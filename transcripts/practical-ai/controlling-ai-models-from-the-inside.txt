@@ -1,0 +1,428 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Controlling AI Models from the Inside
+DATE: 2026-01-20
+SHOW: Practical AI
+LINK: https://share.transistor.fm/s/df33214d
+AUDIO: https://pscrb.fm/rss/p/dts.podtrac.com/redirect.mp3/media.transistor.fm/df33214d/9c2dd1a8.mp3
+DURATION_SECONDS: 2627
+TRANSCRIBED_AT: 2026-11-04T10:11:44Z
+----------------------------------------------------------------------
+Welcome to the Practical AI Podcast, where we break down the real-world applications of artificial
+intelligence and how it's shaping the way we live, work, and create. Our goal is to help make AI
+technology practical, productive, and accessible to everyone. Whether you're a developer, business
+leader, or just curious about the tech behind the buzz, you're in the right place. Be sure to
+connect with us on LinkedIn, X, or Blue Sky to stay up to date with episode drops, behind-the-scenes
+content, and AI insights. You can learn more at practicalai.fm. Now, on to the show. Welcome to
+another episode of the Practical AI Podcast. This is Daniel Whitenack. I am CEO at Prediction Guard,
+and I'm joined, as always, by my co-host, Chris Benson, who is a Principal AI Research Engineer at
+Lockheed Martin. How are you doing, Chris? Hey, doing great today, Daniel. How's it going? It's
+going well. Done a little bit of snow shoveling on the ground. As we speak, we're kind of headed
+into winter break or the holiday Christmas season here in the U.S., and I think this episode will be
+released in the new year. So if you're listening to this, you're listening in the future. To be
+honest, I'm really excited about talking about the future because our guest today is really thinking
+very innovatively about how we can secure our AI models and have safety as we move into that future.
+I'm really excited to welcome to the show today Ali Khatri, who is founder of Rinks. Welcome, Ali.
+Thanks. Thanks for having me, Daniel. Yeah, we met earlier this fall. I'm really fascinated by your
+kind of line of work and technological innovation at Rinks. But I also know that you've been
+thinking about these topics around AI safety, guardrails, disallowed content, et cetera, for quite
+some time. Could you give us a little bit of a background of how you got into these topics and what
+you've done in the past? Yeah. So I have been in the machine learning for AI safety or anti-abuse
+use cases in general for the past eight or so years of my career. I spent about three years at Meta
+where I built infrastructure that serves about half of the world's population. Basically, any
+safety, anytime you type a message on Facebook, it goes through tens of safety checks, which are
+powered by thousands of models. I built the infra that these models run on. And then I moved on to
+Roblox, where I built AI power, like where I built systems to protect about $3 billion in payments
+against fraud. So I've been in this space. I've been using AI models to sort of protect against
+abuse. And during this time, I realized that the models that I'm using themselves are susceptible to
+abuse. So that's what led me to finding rings. And I know that now you're thinking about those
+actual models. So I often tell people also on the AI security side, there's kind of AI for security
+and then there's security for AI. It sounds like there's something similar kind of in, I guess,
+model or safety anti-abuse space. Could you give us a little bit of an understanding of like when
+we're talking about the safety or security of AI models, could you kind of define that for us? Like
+what does that, what do you have in mind as the kind of bad case scenarios or worst case scenarios
+of what a model could do, why it's not, why it might not be secure or safe? Yeah. So thanks for
+making that distinction between AI for security and security for AI. And they're two very different
+things, right? Like AI for security basically means using AI to solve existing security challenges
+in a more effective or a better way, right? So that's a very different and a very linearly separable
+body of work from security for AI, which focuses on making the AI models themselves and like AI-
+based use cases secure. As models have entered the tech stack, they also bring in a bunch of
+security challenges and that is what security for AI solves. Now, in terms of the safety aspects
+that we talked about, models today will generate anything. We'll literally tell like these
+generative models, like if it's a text model, it'll generate any, any vile, any form of vile content
+known to man. It could tell you like openly, I got into trouble for like where a teen was asked to
+commit suicide, right? Like was, or was encouraged to commit suicide. So you have self-harm, you
+have different other categories of harm where you can, you know, generate pornographic content. You
+can generate other forms of inappropriate content like violence, gore. And sometimes it doesn't even
+have to be inappropriate because safety is very context specific, right? Like as a law firm, safety
+looks very different from you than for you than what it does for a medical shop versus say a
+customer service setting versus like a co-generation environment. So each one of these use cases
+come in with a set of permissible and non-permissible behaviors. And that's kind of what safety
+really is that making sure that the technology works in ways that you intended to and minimize the
+unintended outcomes of it. And I guess people are addressing, I mean, these are known issues in the
+sense that at least a segment of the people that are working on these models know about these
+issues. Could you give us a little bit of a sense of like, as we speak, how these, at least in a
+production sense, like what's capable now? Like how does the landscape look in terms of capabilities
+to defend against or align with certain policies or allowed content, disallowed content? What are
+our choices right now? If I'm looking at the availability currently of both kind of open source
+projects and what's in maybe closed platforms, what's available to me to deal with this issue? Okay.
+So before I answer that, I'll use, I'll start with an analogy, which will help make the rest of the
+response much more clear and add some context. So imagine you are in a, like a story, like a giant
+apartment building with over, like say a thousand condos, right? Now, let's say your neighbor for
+some, for some reason or no reason at all really decides to pull out a golf club and starts
+violently assaulting you with it. Now for a situation like this, will the good guys be able to
+protect you just by checking IDs at the gate? Obviously not. That's kind of where we are. You're
+past that point. So that's, that's kind of, that's kind of where we are with AI safety today. Okay.
+That's kind of how jailbreaks work, right? So here the giant thousand story building is the model.
+So today what we are able to do is just today's solutions, analyze what's going into the model, also
+known as the prompt and analyze what's coming out of the model, which is the response. But by then
+the damage has already been done. So now if you're using video generative models, right, you can put
+in a text prompt, get a video output. Your video output is going to be like, it's too expensive to
+analyze number one. And the video has already been generated. So if you already spent a large amount
+of compute generating that bad content, right? Again, if you're talking with audio models, you can
+trick audio models into generating bad content. Like a seemingly innocuous looking prompt can be
+tricked today using multitude of techniques to generate really malicious output. So now, like,
+unless you have visibility into what's going on inside of the model, you're not going to be able to
+catch a lot of these things. That's where jailbreaks come from. That's where adversarial machine
+learning comes from. If you look at like, if you look at it through the context of predictive models
+versus generative models, it's essentially the same core phenomenon where operating these models as
+black boxes, and we have no idea of what's going on inside of them. So we're trying to change that.
+Looking at that, it seems like in the way that you just kind of phrased it with the context there,
+it seems like a very intractable problem. As a follow-up to Dan's question, like, how should I as a
+new user potentially, or someone coming into a use case in my company where a model is desirable,
+but I'm worried about whatever bad or abuse means in the context that I'm operating in, how should I
+start off thinking about that? Like, what's my starting point? Because I got to say, you know,
+coming into it, I'm not even sure where to start. So, like, can you level set that a little bit in
+terms of, you know, what's square one? Yeah. So that's a good question. So normally what you do is,
+the way I like to think about it is, there's a general category of bad stuff that no one really
+wants or the law doesn't allow, and things like that. So there's, like, a general category of stuff
+like that, right? Like, here I'm including porn, hate speech, yada, yada, yada, which, like, a
+general category of undesirables that no one wants on the platform. Like, child safety, for example.
+That's non-negotiable, no matter what context you're in. Now, there's also another aspect of
+categories, which is about context-specific safety. So now if you're in a banking use case, you've
+got to think about, okay, money laundering. You might not have to think about money laundering, say,
+in a code generation setting, for example, right? So you want to think about these very specific
+categories of risk or issues that come from your use case. And people tend to usually have a very
+good idea of that. Like, if you understand your use case well, which most people do, right, which is
+why they're exploring models and they're trying to solve some problem within their use case. So
+within that use case, you also would understand the problems that you're facing. And that's another
+category of risk that you want to think about. Then once you've thought broadly about these two,
+then you've got to figure out about, once you've identified both of these categories, then you want
+to think about mitigations, detections, and things like that. And I guess there's like, if we're
+just kind of defining some terms for people that they might have heard of, this approach that you
+talked about related to kind of guarding the gate to the apartment complex, right? Or the inputs or
+outputs, managing the prompts and the outputs. Is that what people refer to as like guardrails,
+safeguarding? What is some of the terminology that's being used? And then I know that you all, that
+you have a different way of thinking about this. I guess just setting the stage jargon wise, how do
+we define these kind of guarding the gate things? And then as we filter into actual safety within
+the apartment complex or within the model, what kind of terminology? And I guess like there's a body
+of research building up to what you're doing. What terms are used to describe that? And like, as
+people wanted to research that, what would they look for? Yeah. So guardrails essentially like are a
+catch-all term. They can refer to prompt and response filters. Now today, one of the ways of doing
+like, there are like multiple guardrail type solutions out there. There are guard models out there.
+Meta has one. IBM has one. Google has one. OpenAI has one. Like, and I'm talking about public
+releases, right? Internally, most people have their own. But these essentially are prompt and
+response filters. So they look at the data going in, they look at the data coming out. Now, so that
+is like one thing that guardrails are used to refer to. Less commonly, guardrails are also used to
+use, refer to like static checks, where you just look at the output of the model and say something
+like, okay, the word, like forbidden word, let's say the F word, right? The F word appeared in
+output. This is not permissible. So that's a simple regex filter that you can use. So that would
+also be called a guardrail. In terms of like looking at the internal state of the models, there's a
+whole body, like a whole field of research, area of research that's developing. It's called
+interpretability. There's a subset of that called mechanistic interpretability, where they try to
+figure out what subcomponent of the model led to this particular output and try to change it at the
+source. So try to alter or modify behavior while it's happening, as opposed to after or before.
+Well, friends, here's your hot take of the day. Your team's AI tools, they might be making
+collaboration messier, not faster. You probably know this. You feel this. Think about it. You've got
+AI literally everywhere now summarizing, generating, suggesting. But if there's no structure, no
+shared context, you're just creating more noise, more outputs, more stuff to wade through. The gap
+between having a great idea and actually shipping that idea, that gap isn't a speed problem. It's a
+clarity problem. Well, this is where Miro comes in. And honestly, it's shifted how I think about
+team workspaces. Miro's innovation workspace is not about brain dumping everything. Into an infinite
+canvas and just hoping for the best. It's about giving your work context, intentional structure so
+your team knows what to focus on and where to find what they need without playing detective across
+12 different tools, clicking and moving and tabbing. Just too messy. And the AI piece, well, Miro AI
+actually gets this right. They've got these things called AI sidekicks that think like specific
+roles, like product leaders, agile coaches, product marketers, reviewing your materials and
+recommending where to double down or where to clarify. You can even build custom sidekicks that are
+tailored to your team's exact workflow if you desire. And then there's Miro insights. It sorts
+through sticky notes, research docs, random ideas in different formats and synthesizes them into
+structured summaries and product briefs. And Miro prototypes, they let you generate and iterate on
+concepts directly from your board. Test 20 variations before you ever touch your hi-fi design tools,
+saving you time, giving you ideas and getting it right. This whole thing is built around the idea
+that teamwork that normally takes weeks can get done in days, not by going faster, but by
+eliminating the noise and the chaos. So help your teams get great done with Miro. Check it out at
+Miro.com to find out how that's M-I-R-O.com again, Miro.com. So Ali, you were just getting into
+these ideas of interpretability, mechanistic interpretability, I think you called it. We've talked
+about interpretability on the show before. I think mostly in relation to trying to figure out why a
+model made a certain decision in relation maybe to certain concerns around bias or other things. So
+like if I have a risk model for approving insurance or something like that, then I might need to
+have some interpretability around that. Or maybe in the case of healthcare, there's a burden for
+interpretability of like how decisions were made. Here, it sounds like kind of the interpretability
+is being applied to, I guess, why the, is a good way to put it, why the model generated some
+problematic output? Or is there a better way to think about that? So there's multiple overlapping
+aspects here, right? Interpretability is like an umbrella research area. It's an umbrella term. So
+what you alluded to earlier is more of, it's also described as explainability. So why was this
+credit card denied? So you're trying to explain it in human concepts. That is a part of
+interpretability, no doubt. It's a subset of it. There's another subset, which is how was this
+generated, right? So for example, if your generative model outputs, say, like if you say, how are
+you? Hi. And the model says, how are you? You want to care about like, how was this generated
+internally? How were these tokens produced? And the reason you care about that is you want to know
+if, instead of saying, like responding to how, like responding with how are you, it could respond
+with howdy or with something else, right? So you want to know what caused those differences and you
+want to be able to control that. So that aspect is also interpretability. Now, where this interplays
+with safety is when you have these prompts, which look bad, which look good to a human, but bad, but
+result bad out, result in bad outputs, which is how jailbreaks work. When you analyze how the data
+flows inside of this black box, you're able to like control it and stop it at the source. So think
+of this as, continuing that analogy from earlier on, think of this as cameras at every gate or every
+path. So you know that, okay, well, this is what's happening in this hallway and we got to stop it.
+We got to put an end to it. So it's a very different class of defenses. As you're saying this,
+you're actually talking about manipulating the internals of the model and the flows that are there,
+kind of the cameras on the doors and stuff like that, and making it maybe a gray box rather than a
+black box to some degree, as opposed to kind of the more traditional guardrail approach where you
+have programmatic, you know, you use the word guardrails around the models, inputs and outputs to
+try to handle things that way. So it's kind of a whole different thing about instead of treating the
+model as a black box, you're saying you're diving into it and trying to affect an improvement there.
+Yeah. So intervening is one, like stopping generation or modifying that is one form of intervention,
+right? Intervention does not have to necessarily be in that form. It can take various other forms.
+So once you understand today, we have no idea of what's going on inside of the model. We put an
+input to the, like we provide an input to the model, get an output. We have no idea of what's going
+on. So this, what we're trying to build or what Interpretability tries to do is understand what's
+happening inside. Now you could control it, or you could use that to make a risk quantification and
+use that downstream. You don't have to do anything in the moment necessarily. It can be leveraged
+downstream. So now it's basically like you have a whole new set of information or a whole new set,
+like whole new class of data points that you can leverage in creative ways downstream. This is
+something that's not available today. And this is what Interpretability builds really at runtime.
+And am I correct? So part of my assumption in the past, and I'm fascinated by this whole subject, is
+like some small changes in the, for example, the weights or individual layers or individual pieces
+of the model can produce very large changes in the output behavior of the model, which it's kind of,
+I'm blanking on this. What is the thing? It's like a butterfly flaps, it swings and... Oh, the
+butterfly effect. Yeah, the butterfly effect or whatever. So like these, because you can make a
+change, whether that's quantization or other things to the model and that may produce unclear and
+sometimes catastrophic changes in the behavior of the output. And so if I'm understanding what
+you're saying, right, Ali, it's one way you could try to use the information about how the model is
+producing certain outputs is to intervene by actually making a modification or preventing something
+in the model. But that could produce other changes that you may not want, I'm assuming. But you
+could also instrument the model to understand potentially when it is kind of firing those certain
+neurons or lighting up in a certain way that is indicative of problematic behavior. Am I
+understanding that right in terms of like various ways of, I guess, either intervening or
+instrumenting? I don't know if I'm using the right terms. We are instrumenting, like the way we're
+approaching this is we are trying to understand what happens inside of a model at runtime. Models
+are a monolith, right? But we're breaking it down into different spaces or subspaces. And we look at
+the subspaces that get activated during bad generation. So now when you're, let's say, generating
+non-permitted content versus permitted content, right? Different sub-regions of the model get
+triggered. So we're building visibility into that and we're trying to identify them at runtime. So
+now there are some sub-regions that you wouldn't care about, right? Like, for example, in a, like if
+you take a general purpose LLM, it's trained on everything ranging from Python code to 15th century
+Chinese poetry, right? Now, when you're using it in a customer service setting, you care about
+neither one of them. And if those sub-regions of the model are getting activated, then you want to
+be able to, like, arrest it while it's happening. So this is similar to, like, if you go back to the
+analogy that I had, like, made about the apartment building, you want to have visibility at all
+times into what's going on at each level, right? So you understand, like, you find out that a bad
+thing is going to happen way before it actually happens. Like, for example, if someone's going to
+conduct a bank robbery, people just don't get up and conduct a bank robbery, right? There's some
+searching going on. There's, you know, planning, cycles of planning going on. There's purchases of
+firearms or whatever going on. So now if you stop them at these bad activities at different levels,
+it does not have to get, the police don't have to deal with a shootout situation in a bank at the
+very end. So similarly, like, defense works in depth, right? And we're building a whole new layer of
+safety that hasn't been tapped into just yet. Yeah, that's fascinating. And I'm guessing certain
+folks are probably wondering, like, I am out of curiosity, like, this might be the first time that
+they're hearing about such an approach to this kind of problem. And they might be thinking, you
+know, how is this possible? Like, how? So one thing, I think the general concept makes sense, right?
+Like, instrumenting the interior of the apartment complex, understanding what's happening, kind of
+retrieving that, you know, that intelligence for you to make decisions or determine if you want to
+mitigate something. What are the, I guess, have there been multiple attempts to try this sort of
+thing? And from your perspective, in terms of how you all are approaching it, what is kind of
+needed, I guess, from the customer side to create this sort of instrumentation? So I could imagine,
+like, in one scenario, like, I could train, I could tell the customer, well, we're not going to
+train on Chinese poetry or code. We're just going to train a whole new model. And that burden on the
+customer is very, very heavy, right? And on another scenario, you could say, oh, take this model off
+the shelf and do this to it. And then, you know, that's a less burdensome. So there's probably a
+spectrum of here. Could you help us understand, like, the, I guess, the burden and what might be
+required to get to this instrumentation? Yeah. So the way we're approaching this today is we do not
+modify the model. We do not even build models nor require the customer to build a model. We take an
+off-the-shelf model and we build a safety module that sits on top of it. So essentially, for the
+customer, it's like a very low-friction approach where they take a model that they use and love,
+like Lama or, you know, Granite or any Mistral or any of the open-weight models for image
+generation. You have WAN and you have a host, other host of Chinese models for the audio-video
+setting. So any model that you love, we sort of make it more secure and tailor it for your context.
+So now, again, remember, if you're like a lower law firm, right, an off-the-shelf Lama or off-the-
+shelf Mistral is not going to have the protection that you have. Like if you're like, say, a shoe
+company, let's say you're Adidas or Nike, right? You want, you as a user want to talk about Nike but
+not talk about Adidas, right? You can't expect the model maker to put that in for you because the
+model maker is trying to sell to everybody. So we help build that customization and we do that
+without changing your primary model. Like your primary model will continue to be as it is. If you
+make any modifications to it, like fine tuning or anything like that, that's on you. You control
+that. We don't require you to do it. But even if you do that, we can still support you. Could you,
+so totally recognizing that there's proprietary stuff that you're not going to dive into and respect
+that, could you talk a little bit about just kind of clarifying as we were kind of talking earlier
+about kind of the buttressing with guardrails on the external side versus the going into the model?
+And as you're talking about adding a component, like, so in my conclusion, it seems a little bit
+like it's on the outside. Can you talk a little bit about what you mean by that without diving into
+places you can't go? Yeah, so I'll give you a very, I'll try to address that as much as possible
+without going into the specific details. So today what you have, right, you have these filters which
+analyze the inputs and the outputs. Now, analyzing the economics here is all messed up. Like if you
+were to analyze video or audio, right, those tend to be very expensive computationally. Those models
+are very expensive. So now if your inference itself costs X and if you're expecting someone to pay
+another X to analyze it, number one, it's slow. Number two, it's like paying someone $1,000 to guard
+a $100 bill. You're just not going to do that, right? So what people end up doing is people end up
+like shipping unsafe models. So today I've, I've tested, like we have tested models from different
+audio companies. We've tested models from different video companies, different image generation
+models, each and every one of them with little to no trickery, which means that average user can
+just go there and ask them to generate bad stuff and they will do it. There are little to no guards
+there. And that's because the economics does not make sense the way thing is today. So what we've
+built is a scientific, like we've sort of had a research breakthrough where we can build safety
+about thousand times cheaper. So just to give you some concrete numbers, what we've done with LAMA,
+we've taken a LAMA model, which is like an 8 billion parameter off the shelf LAMA model. And today,
+if you had to protect it, you would have to use LAMA Guard 3, which is an 8 billion parameter model.
+And assuming it generates 10 tokens, that is, you're running about 80 billion parameters of
+inference at runtime. Now, if you do that on your prompt and response boat, that number balloons to
+160 billion parameters of inference. That is two extra GPUs or one extra GPU, depending on how
+you've wired the, or set up the, deployed the models. So now what we are essentially doing is we're
+analyzing the internal states of the primary model as it makes the prediction. So in doing so, we
+don't need any of those two extra GPUs. And that 160 billion of parameter, billion parameters of
+inference that I counted, we have succeeded in bringing it down to 20 mil with an M. So we're
+essentially a rounding error today because of this expensive safety profile. You cannot even deploy
+them on edge devices. Like on edge devices, guardrails are non-existent because you can barely, like
+edge, when people are working on the edge, they work really hard. A lot of people work really,
+really hard to squeeze that one device through techniques like quantization, that one model onto the
+limited memory of the device. So you have no room to deploy a safety model, right? So that's why
+we've like built tech, which literally is like a rounding error. 20 million parameters on 8 billion
+is nothing. And we can sort of deliver safety, like comprehensive safety. And our safety performance
+is comparable to a standalone guard model. And it is significantly faster because our latency just
+doesn't exist. It's parallelized and it becomes, in practice, the latency of the primary model is
+the latency that the user sees. With today, you have to like sort of account for the latency of the
+primary model. And you also have to account for the latency of the response filter and the prompt
+filter. Also, the response filter cannot kick in until the primary model is finished generating. So
+you're looking at like very high latencies. So from the perspective of the end user, you're looking
+at a lot of added friction in terms of slow speed. You're looking at increased costs because
+ultimately the cost will be passed on to the user, right? So you're paying for two extra GPUs that
+you don't have to. And your quality will be substandard. Again, remember, all these models are able
+to do is check IDs at the gate. So that is the protection you're getting. So Ali, it's very
+fascinating and encouraging, the results that you're seeing and what you're able to do with this
+sort of approach. I'm also wondering like the size or latency or behavior that you just described.
+That is certainly a huge component of what people are thinking about and why they can't use
+guardrails in certain cases. Another question that might come up, though, and I actually think that
+you can validate me, but I think you have a very good answer to this is what about the kind of
+accuracy or reliability of kind of one approach or the other? So a person, I guess, could argue and
+say, well, if I have a guard at the gate and he's 100 percent accurate in making sure no gun ever
+gets into the building, then there'll never be a shooting. And that's a very robust guardrail or
+something like that. But I think what you're saying is you still wouldn't know what happens inside
+the building with 100 percent certainty. So could you address that side of things like the accuracy
+side or the quality side, I guess, of the performance of guarding and safety with this kind of
+instrumented model approach versus kind of an exterior guardrail? Yeah. So an exterior guardrail, as
+you pointed out, is limited in visibility, right? So even if they do 100 percent great job of
+checking someone's IDs, they only have limited information. There's only so much you can do, right?
+Like what you're the kind of defenses you're expecting is out of the scope. Like you're limited by
+information there. Like if you if you don't know how to drive a car, you're just not going to be
+able to do it. Right. No matter of like no matter how fit you get, no matter how how much you train,
+you are not going to become a race car driver if you cannot drive a car. Similarly, like in this
+security setting, like if the example that I use where somebody, you know, decided to pick up a golf
+club for some reason or no reason at all, you weren't checking for like golf clubs are permitted
+items to bring into a home. So the security have done their job right. They haven't done anything
+wrong, but they're just there's a fundamental limitation that exists here. So you can only do so
+much looking at artifacts. So there's a whole layer of safety that is untapped or unaddressed or
+inaccessible because of because of scientific limitations. But that's changing fast. And we're sort
+of at the like at the leading edge of it. And just to make sure that I that I have it right. So
+would it be a good way to describe it that let's say that I have or I want to prevent, you know,
+toxicity or something coming out of the model of a certain type? Right. There are a variety of
+inputs to the model that could result in that type of output, but I'm never going to know all of
+them. Right. Or there's always a there's always an edge case. Right. And so by instrumenting and
+saying this part of the model lights up when toxicity is being produced, then I no longer have to
+worry that I have all of the possible inputs in the world put together that that might might trigger
+toxicity. I just know when there's toxicity. Is that is that appropriate? Yeah. Way to put it. Yeah.
+So when you're when you're on the defense, when you're playing defense. Right. You don't have like
+when you're defending models against abuse in any scenario, whether you're defending models or just
+protecting a platform in a classical trust and safety sense. You're never going to have an
+exhaustive list of the million ways in which things go wrong. But you can gauge you can develop a
+fair understanding through past examples or through data point that you have. That's the benefit of
+machine learning. Right. But with the way jailbreaks work or with the way adversarial examples work
+is that they do certain things inside of a model that are not possible to predict in a different
+model, which is being used as a guard. Right. So the guard is model type A. The primary model that
+you're predicting is model type B. So the guard is not going to be able to predict what's happening
+in model type B simply because they don't have visibility into what's happening inside the model. So
+without like without information, you're not going to be able to do anything. Right. Like, for
+example, if you're the SEC and somebody takes away your access to bank accounts, you're not going to
+be able to prevent money laundering, no matter how many books you've written on that subject.
+There's only so much you can do with guns and badges. Right. You would need visibility if you want
+to try preventing money laundering. You will need visibility into the financial system. So that's
+kind of what we're building here. In terms of accuracy, the numbers speak for themselves. Like we're
+able to be like match and beat the performance of standalone guard models over a thousand times our
+size. And that's because we are exploiting this unique insight. Yeah. It sounds a lot like what is
+an analogy that in like neuroscience would be if I'm if I can pronounce it right. An electro
+cellophilogram, an EGC where they monitor the synaptic connections and they can see it lighting up.
+You know, since I can't pronounce the word, I'll just describe it to the best of my ability. It's a
+long word. I actually had it written down. I was like, oh, crap, I still can't pronounce it here. So
+so it sounds like that is you're thinking, you know, about like how you can apply that. Are there
+any ways that that can kind of tie back also into the hybrid approaches to see like if we talk about
+some of the other more traditional forms of guardrails that are out there? Can you combine them into
+sort of a hybrid approach where you do have different types of guardrails that that are in place,
+but people can add this kind of capability from you into it and thus enhance their overall security
+model? Like what does that what would that world look like in your in your view if that's valid?
+Yeah, I mean, we I do. I'm a firm believer in defense and depth. So one one product does not
+miraculously solve everything, just like with our human society. Right. Like if you think about law
+enforcement, it's a very good parallel where for secure national security, you need army to protect
+you. You need different forms of the military to protect you from external threats. You need the
+border police to make sure that entrance is regulated. But at the same time, you also need state and
+local law enforcement. You also need federal civilian law enforcement. So you need different levels
+of that to make sure that security on the whole is ensured. Similarly, in our in the setting of in
+the context of AI models. Yes, you have guardrails which look at prompts and responses. They are
+valuable. Right. But then there's ways to do them efficiently. And then you also oftentimes would
+need to combine, say, system level features with model level features. So we build those model level
+features. So you could do something complex, like let's say you're running some sort of customer
+service bot and a customer has a history of rebonds. Right. And then in that we detect, let's say we
+detect some sort of misrepresentation or some sort of lying. So you can say, OK, block if lying
+score. You can compose rules like saying block if, you know, lying score greater than 0.8. And this
+customer has refunded more than thousand dollars worth of merge. So you can there's potential to
+combine mix and match as well. And I think that's how you improve the overall safety profile of any
+system. It's always in depth. And those layers have to work together. If you I can go on like I can
+just look at web applications in parallel. Right. Like you need static code analyzers and you need
+AI firewall. They don't replace each other. If anything, they complement each other and build an
+overall robust system. And before we leave the subject and maybe maybe look towards the future a
+little bit, I do want to highlight I think one of the fascinating things that that is comes out of
+the work that you're doing, Ali, is is some of the, I guess, customization that's possible in the
+sense that we've talked a lot about kind of the, quote, traditional types of things that you would
+want to prevent, whether that's jailbreaking or toxicity. But there's also like like you were saying
+in every industry and actually at every company, there might be custom types of policies that they
+want to enforce or certain things that they want to instrument. Does this does this I guess how
+extendable is is this approach to those sorts of situations? Yeah. So this is this is very
+extendable to those. I mean, our approach is designed for these situations that we've identified
+this niche in the market with models. You're shipping a one size fits all solution. So to put a
+different to put it in a different way, the model needs of most companies are similar ish. But the
+safety needs are dramatically different. So you cannot have a one size fits all safety stack that
+works for everybody. Yes, sure. There's a general category of undesirables that everybody would want
+to keep off their platform. But that's a very small subset in with generative models, which are
+capable of doing so much. You need to be able to customize safety as well. So that's that's the
+space we thrive in. And that's what we're building for. Well, that's very interesting to me. The
+I've learned a lot today as you as you're thinking, you know, Dan kind of telegraph. We like to kind
+of finish up by asking about the future. And as you're thinking about the future, both in terms of
+kind of your specific approach that you're doing, but also, you know, kind of like where where
+security is going for models in general, in the large. What like what kind of what kind of
+guideposts do you have that you're thinking about? You know, I like to say at the end of the day
+when, you know, you're taking a shower or you're lying in bed at night about to go to sleep and your
+mind's just kind of going loosely. You know, where do you see things going and what are you really
+passionate about pursuing or exploring going forward in time? You know, what's that aspirational,
+hey, I'd like to go do that that you have in mind. So I think when you look at safety, when you look
+at like runtime safety, like when you look at safety, right, there's different aspects. So there's
+build time safety, which is a whole different class of safety products. But in terms of runtime
+safety today, runtime safety only exists at the data layer, which is at the prompt and response
+layer. The model layer is missing. My aspiration is to sort of build that out. So that has been my
+vision. That is the guiding vision behind RINX, where we want to build model native safety. And I
+see that will start that will have to exist for models to, you know, be adapted, be adopted into
+different settings. Like if you're in health care, for instance, today, like it's very hard to use a
+public LLM, right, because of data concerns. And like no one in their right minds today would fine
+tune a LLM on PII data. That's because you just can't. It's just not possible. So it's locking a lot
+of people out of the ecosystem. And that's the problem we exist to solve. So I want to become like
+my vision is to sort of build that de facto model safety layer for no matter what model you're
+using. I want to build model, become the go-to for model safety. That's awesome. Well, I definitely
+encourage people to check out the show notes. And I should have said this at the beginning, but just
+to make sure people, RINX, W-R-Y-X. N-X. N-X. Sorry. I even missed that. W-R-Y-N-X. So check out
+RINX. We'll have the link in the show notes. And yeah, just really fascinating work. And from the
+community, Ali, just thank you for digging into this topic and bringing a fresh look at things. It's
+awesome. And hope to see you back on the show to find out where things have advanced. Yeah. Thank
+you for having me on the show, guys. We'll talk to you soon. Thanks. Bye. Bye. All right. That's our
+show for this week. If you haven't checked out our website, head to practicalai.fm and be sure to
+connect with us on LinkedIn, X, or Blue Sky. You'll see us posting insights related to the latest AI
+developments, and we would love for you to join the conversation. Thanks to our partner, Prediction
+Guard, for providing operational support for the show. Check them out at predictionguard.com. Also,
+thanks to Breakmaster Cylinder for the beats, and to you for listening. That's all for now. But
+you'll hear from us again next week.

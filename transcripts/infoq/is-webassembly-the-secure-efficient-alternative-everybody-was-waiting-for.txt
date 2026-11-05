@@ -1,0 +1,253 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Is WebAssembly the Secure, Efficient Alternative Everybody was Waiting for?
+DATE: 2025-08-18
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/podcast-laurent-doguin-and-geoffroy-couprie-by-olimpiu-pop
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2148213003-infoq-channel-podcast-laurent-doguin-and-geoffroy-couprie-by-olimpiu-pop.mp3
+DURATION_SECONDS: 1454
+TRANSCRIBED_AT: 2026-08-05T12:17:21Z
+----------------------------------------------------------------------
+Is time series data crushing your database performance? InfluxDB handles millions of data points per
+second with a database built specifically for time series workloads. Thousands of developers have
+already switched for faster, real-time insights. Ready to see the difference? Visit influxdata.com
+today. Hello everybody. I have in front of me Laurent and Geoffroy to discuss about something a bit
+futuristic if you want. WebAssembly, careless. And what are the benefits that this might bring? But
+before that, Laurent, Geoffroy, can you please introduce yourself? Sure. I'll start. My name is
+Laurent Doguin. I'm the Director of Developer Relations at Cashbase. I write stuff about Cashbase. I
+talk about Cashbase. And I talk to our customers who do fancy stuff with WebAssembly and sometimes
+serverless, which is why I'm here today. Hi, I'm Geoffroy Coupri. I'm a Rust Engineer at ProtonMail.
+I'm using WebAssembly daily and I've been in previous jobs. So it's been a pretty large part of my
+work for years now. Thank you. But let's take a step back and start from the conversation that got
+us here. Laurent, there is some time since we met in London, but still that conversation was quite
+interesting. And you presented something to do with serverless and WebAssembly. Can you give us the
+gist of that presentation and how serverless and WebAssembly fit together? Yes. So I was at QCon in
+London in April, I think. And I did a presentation about how the new Wasm component model was the
+fast best friend, fast function as a service. The gist of it is when you're building a serverless
+platform or function as a service, it means you're basically running untrusted code. And running
+untrusted code, we've had different solutions for this in the past. People have been isolating code
+from a variety of ways. The main reason being you need isolation because process can do weird things
+to your kernel, basically. Let's say you run two processes on the same machine on the same laptop
+and one process does something completely stupid, like, for instance, rebooting the machine. Because
+why not? It could. Then you've lost everything, right? So you need to isolate those processes. The
+metaphor I usually use is double dipping, which is also in my talk. There's a scene in Seinfeld, the
+TV show, where you get someone taking a chip and putting that chip into a guacamole bowl. And then
+he hits the chips and then he dips the chip again. So he's basically sharing his microbiome, his
+microbes, or maybe his good bacteria, who knows, with the rest of the people that will use that
+guacamole bowl. Now, that's perfectly acceptable. If you're doing this with people you trust 100%,
+maybe even 110%, you could do this with your wife. You would probably not do this at a funeral with
+lots of strangers, which is exactly what happened in that TV show. When you're sharing a kernel with
+two processes, that's what's happening. You're basically using the kernel as a guacamole dip and as
+a variety of ways to make sure, let's say, to mitigate things that could go wrong. You could start
+by first running only one process on one machine, and then you could maybe isolate that process by
+running it into what we call a virtual machine. A virtual machine is an isolation level that's
+provided by the CPU, by the hardware stack. And it's basically telling you that you're in a fully
+isolated environment. When we talk about virtual machine, people tend to think about, you know,
+VirtualBox or VMware. People tend to think about, like, very slow things that takes 30 seconds to
+boot. We've gone a long way since then. You can run a virtual machine in a very fast and efficient
+way using KVM, using micro VM frameworks like Firecracker, and I'm sure we're going to talk more
+about this later. But that was the original way that people used to isolate stuff. And then
+something showed up. It was called Docker, or Docker was based on LXC. It's not really a
+visualization. It's called containerization. And the good thing about containerization, it's very
+easy to use, much easier to use than VMs. The problem with containers, it's not as isolated. You're
+still sharing the same kernel. There's no hardware security enforced by the CPU instructions. So
+containers are great. Containers are popular. But it's not as safe as VM. And so people started to
+add more on top of this. They've used things like GVisor, like Kata containers. They tried to add
+more solutions to make containers safer. And at the same time, the VM people had more solutions to
+make VM more lightweight and faster. And so that's sort of the runtime solution you have right now
+when you want to create a safe environment to run code that you don't know. So that's without
+talking about WebAssembly. And the whole part about this talk was to introduce WebAssembly as a
+solution for that. Great. So trying to put everything what you said in a nutshell, the biggest
+problem as infrastructure provider is that you're running code that other people are putting there.
+You don't know what you're actually running. So in order not to contaminate it, you need to isolate
+it. And there are multiple solutions to that. We can look at their history. But WebAssembly is
+coming now into the frame as a more lightweight, faster to start and stop solution, right? Yeah,
+absolutely. It's bytecode that runs on a virtual machine, basically. And that virtual machine gives
+you access to very few things. It basically gives you access to a memory space that you have no way
+to get away from that memory space unless it's explicitly set so by the virtual machine by the
+runtime. So it's extremely isolated in theory. The only thing is allow list security model. By
+default, you cannot do anything. And then the runtime must tell you what you're allowed to do and
+must tell you how you get away from the very, very strict boundaries that you were given at runtime
+when executing that function or the bytecode. But does actually serverless exist? Because in the
+end, there is always a machine behind the scenes, regardless of how we are having it in the
+infrastructure. And I think that was the use case that you two worked in the past on. And because
+that sounded more like that, more in terms of infrastructure. So maybe let's look into that a bit
+more. Right, because it wasn't just about serverless. It was about functions. We were running a
+platform as a service company and we were running other people's code. And most of the application
+code was running into containers or running into VMs, mostly VMs, micro VMs. But we needed to go a
+little more granular. And that's where Geoffroy came in with the idea of basically replatforming or
+creating a function as a service on top of a new technology, which was not a VM, or not really, but
+which was much smaller. Yeah. So the interesting point was at the time, 2018, I went to look at the
+WebAssembly spec. When I started reading about that, the interesting part when looking at that spec
+is that it was not really meant for the browser. It was a pretty generalist platform. I got the idea
+that, oh, maybe that could run on the server side. And I went to just hack on that for like three
+days. Maybe I can make some WebAssembly code run on a WebAssembly interpreter and have it like
+execute a web app, a small web app. And that was running pretty well. The thing that was missing was
+like a very good isolation. At the time, we were both working at CleverCloud, French web hosting
+company. Virtual machines were in the DNA of the company. Everything was on virtual machines. I got
+the idea after having messed with hypervisors a few years back that maybe I could just load the
+WebAssembly generated code, like taken from the bytecode and compiled to machine code and run that
+directly in a virtual machine without even an operating system. Because since the WebAssembly
+runtime has to expose exactly what the app needs and there are no other dependencies, then maybe I
+can specify exactly what the virtual machine exposes and we don't have to expose any kind of weird
+hardware or anything, just exactly the API we will need. And that's where the idea came from. That
+makes sense. So what were you targeting? What were mainly the problems? Everything was from the
+perspective of the security or it was more also in terms of optimizing the usage and making it maybe
+more profitable? There was security for the virtual machine part, but also performance. What people
+are always looking for in serverless platforms is how to run the cheapest way, small piece of a web
+app, even cutting up an app in various elements that will run concurrently. So maybe this endpoint
+is called a lot and we need to provision some machines, but this one is only called once a month. So
+maybe it's on the scale to zero application. That's the kind of play people like to do with
+serverless. And so the idea was that, oh, can we make the cheapest way to run code safely in
+WebAssembly? That was a pretty huge bet. A few things needed to be done. Like how can you make a
+virtual machine boot extremely fast, even faster than how most containers boot? There were a lot of
+freaks to get that. But I don't know at which point, how fast they are starting now at Cloud Cloud
+because the project still hasn't shipped. But I was pretty close to one millisecond at the time to
+boot a virtual machine and have running code inside. That's impressive. Where did you get started?
+What was the initial time of booting the machine to just get a factor of the improvement? That was
+like taking virtual machine and taking it down to the smallest elements. So virtual machine is
+basically a virtual CPU. You ask the KVM API in Linux, make me a virtual CPU. You provide some
+buffers and say, oh, here's your RAM. That's where you have your memory. And this part is
+executable. This part is not. This part is writable. This part is not. Like you decide exactly what
+you want. And from there, you just decide that you do not make any hardware. Like you don't need a
+network card. You don't need basically anything. You just need a way to communicate with the host.
+And for that, I used IO ports, which was like the simplest way to communicate. I could have made a
+kind of virtual device in the same way that most distributions can make Linux that works on VMs
+right now. Like now, if you want to run Ubuntu or something on the server in a virtual machine, the
+hypervisor is not emulating any real hardware. It just provides a virtual device. And the guest
+knows that it's running on an hypervisor. And so it's just say, I want to send something on the
+network over there. And it's not talking to a real network card. But even that was not needed. Just
+like the simplest way to load code. And from there, it's about booting the virtual CPU. So a fun
+fact is that even for virtual CPU, you have to do the boot sequence like you do with a normal CPU,
+where it starts in 16 bits mode. And then you have to make a few instructions to make it move to 32
+bits. And then to 64 bits. It's like you start in the 80s and then you have to progressively go into
+the future, feature by feature. So it's back to the future whenever you're booting the machine,
+right? Yeah. You have to do all of that like very, very quickly. But once you have the vCPU and the
+RAM and you have loaded whatever you wanted in the buffers, then it's there. So you don't have a
+boot sequence for the entire OS at this point because you don't have an OS. You can just point to
+the part of the buffer where you put the code and say, hey, execute from there. That's it. The vCPU,
+we just start executing. So if I understand correctly, by the end of your optimization journey,
+let's call it like that, you got to booting in one millisecond, right? What was the initial time in
+which the machine booted? Okay, well, the virtual machine booted. I think at first it was like 20,
+30 milliseconds. Okay. Well, that's impressive. It's 30x improvement. Kudos to that. And what did
+you use at that point? Loran was mentioning earlier Firecracker, where maybe you can single out a
+couple of the tools that you came across at that point. Yeah. So at that point, it was pretty early.
+So if you wanted some good Rust bindings to the KVM API, you had to go, and there was a small
+library you could fork from the Chrome OS open source code. And I started from there. I did a few
+patches. And a while after, some people started the CloudVMM project in exactly the same way,
+starting from this small library. And I think Firecracker ended up using CloudVMM too. So
+Firecracker is this hypervisor that's made by Amazon, I think. And its entire design is to boot a
+Linux virtual machine faster and in a very safe way. And so it's using basically the same tools. So
+this was like probably the early days of this movement, let's call it. How are things now? Now I'd
+say there's a lot of existing actors. You may have seen some projects on like Crustlets, which were
+some web assembly machines that would run in the Kubernetes cluster. There's been Fermion, an entire
+company around that. Microsoft is also doing with the Hyperlite project basically the same thing,
+compiling WebAssembly code to native code, running that on very light virtual machines. So yeah,
+they're making pretty good progress there as well. So I guess the pattern is coming into mind. Like
+before we had the idea, oh, if you want to sandbox something, you need to use all of the tools that
+Docker is using. But now virtual machines are becoming very easily accessible and hackable. So
+people are looking to what they can do with that. Yeah, but I think also last year, I saw a lot of
+content during the KubeCon about how they are marrying Kubernetes with WebAssembly to get more
+speed. I had the earlier discussion, I think around April or May this year, with one of the guys
+that put together the connectors for WebAssembly and Kubernetes. And what you're saying is that for
+him, the frustrating part is the fact that you have a pod that starts in, I don't know, let's say
+seconds. And then you have WebAssembly that is starting in milliseconds. And then it's pointless
+because you have to wait for the pod itself. But I think there is a lot of stride moving in this
+direction. Yeah, that's kind of what sparkled my talk about Wasm at KubeCon. I've been working with
+the folks at the CNCS Wasm Cloud, and basically they're trying to have the same sort of API that
+Kubernetes have, but instead of parts, they're managing WebAssembly binaries. And so they're
+basically telling you to recompile, rewrite your application to Wasm directly so that you don't have
+that overhead that you would have using traditional Kubernetes. You could have a compatible API, but
+manage Wasm binaries. That makes sense, especially that a lot of the more efficient languages these
+days have a target to compile into Wasm. So that will make things a lot easier, especially that you
+don't have an intermediate step. From the compiler itself, you can just wrap it and have it off the
+door. But looking at the ecosystem, what do you think it will make things even better? We are
+talking futuristic, so what do you think it still needed to make it even greater than what we
+currently have? So an issue we have when a language compiling to WebAssembly is that a lot of the
+languages and libraries in the languages have some assumptions on the system under it. Like, oh, I
+have a POSIX like a network API. Or even I have network, I have files. And reconciling that between
+Windows and Mac and Linux or even like a web or desktop is pretty hard to do. And with WebAssembly,
+it's an entirely new platform where you need to provide some of that. And so even if you can compile
+the code, like just raw code that is not doing any side effects on the network or files to
+WebAssembly, that can work. But then once you start using normal libraries that anybody in that
+language would use, suddenly you can get where, oh, but I cannot just write to a file there and
+that's actually blocking me from using this pretty well-known library. That's one of the main issues
+and that's what they're trying to fix with stuff like Wazi, which is specification for an interface
+between the WebAssembly application and the host to provide common APIs like that. To just see if I
+got it correctly, what you said is that currently, in the end, we still have to run on some kind of
+machine. And currently, there are multiple types of interfaces to just break it down in three
+different categories like Web, Linux and Windows probably. You need to harmonize these interfaces so
+it's easier to just go from one platform to another. Would that sum it up? It's more that
+WebAssembly is one another platform. Like a lot of languages only support Windows, Mac, Linux, but
+they now have to support WebAssembly and it's not just about compiling, it's about making sure that
+a lot of libraries will be able to use Wazi effectively. all desktop libraries or... Because the
+main issue is still that you have to convince people that Wazi is a good platform to build stuff and
+we come from a time where you had to manipulate bytes directly, you had some shared memory, you take
+those bytes and then you try to figure out what to do with those bytes. They can be a flaw, they
+could represent a string, you don't really know what it is. And so this has been standardized very
+recently, the Wazi and Copeland model and it sort of gives you a common understanding of how to
+serialize data across and function calls across WebAssembly binaries. So that's a good step towards
+adoption. People are working on this and then of course there's the WebAssembly system interface
+with Wazi which is standardizing how you would use host functions which is what Jofre was referring
+to making sure that we have a common interface that can be implemented by everyone. Okay, just to
+make sure that it's clear for our listeners, we have WebAssembly that pretty much provides let's
+call it the container even though it's more than that and then we have the Wazi which is the
+WebAssembly system interface that provides mechanism to which WebAssembly can safely call different
+parts of the hardware of the host system. Am I correct? Yeah. Okay, great. Where is Wazi at at this
+point? Last time when they were in 0.1 and they were looking at 0.2 did they evolve from that point
+on? I didn't follow it lately. I haven't been following that much either. What's interesting is that
+so the WebAssembly standards are made by the ByteCard Alliance and the ByteCard Alliance has very
+different key players into it. Most of them are clouds actually. Most of them are selling hardware
+and you did mention something we haven't answered yet which was about pricing when we did the
+function as a service at CleverCard and pricing like it was really really hard to price because well
+frankly it is extremely cheap and is in very few interest as a cloud platform to sell something that
+cheap and I don't know if there's a reason but the ByteCard Alliance has been fairly slow and
+Amazon's in the ByteCard Alliance and a bunch of clouds are in the ByteCard Alliance and yeah it
+should drive costs down quite a bit for everyone so you know is this the reason why it's going slow?
+I don't know it's just an observation. Yeah well it's a tendency to frugality after you had a long
+period of time during which everybody was just adding cloud services and adding and adding now it's
+in the reverse trend but I think it's a fair point to add that if things will just be cheaper
+probably to just churn some of the profits right? Yeah cheaper and greener as well because of course
+less machines. Yeah this kind of gets hand in hand and I think that's one of the interesting
+benefits of the green tech movement where it's cheaper to on the CO2 side but also on the pocket in
+terms of finance. Okay so the Bicode Alliance is the one calling the shots but is there somebody
+that has more weight into that? As you said AWS is part of it. Who are the other big players into
+the Bicode Alliance? One of the biggest was initially Mozilla but Mozilla is getting smaller right
+now and there's been a lot of help from Microsoft from Amazon Fastly Fastly but deep into
+WebAssembly early Fermion FutureWay Intel Shopify StackBlitz it's interesting because they all have
+various interests some will be very very at the bottom of the stack would be about providing
+infrastructure and some will be at the top of the stack like Shopify it's just providing plugins to
+their infrastructures or StackBlitz fixed like this and GenX as well. Yeah it's quite interesting I
+was just scrolling through the list of companies that are part of the Bicode Alliance and it's it's
+a wide group pretty much as you said and it's very different interests exactly so if you look at it
+it's very heterogeneous you have Amazon Arm and then you have Stellar the blockchain cryptocurrency
+but also Mozilla and GenX so interesting sum up of people excellent thank you guys the last question
+for me is WebAssembly a silver bullet because if you look at it it started from the browser now we
+are talking about infrastructure but also I spoke to people that were just trying to put a box in a
+box meaning that they were trying to put WebAssembly in the JVM so what do you think is it a silver
+bullet where are its limits the JVM analogy is interesting because the JVM has all of the same fate
+than WebAssembly it started out to be something specific and ended up being something completely
+different it ended up going away from the initial use case now you can use it on the server but also
+you know you had the applets you had embedded Java you had all sorts of things that were not
+necessarily the way it was first same trend and people say Java is dead but Java is still alive so
+that probably means that Wasm has a good future ahead of it is it a silver bullet yeah probably yep
+I think so too you know I've been at Wasm.io in March with 150 people that were all excited about
+the future of Wasm and was probably all sort of convinced that it is a silver bullet and it's going
+to be the future so personally I'm very excited about it good point thank you yeah you cannot but
+the limit is what makes it useful you want to write your entire application in WebAssembly maybe
+that's not the right call because if you want to have like a huge microservice like a huge thing to
+run then write it in your language and use the container or something but if you have a small thing
+that you don't trust particularly or that you want some kind of behavior some little piece of code
+to go from one place to another in your infrastructure WebAssembly is pretty good fit for that like
+you can have a very small piece of code you know that it does not need a lot of requirements from
+the host and you can predefined those and you can run that in about any kind of process and it will
+not disturb whether you have Java Ruby C++ like you can have your WebAssembly runtime in the same
+process and it will run the code pretty isolated so that's a good fit for like very small isolated
+task it's interesting because you say that because it's not as mature in terms of ecosystem so you
+might want to use your usual ecosystem but will there be a day where it's going to be as mature so
+it becomes counterproductive because you also said like the value of this is not a very big
+ecosystem it's very small it's precise it's secure so like the more open it becomes less useful it
+becomes yeah but at this point we'll have another new technology that will come up that will replace
+for us fair okay thank you for your time anything else to add on your side no it was great to be
+here and I'm hoping people will get interested into Wasm well there is plenty of interest so let's
+keep it going Jofra anything on your side nothing for me thank you I was happy to chat thank you
+cloak

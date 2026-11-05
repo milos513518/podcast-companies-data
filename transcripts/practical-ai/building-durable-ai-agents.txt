@@ -1,0 +1,464 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Building Durable AI Agents
+DATE: 2026-07-09
+SHOW: Practical AI
+LINK: https://share.transistor.fm/s/facb92e2
+AUDIO: https://pscrb.fm/rss/p/dts.podtrac.com/redirect.mp3/media.transistor.fm/facb92e2/33d1bc96.mp3
+DURATION_SECONDS: 2793
+TRANSCRIBED_AT: 2026-11-04T09:56:19Z
+----------------------------------------------------------------------
+Welcome to the Practical AI Podcast, where we break down the real-world applications of artificial
+intelligence and how it's shaping the way we live, work, and create. Our goal is to help make AI
+technology practical, productive, and accessible to everyone. Whether you're a developer, business
+leader, or just curious about the tech behind the buzz, you're in the right place. Be sure to
+connect with us on LinkedIn, X, or Blue Sky to stay up to date with episode drops, behind-the-scenes
+content, and AI insights. You can learn more at practicalai.fm. Now, on to the show. Welcome to
+another episode of the Practical AI Podcast. This is Daniel Whitenack. I am CEO at Prediction Guard,
+and really excited for today's episode because it fits right in the theme of our show, which is
+practical AI, focusing on some things that are actually useful and practical. Have with us today,
+Hamza Tahir, who is co-founder at ZenML. And they have a new product, a new project out, Kitteru,
+which is focused on agents and making agents durable, which is super interesting. And Hamza is
+joining us today. I think you are out at the AI Engineers World's Fair, right? Yeah, I am. It's like
+7,000 people, all of our crowd gathered in one small, like, big hallway. So it's just fantastic to
+be in San Francisco when the energy is so high. Yeah, that's awesome. Always inspiring and really
+cool to see. Also, growth in that from Swix and others who have really built up an amazing community
+over time. Friends of the show. So if you haven't checked it out, go ahead and check out what
+they're doing over there. But yeah, excited to dig in today, Hamza. Maybe just to set the stage. I
+know your co-founder of ZenML is kind of some background with that project and product around ML
+Ops. Now you're getting into agent, agentic things. I'd love your perspective on maybe first off
+kind of the world that you have been inhabiting around ML and ML pipelines. As now we're all
+thinking about agents and generative AI and all of these things. From your perspective, before we
+get into agents specifically, what role does the more traditional ML models, training pipelines,
+etc. play in our world moving forward from your perspective? Awesome. That's, I think, a great one
+to start with. And thank you for inviting me on the show. I appreciate the opportunity. So I co-
+founded ZenML about five years ago. So this was really almost at a point where ML Ops was really
+reaching fever pitch on, you know, there was all sorts of chatter about how to productionalize AI
+and machine learning workloads. And I had done four or five years of that in my previous job where I
+was co-founding another company trying to deploy ML models in disparate, you know, compute backends
+and all over, especially out of Germany where I'm based. So the, like that led me to, you know, like
+having a framework internally that we used that you could write workflows and DAGs and you could
+deploy them on these different backends. And that turned out to be ZenML. We open sourced it. We got
+a bit of traction at the beginning and a few projects and revenue and we raised. And that's been the
+story so far. And smack dab in the middle of this from then to today, we had the agent renaissance
+and it felt like, it felt a bit funny because in ML Ops, it was like DevOps reinventing itself. And
+with agents, it's like ML Ops reinventing itself. And at the end of the day, it comes down to these
+very basic principles of how to write. Good software engineering code that runs non-deterministic
+code in a way that's safe and reliable and retryable. So I think if anything, even if you throw away
+every other tool that we ever used in ML Ops, the principles and the learnings that we took from
+productionalizing these applications at scale still translate and are being rediscovered. Even at
+the AIE WorldSphere, I sometimes hear docs. I'm like, I seem to remember I've heard this talk before
+in the ML Ops conferences. So yeah, I'm happy to chat deeper if you're interested in a particular.
+It's interesting, like you're talking about the workflows, DAG pipelines. There was very much this
+phase. And at least this is how it occurred to me. I don't know if everyone had this perspective,
+but there was this phase with generative AI around like workflow automation. And there was this very
+much workflow focus for some time with things like N8N or whatever. And those tools still very
+useful, of course. But there is like this DAG focus. And now it seems like people have thought,
+well, I remember having Jeffrey from News Research on the show. And he's like, well, with like their
+Hermes agent or whatever, it's like, well, I don't want to impose my workflow into this. But there's
+still a there's still a workflow under the hood. Like there's decisions made. There's a workflow
+executed. It's just like you're not not defining it. And so from the human perspective, you actually
+don't see that that workflow in like a visualized DAG. But it it sort of exists under there. Is that
+partially why you think like some of these principles carry carry over or reinvented in a new way?
+Because like at the end of the day, there is some flow of things being executed. Right. Yeah. I
+mean, a graph like all software is essentially a graph. Right. When you write code, you have if this
+else that execute this. Execute that. That's like the sequence of steps you're doing in a graph. I
+think the way we thought about workflows before were more deterministic. Obviously, for example, I
+come from the world of machine learning pipelines. So it's like load your data, reprocess your data,
+train your model, evaluate your model. So, you know, we sort of knew the steps ahead of time and
+that lended itself to a graph structure. And, you know, graphs introduced order to the chaos of just
+willy nilly scripting things. Mm-hmm. And then obviously DAGs are directed acyclic graphs, but they
+are graphs. So they're directed in one direction. They're acyclic. They don't have cycles. They
+don't loop back. So in the world of agents, the acyclic part gets very tricky because it cycles all
+the way down. Right. It's loops. So it's where we had to reinvent ourselves as well. So back in like
+2023, four users started hacking our pipeline engine to run agents like dynamic steps, conditional
+branching, state through artifacts, store workarounds. And then, you know, we were like, okay,
+they're starting to fight our abstraction. And so we introduced a new dynamic mode. And I think the
+main, the key difference here is really, as you said, everything is a workflow. Everything is an
+agent, in my opinion, is just an unrolled graph. So it's like LLM call, tool call, LLM call, tool
+call. Sometimes you do the tool calls together. So you're just, it's like a tree structure. So the
+trace, I guess, is a graph. Mm-hmm. And we just needed to make our system more capable of having
+graphs that are defined in real time versus statically compiled at the beginning. Yeah. And we did
+that quite early. And since then, the same abstractions have worked. Except, yeah. And we can get
+into this. There's these whole new workload that we need to think about different things about, like
+durability, state management, retries, and how those things work and replays. And those are the
+things I've been working on in the last two years. Yeah. I would be curious to know maybe as we get
+into those things, maybe just some of the, I guess, some of the stories or types of failures that
+you see. There's like one piece, which is like how we handle those, how we instrument things, how
+we, to your point, make our agents more durable. But that's assuming like they need to be made more
+durable. Yeah. They're currently not durable. They're fragile, right? So what are the, I guess, help
+the audience understand some of those main categories of why agents in our world today are not
+durable or reliable or however you define that. Yeah. Yeah. So I think in order to, in order to, to
+follow that thread, we need to see where the world is going. Right. So if you look at how agents,
+most people, when they think of agents, honestly, still outside of our little bubble of these 7,000
+people in the Moscone Center, they, they think that agents are these local cloud code instances or,
+you know, the, you know, or like Hermes or something. Yeah. The computers running in the cloud,
+defined by, controlled by your company that are executing arbitrary code and doing all sorts of
+things like MCP calls and, and, and, you know, like loading skills. Yeah. And would this be like,
+to, uh, to kind of go off of your point, this would be, uh, certainly people are running cloud code
+or whatever on their local machine, like, like you're talking about. But ultimately, at least the
+way I've heard companies express this is to really lean into this element of how the future is going
+to play out. There, there, there, there, there, there will be this, uh, uh, uh, digital workforce,
+however you want to think about it. Uh, agents, uh, uh, agents that are operating and actually
+taking, taking action within your enterprise infrastructure, right. That aren't tied to someone's
+laptop and they maybe then eventually are not just, uh, acting, you know, in, in, in a single agent
+type of way, but eventually there is, there are many of these agents that are operating, which I'm
+sure adds another level of complexity. Yeah. Yeah. These fleets or swarms or, you know, the multi-
+agent architectures that, that, that, that keep coming up. I, I think they're getting very real now.
+So, I mean, the companies certainly that we work with are deploying these things and what ends up
+happening once you do that is there is no limit to the scale that you can reach technically, right.
+Um, a disregarding token spend. Um, and you, I mean, why would you not arbitrarily scale that to a
+hundred thousand agent executions per, I don't know, hour, um, if you could afford it. Um, once that
+you loosen the yoke of the laptop, right. Um, so I, I have the, I have the feeling that, you know,
+as things, as infrastructure, um, gets more and more mature and architectural practices get more
+mature. Um, we, we, I, we can't really predict how much, um, volume of agents would be running once
+they're not running locally. And that migration has, is well and truly underway, right. Like this
+year and people who get there tend to just, it's like this sort of slow adoption. And then suddenly,
+boom, there's like a crazy increase. And then at that scale, of course, you have different sorts of
+problems with agents. Like, uh, and I guess that's what we, we can spend a bit of time, uh, talking
+about. And, and, and these agents that would run in your, in your cloud environment, you know,
+disconnected from your local environment, you know, people might have some ideas of some of the
+local ones, like a cloud code or open code or open claw or whatever we're talking about. Like, what,
+could you give us some examples of kind of the, the, the other types of agents? Like what, what are
+they built on top of? Like what, what, uh, are, are these, do you envision these as mostly kind of
+software vendors that are building vertical focused agents and they're deploying, you know, into
+companies or companies building them themselves? I, I'm just trying to get like a, a bit of a vision
+for people of like what these things might be. So I think this is a big battle in the industry right
+now, who, who owns that part of the stack. So, you know, you, you, let's start with the most easiest
+part of the stack. It's the, the harness, right? So the, the harness and the model providers have
+been for the last year, tightly coupled. And, um, I like, maybe we should spend a little bit of time
+talking about what the harness is. Yeah, yeah, go ahead, please. If, if, if, if we've mentioned it
+on the show, but I think always it's like, this is one of those concepts that has popped up and it
+is often very subtle for people. Like what we're, what we're talking about, right? It's very
+ephemeral anyway, because what used to be an agent is now a harness. Yeah. So, uh, the definition I
+cling on to in, um, July, 2026 is, is basically, um, you know, we, we, we had this notion of an LLM
+model, right? The LLM model is simply a token generator. So in itself, it doesn't do anything. It
+doesn't do action. So the way we did action was we started three years ago with structured outputs
+and tool calling. And suddenly what is structured outputs and tool calling? That's simply, uh,
+imposing policies on what type of tokens can the model generate to predict the next action inside
+the environment in which it's playing. So it, you can, ahead of time, you give it like five tools
+and you say, Hey, um, you have get weather or you have, uh, like being Hamza or, uh, like being Dan.
+And like, you have all these bunch of tools to send emails or do different things. And here's the
+definition of the parameters of these tools. And then whenever you want, you think that you need
+more information, given that description, you can return me a bunch of tokens, which I can parse and
+actually map that to my code and execute it. And that while loop, like that's the agent, right? And
+suddenly we started having a program that runs on your machine at the beginning, which mapped those
+tokens back to the tool calls. And it turns out that's harder than it looks. So it's, uh, I mean, I
+still remember when I did it the first time, like three years ago, it was like, you literally have
+the, literally do a exact, like an eval in Python, which converts the string into code and runs it.
+I guess that's still what's happening under the, uh, under the hood. But basically three years of
+software development later, we had things like cloud code, which started doing more things while
+having that while loop. So, you know, things like, uh, compaction when the context window gets too
+big or things like ensuring that the tool goals, um, are, you know, have the right parameters. Um,
+indexing memory. Yeah. Indexing and memory. So that, that software program is called the harness.
+Um, so it's basically the thing that, that gives your brain a hands, like a body. So your brain is
+just spewing out tokens and you're converting those tokens into actions. And the, the outcome that
+comes out of combining the harness and the model is the agent, right? So, so that's how I think
+about it. I will obviously be very embarrassed in a year when I'm listening back to this. For, for,
+for what it's worth, I mentioned Jeffrey and, and, uh, noose, uh, like he gave the same, uh, a very
+similar metaphor of like brain and body. So at least we're in, yeah, we're, we're, we're in safe,
+safe, safe territory for now until the industry decides to flip this. Yeah. So, so, so, so, so
+obviously the most famous harness is being, um, like some, some interesting phenomena started to
+happen because what we ended up figuring out is that the models started to asymptote in performance.
+And what the model providers quickly found out given their valuations is that if you just make this
+program better and you manage context better and you manage memory and all those things, general
+purpose tasks get easier to solve. And, um, therefore you could just make a better program, right?
+The better program will win given, given the model stays static. And, and then they, they started a
+weird RL loop. So what they, what they did was they, uh, like Cloud Code, for instance, has a very,
+um, you know, Cloud Code is the harness and underlying it is Opus 4.8. And, um, Opus 4.8 by now,
+unlike Opus 3.5, understands what Cloud Code itself is. So it's self-aware in the way it's, that
+it's running inside Cloud Code. So when it calls a tool like Edit File, it, it actually uses certain
+parameters and the tool calling is very accurate. If you, if you drop GPT 5.5 into Cloud Code, the
+harness, that would not be as accurate. It wouldn't perform as good because simply the two things
+have, have coupled together. So, um, the harness, uh, with, with the reinforcement learning loop
+that has gone on for the last year and a half, uh, has coupled deeply with the, with the models.
+Now, on the same time, there has been this renaissance of open harnesses, right? So we had Pi, we
+have frameworks like Lengraph or Pydantic AI. And those harnesses, uh, are of the opposite opinion
+that we should have an open standard that shouldn't be tied to the model because we don't want to be
+tied to the model. I mean, if the U S government decides to ban and unban models, that shouldn't
+affect our business outcomes. Um, and, uh, that has been an underlying tension in the industry for
+the last year, um, and hasn't resolved yet. So we, I don't, I wouldn't know whether my intuition
+says then open harness will win, uh, which standardizes those things. But on the other side, I mean,
+you know, better than most people that, I mean, a cloud code works, right? So why would I use
+anything else? So that's another thing. Yeah. I would guess that there's, there's going to be a mix
+for, for some time. You see this also with the, you know, existing software vendors who are trying
+to figure out how they show up within, within agents, like a NetSuite or a Salesforce or whatever.
+You see on, on the one side, them officially supporting MCP interaction with their platform. Cause
+they, they see maybe, well, the value of our platform is how we manage this data, how we create a
+functions on top of it, the ability to do actions within this environment and the interface through
+which people do that. Like an agent really like, or the value is in the platform and that data, not
+so much the web interface through which people interact with the product. But then on the other
+side, you see the same individuals, you know, the same companies creating proprietary agentic things
+in their web, uh, you know, web app, which you, you can't swap out to your point. You can't swap out
+the, uh, you know, in many cases, you can't swap out the underlying endpoint to change out the brain
+to, to, to your point. Yeah. Because the brain ultimately is commoditized. It's like electricity. So
+what else, what else are you going to make the next, whatever, a trillion dollars on? Um, and, and
+that's the whole stack, right? And we, we haven't even gotten to the point where it, so this is all
+local, right? So this, this revolution is happening December 2025, we come into this era of suddenly
+this works, right? Excuse me for the language. Um, and then it's like, okay, so what, what has
+started working? Ah, so we have Pi and we have OpenClaw and the innovation is that it's running all
+the time and it has a heartbeat and it's like, it's managing memory somehow better. And okay, what,
+what did we actually change? Or we changed the harness. So we, so the, the, somehow like Peter
+Steinberger and, uh, Mario and Armin, like those guys, they had better ideas. How to manage that
+program, which just caught fire. And, um, yeah. And, you know, we haven't even gotten to the point
+where let's get these things out of the computer and into a Kubernetes cluster or something. Yeah.
+Yeah. Super, super interesting. Sometimes the gap between AI generated ideas and production ready
+work can be really frustrating. Agents can produce things that aren't editable and don't live in
+your core workflows. That's why I really love what our partner Framer is doing with the way they're
+integrating agents into their website platform. Agents work in the same place where the real site is
+designed, managed, reviewed, and published. It lands on the canvas, stays editable, and can be
+published when the team is ready. Framer is a complete website platform, not just a builder. So
+teams can launch and keep improving their sites in one place. Learn how you can get more out of your
+website from a Framer specialist or get started building for free today at framer.com slash
+practical AI for 30% off a Framer Pro annual plan. That's framer.com slash practical AI for 30% off.
+Framer.com slash practical AI. Rules and restrictions may apply. Well, Hamza, it was really good
+intro to, I guess, just how to think about or categorize some of these things and the shifts that
+we're seeing in our mind. And let's go under the assumption that, you know, maybe there's even
+people listening to this podcast that have envisioned products that have agents in them. They're
+maybe building agents that they intend to sell into the enterprise. Or maybe it's part of people in
+a larger company that are building their own agents for operational efficiencies or internal tools.
+And they are picturing that future that you described, which is, hey, I actually want these things
+to run off my laptop. I want to be able to take my laptop, go into a meeting and not, you know, have
+to keep it up all the time for my agent. So in that sense, then, assume we have some of those agents
+running in that type of environment. What are some of these, I guess, fragilities or points about
+agents in terms of how people are architecting them now, how they're building the agent harness
+piece that make them fragile, not durable? Yeah. So I think first, we have to understand the
+different types of like agent workloads that can run in the background. So if you're talking about a
+chatbot interface, which is or a voice agent, that's largely different from a personal assistant
+that's running and or a deep research or an auto research that's just doing a single loop. And, you
+know, always on and, you know, achieving some outcome. So I think that for all of those different
+types of use cases, there's different infrastructural pieces and different ways to think about it.
+So I would say that if it's a simple agent that's running, you know, online somewhere, I think that
+I would personally default to something which is very easy, whether that's using the model providers
+like Anthropic has Anthropic managed agents. They have inbuilt like routines and all those things
+inside the harness now that you can deploy and they take care of all of that infrastructure for you.
+Now, when it starts getting more complex, where your workflows start looking a little bit more
+business processy, meaning you have a workflow, which is doing things like, OK, fetch an order here
+and do some processing with an LLM, which is an agentic loop here, and then do some post-processing
+there. So then it starts looking a bit more complicated. And if you do that at scale, then you might
+want to own that infrastructure. So the first thing you do is sort of have an agent platform
+internally as an enterprise. And this, I highly encourage people who are scaling beyond single teams
+to really invest in, like similar to MLOps, where the people who build the best MLOps platforms like
+Uber, they won their markets. I'm not saying the MLO platform was the reason Uber won the taxi game,
+but it was a big reason that they made, you know, things like search pricing and, you know, they
+were the best product out there in the market for a while. And I think the best companies will be
+the ones that invest internally to build platforms that can run these things at scale, because
+simply the act of doing that informs you so much internally of what works and doesn't work for your
+particular business context. Yeah. And in that, I guess the set of things that you need to have in
+place to support that, let's say I did want to go down that path, I want to own it. Yeah. Like, what
+are some of the main sets of things that, like, need, I need to be thinking about, I guess? Yeah.
+Yeah. So the first thing is you need to pick your harness or you need to give your teams the ability
+to create, you know, using an agentic framework, whatever, let's say you're using LandGraph or
+Pedantic AI or something like that. Then you need to deploy it onto some compute target. Let's say
+you picked something, probably you have other applications running, so probably you use the same
+thing, whether that's ECS on AWS or whether that's a Kubernetes cluster running somewhere. And now
+you have an API, so you have a REST API. So I'm more of a Python guy, so I'm going to give Python
+analogies. So let's say you have a fast API application, you have a post REST call that kicks off an
+agent. And obviously the first failure mode that will happen is that, you know, you can, these
+things are not quick requests, RESTful, that just, you know, execute in milliseconds. These are very
+stateful processes that run for a long time. So they can't run in process, right? This is where you
+start to farm out things architecturally to things like workers and task queues. And when you start
+thinking infrastructurally like that, then you need to think about, okay, what is a task queue? Is
+it a pull-based system? Is it a push-based system? So this is just where in the realm of how do we
+actually execute this so that at a certain scale it keeps working? Then obviously you have this, you
+know, a very simple task queue would be, so imagine you have an API, and you just directly from the
+API you spin up a worker that, you know, like a salary worker. Sure. Well, you don't want to be
+doing that because what if the worker goes down? Because at scale the workers can go down for a
+number of reasons, like network failures, or maybe the pod didn't exist at that point because
+somebody was using your underlying compute for something else. So a very normal 101 architecture is
+just putting a message queue, a message broker in the middle of that. So you have a bus and the
+fastGPI server, which is the entry point, puts events on a bus, and then these events are durably
+persisted. And then you have workers that can spin up and down. And, you know, you can do an
+intensive task, like an agent tick loop inside that worker. From there, you have this problem that,
+oh, this system is very hard to update. It's, you know, you have to ensure things like idempotency.
+And, you know, you need to make that system more observable. So, for example, if you're processing a
+file upload and suddenly you have a multi-workflow system, like your task consists of two steps
+rather than just one thing. Like maybe you're calling something at the beginning and then you're
+doing something else. Suddenly you have dependencies between the workers. So suddenly this
+complexity starts to explode from a very simple, oh, I just need to slap a queue in front of my
+fastAPI to, okay, I need a DAG, like a workflow execution thing. Right. And then you're like looking
+at it like, okay, how do I make this DAG orchestration thing work with my harness? And how do I make
+things like in-flight updates? Like what if my agent, like what if there's a long running task for
+30 days, right? And, you know, that's running for 30 days. I mean, most tasks are not running for 30
+days, but they can very soon, right? And what if then the next person kicks off another 30-day task,
+but that's a different, you've updated the code. So what happens in the 31st day, should I use the
+latest code or should I use the old code that's versioned to that agent system? And, you know, what
+happens in within the 30 days, the LLM model gets banned by the U.S. government. I'm going to keep
+saying that because I'm in the U.S. now. Yeah, yeah, yeah. So, yeah, I mean, there's a whole
+plethora of problems that start happening from the infrastructure perspective to make things really
+reliable and that you don't just write defensive code all the time. Like you don't want your
+developers to be writing defensive code. You want them on the offense, writing use cases. Yeah. And
+what about, I guess, the, and I really liked how you framed this when I was looking through the
+Kitaru pages and docs. It's like, there's a lot of questions that you could be asking. Like, what if
+the tool calls time out? What if I don't use a re-ranker? Can I use a cheaper model? Well, there's a
+lot of, I guess, developer side questions that come up. Certainly related to some of those things,
+like the supply chain thing you mentioned about, you know, a model being all of a sudden identified
+as a supply chain risk, which I think is a very, is a very real one. But there's all these other
+things. There's so many possibilities of how you could update your agent harness. It's very much, I
+mean, I remember just when I would teach workshops and just talking about ML models or single LLM
+calls. I would get pushed back saying like, well, how do we test these things like rigorously,
+right? They're non-deterministic and they like, they could return anything. And, you know, I having
+a background in physics, I was like, it's, hey, we wouldn't know a lot about the universe if we
+weren't able to test things that were non-deterministic. Right. So I look, look, this is, I mean,
+you're so right because I was lingering too much on the infrastructure side, probably like the
+developer side, the things that you're talking about is post factum that once those things are
+running. Yeah. So you have some notion of state. Yeah. Then you have a multi-layered problem. Yeah.
+Yeah. There is the infrastructure and there it's like both interact in interesting ways, like in, in
+the way, how long something takes or how it times out or whatever, certainly related to network. And
+infrastructure, but then there's all of these choices that you can make within the agent. Right.
+Yeah. Yeah. I'll give you a good example. I mean, imagine you have a coding factory, like this is
+the buzzword for AIE right now, right? Coding factories. So we're going to automate software
+engineering and imagine that an agent is running in such a system that I described in workers. And
+suddenly it obviously has to execute code, right? So it needs a sandbox. And this is why the sandbox
+providers like E2B, Daytona, Modal are so popular nowadays because you need a sandbox to execute
+arbitrary code. So that's another problem. Suddenly that appeared on the infrastructure side. And
+now what if the file system that you're editing the code, you fail before you can commit the code?
+Like, how do you get back to that state? When, you know, 20,000 tool calls in, Cloud Code is almost
+about to finish the feature and it just suddenly fails. And are you mounting the file system into
+the pod? Because this is not your machine anymore, right? Yeah. Yeah, yeah, yeah. Typically when
+pods die. And then how do I, like, even if you get to the end and it finishes, like, what if
+somebody looks at that and says, this is a feature? Like, this is not what I wanted. So how can I go
+back and evaluate, to your point, like, how can I go back and evaluate, hey, could I have done this
+faster, cheaper, better? Or if I had done an experiment of using GLM, maybe, instead of GPD. Or
+maybe I wanted a different tool call. Maybe I should have given it so many tool calls. It got
+confused. Maybe just let's give it two calls and start again. Yeah, it's, and I think that would be
+especially true if you are moving from this, like, this is my personal agent, which I can look at
+the output and then maybe provide, you know, I can actually commit to memory or skills or that sort
+of thing. Like, this is how I want it to go. This is how you should do things. But it's another
+thing if these are more autonomous, they're operating in the enterprise environment, or, like, I'm a
+software vendor and I'm creating my own, you know, my own agent, which is my product, my IP. And
+this shouldn't just be, like, a general purpose agent, right? Like, there should be an opinionated
+take on how to do these things in this vertical that operate better because I'm infusing actual
+opinions into the harness, right? Yeah, actually, that is the biggest unsolved problem, right, Dan?
+Like, I mean, you've probably been building agents for years now. So I still am terrified updating
+my agent in production. I'm terrified because I have no idea. I have literally no idea, given the
+entropy in that system, how I can even, adding a word to the system prompt, what would happen? And
+that terrifies me in a world where you have hundreds and hundreds of millions of these things
+running in enterprise in flight, right? And suddenly you have to task the poor agent developer to
+crock all of these context states. It's a very stateful application. And try to make an educated
+guess as to how to update the system in a way that it wouldn't break for all your customers. It's
+almost impossible, right, without giving the right observability, given the right ability to go back
+in time and introspect and, you know, try to run some of these experiments. It's like you need to
+have some sort of a simulated, I keep saying the physics words, entropy, it's just simulations. So,
+yeah. And that's some of what you're doing with Kideru, right? Yeah. Which is this, could you
+explain kind of, maybe just introduce a little bit of the idea behind that? And I know there's some
+really interesting things around replay, for example. But, yeah, would love to hear more about that.
+So, yeah. Kideru comes from this concept of, you know, so it still uses ZenML. So ZenML is our open
+source product that's been running in production for enterprises for five years now. So we've
+really, we sort of know how to do workflow orchestration now. So we, our task this year was how do
+we convert that into using that engine in a way that's ergonomic to agent builders and sort of try
+to answer, try to take opinions on some of the things that we just spoke about. So Kideru is built
+on top of ZenML. It's a new SDK and a new UI that works almost from the harness backwards. Because I
+think very important is the harness layer, because that's what most people are, is the entry point
+to agent building. And a lot of the opinions taken in that harness layer, actually, as we just
+talked about in this episode, it do matter a lot at the infrastructure layer. So our goal is to
+build an open runtime that allows you to take any harness and deploy it in a way that you don't have
+to think about some of these problems. And then on top, it gives you all these goodies of replay.
+And how we end up doing that is, turns out, if you hook into the harnesses, there's certain
+checkpoints in state that you can snapshot and store while you're running it on, let's say, a
+Kubernetes cluster that will make life a lot easier once those inevitable failure modes do kick in.
+So the first order of business was, how do we get the best world-class adapters for all the popular
+harnesses, like Anthropic Agents SDK, OpenAI Agents SDK, that you can just drop Kideru as a runtime
+in. And it gets it from your laptop out to the production. And then once it's running, it makes it
+resilient to tool calls failing in the middle of an agentic loop by storing that state in an
+external database or blob storage. And once we have that state, then we have all sorts of
+interesting questions, like we already talked about, what if you want to mock a tool call or if you
+want to change the replay, like replay a different model and drop that in the middle of your trace.
+And this is a very interesting problem anyway, like from a scientific perspective, because if you
+change the model midway in a multi-turn conversation or a multi-turn situation, then what ends up
+happening is that you never really know that the model that the agent would have ever gotten to that
+point if you had started with a different model anyway. So it's anyway a broken experiment. And also
+the problem is that when you replay from the middle, you have certain, like if you swap out GLM with
+cloud code, like the harness differences also make it just hard to just start again from that point
+anyway. So there's a lot of code that we have to write in order to make that experiment somewhat
+feasible. And again, it's not perfect and we're still working with our customers to make it good.
+But given that you're grounded in your production traces, production executions, and you have a big
+enough sample size, you could then, like we have seen early signs of where you could just say, oh, I
+should have just used an open source model or a smaller model. Or I should have just swapped out
+some of the tool calls and made it a bit easier and I would have gotten a better and cheaper result
+in place of that. Yeah. Do you view this as, what's the way to put this? So like I think of, you
+know, taking it out of the AI agent world into like manufacturing. You have like a pipeline in your
+manufacturing or a line in your manufacturing plant. There's always going to be a bottleneck in
+there. Right. And so often what people recommend, right, is you find the bottleneck, you ignore the
+other things, you address that bottleneck and then you have a new bottleneck. Right. So one way to
+approach this would be that that way. You could also approach this and look at, well, there's all
+these things happening. Right. It's really. Yeah. There's, of course, all sorts of optimization
+theory on like how to optimize things, but like there's all sorts of things that are actually
+coupled together. Right. If I optimize this, then that gets faster, but creates a different, you
+know, a different problem. So like what have you noticed after actually having, which I think a big
+piece of this to your point is like actually getting visibility into into what's happening. But then
+comes the next question of, well, now, now what? Right. Like what are what are the best? And maybe
+it's a part of like we don't know the best practices around addressing some of these things yet.
+Yeah. Yeah. I mean, exactly. Like exactly how I imagine it as well. It's like playing a game of
+whack-a-mole and trying to sort things out. So when you fix one thing, another thing breaks. I think
+the first order of business, as I said, checkpoint everything. So that's the durability aspect.
+Right. So, I mean, obviously there are latency concerns. You need to be efficient about it, but
+checkpoint everything so you can look back. And then I think it's almost humanly impossible to do
+all the experiments. So you've got to get agents doing that. Right. So I think our goal really in
+the future is how can we close the loop from like once because you sort of know the outcome. Right.
+You want a cheaper, better, faster model agent at the end of the day. So we have the production
+executions, the traces. And the first thing I ask people to do when they're using GitHub, I'm like,
+run it for a week. And then after a week, just filter for the most expensive traces, which were
+successful, voted by your customers. Go through the checkpoints and see the bottlenecks, just like
+you said. And figure out the common failure modes and then, you know, go from there. But obviously,
+my goal is not that humans do this. You know, we shipped an MCP CLI day one of Kitaru because we
+know that eventually that problem needs to be solved by other agents that sort of are embedded in
+that loop. So my ultimate goal is you have every time you launch an agent, you have a companion,
+like a companion, a nurse agent. Trainer. Yeah, it's a loaded term, but. Yeah, exactly. I mean,
+something like a trainer that's, you know, that's constantly looking at, OK, what is this guy doing
+wrong? And then running experiments in the back, replaying things and constantly editing that thing.
+I mean, we're very far away. I mean, to be clear, this is a this is a this is a dream because then,
+you know, your agent builders can start from a really state and get to a very efficient state very
+quickly. But I think we need more tooling and infrastructure to make that possible because that is
+eventually the future. Yeah. And I guess that does get to, you know, a really good place for us to
+kind of start wrapping up the conversation, which is as you see the current state and you look to
+the future, maybe on both sides of this. Like, what's one area where you're really encouraged and,
+you know, it excites you of like, hey, things are going in this direction. And I'm really happy
+about that. And this is maybe what we could expect. And then maybe something like you said, if we
+could solve this, if we could move this big rock like that would open up a lot of a lot of
+opportunities. Any any thoughts? So I'll start with the the thing I'm less optimistic about for now
+as an industry, because and, you know, I'm you catch me at a very opportune time right after this.
+I'm going to go to the conference. Right. So I'm going to be at the World's Fair and walking around
+the expo. It strikes me how many people have different takes on solving the same four or five
+problems. So I think we're at this fever pitch of like we have an MLOps in 2021 when Chip Huyn, like
+maybe we can drop that article in the in the show notes. It's a very good. It's a very good. Yeah.
+Like when we did explosion of tools, when we had these MLOps problems and investor money came in.
+And then, you know, it was just extremely confusing to figure out the modern MLOps stack or on top
+of the data stack. And I think that this is why I mean, we're sort of contributing to that noise.
+Right. By being by taking opinions. But I feel like we are very early in deciding the canonical ways
+of separating things like the harness and the infrastructure and the deployment paradigms. And I'm
+less encouraged by that, by the model providers taking such aggressive stances on how to deploy
+things and how aggressively they make things hard to for other vendors to, you know, be
+interoperable. Although there are some good signs sometimes, but, you know, it's just they're pushed
+into the harness. And when you're pushed into the harness, you want everything running on your
+infra. And I think this is this is this is a slight negative economical impact. But on the other
+side, OK, here are things where I'm where I'm very optimistic. We have amazing open efforts with
+open source models. Take Minimax or like take the Kimi models or or take something like GLM coming
+out of like China right now, but hopefully also the US and Europe with Mistral that that have made
+it very economically viable. To start like start like the enterprises have started to really take it
+seriously to replace that the bigger model providers with their own systems. And I think that's
+going to be eventually where when they start thinking, OK, we need to have system engineers that
+think of that problem and start playing around with and fiddling with the other pieces like the
+harness and the durable runtime. And I'm very encouraged by by the fact that we have now performing
+models that are just this is like two weeks old, right? The GLM is as basically 95 percent of Opus
+4.8, which is just phenomenal. Like we are we were at a trajectory that that was very far away. But
+in a world where you can have sort of the same performance with open models, then I think you see
+more investment in creating internal platforms that can deploy those agents and then open harnesses
+will be a huge thing, in my opinion, because a thing like Pi or a thing like OpenCode or something
+like that, or even specific harnesses for law or for science or something will probably explode in
+growth. And suddenly you have this thing where people will start realizing that actually investing
+in internal infrastructure at the enterprise level is probably going to be the competitive
+differentiator in a world where the tokens regress down to the cost of electricity and the models
+become commoditized. And this is I'm extremely, extremely encouraged by by the recent progress
+around that. Yeah, that's that's, I think, a great perspective. And I think it encourages people
+also that are listening to the show. Please check out these these open projects around open
+harnesses. A lot of them are even linked in the ZenML website and integrations that they have. I
+encourage you to check out the ZenML website. You know, try some things in your own environment.
+It's it's never been easier to to spin up some of your your own tools and infrastructure and try
+things and would encourage that you'll you'll find some links in the show notes. Thank you so much
+for joining us, Hamza. It's been great. Thank you for having me. All right. That's our show for this
+week. If you haven't checked out our website, head to practicalai.fm and be sure to connect with us
+on LinkedIn X or Blue Sky. You'll see us posting insights related to the latest AI developments, and
+we would love for you to join the conversation. Thanks to our partner, Prediction Guard, for
+providing operational support for the show. Check them out at predictionguard.com. Also, thanks to
+Breakmaster Cylinder for the beats and to you for listening. That's all for now. But you'll hear
+from us again next week.

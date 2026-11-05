@@ -1,0 +1,601 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 716: Martin Kleppmann Local-First Software
+DATE: 2026-04-15
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/04/se-radio-716-martin-kleppmann-local-first-software/
+AUDIO: https://traffic.libsyn.com/secure/seradio/716-martin-kleppman-local-first-software.mp3?dest-id=23379
+DURATION_SECONDS: 3326
+TRANSCRIBED_AT: 2026-11-04T10:30:03Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Adi
+Narayan, and I'm here today with Martin Kleppman. Martin is an associate professor at the University
+of Cambridge, working on local-first collaboration software and distributed system security. He's
+the author of Designing Data-Intensive Applications, which is regarded as one of the foundational
+techs for data engineering and distributed systems and has sold more than 300,000 copies globally.
+It's one of the most popular books on O'Reilly, and an updated version comes out sometime this year.
+He's also one of the founders of the open-source library AutoMerge that allows developers to build
+collaborative apps where data merges automatically. Prior to this, he founded two startups that were
+sold to LinkedIn and Redgate Software. Martin, welcome to Software Engineering Radio. Hello, it's
+great to be here. Yeah, a lot of engineers may be familiar with your really famous book on
+architecting big data systems, but your recent focus has been on local-first software, which we're
+going to be talking about today. To begin, can you define what that term means and a little bit
+about its history? Yeah, sure. So we were a few years ago working on this type of software where we
+wanted to combine the best of two different worlds. Those two worlds are, on the one hand, old-
+fashioned pre-internet software. From the 1990s, you would just have some software. It would run on
+your computer, store its files on your computer, very simple model, which we now call local-only
+software. But then we got cloud software, and with cloud software, we get real-time collaboration,
+like in Google Docs and Figma and so on. And that's super convenient. But now the files are no
+longer on your own computer anymore. And so if you ever got locked out of your account, for example,
+then all of your files are gone. And so local-first is really trying to be the best of both of those
+two worlds, where we have the collaboration features that we know and love from cloud software, but
+at the same time, the data is also stored on your own computer locally. And so therefore, it's there
+where nobody can take it away from you. I think you hit on a point there that these days,
+collaborative software is so well-entrenched, but the default is that it lives on the cloud. Are
+there some sort of features? When you say local-first, it's more than just saving the data locally.
+There's a lot more sort of principles that govern this. What are those? Yeah, so we realize that
+when you keep data locally, that opens up a bunch of really interesting advantages for software
+development, but also some challenges. So some of the advantages are, for example, that you can make
+the software work fine offline. So user can just keep editing the data in whatever way they like,
+regardless of whether they happen to have an internet connection right now. And then it'll just re-
+sync with the server and with your collaborators the next time you get an internet connection again.
+But at the same time, while you're online, you can have real-time collaboration. It also has
+performance advantages, because if you click a button, then you don't have to wait for a network
+round trip before something happens. So the user experience can actually be really great, because it
+means that the software just responds really well. And finally, we found that from the point of view
+of the app developer, it can actually be a much nicer software development model compared to writing
+cloud software. Because if you're writing cloud software, you're first, you're writing a front-end,
+which might be like JavaScript in a web browser, or maybe a mobile app. But then that has to sync
+via a server, and then you have to define a REST API, or maybe even a WebSocket protocol or
+something like that, if you want it to be real-time. And then you have to write the back-end.
+There's just so much complexity in all these different levels of infrastructure that you have to
+build. And so part of the goal of local-first software is actually also to simplify that
+infrastructure, so that essentially you build only the front-end, and all of the data sync and back-
+end is just abstracted away. So even small teams can build, you don't need to have like a dedicated
+back-end group and front-end group to make an app, but a smaller group can just build the entire
+thing into it. Exactly, that's the hope, yes. So right now, there are some services providing back-
+ends for local-first software, so you can then just build a front-end and use a back-end from some
+company. What we would like to gradually move towards long-term is to actually have open standards
+for these back-ends, so that you could then plug in a back-end from many different providers and
+just use whichever provider is the cheapest, for example. And then that way, you're not bound to any
+one company for the back-end, but you have that flexibility, and at the same time, you can still
+build arbitrary software on top of it. I think you covered a lot of ground there, and let's dig into
+each of these things one by one. First thing is UX design. The fact that everything lives in the
+local machine means that the down-trip is saved, and the app should be more responsive. What does
+that look like? From a developer point of view, is the approach to UX design very different? So the
+idea here is that you essentially only ever work with local data, and any network communication just
+happens as a background process. And that then leads to these potentially really nice instant
+responses. And there's been a bunch of apps that have used this very successfully, like Linear is an
+example of a tracker, essentially, that uses a local-first-like architecture with a lot of local
+data in the browser. And they found that just the user experience advantages of being able to
+respond immediately, like to user input, when a user clicks something or presses a key, that that is
+really nice. And you get a similar thing with, say, Google Docs or Figma, where, likewise, you need
+every user interaction to instantaneously reflect on the screen. You can't be waiting on a network
+round-trip every time you hit a key in a text document. That would just be really painfully slow to
+work with, especially if you're on a poor internet connection. And so this instant responsiveness of
+local-first software is quite a nice UX benefit. You mentioned one example there, Linear. What does
+that app do for folks who may not have heard about it? Oh, it's like a project management tool, like
+a bug tracker, essentially. So to summarize, almost all of the data is stored locally, so it doesn't
+need to have any round-trip to pull it. But it would have a cloud interface or a cloud server to
+sync it so that any other user, when they're logging into a different device, is able to pull the
+same notebook or the same project, right? Exactly. So the way you implement this is with a sync
+engine. So a sync engine, you can think of as a database replication tool, essentially, but it
+replicates data between a database that's embedded on the user's own device. So, for example, as a
+local storage in their web browser and a database that's on a server. And any update that you make
+to the data on your own local device gets synced to the server whenever an internet connection is
+available. And if another user has made an update to the database, that would typically go to the
+server and then be synced to the end user's client whenever an internet connection is available. And
+so this way, you still get the real-time collaboration. So any change made by one user flows through
+the server and is synced to the other users with low latency. And each user's local client then re-
+renders the user interface based on those changes coming in of the network. And that way, you get
+this really nice real-time collaboration. But at the same time, if the internet connection is
+unavailable right now, well, then you're just working offline and you're just storing the data
+locally in your own local copy of the database. I think the sync engines are really something
+interesting. And we'll come back to that when we speak about the challenges around local first. To
+give a larger overview, are there certain design principles that govern pretty much all kinds of
+local first software? There are sort of challenges that arise with it. And so one fundamental issue,
+if you allow people to work offline, is that, well, they might have made conflicting updates while
+offline. This is something that software developers know very well from version control systems,
+obviously. Anyone who's worked on a version control with Git in a team will know that sometimes you
+get merge conflicts because different people have edited the same file on different branches. And so
+you get exactly that same pattern with other types of collaborative software too. And with local
+first per se, it doesn't prescribe any particular way of handling those kinds of conflicts. In
+practice, we've had pretty good experiences using automatic merging algorithms. And so this auto-
+merge library that you mentioned uses some automatic merging algorithms so that if different users
+make edits to the same file, in most cases, we can automatically combine them into a consistent
+state. But of course, like if people are literally editing the same sentence of a text document, we
+will be able to merge those together, but the result probably won't be a grammatically accurate
+sentence. And so in those kinds of situations, then it still becomes a UX problem of how we surface
+those kinds of conflicts to the user and help them resolve it. Got it. Understood. I think there was
+a paper, sort of a manifesto that you published, and in that you had five core principles listed.
+One was offline first, multi-device syncing, longevity that the data is always with you, conflict-
+free merging, and performance. No spinners, everything in the same place, so things are faster. Do
+you still stand by those? Are those sort of the five guiding principles for when somebody's trying
+to build something that's local first? Yeah, so there were seven principles even in the original
+local first paper that we published. So one thing that we didn't really appreciate yet at the time
+is the simplification of the developer experience, actually. So in that paper, we focused very much
+on the user experience and the benefits for users, and that is still very much relevant and true.
+But we've come to since appreciate that also there are actually significant advantages for app
+developers as well. And so we've considered writing a follow-up piece at some point, which
+elaborates on that, but we haven't got around to writing it yet. Got it. What are some of those
+advantages to developers? Could you list a few? It's mostly just not having to think about the
+network, because thinking about the network is really annoying, because every time you make a
+request over the network, it might be that the user is on an unreliable coffee shop Wi-Fi and your
+request time's out, and then you just have no idea what happened. Like, did the data get to the
+server or not? You just have no idea. And so, like, you're constantly writing tons of error handling
+code and trying to figure out what should you even do in the error case. And the nice thing with
+using a sync engine is that the application code is only ever interacting with this local database
+that's embedded on the client. And the whole distributed systems problem of syncing the data between
+that local copy and the servers and to other collaborators, that's just dealt with by the
+implementation of the sync engine. So, of course, the network communication is still happening, but
+it's not happening in app code. And so app developers don't have to worry about it. And so,
+essentially, we're pushing these distributed systems problems down into the infrastructure, and that
+can massively simplify the programming model. I think you hit a nerve there, because as anyone who's
+built an app knows it, the amount of time you need to spend to just make sure that all kinds of
+network failures are taken care of and handled correctly without an unexpected failure or a 404
+screen. So it's underrated, but it ends up taking so much time in any production project. So I 100%
+agree with that. To the point that you mentioned about the app only interacts with the local
+database, is it correct to think of it as the app only interacts with the local database, and as the
+connection is improved or if it comes out of an offline bubble, the database gets synced with
+whatever the server or with another copy in the cloud, and then the app adapts to any new
+information that's coming in. Is that accurate? Yeah, exactly. So, you know, from, say, React, for
+example, it has this model where you can represent the user interface as a function of some model
+objects that exist in JavaScript, and typically those would be just some plain old JavaScript
+objects. And then if the data changes, you re-render the React components and then update the user
+interface based on that. And so we can use a very similar model for local first software. It's just
+that these model objects, rather than just being these plain old JavaScript objects, we make that
+the state of the sync engine. And so whenever another user, another collaborator, has made some
+update to the data, that gets synced by the sync engine to the local copy, and then you re-render
+the user interface using React or whatever component you're using. And then that way, the remote
+collaborator's changes are directly reflected in the user interface. And it's actually a really
+straightforward, simple programming model where you're not having to worry about the case of how you
+merge in the remote user's changes because the sync engine has done that merging already, and all
+you need to do is re-render the UI. And what is the sync engine merging with? Is the expectation
+that there is a server, or is it just a bunch of different users with apps on their devices? Yeah,
+there are different sync engines and that take different approaches with regard to this. So there
+are some systems that assume that there's a server, and so it's somewhat traditional cloud model in
+that sense. But there are others that could work over a peer-to-peer network as well as a server.
+And so AutoMerge is an example of a library that's designed for a decentralized use, where if you
+want to use it with a single sync server, you can certainly do that. But you could also use several
+servers side-by-side, for example. Or if it turns out that you are on a local Wi-Fi with another
+device, but you don't actually have internet access, or you maybe have Bluetooth connection between
+two devices or something like that, you can just use that local connectivity as well. So there's no
+assumption that you have to go via a remote server. If you have some local connectivity or a peer-
+to-peer connection, that's perfectly fine as well. So all that AutoMerge requires really is some way
+of getting bytes from device A to device B. And often relaying the bytes via a server is a
+convenient way of doing it because we know how to run that kind of infrastructure, and peer-to-peer
+can sometimes be unreliable. So relying on peer-to-peer only is dangerous. But having peer-to-peer
+in there as an option that you can use alongside server-based sync, that's actually really
+empowering because it means that you might have a farmer on a remote field, and they just want to
+sync some data between their phone and their tractor, and they might not have cellular data
+connection where they are in some remote location, they should still be able to sync that because
+they have the two devices right next to each other. And so that's also part of what we actually
+wanted to enable with Local First. So with Local First, the local part doesn't actually refer just
+to local storage, but also to local networking. So if you have two devices that are physically close
+to each other, then they should just be able to communicate over a local network, and that should
+work just as well as going via a server. That's so interesting because these days we just take it
+for granted, right? Like even though if there are two people sharing a document, like say it's me
+and my wife editing the same document, for us to see our changes, the changes have to go to a
+server, I don't know, sitting in California or New York, and then come back to us. And if that
+connection is not active, we can't even see each of those changes. And we just take it for granted.
+But the fact is, there are ways to, like you were saying, if we can say that devices can share
+information through whatever means possible, be it a peer-to-peer network or Bluetooth, it gives you
+the same outcome without having to make those round-trip journeys to an external server sitting
+somewhere else. Exactly. And if you think about it, it's kind of ridiculous to send all of your data
+via AWS US East 1 if you have two devices sitting right next to each other. There's really no need
+for them to go via some cloud. We'll dig into some of these challenges a little bit later, but can
+you give us an idea of who's using it these days? Like, is it mostly folks making hobby projects or
+is it being applied in any form in bigger and popular apps as well? So there are increasing numbers
+of production users of these types of software as well. So for AutoMerge, for example, it's an open
+source project, but we have a bunch of companies commercially sponsoring it because these are
+companies using AutoMerge for their production products and they want to make sure that it's a well-
+maintained, good quality open source project. And so they're voluntarily financially supporting the
+project like that. I think many of them are pre-launched, so I'm not sure I can name them right now,
+but there are definitely people using this for production software and getting really good results
+out of it. When we think about apps, say an app like an Excalibur or WhatsApp for that matter, there
+are local first elements there that I can notice. The fact that the app can always work, regardless
+of whether you have internet or not, that like say in WhatsApp, you can read the messages even
+though there is no internet connection. Or Excalibur for that matter, that saves all of the data
+locally and not on the cloud. Do you see that there are mainstream apps using the principles, at
+least not all of them, but some of them, because they are sort of almost common sense principles at
+this point? Yeah, well, I would say Git, for example, which, I mean, is mainstream among software
+developers, maybe not mainstream amongst the general population. But Git is totally local first. It
+has this property that you can create a commit while you're offline. You can rewrite your local
+history while you're offline. And only for pushing and pulling do you need to be online. Everything
+else you can do offline. All of the version control stuff, you can look back at old versions of your
+repository and so on. And that's something that we have come to take for granted as software
+developers because it's so useful to be able to do these kinds of things locally on your laptop and
+it's just really fast as well. And essentially, what we're trying to do with local first software is
+to bring these capabilities that software developers have with Git to bring that to many other types
+of apps and many other different file types because the big disadvantage of Git, of course, is
+there's no real-time collaboration and you can't really put anything other than text files into it
+and get sensible merging behavior. So if you put a spreadsheet into Git, well, it'll just be a
+binary blob. And if two people on different branches edit that spreadsheet, well, then good luck
+merging that. And so essentially, what we want to do is have Git-like capabilities, but bring them
+to not just text files, but spreadsheets and graphics apps and issue trackers and all these types of
+other kinds of software. So is it right to think about it as Git-like abilities, but with the ease
+of use of, say, Google Docs or Google Sheets? Yes, exactly. Got it. All right. Since the time that
+this came about, it used to be called local-only software. I think back in the day there was one
+iteration of it called offline-first software as well. What kind of technological improvements have
+made it easier for developers to adopt this? Or how have made it possible to be able to resolve
+conflicts between users, synchronize data, the Think Engine, and so forth? What are the sort of key
+technological improvements that have enabled local-first software to be adopted more? Yeah, so one
+of the main things that a Sync Engine needs to do is to, well, it needs to capture all of the edits
+that are made to some document or some file, and then it needs to be able to merge things if two
+different users can currently edit the same file. Now, there are a few different algorithms which
+have been developed for this sort of thing. Google Docs, for example, uses a type of algorithm
+called operational transformation, which has been around since the early 90s, actually. So its
+approach is able to merge concurrent updates. So if different people edit the text on their
+respective devices, then this algorithm can merge those edits together in a clean way. But it does
+depend on a single central server. And so as just discussed, part of what we're trying to do with
+LocalFirst is also open the option of not having that one central server. And there's a different
+family of algorithms which has been developed which can handle this type of merging and conflict
+resolution without assuming a server. And they're called conflict-free replicated data types, or
+CRDTs. And this is actually how I got into the whole area as well. So when I first started working
+on collaboration software in 2015 or so, that was because I had just read the research on CRDTs,
+which was quite new at the time. And we didn't yet have the term LocalFirst, and we hadn't yet
+really worked out these ideas and principles so well, but we did have these algorithms. And I saw in
+those algorithms the promise of building a better type of software. And so I started then doing
+research on CRDT algorithms myself. And initially, that was quite theoretical of just trying to
+figure out how the merging behavior should actually work and how we implement it. And then over the
+years, we put a lot of work into the efficiency and performance of these data structures. And now
+gradually, we're getting to the point where we feel like, okay, we actually have a pretty solid set
+of not just algorithms, but implementations and systems. But they're based on this CRDT research
+from the last decade or two. Got it. For the interest of listeners, I'm just going to define a few
+of the terms that you just mentioned. When you say a sync engine, am I right to understand that it
+is very hard just making sure that any changes that have been made by a user on their device, if,
+say, the user was offline for a bit, that those are synced with either the central repository,
+central sort of server, or with other users whenever the internet connection is back. Is that
+accurate? Yeah. So you can think of a sync engine as an embedded database plus a replication
+protocol, if that's any clearer. So an embedded database like SQLite, it works very nicely, but you
+have data only on one device. If you have like a cloud database like Postgres or so, then you might
+have multiple replicas of that. But in that case, you would typically have one primary replica and
+then several followers. And with a sync engine, it's more of a decentralized model where there isn't
+really one primary copy, but each user on their local device has a local embedded database that
+stores the data for that user. And then if the user updates it, those updates can then be synced to
+a copy on other collaborators' devices, perhaps via servers, perhaps peer-to-peer, whatever. And if
+other users make changes, then respectively, they're synced back to the local user. So given that
+each user has data on, when they make changes on their device, it is then synced to all the other
+users. How do you ensure that the size of the data that's on each device just doesn't grow
+exponentially? Because you don't want all users to have information about all other users' data,
+right? How do you ensure that the database on each user's device is specific to just what that user
+needs? Yes. So we think Local First is not for absolutely every type of software, but it's
+particularly good for software where the data is basically all created by the user themselves or by
+their collaborators. And so in that case, the data you need to sync to a user's device are just
+either the files that that user themselves created or the files that a collaborator chose to share
+with that particular user. And so the way you define what you sync is then through access control.
+Essentially, you look at all the documents that that user should be able to read and write or maybe
+just read and those are the ones you sync. And so on the server, if there's a sync server, it may
+have a much larger collection of documents, but you would only sync to each individual user those
+docs that that user has access to. That may still, in some cases, be a lot of data. And so in that
+case, you may still want some mechanisms of filtering it down and syncing only subsets. But that's
+the core idea of how we're approaching that, at least in AutoMerge. So when I say documents here,
+you can think of that as like a file or a document is just a granular, the fine-grained elements at
+which you can share so you could give access to someone, to a document or a collection of documents.
+Can you define AutoMerge, what it does and sort of where it's used? Yeah, AutoMerge, it's a sync
+engine or you can think of it as an embedded database that you can run in a browser or inside a
+mobile app where it captures any changes that you make to the data. The data is represented in a
+JSON-like data model with a few extensions and any time, if you want to represent, say, a
+spreadsheet, you would model that spreadsheet as a JSON document. Every time that somebody edits a
+cell in the spreadsheet, for example, you would then go in and update the corresponding part of that
+JSON document that represents that cell and AutoMerge then persists that change to local storage. So
+in a browser that might be to IndexDB, for example, if it's in a native app that might be just to
+the file system and it also then syncs that data of the network to any other copies, any other users
+who have a copy of the same document and AutoMerge handles all of the network communication stuff so
+there's a network protocol in there that is able to figure out when a user reconnects, what changes
+do they need to download and upload so that they're in sync with whoever they're syncing with right
+now and to make that efficient even if you have a large collection of documents and then while the
+user is online, any changes that one user make get relayed in real time to their collaborators and
+while a user is offline, any changes they make just get buffered locally on their local storage and
+then synced the next time that the user is online. In an industry where demand for verified skill
+has never been higher, prove you have the foundation to deliver results with the IEEE Computer
+Society's new software professional certification for emerging professionals. Give your career the
+head start it deserves. Visit computer.org slash certification today. Can you talk a little bit
+about how this automatic syncing works because there could be changes that if we take an example of
+say a document if I make a change when I'm offline and somebody else also makes a change around the
+same area is it last in like the most recent changes come first? How do you decide which changes
+should be a sort of the final version? Yes, so we combine all of the changes together and try to
+merge them in a way that preserves the intentions of the users as much as possible. There are, of
+course, limitations to what is possible. So if two users edit the same word in the same sentence
+then the best we can do is, well, we preserve all of the inserted characters essentially and make
+sure that they appear in the right order. But, for example, if you replaced word A with B and I
+replaced word A with C then in the final document it will then say BC or CB. So both of the texts
+that we inserted will still be there but the algorithm doesn't try to do anything clever with, for
+example, ensuring that the final sentence is grammatically correct or anything like that. So it just
+ensures everybody's in a consistent outcome and then if that merged outcome isn't what you liked
+then you can still edit the document and fix the bad merge. That's essentially the philosophy that
+we take here. So there's no explicit merge conflict resolution step like there is in Git because we
+felt that that often leads to just really complex user interfaces. You know, everybody using Git
+hates resolving merge conflicts because it's just so confusing and sometimes mind-bending to figure
+out how to merge these things. So we figured out that what we would rather do is just merge things
+automatically and then fix things up after the fact if it isn't what was desired. But the merge
+algorithm does ensure that if two users independently merge the same changes then they will end up
+in exactly the same state. So they will then have the same document on their screen at the end. Got
+it. So it takes a first stab at coming up with like a merged version and if the users find that it's
+not what they want it to be they can go and make additional changes. Is that correct? That's right.
+Yes. What we'd ideally like is maybe some more tooling around helping apps surface conflicts to
+users. So when we've merged edits that are very close together for example then it would be nice to
+maybe show a pop-up to users saying hey we did a merge here that you might want to review because
+the edits were very close together. The trouble is there how do you define close together and so in
+a text document maybe you define close together in terms of how many characters there are apart but
+in a spreadsheet close together may mean something entirely different and then in a graphics app
+close together may mean something else again. So that's a problem that we haven't really cracked
+yet. At the moment we just do the merge and let users review it. We don't yet have that mechanism
+for surfacing these potential conflicts to users but we'd love to have that in the future. Am I
+right in thinking about auto-merge as for it is able to depending on the file type to be like a
+document read a spreadsheet it saves it as JSON and it is able to manage the changes that each user
+makes and resolve those conflicts. For any new file type is there work required to enable it within
+auto-merge? Yes so you would have to map it onto the data model that auto-merge provides which is
+this JSON plus a few extensions like I mentioned. So you know that's comparable to if you're
+building an app on top of a relational database then you have to figure out how to model your data
+in terms of tables and rows. So there's a similar kind of data modeling process that happens. The
+reason we chose JSON is that we found that many client-side apps front-end apps naturally represent
+their data in a kind of JSON form and that's if you're using a user interface framework like React
+for example that kind of data model is almost assumed that it's really part of the way how these
+front-end frameworks work. And also it's just something that all developers are familiar with.
+Everyone can imagine what JSON looks like and it's a very flexible format. It allows us to represent
+ordering for example in a way that is harder with a relational model. So if you have a to-do list in
+which you want your to-do items to appear in a particular order, well in JSON that's really
+straightforward. You just make an array. If in a relational model, well you would then have to have
+some sort of numbering of the rows to tell you in which order they belong and then as rows get moved
+up and down, you have to renumber them carefully and that gets a bit messy. So the JSON data model
+seems to work quite well here, but it does assume that you're building your app really on top of the
+sync engine. It's a little bit hard to retrofit this to an existing app that doesn't have this kind
+of data model layer of the same sort at its core already. And when you say it assumes that you build
+your app on top of the sync engine, I'm understanding that to mean that you're really conscious
+about how the syncing works and like what you were saying, when it comes to cases where there are
+conflicts, the way the sync engine handles the conflict is very specific and the app needs to be
+cognizant of that and give the user the ability to maybe go back to an older revision or make
+changes and so forth. Is that correct? Well, it doesn't need to be that complex actually. So the app
+doesn't really have to worry about the fact that sync is occurring. It can just take the state
+that's represented in this local database and render it. And we've had some success porting single
+user apps to be multi-user by putting them on top of auto-merge. So for example, TLDraw is an open
+source little graphics browser-based vector graphics tool. And we were able to fairly easily put
+that on top of auto-merge by just taking the TLDraw internal data model. And mapping it onto an
+auto-merge document as it uses a JSON like model. So that fit well. And that way we were able to
+make a collaborative TLDraw actually quite easily. And what were some of the challenges that you
+encountered while building auto-merge? The biggest challenge has really been performance and memory
+usage over the years. And we've put a lot of engineering work into that because the approach how
+auto-merge works is you can think of it like a version control system like Git. So every time you
+edit the data in any way we capture that. The difference to Git is that auto-merge is designed for
+very fine-grained changes because we want to be able to use it for real-time collaboration and
+people are using it for real-time collaboration. So Google Docs style, which means that potentially
+every single keystroke becomes a commit. Now if you use Git like this way creating a separate commit
+for every keystroke it would be ridiculous and extremely inefficient. But we put a huge amount of
+work into the internal data structures of auto-merge so that we could have a Git-like model but at
+the same time represent this very fine-grained editing history. And like Git, auto-merge also
+retains the full editing history. So that means you can look back at arbitrary past versions of a
+document, you can do a diff of what did your colleague change last week while you were on holiday,
+any of those kind of things that we're very familiar with from Git but people don't really have
+those kind of version control capabilities inside other apps. And so part of the goal of auto-merge
+besides providing this tool that supports real-time collaboration is actually to try and bring these
+version control concepts to other types of apps. But the challenge there has really been in
+maintaining all of that editing history efficiently. I think we have some pretty good solutions for
+that now but it has taken several years to get there. And what kind of usage are we talking about in
+terms of how many users right now use the library? Is it used in production systems? What's the
+scale like? We don't really count users in traditional sense because it's not a cloud service. It's
+like asking how many users does Postgres have? Well, I don't know. Yeah, NPM downloads is a good
+metric, yeah. So apparently there's 14,000 weekly downloads from NPM at the moment. So it is being
+used quite a bit, I would say. It's obviously still a comparatively new technology but people are
+using it for serious stuff. The number of users doesn't per se really make a huge difference. One of
+our design goals of Auto Merge actually is at least eventually to be able to support Wikipedia scale
+collaboration. And so there's no current plans for Wikipedia to adopt Auto Merge but if they wanted
+to it should be possible. And so that's a very large collection of documents with a large number of
+collaborators. The challenges that arise with really large number of collaborators are more around
+the permissions and human coordination aspects. If you have a document that's publicly available on
+the internet for anybody to edit then you'll inevitably have problems with vandalism and people just
+coming in and defacing it or adding rude content to the document or anything like that. You know
+that's not something that Auto Merge per se can solve. Auto Merge is just a sync engine so it's not
+a moderation system that's designed to solve with those types of things. But from an Auto Merge
+level point of view the number of users that are collaborating doesn't really make a big difference.
+So Auto Merge itself just assumes there's some way for the users to get access to the right
+documents. We are working on a cryptographic access control system called Keyhive which is designed
+to go alongside Auto Merge. This is not quite ready yet so this has been in development for the last
+year or so. And the idea with this is to have a way of having say Google Drive style permissions so
+you could grant somebody access to a folder full of documents for example and then for those
+individual documents then to become accessible to the user who's been granted access and you need to
+be able to revoke access again of course and to be able to have maybe teams of users and to be able
+to grant everybody within a team access those types of things. So doing all of that but without
+again relying on a single trusted server. So all of these access control things are really easy if
+you just have a single authoritative server that can decide who gets to access what. But in a
+decentralized case where it's potentially peer-to-peer that becomes a lot harder because you need
+cryptographic keys in order to identify the users at all of the users devices. So with Keyhive we
+create a separate cryptographic key pair for every device and then we have a access control
+delegation system essentially where the creator for some document can then delegate access to
+different keys or different groups of keys and thus grant them access. And then there's a permission
+checking system which is able to when you get an edit from somebody for example figure out was that
+edit actually allowed or not? Was that edit made by an authorized user? And that can all be done
+without assuming a central server. And then finally Keyhive actually enables end-to-end encryption
+as well because we have these cryptographic keys anyway. We can then use that to encrypt the data on
+any sync servers so the sync servers can't actually see the content of the documents at all but only
+the end users on their devices can decrypt the documents in the same way as like Signal and WhatsApp
+do. We're essentially trying to bring that kind of end-to-end encryption to file editing as well.
+Great. I mean that sounds really interesting though. In the interest of time I think we've spoken a
+lot about automerge and it was really interesting to understand how it works. One point that you
+mentioned earlier was I think you had mentioned it in passing that local first is not for all kinds
+of software there are certain kinds of software where it's better suited versus others. Where do
+those boundaries lie? Like what is good for local first and what is really not? Yeah I think the
+apps where local first works really well are the apps where the user can edit the data in whatever
+way they like. And so that's the case with a text editor or spreadsheet or graphics app. You know
+the user is free to change the data however they like. With a bank account say this is not really
+the case. With a bank account I could edit the bank account balance and add an extra zero at the end
+but you know the bank is not going to pay any attention to my edit because it's not meaningful. So
+for that type of apps I think you know if it's managing some real world resource like money or say
+inventory in a warehouse or something like that I suspect that like the traditional cloud model is
+still more appropriate for that type of app. And then furthermore if there's apps with large data
+sets so say it's an e-commerce website in principle you could make that local first but that would
+mean syncing the entire product catalog to every user's local device. And that's probably not going
+to make sense because the user is only going to be interested in a tiny fraction of the product
+catalog. They're not going to read every single product description page. And so in that case I
+think the traditional web approach is just fine as well where you know you have an e-commerce
+website you just go to the product pages for those products that you're interested in you download
+those individual pages and you don't download the entire catalog. So this pre-downloading everything
+is really useful if this is data that the user is likely to want to edit offline or access offline.
+But in the case of a large product catalog that doesn't really make sense. So you know I think we
+want to be sensible about where it applies and where not. Those are the heuristics that I use. To
+summarize software that requires like a single source of truth be it like a financial thing or a
+stock exchange software something like that that certainly will not apply. Local First will not be
+applicable. But for things like say a note-taking software or you know or some sort of a chatting
+app anything where users entering their own data and being able to manipulate that then it makes
+more sense. Exactly. Now from a developer point of view in order to build local First applications
+how much do they need to get into the weeds of you know the sync engine and CRDTs and all of that.
+is there a complexity tax really for designing something that's local first as opposed to you know
+just building a very quick app setting up a cloud database somewhere and the rest API to sort of
+quickly access it and a client-side app access it. Is it harder to build something local first? So
+our hope is that it's actually easier not harder and so all of this details of CRDTs is something
+that app developers should hopefully never have to worry about. In fact I think the auto-merge
+website barely even mentions the word CRDT because we think that for users that's just not something
+that they should have to think about or for app developers. The only real challenge is just that
+it's a different model and so if you're used to the way of building software for the cloud and you
+have your tools and workflows and habits that you've built around that kind of software architecture
+then it requires learning a new model and even though that model might be simpler there is just a
+bit of a switching cost in learning something new. So that's what I see as the main challenge to
+adoption here. And when it comes to things like you know like say for listeners if somebody wants to
+experiment with it how do you recommend they get started? Is there like a popular example that folks
+like to use? So if you want to get started with auto-merge specifically there's documentation on the
+auto-merge website that is hopefully fine for getting started. There's also a friendly discord
+community where you can get questions answered. If you're interested in LocalFirst more broadly
+there's quite a nice website put together by Johannes Schickling from the LocalFirst podcast. So
+this is on the website localfirst.fm and if you click in the top menu on landscape it has
+essentially a catalog of technologies for building LocalFirst software and auto-merge is included
+there along with a whole bunch of other tools. some are like open source projects some are startups
+and they don't have all exactly the same design approach. Some prioritize having a central server
+and are happy not supporting peer-to-peer for example where there's others want to be able to
+support peer-to-peer operation and there are various other trade-offs that they make. Some for
+example retain version history so you can do version control. Some are focused more on real-time
+collaboration and don't retain version history and so on. So there's no like as usual with these
+systems there's no one right answer for all applications but hopefully this LocalFirst landscape can
+help you figure out what tool would be appropriate for your particular application. One question
+that I wanted to ask that I had missed earlier was we've been spoiled by the likes of Big Cloud
+providers, Google and others to have really good search functionality always there so you can you
+don't realize how good it is but you're able to search for like one little keyword on millions of
+documents and it comes out in like less than a second. If your database is on the device does the
+developer is the are they expected to invest time to build really good search functionality to match
+what they see in the cloud? Yes so with LocalFirst if you want the search to work offline then of
+course your your search function will have to be locally on the client as well. I think there are
+some really nice apps that demonstrate how well that can be done like I use Obsidian as my note
+taking app for example and it has a great search functionality. It's super fast. I have a pretty
+large collection of notes accumulated over the years and I'm able to find things within a keystroke
+so I think you know it will require a little bit of investment but a server side searching
+functionality requires investment as well and in fact scaling a server side search is probably
+harder than making a client side search engine so there are plenty of existing search engines open
+source tools that you can use. At the moment we don't yet have a really nice integration of auto
+merge with search engines so that's maybe something where we could invest in the future. So for now
+if you're using a sync engine like auto merge you would then as updated documents come in over the
+network you would need to update the local search index as well but that way you would be able to
+provide really nice search locally too. Understood. this may be a very simple question but like if
+all of the data is stored on a local device let's say it's a phone and if I lose my phone and if I
+haven't synced to the server in a while or if there wasn't a server if it was all peer-to-peer what
+happens? if you've not synced anywhere then the data will be gone and so part of the reason for
+having sync servers is also providing a backup mechanism and so we recognize that that's a useful
+function that sync servers provide besides just getting the bytes from one device to another. The
+backup functionality is a useful thing because obviously people do use devices. If you're in a peer-
+to-peer setting you would probably want something like a backup peer so you could actually still
+whether you call it a server or a peer that happens to be online most of the time it's kind of the
+same thing but that's just inherent if you haven't copied the data anywhere off device and you lose
+the device then of course it's gone but I think just the fact that you have the local copy doesn't
+mean you can't have a cloud backup as well. Cloud backups are perfectly fine and we encourage that
+too. But I think the distinction that you draw is the cloud backup is just like a dumb backup right
+like just an S3 backup where you just put the data there you're not relying on the cloud to do any
+collaboration or to search it or anything you're just keeping it there as a way to store it. Exactly
+yeah it's just very straightforward storage. Understood understood. Switching gears a little bit to
+the sort of you know the compulsory AI question with the advent of AI coding tools and chatbots is
+there a change in the adoption of LocalFirst? Is it making more sense to have you know having a
+local database does it help with running LLMs on your device where you have its own sort of its own
+memory that can bank on? How has AI changed LocalFirst adoption? Yeah the two seem to go together
+very nicely actually. Partly it's that since LocalFirst enables a simpler application architecture
+because you're basically only building the front end and you don't need to build the back end. It
+becomes easier to actually vibe code an entire app and have it work because there's just fewer
+moving parts that need to be coordinated. So I think AI assisted software development is definitely
+friendly to LocalFirst because it's this more self-contained programming model. But another aspect
+there is that with AI essentially we can treat human-to-AI collaboration as just another instance of
+human-to-human collaboration and LocalFirst is already all about collaboration and so when we
+started the LocalFirst thing AI wasn't big yet and so we were assuming human-to-human collaboration.
+But actually we've had really good success applying the same principle to human-to-AI collaboration.
+So one example of that would be you want to have an AI agent maybe rephrase a text document that
+you've written but then you probably want to review the edits that that AI has made and check that
+you actually agree with them. You don't want those edits just immediately going in. And so the way
+we do that is to use the same kind of versioning control and change tracking facilities as we do for
+human-to-human collaboration. We just say essentially the AI makes a pull request against your
+document and you get to see a diff and you get to review every change that was made by the AI
+accepted or rejected. And so this actually this wasn't planned originally but it seems to have
+worked out very nicely in the age of AI. That makes a lot of sense and it's really interesting
+because you do especially when you're using agents it goes and iterates so fast it makes so many
+changes that the idea of looking back at the revision history doesn't really come up. It's more like
+I gave it something and then it ended up at something else. And especially if you're going there and
+then making more edits having that version history and seeing what those changes were is very
+interesting. Are there any apps or any groups that are using it or is it still sort of in the
+experimental stage? Yeah there are a bunch of production apps using it. There's a whole list of
+products that describe themselves as local first which I've put together. I wouldn't be able to name
+them all off the top of my head because there are literally dozens of products on there. So it's
+really like catching on as an industry trend I would say. Given that there's with any local first
+app there's going to be a lot of data being stored in the device itself. Has anyone tried to use
+that data as sort of long-term memory for AI agents or for LLMs that are running on the device
+itself without even going to the cloud like running like a local instance of say Lama? Yeah people
+are experimenting with running local models locally on device and I think that's a really promising
+direction. I think right now the biggest and most powerful and best models are still cloud-based but
+there seem to be enough open source models that are good enough for a whole bunch of use cases that
+you can have software that is able to have AI-based facilities working offline for example by using
+a local model and local first plays into this very directly. A few last things. If you had to pick
+one benefit that will finally push local first into the mainstream what would it be? Would it be
+speed, privacy, or the fact that the app won't die or the data won't die when the company does? I
+would say different benefits matter to different people and so I wouldn't say like there's one thing
+that applies for everybody. For me personally I think the one that I care about most is not being
+dependent on individual providers. So I'm very worried about say a provider locking you out because
+whatever some automated system decided that you were violating the terms of service and then if you
+get locked out of your Google account for example you have basically no recourse because you know
+good luck getting a hold of an actual human being at Google. So I think this puts in a very
+precarious situation with cloud software and so for me personally I think this knowledge that
+there's a local copy of the data that nobody can take away from me that's what matters most to me.
+But for other people like maybe the developer experience matters more or the user experience
+benefits of having software that's really fast. So I wouldn't say there's just one single aspect.
+That is very interesting. I mean it's one of those things that you almost take for granted that yes
+Google Gmail will always be present you'll always have access to that but you never know you never
+know what forces are there that there could be like a court ruling against you or anything of that
+sort which might just suddenly block your access to all of these things. Which brings up another
+question though. We've talked about the technical aspects. Is there a change in the legal system
+wherein you know do you think we'll see regulations that see that certain types of data maybe
+medical or financial records should be local first for privacy reasons? Well there's already a lot
+of regulation that requires medical data to be stored locally within the country. Many countries
+have this sort of regulation already. That doesn't imply locally on device necessarily but it is
+locality within the country. So there's sort of a similarity there. I think I'm less concerned about
+regulation but I am a bit concerned about the wider geopolitical risks. So as we've seen in the last
+few months for example there's been tensions between Europe and the US about Greenland and this has
+made me quite worried about what if some if these tensions escalate and Europe is currently highly
+dependent on US cloud services and what if there's suddenly an executive order that limits European
+companies access to US cloud services and that could happen overnight. I think the chances of that
+happening are not very great and I really hope that it doesn't happen but I think you know a year
+ago it would have been unthinkable and now it's unfortunately no longer unthinkable. And so I do
+believe that Local First has a role to play in getting our systems away from this dependency on a
+single server hosted by a single company in a single country and more towards a more decentralized
+model where you could have multiple servers they can be hosted by different companies they can be
+hosted in different countries if one of them goes away it's not a big deal because the others are
+still there. So I think I'd just like to move to this slightly more relaxed model where
+decentralization actually guards against some of these geopolitical risks. Yeah I think it's a great
+place to leave it and it's it also the way the Local First movement also has developed is that you
+start small you start thinking about your app or whatever you're building and making sure that if
+some data doesn't need to be in the cloud don't put it in the cloud if you can manage by just
+keeping it locally go ahead and keep it locally and deal with the problems of syncing it between
+users as a separate thing keeping it this whole default state where everything starts off in the
+cloud has all of these risks as you pointed out. If folks want to know more about your work where
+should they go? Yeah if they're interested in AutoMerge as a sync engine AutoMerge.org is the
+website for that. If they're interested in Local First more generally I would suggest reading our
+2019 essay on Local First software which is on the Inc. and Switch website. If you're interested in
+like various different Local First tools on LocalFirst.fm and then click the landscape link in the
+top menu that has an overview of a whole bunch of different products and systems. Yeah if you're
+interested in like academic research then I have a personal website with a bunch of publications on
+it as well. And a new edition of your very popular book is coming out sometime this year right? Yes
+exactly so the print edition should be out within the next week of this recording actually so by the
+time you listen to it it should already be out. Sorry the e-book should be out and the print edition
+comes out in March 2026. That book has been really instrumental definitely for my career because a
+lot of learning about you know data engineering and distributed data applications comes from that it
+became like a foundational text for us. So it's a real pleasure to have you on the podcast and thank
+you so much for taking the time today to talk about Local First and how folks can get into it. Thank
+you. Thanks for the good questions and yes it's a pleasure talking to you. Thanks Martin. Thanks for
+listening to SE Radio an educational program brought to you by IEEE Software Magazine. For more
+about the podcast including other episodes visit our website at se-radio.net To provide feedback you
+can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter or through our
+Slack channel at seradio.slack.com You can also email us at team at se-radio.net This and all other
+episodes of SE Radio is licensed under Creative Commons License 2.5. Thanks for listening. скихских
+!

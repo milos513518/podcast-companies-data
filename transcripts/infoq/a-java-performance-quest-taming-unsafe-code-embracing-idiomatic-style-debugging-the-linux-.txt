@@ -1,0 +1,347 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: A Java Performance Quest: Taming Unsafe Code, Embracing Idiomatic Style & Debugging the Linux Kernel
+DATE: 2026-04-27
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/a-java-performance-quest
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2306441201-infoq-channel-a-java-performance-quest.mp3
+DURATION_SECONDS: 2468
+TRANSCRIBED_AT: 2026-11-04T09:43:01Z
+----------------------------------------------------------------------
+If your team has AI running in a proof of concept, but you're still figuring out how to run it
+reliably in production, you're not alone. That's the gap most engineering teams are navigating right
+now. QCon AI Boston, this June 1st and 2nd, brings together senior engineers, software architects,
+and technical leaders who've already made that shift. They'll share the patterns that scaled, the
+mistakes that didn't make the blog post, and what they'd actually do differently. No hidden product
+pitches, just senior practitioners helping senior practitioners. Learn more at boston.qcon.ai. My
+name is Jaromir. I am a generalist. I'm a developer. I've been coding since I can't remember. I had
+a Czechoslovakian Biden clone of ZX Spectrum. So that was basic. And I've been coding ever since.
+Okay. And you'll not stop because you'll always find something to tinker with. Yeah. To tinker,
+that's the right word because that's how I define myself a tinker. That's why I call myself a
+generalist because I'm not super specialized in any particular bit because I get bored easily, but I
+can weaponize it to an above bits and boops of everything. Currently, you are involved with QuestDB.
+And if you read on the website or the Wikipedia definition, it says that it's a time series database
+that was built for high ingestion rate and also to be able to close the gap between high intensity
+sources of information and then between data lakes. Maybe you can give us a bit of a time series.
+You can use aggregations over all data you have. Maybe do not even apply any predicates, just scan
+over everything and run disaggregations, the window functions over everything. That's a bit
+oversimplified analytical type of a database query. Well, the time series means it is specialized in
+a way that, okay, I do not want to run disaggregation over all my data, but maybe just data I have
+recorded in the last 24 hours. Or maybe I do not want to run disaggregation over all data, but I
+want to bucket my data by time. So it means that I want to run disaggregation functions, maybe over
+all my data, but create a window one hour long each. And then on ROS, we'll run this time window,
+run this and that aggregation. That's the time series database part, right? It is all about time and
+time is a first class citizen. And not all, but oftentimes the query, they treat time as special.
+Let's put it this way. So that's the time series database part. And by the tiered part, we basically
+mean that we have three kinds of storages. The tier number one is our write-ahead log. It means that
+when we ingest data, we just write it to a disk, append only, super fast. This gives us ingestion
+rates in millions of rows per second. But it's hard to query because it is written append only as
+the data are coming. So to be able to query it efficiently, we have the second tier where we
+transform this received data into a shape which is suitable for this time series processing. It
+means you can imagine that the data are physically on disk. The second tier organization is by time.
+Literally, the files on disk, they are physically sorted by time. It means if I want to see in the
+extreme case, what is the last row by time, I mean last, it's literally the last row we have written
+to the second tier. So it makes these kinds of queries efficient. If I want to find last hour, I
+just do some kind of a binary search where the last hour starts. And then I know, okay, if this row
+is the one with the last hour, then if I read from that row down, then that's my last hour. And then
+we can partition it by time and tricks like this for efficient querying. So that's the second tier.
+And the third tier is code storage. Because QuestDB and time series databases in general are often
+used in high ingestion scenarios, like ingesting data from exchanges, IoT data, physical AI, things
+like that. So typically machine generated data. And machine generated, it means it's a lot of data,
+right? So the portal data set can grow quite fast. And also, as I said in the beginning, the queries
+typically need just the recent enough subset of data. Oftentimes, not always, but oftentimes. It
+means that we can afford to upload all the data. And we know where they are because everything is
+sorted by time in the second tier. So we can upload it to some kind of cheap storage. Think of S3,
+but not only that. And because we do not want to take your data in hostage, then we upload it to
+this object store in a parquet format. So if you have your tooling capable of processing parquet,
+which means all tooling these days, then you can process this offloaded parquet files without even
+going through QuestDB. So that's what we mean by three tiers or three layers inside QuestDB. Okay,
+thank you for the explanation. So just to summarize, you have three different lenses that you can
+look into. One of them is the write-ahead log. And there you're just writing, writing, writing. It's
+just an append file only. And that's the main reason for the high intensity where you're able to
+ingest as much data as possible. And then after that, asynchronously, you digest it and then you put
+it into a time series format. That means the rows are aggregated based on time-sensitive data. And
+that's where the query comes. If I remember correctly, it's a SQL query that will make things a lot
+easier. And if I have to do any kind of queries, I'll do it there. And then for integration
+purposes, but also for more back-in-time data, you use parquet files. And then we can call it the
+standard these days. It's in terms of object storage is the S3 became the standard in this point.
+And then it's there. So that means that if, for instance, I have a data lake, and obviously
+everything goes in parquet now, it's easy. And I can see the data there without even interacting
+with the database because they'd be in this case. And then it makes the things a lot easier. That is
+exactly right. And maybe you could summarize it in one sentence per tier. So the whole tier is
+ingestion optimized. The mid-tier is query optimized. And the last tier is archiving optimized.
+Great summarization, Yarmir. So where is Java in all this? Because the old story, and we are old
+folks because we speak for at least a decade about Java, and we interacted 10 years ago. And at that
+point, you're more focused on streaming with another company. Everybody says that Java is not fast.
+Then why do you build a fast database in Java? Is it Java? Or is it something else that looks like
+Java? That's a great question because QuestDB, the core, is technically Java. If you check how
+GitHub starts, then I don't know by heart, but my guess is that 85% if not more of the total lines
+of code is Java. So nominally it's Java, but it's a rather unontologous Java. At least people tend
+to tell us when they see our code base. And the reason is in history, the founder of the project is
+a background in high-frequency trading. And he would use Java, even in high-frequency trading. But
+these folks, they use a very special Java, right? They tend to avoid allocations because especially
+back then, allocations, it implied garbage and that back then implied long clauses, which were not
+acceptable in the high-frequency trading domain. So style of how the high-frequency trading people
+work in Java, they heavily rely on all heap data structures. They often use pooling and object
+reusing rather than allocating. And in general, they go against a lot of so-called best practices in
+Java. And the founder, who is now the CTO of the company, he thought, well, maybe I could apply the
+same principle to write a full-blown database. Because this high-frequency trading, these programs
+tend to be small, right? They are not as generalized as a database is. So what took it as a
+challenge, hey, you know, let's start a database, but apply the same principle. And he picked Java
+because that was the language he knew the best. And the QuestDB code base is older than, say, Rust
+1.0. So he started slowly, you know, he had a lot of dead ends, and he had to rewrite big subsystems
+from scratch many times. But the end result is that now the code base is nominally Java, and we have
+a lot of extension. We have parts in C, C++, Assembler, Rust. But the heart is still Java. And I,
+you know, we mentioned the ingestion rate in millions of euros per second. Take this as yet another
+evidence that Java can actually be pretty fast. And the same goes for queering. In many independent
+benchmarks, we are often at the top positions. Yeah, it's in a great majority Java, so it's 90.8%
+from GitHub statistics is Java. Then there are bits and pieces of C, C++, some Rust, but it's mostly
+Java. But what's the secret sauce of QuestDB? That's the main question. Is it old school, unsafe
+days, or you are going into more fancy stuff like the vector API and CIMDs and other stuff like
+that? The core right now, as it is, it still relies on the old school unsafe ways. One reason is
+that up until recently, the Java client was part of the main OSDB jar for some historical reasons.
+And this was preventing us to upgrade the Java-based version aggressively. But we just recently
+split it. So now the core is 17, or we just bump it, or we are about to bump it to 21. And then
+because of this client-service split, we are now in a position to do this very aggressively. So the
+long-term plan is to basically track new Java releases as much as possible. It is possible that if
+they completely cut the access to unsafe, then that will be a delay for us because we will have to
+adapt. But we are pretty excited about the new development. So we are definitely eyeing Malhalla and
+Hanama for value objects and better interactions with non-Java world. I've been playing with vector
+API just last weekend because it's super exciting for things like filtering. Where you have SQL, we
+learn where, predicate. Because we are filtering oftentimes over hundreds of millions and billions
+of rows. The machine code must be the most efficient machine code possible. So what we do right now
+for filter execution is that we use JIT. But for filters, we don't use the JIT, which is part of the
+Java runtime. We implemented our own JIT because of this predictability we need. So the architecture
+is that you are a user, I'm a QuestDB database. You send me SQL, that it goes to the traditional
+parsing. We build some kind of abstract syntax tree. Then we see how this part is a filter. Then we
+serialize this filter, this where clause from the SQL into some kind of intermediate off heap or
+intermediate representation store in off heap. I take a pointer. And then over JNI, we call to just
+in time C++ backend, which reads from that old heap memory, this intermediate representation filter,
+and builds a machine code for a given platform, Intel or ARM. Intel can be scalar or vectorized. And
+it builds the most efficient machine code possible for that given filter. And then returns back a
+pointer. And so the Java code knows that, okay, at this pointer is a native function, which
+represents that particle SQL filter. So when we are later executing the query and we need to filter
+the rows to find the one matching the filter, then there is another JNI call, which basically
+receives address, again, of heap memory where the data are stored, and address of these filter
+functions we have generated before, which will be applied to the data columns and will return back
+only the matching row IDs. The other reasons why we would like to rid off this, or I would like to
+rid off this C++ backend, is that up until recently we supported only Intel. We didn't support ARM
+at all for JIT filters. Because for ARM, we had to write this backend from scratch. So my other
+motivation is that, okay, we could use the Java Vector API to do the same kind of efficient
+filtering as right now we do from the C++ backend with, say, AVX2 instructions. So I was playing
+with this just last weekend. The results are, say, promising. There are still some typical Java
+difficulties like with warm-up time, right? So what I end up doing is consuming the same
+intermediate representation with the filter BC++ backend consumes right now. And I would generate at
+runtime a bytecode, which would represent that particle filter. The generated bytecode would go to
+Java Vector API. And then at runtime, it would be just regular Java function call. The problem is
+that it takes time to warm up. So it was not really that great for ad hoc queries. If each filter is
+slightly different, then we need to generate a new Java class for each filter. And that's not great
+because it means that the first execution is slow. And even when we are filtering over millions of
+rows, the Java, in this case, kick off almost immediately. But the first generated code is, you
+know, first run interpreted. And that's usually Java tiering, C1, C2. When the new code is generated
+while the filter is still running in that hot filtering loop, Java has this thing called on stack
+replacement, which means that, okay, the first execution of the hot loop will at some point in time
+upgrade to more efficient code, but it is still not as efficient as it could be because it cannot do
+this full replacement while the loop is still running and things like that. So those results are
+promising. And the Java vector API, if we manage to solve some of the difficulties, I think it could
+be a nice way to, for example, get the vectorized execution on ARM. Because right now our JIT on
+ARM, it emits color-only instructions, while hotspot JIT is known. And I think even the other
+extension, I forgot the name, vector VRE or something like that. That's basically vectorized
+extensions for ARM ISA. Vector API is a good one. Valhalla and value object would be another
+milestone. And I heard some rumors that Valhalla might be integrated post the 27 freeze. So maybe in
+28 in some kind of form, preview incubator. And yeah, so that would be also quite amazing because
+one of our principles is to control memory layout of our data structures, which right now in Java is
+not easy. So being able to use Valhalla for value time and have a fine control over memory layout, I
+think that's going to be fantastic. Kwan's is there. You mentioned Java 17 and targeting Java 21.
+These are the new epoch moments I was discussing the other week with Gunnar Morling. And they were
+saying the same, that after 17, it's a lot easier. And that feels like the Java 8 moment of our
+generation when things start moving differently. So this is the case. And then you guys are looking
+into the Vector API, which will allow you the ability to move away just from x86 to from Intel, move
+towards form to ARM in terms of having decent queries from that point on. And then obviously it's
+Valhalla, which will allow you to be in a nicer environment when you're looking into the memory
+layout. It allows us to keep our mechanical sympathy and write Java code. Because right now, there
+is a bit of tension between these two, right? Either you are writing idiomatic Java, everything is
+an object with its own identity, the primitives. And if you embrace this, I think most developers
+should, then you can write nice idiomatic Java. But then sometimes this abstraction is too high and
+it removes some of the control. So then when you want to have some sympathy for the hardware and you
+don't want to prevent your computer to be as fast as possible, then you need to have some sympathy
+for the hardware. And right now we have to decide what we value more. I know writing nice idiomatic
+code or have sympathy for the hardware. Well, we decided that we value the sympathy for the hardware
+more, but that doesn't mean that we don't value nice and readable, maintainable code. We would like
+to have that too. So my hope is that the Valhalla will allow us to have both. Hopefully. How about
+Panama? Are you getting rid of the GNDA? I haven't played with that personally. But maybe we could
+because internally we use a map. Basically, we map a file into a memory when we are querying it.
+Right now, we use a JNI call. So we have a C verb ray and we expose this over JNI. So it means when
+we want to read some data file, we call from Java, you know, open me this file and then map me this
+file into memory and return me a pointer to a memory. And then we use this pointer, you know, for
+unsaved access to what is in that file. And yeah, with Panama, we could read off JNI because we
+could just use the Panama bindings to call this a map from the standard library. And we could also
+read off the unsaved access because then hopefully one day we will be able to have some kind of zero
+cost abstraction to read of heap memory and map memory without paying the price or too much price
+because right now with unsafe, it can be fiddly. I sometimes say that using unsafe from Java,
+especially if the object is a bit more complex, it's sort of like using pointer to void in C. If you
+happen to know C, you know, you know, you know, you know, you can have a pointer to this data type
+or you have a pointer to void and then it can be anything. It's up to you. It gives you some
+flexibility, but also you can shoot yourself pretty badly because if you are assuming that the
+memory behind this pointer has certain layout, but this assumption turns out to be wrong, then very
+bad things can happen and you have no type safety. So all in all, Java is moving into the right
+direction to close the gap between having idiomatic Java and high-performing Java under the same
+roof. That's right. One thing I want to clarify, I do not want to sound like you have to use these
+techniques, otherwise your code is going to be slow. that's not the impression I would like to make.
+The techniques we use are not needed for most of developers. If you are just writing your string
+applications, you totally don't need to do that because someone else did it for you already in that
+framework. But if you are the one writing the framework and the performance is your differentiator,
+then perhaps you need it right now. And the hope is that in the future, it will be more
+straightforward. Less risky, less fragile, easy to maintain and reason about. Yeah, it's for a
+narrow amount of developers in my opinion where you just have to focus on each second and each
+millisecond. And that's very thin. As you mentioned in the financial side where you have to do with
+trading and then it's about databases and probably some other. It's very important probably in the
+robotic space again where each millisecond counts and you have real time. So I think that's where
+it's most targeted. Some time ago, you wrote a post about playing in the Linux kernel. And that was
+a rabbit hole. I mean, we are already, you know, in a very small bucket of developers talking about
+mechanical sympathy and talking about unsafe and memory model. But then we are discussing about the
+operating system kernel. That's a whole different bucket. So maybe you can share a bit about that. I
+was trying to reproduce a performance issue for one of our customer experienced. I attached my async
+profiler to QuestDB and my whole computer froze. What is going on? I restarted the computer, tried
+to attach the profile again. The same thing happened. It was completely frozen. I was totally
+perplexed what's going on. First, I suspected a bug, maybe in QuestDB or Async profiler. But it was
+strange because we have Async profiler embedded within QuestDB. It's shipped. In every QuestDB
+installation, it's a profiler. I was the one who did the integration, so I was pretty sure that it
+used to work before. My computer was freezing and at some point, I realized that I recently upgraded
+my Ubuntu version, which came with a new calmo. That was a clue. I started to Google, around, and I
+found that a virtual friend, Francesco Nigiri from Red Hat, supported just a few, I don't know if
+hours or days ago, very similar behavior. So again, this helped me to find a bug in Lyrux kernel,
+which under some very specific circumstances led to deadlock inside the kernel. So the kernel
+basically deadlocked itself, because internally it was trying to cancel a timer, but that task which
+was cancelling, the timer could not cancel the timer because the timer actually triggered that task.
+In order to cancel a timer, I have to make sure that nobody else is executing the timer. timer, it's
+me. So basically it waited until that callback was done, but the callback could not be done because
+that was the one which was cancelling the timer. And luckily there was a workaround, so I could
+carry on with the customer work. You know, as I mentioned in the beginning, I like to know a lot
+about computers and I don't see these kind of bugs every day. So I had a look at the patch because
+it was already patched in the kernel dev tree. So I checked how it worked and then I tried to
+reproduce it in a clam. Eventually I managed to reproduce it and was like, well, if I already have a
+stable reproducer in an emulator, maybe I can poke it a little bit. And I'm not a kernel developer.
+I can reason about seven small parts of kernel, but I'm by no means I'm a kernel developer. But I'm
+curious. So I opened the kernel source tree on the CLAM, I noticed how it works and then I realized
+that I could attach a GDB debugger to that emulated machine and I could debug kernel step-by-step as
+when you are debugging a Java problem, for example. This was new to me. I've never done this before.
+So I was playing a little bit. I was, you know, you do one step, you observe how registers are
+changing and then I thought, well, maybe I could trick the kernel to exit from the deadlock and
+maybe I could revive that frozen computer somewhere in Klamo. And first, I could not do it and I was
+about to give up, but then, you know, I like to poke things. so I tried something else with GDB and
+eventually I managed through a series of super ugly tricks which involve lying to kernel. So I was
+stepping out a function which was returning one value, but under the feet of that kernel, I replaced
+that value so the rest of the code thought that that function returned something else and it
+actually returned. and I was able to unfroze that frozen box, which is not practical at all because
+we basically lied to a kernel and I think once you lie to a kernel, you know, in situations like
+this, then basically, I don't know, maybe I violated some invariance and, you know, the machine I
+would not recommend to do this in production or anywhere outside of laboratory, but it was a fun
+exercise. Maybe you could call it a party trick, but I learned about how profiles work, how timers
+in the kernel work, I learned how to attach a debugger to a kernel and bits and bobs. So, you know,
+it was fun. That was all what it was. It was a fun and it was a learning exercise. Totally
+impractical. I would not recommend it. No, I would, I would. But don't expect that your employer
+will be amazed. They will not. Okay, that was my question. Will you do it again? Of course. Well, it
+depends. If my boss is listening to this podcast, then definitely know I will always work on
+business critical tasks, but if he is not listening, I will. Because sometimes I just cannot resist.
+Sometimes it's too much to resist, you know. I remember that point of time because we have to
+mention it. Three years ago, you got the bronze medal. And that was quite amazing, even the amount
+of submissions that challenge had. But, you know, the rules played in my favor. Like one billion
+round challenge, it was explicit in the rules that people were encouraged to inspire from each
+other, to borrow the ideas. And so if you joined late, it was not a big deal because you could see
+what others are doing, what they are trying, where they failed, and think about your own
+contribution. Of course, you know, if you just copy what the best person is doing, well, maybe you
+will be high in the scoreboard, but that is fun, right? I think I was attending for the last two
+weeks or something like that. I spent most of my evenings in front of the computer and just trying
+to, you know, doing a lot of profiling, benchmarking, going in down from Java to assembly to see
+where the computer is wasting time, where maybe the algo is fast enough, and we are just memory
+latency and just trying to smooth out everything. And I think my own contribution, there was one at
+least, was in the realization that CPUs these days are super parallel, out-of-order execution
+machines. And by parallel, I don't mean just that they have multiple cores. I mean that one core can
+do many things within the same time, right? So even if you have just a single thread running on one
+specific core, even if you have modern CPU with one core, it can still do many things in parallel.
+so my contribution was that I exploited this. Basically, each line looks like copy-pasted twice,
+except with different arguments, and that is to exploit the fact that CPU has multiple mathematical
+logical units. So it can do multiple logical or mathematical algebraical, you name it, operations at
+the same time. So my first version was literally just copy-pasted every single line, just double it,
+and process multiple things at once within the same thread, and hope that the total runtime will be
+less than if you were just running a serial. And it worked. It worked. And at some point, I was
+even, I think, 12 hours before the deadline, I was in the first place. But then the other people
+used the trick as well, because they saw it was public, and they were anchored to copy it. And then
+they had some other tricks, and then I could not jump over Thomas and Artem, I believe, who was the
+second guy. But yeah, that was pretty amazing, and I, again, I learned. I improved my intuition in
+what is possible to do in, say, 80 milliseconds or 200 milliseconds, you know, because when this
+challenge started, the first good times were around five, six, seven, something like that seconds.
+And I was like, okay, maybe they have it, so it will be two seconds. Maybe that will be the winning
+time. And I was proven so wrong. I was proven wrong by all the magnitudes. so it was very time-
+consuming. The lesson for me is, again, that computers are extremely fast, and if you are not
+sabotaging them, they are surprising. Okay, so for me, the lesson learned is that there is a big
+difference between beautiful code and fast-coded points. If you know exactly how the hardware
+actually acts, it might be the case that you can optimize for that, if the case requires it. And
+again, it doesn't mean that in order to write fast code, it has to be ugly. This was really about
+using the very last drops, and that required some very ugly tricks. Again, I would not recommend
+this to anyone. We even don't use this level of trickery in QuestDB because the 1 billion road
+challenge had one massive advantage. The code didn't have to be maintained after the deadline. So
+you could do whatever. we could go bananas, try the ugliest possible tricks, specialize it for the
+input, right? At some point, people realized that there was certain distribution of city names, of
+cities that had certain shape, and this fact could be exploited to specialize hash maps for these
+particle shapes.  you can't do that in a general database because it has to work in all shapes input
+data. But yeah, for building a better intuition about hardware, this was priceless, yes. Okay,
+great. Thank you for sharing. Is there anything else that I should have asked you, but I didn't? ask
+me if I use AI for coding, I totally expected this question. So, do you? Yeah, I do. I do. I have
+different use cases. Like, one, sometimes is just investigation of unknown codebase, right? So, when
+I was doing my vector API exercise last weekend, I wanted to see how the mapping of the vector API
+all the way through the compilation pipeline in Hotspot to specific vectorized instruction, how that
+works. And it's all there in Hotspot codebase, but I know the Hotspot developer. And the Hotspot C2
+compiler is complicated beast. It doesn't use the normal control flow graph, you know, it has its
+own thing, sea of nodes. And I don't know it that well, so I use codex and codex to basically
+explain me things, right? So I was like, you know, I'm doing this and that, and I have a hypothesis
+how this works, please check it, validate, this. So that one use case. I used it for Linux kernel.
+You know, if I want to see how something works in kernel, I have Linux kernel clone on my disk. So I
+start codex for cloder, ask question, then validate the answer. I think that's the important bits
+people are sometimes skipping on. But it's amazing for this kind of explorative work and as a
+learning too, right? Because, you know, I can do things I wouldn't be able to do in a reasonable
+time before, like this hotspot exploration. It doesn't mean that I would not be able to trace it all
+the way down, but I wouldn't be able to trace it all the way down on Saturday. so that it means
+practically it would not be possible because I have family too. Well, even if it's not that, what
+was my experience is like just trying something new a couple of years back, it meant a lot of
+research. You did it, you tried something and then life happened or business priorities happened and
+then you forgot and then you had to remember what you did. But now it's very easy to do it and you
+have a lot of iterations and then you have some aha moments that normally you would have just done
+it differently. And now it feels that it's a lot faster, especially if you know how to even fix it,
+go deep into the code and use your intuition. So I think that's important for me. The concerning
+part is it seems that it's working very good for people with more experience and higher intuition
+for the guys that are actually still in the beginning. They don't know what's wrong, but looking in
+the last couple of weeks, I think both Claude and Codex brought in the learning mode and they had
+some interesting experiments where they just had junior developers play with the framework and those
+that actually used the learning mode scored a lot better in the quiz afterwards. So we have options
+if we want to use these kind of things. It's amazing. Just the other day I was thinking, okay, if I
+was starting with programming these days, how it would be like, you know, because on one hand, these
+tools, it's amazing for learning, right? You can learn about a lot of complicated real-world pieces
+of software. It can be one example, right? So on one hand, it is amazing learning exercise. On the
+other hand, knowing myself, there might be, you know, this why border question, right? If I'm
+starting coding these days, and I can see what agents can do on their own, I don't know if I would
+have enough discipline to actually learn the craft. I don't know what's the answer, and I guess we
+will learn in a few years to see how this works out. Because coding needs a lot of discipline,
+right? Especially when you are starting and even later, it needs deep concentration, you need to
+have at least some level of goal orientation, because, you know, you need to invest a lot of time,
+right? And if you are investing a lot of time, and you know, you invest six months, say, to learn
+something, and then you realize an agent can do it just by, you know, putting a few sentences, I
+think that's not very good for motivation. I will just bring against you two things that you
+mentioned in our discussion, and one of them is that you were shaped by experiments, just think
+about the Linux side and something that made you curious, and then the other thing is that you have
+to have a difference between code that you run in production that needs to be maintained, and that
+will bring it into particular cases, and then the other ones. Two years ago, there was a
+presentation at QCon London about one of the guys that is working as an SRE for Anthropic, and it
+was very nice to see how the guys from Anthropic are using Claude to dig through logs and stuff like
+that. My expectation is we saw it already with the launch of OpenAI 44 years ago, whenever it
+happened, the fact that now the products are built in front of your eyes, and that's what they did.
+So I think we need this acceleration, but my fear is that it's about superficiality, because you
+don't understand in depth a lot of things, but on the other side, if you do, you actually have these
+powerful eye-openers. There was a security researcher from Anthropic, he was mentioning that he
+experimented with a couple of things using Claude and doing some red dimming, and actually he found
+a defect, a vulnerability in a project that is available open source for 10 years now. It was the
+first vulnerability ever reported. It was about Ghost, the static content generated in JavaScript,
+and that was quite interesting. So I think it's an interesting era, and with its challenges and its
+cognitive loading, but yeah, let's see where this takes us. Yeah, yeah, yeah, I agree. Thank you for
+your time, Joramir, it was a great discussion. Thank you for having me, yeah, I was having fun too.
+Thank you.                                              Thank you.

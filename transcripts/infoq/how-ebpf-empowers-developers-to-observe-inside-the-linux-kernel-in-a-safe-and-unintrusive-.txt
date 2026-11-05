@@ -1,0 +1,422 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: How eBPF Empowers Developers to Observe Inside the Linux Kernel in a Safe and Unintrusive Way
+DATE: 2026-06-22
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/how-ebpf-empowers-developers
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2340378536-infoq-channel-how-ebpf-empowers-developers.mp3
+DURATION_SECONDS: 2633
+TRANSCRIBED_AT: 2026-11-04T09:37:52Z
+----------------------------------------------------------------------
+The decisions you're making right now about AI adoption, architecture trade-offs, and how your team
+works together will shape your systems for years. Getting those calls right when the landscape is
+shifting this fast is hard. QCon San Francisco has spent 20 years connecting senior engineers with
+practitioners who are a few steps ahead on the same problems. This November 16th through the 20th,
+60 plus speakers across 12 tracks will share what's actually working in production and what isn't.
+No hidden product pitches, just senior practitioners helping senior practitioners. Learn more at
+QConSF.com. Hello, everybody. I'm Olympi Poppen, InfoQ Editor. And I have in front of me Dan F. I
+will not try to pronounce his name because probably I'll butcher it. So let's Dan introduce himself.
+How the thing started for our conversation, it was after QCon. Dan had the fabulous presentation and
+a lot of people were just eyes on the slides. And we learned a lot of stuff because he had some code
+as well. But he was concerned while having a chat in the elevator, how much of the gist of what eBPF
+actually is, got to the audience. So then we said, let's give it a try and give it another angle. Me
+playing the role of the noob. I had exposure to eBPF previously, but it's always good to hear more
+about it. But without further ado, Dan, please introduce yourself and please teach me how I should I
+pronounce your last name. So I'll do better next time. It's a funny surname to a certain degree. So
+a lot of people do pronounce it in a myriad of different ways, which is always fine. My name is
+Daniel or Dan, Dan Finneran. So it's an Irish surname. Cinnamon, Cineran, a lot of different
+mispronunciations, but Dan Finneran typically. So quick overview is I am part of the community team
+at iSurveillant and it is now iSurveillant at Cisco. So around 18 months or so ago, we joined the
+Cisco family. iSurveillant is the company that effectively spearheaded the creation of the eBPF
+project and then built some projects on top of eBPF, namely the Cilium project and the Tetragon
+project. which are typically cloud native projects in the cloud native ecosystem. So let's start
+with the simple things. Well, if any of them are simple, we are discussing about the Linux kernel.
+eBPF has a lengthy name that includes something with Berkeley. And what I remember from the other
+conversations with the guys from ISurveillant that I had in the previous years is that it's more or
+less a keyhole in the Linux kernel. And that says a lot because we know that the guys from Linux are
+very, how should I put it, protective with Linux per se. And then the question is what actually eBPF
+is and how they allowed such exception because probably it has to be something very important if we
+manage to do that. I guess we'll kick off with the first thing to think about is the naming. So eBPF
+is the technology that we're going to kind of pull apart and understand. And I guess a little bit of
+history is that it was originally based upon BPF, which is the Berkeley packet filter. BPF is
+effectively a way of configuring a kernel to do packet matches and kind of allow and filter traffic,
+networking traffic. And the way that it worked was that you would write these filters and you would
+attach them to a running system. And those filters would see traffic and do what they needed to do.
+And people had challenges that they had with the Linux kernel. They wanted to do more and more with
+it. So what they did was do we start from scratch or do we extend this tried and tested packet
+filtering mechanism? So as I say, we can write some packet filters and attach them to a running
+system. And it was a case of we've already kind of got some hooks that exist within the kernel that
+have been allowed. Maybe we can extend them. So eBPF did stand for extended Berkeley packet filter.
+However, the community has kind of reached the consensus that the extension has been so big that
+eBPF doesn't really bear any sort of resemblance to BPF anymore. So eBPF now doesn't actually stand
+for anything. The community is basically eBPF is just the name of everything that we do in that
+swath space within the Linux kernel. It's the technology that powers that. Yeah. The Linux kernel
+and your kind of applications that run on top of Linux now, it's ubiquitous. It's everywhere. Mobile
+phones, highly available systems. You know, I wouldn't be surprised if space launchers and rockets
+and things like that aren't running Linux kernels and things like that. So there's a lot of heavy
+duty infrastructure that is now stable and runs on top of a Linux kernel. So the idea really of
+suddenly being able to crack open a tried and tested platform and start twiddling things generally
+is quite scary to most people. And it's not really what is kind of wanted. And we've seen this
+before because the Linux kernel is kind of very gated in that it's very hard to get code all the way
+into the Linux kernel. So, you know, if you wanted to change the behavior of a Linux system, you
+typically would need to get the source code of Linux. You would need to find where that change that
+you want to make is. You would need to create a patch set. That patch set would need to be reviewed
+by a number of different people. So, for instance, if it was a new driver for storage, the storage
+team would need to review it first. And then the next layer would need to review it. And then the
+next layer would need to review it. And then finally, if you're very, very lucky, Linus or Greg or
+one of the two, you know, kind of overarching gatekeepers of the Linux kernel will finally get a go
+or no go. And your code may finally make it, rarely, but it may finally make it into the Linux
+kernel. And then you need to wait for Ubuntu and Red Hat or whoever it is to finally adopt that
+kernel. So you can actually get a running system with your changes in. And one of the main reasons
+why EVPS came into fruition is really that that process is so lengthy. And there is no guarantees
+that any changes that you want to make will make it through all of those various steps. And, yeah,
+as we mentioned, you know, kind of security and breaking the Linux kernel and things like that. You
+know, they are all there. These various layers are there to ensure the bad code doesn't make its way
+into the Linux kernel. But there are still opportunities to do that. So if you don't want to go
+through the path of upstreaming to a Linux kernel, your next option is the concept of a kernel
+module. So a kernel module effectively is you can take the source code for the kernel that you are
+running on your current system. And you can write some code that will hook into the side of an
+existing kernel. So you'll do a ins mod. So you'll install the module. And that code that you added
+will now be added into the Linux kernel and will be run when the path of execution hits your module.
+Now, that's one way of extending an existing kernel. However, it also comes with a bunch of issues.
+So first and foremost, kernel modules typically have to be compiled and built against a particular
+kernel version because kernel internal structures change and things like that. So if I wanted to
+make a change for everybody, I would need to create kernel modules for every kernel version that
+perceivably could exist. So you have massive technical overhead. And additionally, kernel modules
+can crash a kernel. So if I have bad code in my kernel module that will just loop indefinitely or
+block execution or fundamentally just do something that is not allowed, you can take down a running
+system with a kernel module. So EBPF is designed in a way to ensure that those sorts of issues that
+exist with things like kernel modules are no longer present. And it gives us the velocity and the
+speed that we don't have to deal with wanting to upstream things through all the various chains of
+who will approve this code and who will merge it and who will actually add it into the mainline
+kernel and things itself. That's kind of like the problem statement that why EBPF came in to play.
+And the crux of it really is stability. And to ensure that EBPF code can never impact a running
+system, there are a lot of guardrails that exist around EBPF. And two of them really just come into
+actually writing EBPF code itself. So you can write some EBPF code that's going to do something.
+What it does is irrelevant at this point. But when you first try and compile your EBPF code into a
+way that can be attached, compilers that are going to build that code come with strict rules that
+will effectively only allow code that looks in a certain way to actually compile into EBPF code. So
+compilers will check very stringent checks around, you know, are we trying to access things that are
+out of bounds? Are we effectively doing things that could break a system? That's kind of the first
+guardrail. The second and the most stringent guardrail, and you can think of the kernel as a
+nightclub. Think of your EBPF code wanting to go to the nightclub. You have what's called the
+verifier. And that is the bouncer, the security on the door to your nightclub. And that EBPF
+verifier is there to do a huge amount of different checks on your code to ensure that you're
+actually allowed to be ran in the first place. So even if you compile your code, there's still no
+guarantee that the verifier will allow you to load that into the kernel. And the verifier will do
+things like unroll all of the loops. So if you have a loop that is going to be ran for X amount of
+time, it will unroll it all. It will step through that loop. It will try and run things without
+variables being populated to ensure that outbound memory accesses can't occur. The verifier is
+filled with hundreds and hundreds of different tests to ensure that EBPF code can never impact a
+running system. It can never block, it can never be stuck in a loop forever, all of those different
+things. And those are kind of the first two main guardrails to ensure that EBPF can't impact the
+system. Okay. Let me see if I get it correctly. Plainly speaking, EBPF is a sandbox inside the Linux
+kernel. So that will allow you to run things that you actually want to run at the kernel level
+without the need of going through all the changes. And actually, you don't want to go through all
+those points. And if I understand correctly, you can do something like a hot deploy. So you don't
+even need to restart the whole machine itself. That allows you to do a lot of experimentation and do
+a couple of things. And you have multiple layers of security that make sure that the code that you
+actually provided is good enough so that it doesn't break the kernel itself. 100%, yeah. Okay,
+great. But taking a step back, it's obviously a great technology, but looking at most of the
+personas, which one of them would like to have more to do with EBPF? Like most of the developers
+will not care about it. And then we have to look more into what will be the actual developers or
+other personas that have to care about it. Or let me put it a different way. Is it IP tables and
+EBPF? Or do we have to have an or between them or and then? Oh, good question. Good question. To
+complicate matters to a certain degree is that EBPF isn't just networking. The way an EBPF program
+works is you write your EBPF code and you can attach it to a myriad of different places within a
+running kernel. So we may want to attach it to areas known as kernel probes. What that means is that
+whenever a particular function is fired within the Linux kernel, say, file open, our EBPF code is
+executed first. We can attach to syscalls and do something fundamentally similar. But in my role, we
+tend to think about attaching our EBPF code to the networking stack to do clever networking. There's
+no nice way of sugarcoating it, though. Writing EBPF code is not the easiest thing to do. You
+typically need low, low-ish level languages. So C is what most EBPF code I see is written in.
+However, there is a really big effort now to enable and help people write EBPF code in Rust. So, you
+know, kind of more modern memory safe language that will compile into an EBPF program. And, you
+know, to your point, really, who needs to care about EBPF? That is a very good question. I mean, I'm
+part of EBPF community. So from my perspective, everybody. But really, that's not the case at all.
+People who are just wanting to do networking with Cilium inside a Kubernetes cluster. Kubernetes is
+complicated enough. With Cilium, we basically kind of abstract away at everything. We want to give
+people the principles of being able to say, yeah, this workload can speak to this workload. People
+don't really need to know what happens under the covers. You know, kind of the amazing engineers who
+have built EBPF and have built Cilium, they've taken care of the implementation details for you. You
+know, like you don't need to care about IP tables. You don't need to care about the EBPF side of
+things. We present the nice UX side of things to the user. But we are seeing more and more people
+who are writing EBPF code now. We are seeing lots more different use cases. Observability being a
+really big one at the moment. So you're writing some EBPF code that is going to hook into the
+storage layer. That is going to hook into device drivers. We have seen a pretty cool use case where
+people have written EBPF code, which hooks into the NVIDIA CUDA drivers for the GPUs. And we'll
+basically be able to get low level information about how busy the GPUs are, correlate that to how
+much workload is kind of coming in to ensure that GPUs never go quiet and we don't end up wasting
+electricity and things like that as well. So the drivers were never designed to do that. We have
+basically been able to hook in with EBPF code and see the memory structures of the drivers and
+understand everything that's kind of happening. The personas are changing. We saw a lot of people
+writing clever networking with EBPF, you know, redirecting transparently, removing the need for IP
+tables. Now we're seeing people writing EBTF code to hook into userland applications, to observe
+everything that's happening within the running system, to look at encryption, to look at the
+behaviors of a running system and things like that as well. Okay. So the summary of what you said is
+it depends, right? So the proper answer of... Very political. Well, that's the answer that we tend
+to give for everything. That means that EBPF is a very powerful technology that provides access to
+the Linux kernel and everything happens to the Linux kernel. Probably file access, network access,
+pretty much everything that you have running on the Linux server. And probably have to take a step
+back and be more inclusive these days. And actually, it's not only Linux. Not long ago, Windows
+opened the doors as well. So any operating system in the sphere of Linux or Windows, right? That's
+correct. Yes. So in a very rare series of events, Microsoft have to allow the capability of
+extending the Windows kernel with... At the moment, it's EBPF drivers. So effectively, this is
+something you need to sideload into Windows. With Linux, it's there out of the box. EBPF has been in
+the Linux kernel since 4.something or the like super stable since 5. So with Windows, EBPF for
+Windows, you currently need to load in some additional drivers. The idea being at some point in the
+future, EBPF will just be part of Windows out of the box. You know, one of the cool things really is
+that the EBPF code that you compile will basically just run anywhere because it is its own bytecode
+and you can effectively run that in either a Windows sandbox or a Linux sandbox, attach it to the
+various areas of either or kernel. And then, you know, the EBPF code will do what it's programmed to
+do. Okay. So at this point of time, probably it's fair to say is that if we want to have a very
+fine-grained access to information at the kernel level of an operating system, then probably here we
+can take a lot of stuff. As you mentioned, it's about access to drivers. It's about access to
+storage and so on and so forth. So pretty much everything that is at the kernel level and everything
+is actually everything because everything runs there in Linux or Windows operating systems. And
+probably if you deploy applications, those will be the only ones that you care. I don't particularly
+hear about many people deploying on Windows, but if you are part of that very small percentage
+around the world, then yes, we have the EBPF now. And probably one of the applications that are
+running, but that's more focused on security, that's Tetragon. Again, another project that is coming
+from Esovalent, now part of Cisco, obviously. And if I remember correctly, Tetragon was very focused
+on ensuring your operating system. Maybe we can look through that lens and say, okay, in these
+particular cases, Tetragon will use EBPF to secure your machine. Because I think there were two
+things. One of them was observability and the other one was also action at the kernel level. 100%.
+So Tetragon is a second product that was developed inside of Esovalent. And where Cilium effectively
+hooks into the network and will move traffic around, Tetragon, as you mentioned, is there really to
+do two things. One, it will hook into any area of the system that you want it to do. So you can
+effectively hook into any syscall that the kernel is going to do. And you can simply have it in a
+reporting way where every action that is happening within your system is audited. So you'll get full
+audit logs. Every time somebody tries to open a file, we'll be able to see what that file was, who
+tried to open it, things like that. We can do things like, again, audit for whomever is elevating
+privileges. So every time I try to become root, that is audited. The kernel will do that, but
+Tetragon will see that actually occurring. And we'll report all of that back. So there is nothing
+that we pretty much can't access inside the kernel. Every syscall we can attach to, every time that
+syscall is triggered, Tetragon will be made aware that that has actually been triggered. Who
+triggered it? You know, what all of the parameters of that all kind of look like. But auditing is
+incredibly useful and incredibly powerful. To me, the main power lies in the enforcement side of
+things. And again, this is one of the reasons why EBPS is more powerful than some of the previous
+tools that existed. In that many years ago, I had to install an agent across an entire fleet for
+things like PCI DSS. So what are the security requirements? And this agent, I can't remember the
+name of it, but it centrally managed. And it was there to do some level of enforcement. The problem
+with the way that the agent worked was it was kind of always on the back foot. In that it couldn't
+hook into the kernel. The kernel would do something and then the agent would see it happening and
+then try and stop it or revert the behavior and things like that. EBPF hooks into a running system
+so that when the kernel tries to do something, EBPF will be ran first before the kernel will
+actually run the thing that it was meant to run. So it has hooks inside the Linux kernel. There is a
+prehook, a posthook. Typically, the order of execution is, so for instance, if I wanted to open a
+file and I wanted to open etc password to get everybody's details, typically what would happen is
+the syscall file open would be executed and the file would then be opened and mapped to where it
+needs to be. With EBPF, a prehook where our EBPF code would be attached means that when we try to do
+the file open, our EBPF code is executed first. We can look at what is actually going to be sent to
+the actual syscall. We can make a decision based upon it there. Then the Linux kernel will execute
+its actual code for file open. And then after that, we can hook into a posthook to see the results
+of everything that has actually happened. So we can go before and after and we can observe and
+enforce across the entire spectrum. So the behaviors and things that we can change within the Linux
+kernel typically means that when the Linux kernel is actually going to execute its file open, we've
+actually changed things and the Linux kernel is none the wiser. So we're not on the back foot, we're
+on the front foot. We are in front of the kernel before it actually tries to do things. Which really
+gives us a lot of power in protecting running systems. AI agents going quite crazy at the moment.
+There's a lot of people, you know, kind of, can you tidy this up for me? When you say tidy up, I
+meant tidy up the code base, not delete my entire file system and tidy that up for me. So, you know,
+we can effectively have Tetragan policies which say, if we ever see a syscall for file delete and
+the path of it matches slash home slash Dan slash, you know, super important project, simply do not
+allow the syscall then to actually execute or just don't allow it to happen. And then, you know, the
+syscall will effectively either fail or do not execute. Again, you know, the deleting file systems
+and things like that, we've seen a lot of AI agents do, but a lot of other things really are
+enforcing who can do what within a running system. You know, if you have a database, Oracle, for
+instance, running on MySQL, ultimately there'll be a MySQL.db file on your file system. Now, the
+only process that should ever access that is the MySQL D, the daemon process for MySQL. So really,
+only ever should the PID of MySQL be trying to access all of that. So we can kind of correlate
+between who is allowed to do what, anybody else is simply not allowed to do that sort of thing.
+Again, who's allowed to go to super user? And what we've been able to do with Tetragon really is not
+just, you know, kind of do simple policies about what can and can't be opened and read and who can
+execute to super users and things like that, is building policies which mitigate against CVEs. So
+some libraries, for instance, have buffer overflows and things like that. So if you were to send 40
+bytes where 30 bytes are expected and the last 10 bytes are some code that will be executed to give
+you this, that, and the other, well, we can hook in to the pre-hooks before that library is actually
+accessed. We can see what data is going to be sent to that library. We can see that it's going to be
+in buffer overflow. There's 40 bytes coming in here. And we know that due to the CVE and how that
+looks, that's too many bytes. Somebody's trying to do a buffer overflow here. We can stop that from
+happening. So not only are we protecting, we are live protecting against vulnerabilities that are
+happening on a daily basis, which I think is very powerful. I had a conversation probably last year
+after KubeCon with Marina Moore from Edera. And one of the drums that they are beating is about the
+kernel-level problems, one of them being be a buffer overflows, that any kind of CVE that affects
+the Linux kernel might affect the whole orchestration of the containers that are running there. So
+that's why they are one of the voices that are preaching for secure boot. And then on the other
+hand, they are preaching against containers in some situations and actually insisting on using micro
+virtual machines. Given that being very small, they will give the best of two worlds, not the
+heavyweight of what they used to have as virtual machines previously, but also the ability of having
+fast boot time and so on and so forth. Yes. Is the combination of eBPF and Tetragon another way of
+looking at that issue? Meaning we have a Kubernetes cluster. We don't want to go for virtual
+machines. I don't know why, but we do have Tetragon and eBPF. So Cilium together with Tetragon, will
+that help us? Yes, absolutely. I would like to point out, though, that Adira recently have updated
+the kernel, their micro VM kernel. So the eBPF is now supported inside their running micro VMs. And
+that, I think, is kind of testament because it's okay putting your containers inside micro VMs. But
+if you put a web server in there and there is still the capability of exploiting the application
+that's running in there, you're still going to get inside the Kubernetes network and things like
+that. You're still going to be able to do things that exist within that micro VM. Even if you can
+just infect that micro VM, that still means you're now inside the running environment and things
+like that as well. So for me, I think separation of kernel is a good thing because, you know, if you
+break one kernel, you can effectively break everything that sits underneath it. However, I think a
+combination of the both, a isolated kernel or a virtualized kernel and having Tetragon there to
+ensure that we can observe and we can still live patch if need be or ensure, you know, kind of what
+is actually happening within a running system. Because as mentioned, even if that VM is still
+vulnerable in one way or another, we can mitigate bad behaviors through eBPF simply and easily with
+Tetragon or other eBPF related means to ensure what's actually happening. And that is much less
+overhead. So I mean, if Adira wants to keep managing their own kernels, which they are doing at the
+moment, you know, they'll need to keep patching. They're going to have the technical debt now of
+continuously looking after new kernels every time they need to update their Adira infrastructure and
+things like that as well. Whereas just having eBPF there next to their kernel means that they can
+patch things at the point of CVs being released. And then when they have the time, they can update
+their kernel versions and underlying libraries and things like that to mitigate those, those found
+CVs and things like that. For me, best of both worlds is one or both. Okay. Okay. Thank you. The
+other thing that I was thinking of is how close are we to self-healing systems? Because back in the
+day when I was doing my master thesis, that was the rage at that point, but it was still a very,
+very far away dream. Now we are discussing about agents that are allowing us to write code on the
+spot based on feedback and human readable. And you have a way to look into the Linux kernel. Are we
+close or we are still far away from it? So we have been experimenting. We experimented just in the
+community side of things with trying to get some of the AI providers to generate policies based upon
+some behaviors that we kind of asked the AI provider to create it would generate Tetragan policies
+for us or what looked like Tetragan policies. When we applied the Tetragan policies, it's like some
+of these fields don't make any sense whatsoever. This looks and smells like a Tetragan policy, but
+like the model and the spec of the policy is wrong. However, I think as the models improve and, you
+know, we potentially put more resources together so that these models can understand how and what is
+required to generate a working policy that Tetragan understands, we could well be in a position
+where a CVE is found. It could be Welder, things like Mythos, the new AI exploit. Let's say tools
+from Antropic. Yes. Yeah. So that finds a CVE in the Linux kernel and immediately can effectively
+say, right, we know it's a buffer overflow. We know it's in this function, this is cool, whatever.
+So we'll immediately now generate a corresponding Tetragan policy that attaches to a pre-hook on the
+syscall and ensures that, yeah, the buffer overflow simply can't occur. So I really do think we're
+quite close to having that loop in place where it simply can't generate policies as it finds issues
+that we're continuously like reconfiguring live a kernel, which effectively says these inputs are
+validated or these inputs aren't valid. So we're simply not going to allow them. And that is really
+what we're kind of doing and talking a lot about at Cisco at the moment. One of the things that we
+announced last year was Tetragan on Cisco switches. And the idea there being the Tetragan will
+monitor the control plane behavior of a Cisco switch and ensure who is logging onto a Cisco switch,
+who is doing what with Cisco switch, who is trying to elevate their privileges and things like that.
+But we're wanting to move that more into the thing that you desired earlier, which is that loop of
+exploits. Critical vulnerabilities are found automatically. I like that term. A resulting policy is
+automatically generated and applied. And as soon as the issue is actually found, the systems are
+automatically protected against it. And we're getting there, I think. That sounds quite, quite
+interesting, especially when you're talking about Cisco servers, because that's a little bit more
+infrastructure. And I'm thinking that probably a better place to have those kind of things are small
+offices and also households, because in the end, I don't know how often, even in my place, how often
+I do the firmware update because it's quite problematic. And then that's something that definitely
+will help a lot. And especially that the place where the cyber crime is growing the most is on the
+household front because people are just not that keen on getting protected or they even don't know
+about it. But I think we just got to the big guns with everything that Tetragon can do and EBPF can
+do. One of the things that probably is closer to most of the other developers is probably
+observability. Because one of the promises that EBPF has is that you can properly observe your
+applications without the need of actually instrumenting your code. Because that was one of the
+biggest problems from my point of view. You had an application going and then you wanted to see what
+happens and then you had to instrument it. So that meant extra libraries and so on and so forth and
+go to the whole cycle, deploy it and then see what actually happens. And then there was also the
+question, what is the amount of time extra added to each call? And from the way how I see it, EBPF
+can do that for you. So there is, I mentioned K-probes and syscalls and things like that. There are
+U-probes, which are user probes, which will allow us to attach our EBPF program to user land
+applications, that's system libraries and things like that. And through all of those different areas
+that we can connect, we can profile a variety of different areas in terms of where a program is
+interacting with things, what it's actually seeing, what it's doing, what the results it's getting
+back are actually looking like, timestamp all of that. And I think another area, which is going to
+be very interesting for a lot of people moving forward, it's observability, but it's also scheduling
+of workloads as well can now be added as a alternative to the Linux scheduler. So you have multiple
+programs actually running and our EBPF code can actually do the scheduling. So we can effectively
+say these programs have a higher priority whenever we need to reschedule the next workload in. These
+should be given a much higher priority. They're always at the front of the queue to go back on the
+scheduler, to go back on the CPU and things like that as well. So in terms of performance and things
+like that, as mentioned, we can hook in user level. We can hook into our programs, interact with the
+actual kernel itself through syscalls and fentries and K-probes. We can see every library call that
+our program is making through U-probes. So we can see all of the data that it's sending to other use
+land libraries and backwards and things like that as well. So we can get such observability into
+absolutely everything that it's doing and control in terms of how the kernel is actually running our
+program as well. Okay. Just to summarize, if we look at it, we start from the way the Linux is
+based. You have the kernel space where all the magic is happening under the hood, and then you have
+the user space where the applications are running actually. Yeah. And EBPF provides probes for both
+spaces. One of them for the kernel space, you have kernel probes, as you mentioned before, kernel
+return probes, which are actually looking at the return of what actually kernel calls happened. So
+that allows us to have both places. And then there are the trace points, which are allowed to see
+how things are happening in different type of events. And more or less, it's the same category for
+the user space. It's U-probes that allows us to see dynamically what happens. There are returns. And
+then you have statically defined tracing again. So pretty much the same thing, but for application
+at this point that we can use for observability. Yep. Probably there are a couple of misconceptions
+about EBPF. Maybe you can give us a summary what some people think it is, because I suppose you
+heard quite a few. As I have mentioned, getting into writing EBPF is not for the faint hearted. It
+is getting easier, but because of the strict rules for what we want to allow to run in a Linux
+kernel, that typically means EBPF programs. You can only do certain levels of complexity with an
+EBPF program. You're not going to be able to run everything within an EBPF program. Although pretty
+sure I did see something where somebody was trying to run Doom in EBPF, which I'm not sure is
+technically possible yet, but that seems to be the benchmark for doing crazy things with computers.
+But as the verifier is improving, a lot of the rules that we had with EBPF programs are being
+relaxed. So EBPF programs are being able to get bigger, are being able to get more complex. You
+still can't do everything in an EBPF program. Some things you will need to use user land for, but it
+is maturing at a very fast pace. And because of all of the improvements that we're seeing, we're
+just seeing kind of massive adoption. You know, the main thing is you just can't do everything with
+EBPF as of today, but it's still meeting pretty much most people who need to use EBPF. It's still
+meeting pretty much all of their requirements at the moment. And I say it is improving and growing
+in terms of functionality. That's kind of the main one really that a lot of people kind of have
+pushed back on. It's difficult to get going with EBPF and you may find it limiting if you're trying
+to do something that's incredibly complex with EBPF because programs can only be so big. Loops can
+only go on for so long because the verifier will need to unroll them to make sure that they actually
+end. And I think a lot of people do struggle with the verifier. One of the big issues that you will
+find is when you write codes and it's compiled and then you try and load it, the verifier will
+typically say, this code cannot be attached because, and then just a crazy hex string. And it's
+like, well, I don't, I don't know what that means. So the output of the verifier can be quite hard
+to understand a little bit, but there is work on improving that sort of feedback loop and things
+like that as well. I think for me, really, it's just the barrier to entry is quite tough. Being part
+of the community, I do my best to try and educate people and provide examples and things like that.
+And I like to hope people are getting more and more into it. And we're certainly seeing more and
+more EBPF related projects. We're certainly seeing a lot more kind of adoption and a lot more people
+just kind of wanting to get their feet wet with writing their first EBPF programs. Liz Rice has put
+out a newer version of her book recently as well. I think so. There's multiple resources out there
+to help people over that initial tough learning curve to get going. Okay. Is there anything else
+that I should have asked you, but I failed to do so? No, I guess not. I mean, you know, EBPF is open
+source. It's part of the Linux kernel as well as the Windows part of it is also open source as well.
+So this is a community thing. If you want to get into it, you know, there are communities around all
+that. There is an EBPF community Slack. So if you want to learn more, those are all good places to
+start. We also have labs available as well. So you can actually, if you go to psyllium.io4 slash
+labs, you can spin up a free lab in a web browser and play with some EBPF code and things like that
+to try and get your head around it. There are more and more projects that are based on EBPF now, but
+to use those projects, you typically don't need to know EBPF. Like I drive a car, but I've no idea
+how the motor works. So use the tooling and try not to worry about too much about EBPF unless you
+are one of the personas that is going to want to write your own observability or your own clever
+networking or enforcement and things like that. So EBPF is a technology that is very useful to
+provide more observability and security on Linux kernel and lately also on Windows, but it's not for
+everybody. You can use tools that are based on EBPF. And if you're really curious, probably it'll be
+more than enough to just play on the online playground where you can see more, but it's not for the
+faint hearted. It's probably something that not many of the developers will touch. I mean, I want
+everybody to play with EBPF, but I just, the main thing really I wanted to stress more was if you
+see a tool based upon EBPF, more often than not, you won't need to know the EBPF in order to use
+that tool. That's kind of what I wanted to stress. I don't want people to suddenly think, oh, I'm
+not going to use this tool because I don't know EBPF. Like that's usually not a requirement of the
+tooling. It's just what's actually powering it. But I, you know, I want people to learn EBPF. I want
+people to play with it and understand it. And that's kind of the flip side of it, I suppose. Okay.
+So let me ask you a different thing because you opened Pandora's box there. You are working for the
+car factory, right? And now the question is somebody is just pitching an EBPF based tool to me. What
+should I ask? What should I be careful in asking those people that are maintaining it? Before I
+actually buy in and start running it. I mean, that's always a tough one. I think judging the health
+of an open source project generally is quite tough. Typically there are a couple of indicators you
+can look for, which is, yeah. How often is this project receiving updates? What's its contribution
+base look like? Is it one person in his basement? Is it a big company with hundreds of developers?
+Kind of trying to get an idea of how many people are actually using it. Because if it has a massive
+user base, then typically more and more people will be contributing to it and things like that as
+well. I think, and this is going to be a tricky line to walk. We are seeing a lot of AI generated
+submissions in various projects. There are some models which apparently now understand the EBPF code
+a little bit more. Now that's great. Like I want more code being written. The flip side, I think
+though, is if I'm going to adopt a project that's using EBPF. Well, just a project doesn't make it.
+EBPF is kind of relevant in this space. It's more just a general open source project issue. Is the
+people that have created this project, do they understand how the code works? Are they going to be
+able to support it? You know what I mean? Models are decommissioned every now and then and things
+like that. Or if tokens become too expensive, like they may do, are they going to be able to support
+this project moving forward? If it breaks or a bug is found, who's going to fix the bugs and things
+like that as well? So I worry a little bit about the disconnect between developers themselves who
+kind of own the projects and who's actually writing the code for the projects and the gulf between
+understanding the code in the project and supporting it moving forward. Because people are creating
+stuff and throwing it over the fence at a crazy rate at this point. And like, I'm seeing a lot of
+cool new projects, but like with no voice to speak to about how's it going to move forward? What's
+the life cycle of this project going to look like and things like that. So it's a very interesting
+time at the moment, I'd say. Okay. So the short answer would be do your own due diligence. And if
+you have any doubts, just go to the next shop and see what's there. If you have doubts, raise an
+issue, ask the question. Like the whole point of kind of like the open sources, the back and forth
+and hopefully the community. So, yeah. Thank you, Dan Finneran. Thank you for your time. Excellent
+pronunciation. Thank you very much for your time as well. This was fantastic. Thank you.
+Thank you.

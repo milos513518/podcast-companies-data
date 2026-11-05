@@ -1,0 +1,404 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Increasing Users’ Data Agency: From BlueSky's AT Protocol to the Local-First Software Movement
+DATE: 2026-06-15
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/increasing-users-data-agency
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2335998404-infoq-channel-increasing-users-data-agency.mp3
+DURATION_SECONDS: 2387
+TRANSCRIBED_AT: 2026-11-04T09:38:33Z
+----------------------------------------------------------------------
+The decisions you're making right now about AI adoption, architecture trade-offs, and how your team
+works together will shape your systems for years. Getting those calls right when the landscape is
+shifting this fast is hard. QCon San Francisco has spent 20 years connecting senior engineers with
+practitioners who are a few steps ahead on the same problems. This November 16th through the 20th,
+60 plus speakers across 12 tracks will share what's actually working in production and what isn't.
+No hidden product pitches, just senior practitioners helping senior practitioners. Learn more at
+QConSF.com. Hello everybody, I'm Olympi Pop, an InfoQ editor, and I have in front of me Martin
+Kleppmann, who is probably one of the most known people in the data space because he wrote the
+Designing Data Intensive application. And he has a second edition that was not long ago launched,
+but without any further ado, a little common. Martin, can you please introduce yourself? Yeah, sure.
+It's great to be here. So I'm an associate professor in Cambridge where I teach and do research on
+distributed systems and some security protocols. I have also written now two editions of this
+Designing Data Intensive Applications book for O'Reilly. I used to do startup software engineering
+back in the previous life before I switched over to academia. Nice. Thank you for writing it. I read
+the first edition. I'm looking forward to starting the second edition. But for those of us that are
+not that patient in reading everything, what will be the things that changed in between? If I
+remember correctly, it's almost one decade since you first wrote the first edition. Yeah, the first
+edition came out in 2017. So that's nine years old now. So of course, technology does move on in
+that sort of time. So part of the goal of the second edition was just to bring it up to date with
+shifts in technology. Partly, it was also some things I've now learned to understand better myself.
+So we rewrote some of the explanations as well to hopefully be clearer now. But in terms of the
+technology that has changed, I would say one of the biggest things is the rise of cloud native
+software architectures, which is a bit fuzzy. The term cloud native is not exactly well defined. But
+what we mean with this is systems that are built to take advantage of cloud services as opposed to
+local operating system services, which was the case previously. So historically, if you wanted to
+build a distributed database, you would write a piece of software that would store some data on the
+local disk of each node. And if you wanted to replicate it to another node, you would do that at the
+database software level. And then the replica would store its data on its local disk on that node.
+And with a bunch of modern systems, that's just not true anymore, because now people are building
+databases on top of object stores, for example. And so the underlying storage abstraction is an
+object store, not a local disk. And it's already inherently replicated at the object store level,
+which then changes the way you build things on top of it. And so, of course, we do still have the
+traditional form of databases nowadays, which you run on top of local disks. But there are now more
+and more systems that also take advantage of these cloud services as the underlying abstractions.
+And that's really an important shift that we wanted to weave in throughout the book. So we've kind
+of incorporated that idea throughout various chapters. Great. One thing that I saw in the data
+space, for me, data was, you know, the cylindrical block in the diagrams. I didn't touch it. I left
+it for the guys that didn't know how to handle that. Yeah. But in the last couple of weeks, maybe
+months, I spoke a lot with people that are actually designing and building data systems. And then a
+new passion, a new interest into this arose in me. So one of the things that the conclusions to the
+conversation and also from what I was building is the fact that after a long period of time where
+you had only monolithic block also in the data space, you had everything was in one piece. And you
+either build something or you bought something. Everything seemed to be like huge data lakes and so
+on and so forth in the BI space. But now it feels that the revolution touched also the data space
+and you have more fragmented pieces that you can build the stuff. For instance, I had a conversation
+with the guys that built the InfluxDB and they were just talking about the FDAP stack, as they call
+it. Apache Flight, DataFusion, Apache Parquet and Apache Arrow into building blocks. And then it's a
+lot easier now. And as you mentioned as well, object storage. Some of the things that appeared only
+as technologies, as it was the S3 buckets back in the day, now became the factor standards. S3 is
+one of these standards. Then you have Apache Parquet that became the underlying ground between data
+storage and data lakes and the part with analytics. It feels that it is a more livable environment
+and it's continuously changing. I'm very excited about what follows. Yeah, and I think that's quite
+an interesting trend that we're seeing this fragmentation of these big monolithic systems into
+composing different building blocks together. Where you might take an object store from one vendor
+and then a columnar data file encoding format and then have a table format on top of that. And then
+a choice of different query engines that you could use to run queries over this. And that I found
+very exciting because that way, if you can mix and match different components in a way to best suit
+the needs of your particular application, I think that increases the flexibility for everyone. And
+it kind of opens it up for more people to experiment because you don't have to build a huge system
+anymore. You can just build one component of a system and reuse other parts so that it's more open
+for people to customize and experiment with new approaches. Another trend that probably was around
+maybe a little bit earlier before you wrote the book, it was the SQL versus no SQL movement. And at
+that point, it felt that was the whole revolution. And now probably to soon come live a discussion
+with the guys that built QuestDB. What these guys were saying, and it was like, okay, it's a multi-
+tiered one. And what was interesting for me is like, okay, we have a write-ahead log where you can
+just write like in a no SQL style. You just write, you don't care about anything else. And then you
+have a query engine based on SQL, and then you can query that kind of data that normally wouldn't
+have thought that it's queryable via SQL. And then you have the cold storage that's Apache Parquet
+files. That's still queryable, but it's written on the file system. And as you mentioned as well,
+it's easy to be archived. It's easy to be backed up because in the end, it's a simple file system
+storage mechanism. And I think there are a lot of options, maybe too many options if you are in the
+position of choosing one for your system. Yeah, definitely. The other thing that was quite
+interesting during your keynote, and by the way, kudos for the title, for the listeners that don't
+know about it. Martin used, I would say, a taboo or normally geopolitics in his title for his
+keynote. And everybody was very interested about it. One of the points that you mentioned was that
+having more distributed systems will allow us to be more autonomous, more sovereign, because this is
+the trendy world these days, as the technology. And that will allow us to be further away from being
+locked in by vendors, regardless of the nationality or the country where this service is provided.
+And one of the protocols that you helped build was AT protocol that is underlying the blue sky
+social network. Maybe you can give us in a couple of sentences, what was your experience into
+building it? And what are the lessons learned from all your experience with designing data intensive
+applications that you brought to the table while designing the protocol? Yeah, the app protocol is
+super interesting. I got contacted by Jay Graber quite early on in the process, just when she was
+getting the team together to build Blue Sky. This was at the time when we still believed this effort
+was to build a decentralized technology for Twitter at the time. This was before Elon Musk came in
+and acquired it. And so the idea is that we would just be building a technology infrastructure layer
+for different social networking apps to run on top of. And then Elon came along and then plans
+changed and Twitter got renamed to X. And well, we then decided that Blue Sky needed to be just a
+social network in its own right, competing directly with the incumbents. But we still managed to
+keep that ethos, those principles and the values on which the app protocol was originally founded
+and designed, which was to essentially say that social media is too important to leave it in the
+hands of a single company. And there are different approaches to how you can decentralize social
+media. And so I guess one alternative approach is what ActivityPub does, which is what Mastodon is
+based on. And that has been pretty popular as well, and it works very well for a number of people.
+And that already existed at the time when we started at Proto. But we deliberately designed at Proto
+to be different in various ways in order to address what we saw were some issues with the way that
+ActivityPub worked. But there were also trade-offs. And so in particular, what we wanted for at
+Proto was to have a technology that would provide a user experience that was basically
+indistinguishable from a centralized social network. So we wanted the fact that the system is
+decentralized at the technical level not to result in any weirdness in terms of user experience or
+any complicated steps or truths that the users would have to jump through. And you don't have this
+on Mastodon. So, for example, on Mastodon, if you look at the replies to a particular post, if
+you're looking at the reply thread on one server, you may see an entirely different thread compared
+to looking at the same reply thread on a different server, the replies to different posts. And
+that's because not every server knows about all of the replies to a post. I think for ActivityPub,
+that was just like an intentional, deliberate decision in order to maximize the decentralized,
+federated nature of the system. But for Atro2, we wanted the consistency. We wanted that if somebody
+looks at the reply thread, everyone should see the same thing, basically. If you look at like
+counts, everyone should see the same white count and so on. And that then implies that there has to
+be something that essentially indexes the entire network, that looks at any replies that are posted
+on any of the servers and brings them all together so that they can be shown in a single thread. And
+that counts all of the likes that happen on all of the servers and adds them up to a single number.
+And that is done in AppProto by essentially having a firehose that combines all of the user activity
+from all of the servers. There's still lots of different servers that store the user data. They're
+called personal data servers or PDSs. But that's then aggregated into a big firehose through a
+service called the Relay. And then different organizations can build different services that index
+this data set. And anyone can come along and take this data set and compute whatever views they want
+with this data. And to be honest, most of the people using BlueSky now are using the services
+provided by BlueSky, the company. And as a result, it's somewhat more centralized than a sort of
+pure federated system like Mastodon is. But we decided that that was a reasonable tradeoff. As long
+as there was this option for users to go and switch to a different service provider if their current
+service provider ever stopped living up to their expectations. And so that was really the core
+founding principle behind AppProto that users should be able to switch to a different provider
+without having to change anything or without losing any of their data. So they shouldn't lose their
+username or have to change their username by switching providers. They shouldn't lose any of their
+posts that they've created or any of the replies from other people on their posts. They shouldn't
+lose any of their social graph, neither of the people they are following or those who are following
+them. All of that should be easily portable between providers. And that is something that we have
+managed with AppProto. And there are now also alternative providers that run their own systems but
+give you essentially the same data. You can see the same posts and the same reply threads but via a
+different provider. That seems to have worked out pretty well, I think, as a design principle that
+means you get a good user experience for decentralized social media. Personally, I really like it
+because it's quite clean and it seems that it has all the attributes that former Twitter had without
+having the insanity. But to summarize, all the user-related data, it's stored in PDSs, which is
+personal data service. And then you have a backbone where everything, a firehose in the middle,
+where all the data is aggregated. So that's publicly available and you can just play with it and
+everybody can use it. But what BlueSky is doing is just one implementation of the ADT protocol. But
+actually, whoever wants to do it can actually do it. And I think you even gave an example of another
+firehose during your presentation that appeared in the last period. Yeah, there are several
+alternative ones, like BlackSky runs an alternative firehose, for example. If we redo a similar
+protocol, what will be the things that you do differently, if there are any? Okay. I'm pretty happy
+with how the design of the AdProtter has ended up. I mean, I played only a small part in it, right?
+So I didn't write any of the code in the implementation. That was all done by the BlueSky team. I
+was just an advisor for maybe an hour a week or so. But I would like to think that some of my
+thinking about building scalable data systems has fed into the design. And I think on the whole, the
+design decisions have worked out pretty well. Whether the system is decentralized or not depends, of
+course, not just on the protocols, but also on which organizations are actually running services. So
+you could have a perfectly decentralized protocol, but if no alternative providers are available,
+then it's all hypothetical. So I'm very happy to see that there are more and more alternative
+providers to BlueSky providing AdProtter services now. But that's something that BlueSky itself
+cannot do, kind of by definition. It has to come from the community and from other people. And so
+there's actually a limit to what BlueSky can do in order to increase that decentralization. I think
+BlueSky has really done everything right to just open up the data so that it's available for anyone
+to start competing services. But in the end, it's then up to other people to step up. And it does
+require some funding, of course, because engineering is necessary and infrastructure is necessary to
+run these services. But I think we've done what we can to enable it through, for example, open
+source software and good documentation and so on. Local First is something that is closer to you. I
+know that you wrote also some software that you're very proud of. Can you tell us more what the
+Local First movement actually is and what's its mission? Why did you get it started? Local First is
+also, you could argue it's about decentralization, but it's a different type of app. This is
+thinking more about collaboration software where you've got a small group of trusted collaborators.
+For example, in Google Docs, writing a document or working together on a spreadsheet, working
+together on some graphics files or a bug tracker or things like that. Where it's really about
+collaboration between a small group of people. Local First is a principle for designing this kind of
+collaboration software in a way where the primary copy of the data is not somewhere on the cloud,
+but it's on your own machine. You'd have to copy of the data locally on your own machine, which
+means that you can access it while offline, for example. And you can just keep using the software
+without an internet connection and it'll just re-sync the next time you come back online again. It
+also means the software is simply faster to use because it doesn't have to wait for a network
+roundtrip every time you click a button. But everything can work just off your local storage. I
+think this is important because it empowers users. It's really about user agency. And also it's
+about reducing the risk of cloud providers suddenly disappearing. You know, I think probably all of
+us have had this experience of like using some web-based software that was pretty useful, pretty
+nice. And then the provider of the software just decided to shut it down. Google Reader is one
+example that people still cite even a decade after it got shut down because people loved it so much
+and Google shut it down nevertheless. That's just kind of an inherent problem with software as a
+service or web-based software. There's no way you can continue running a copy of that software
+locally on your own machine. If the provider decides to take it away from you, it's gone. If the
+provider decides to lock you out of your account, well, then you lose all of the files that you ever
+created with that software. And I find that a really untenable situation where we're just completely
+dependent on some software providers not locking us out of all of our data. And that's why I think
+Local First is so important because it means if you have a copy of the data locally on your own
+machine, nobody can take it away from you. Even if all of the servers go away, maybe you stop being
+able to collaborate with other users, but at least you've still got a copy of the data yourself. I'm
+really happy that Local First is now beginning to really catch on as a wider industry trend. We're
+seeing dozens of companies now making Local First products and marketing them as Local First as
+well. And this is an attribute of software that people are increasingly caring about as something
+that is desirable because it just gives us better software. For me, it was the guideline or
+something that they pushed always on architecting or designing a new application. For me, it made no
+sense when you have quite powerful devices in your pocket. Why something like, for example,
+Instagram is not working, even though you cached a lot of data on it. And then, I don't know, you're
+in flight mode and you don't have access to it. You have a banner and it says, OK, you have to
+connect. That was one thing. And probably there are others where I knew that the data is cached
+locally. So, I didn't understand why you cannot access it nicely and even take it away. So, more or
+less, how you defined it, it feels like it's maybe a little bit more evolved way of Git. Because
+Git, that's in the end, the perspective that Git has. You have a copy on your local machine. And
+then, obviously, each of the nodes can be the master and so on and so forth. Well, we wanted
+decentralization, but then GitHub and GitLab and all the other ones appeared. And then, we went
+again to a centralized approach. Yeah, but Git is actually a fantastic example here, I find.
+Because, you know, it is local first in the sense that all of the data is local, including all of
+the commit history is local. You can just do, like, inspecting past versions of your repository
+without talking to any servers. And what's more is that, you know, you mentioned GitHub and GitLab
+as these points of centralization, which is true. But at least we still have the Git protocol as an
+open standard sync protocol, which means you can take the same Git repository, push it to GitHub,
+push the same repository to GitLab, push the same repository to your self-hosted Git service. And it
+just works. You can just have multiple remotes, and it works just fine. This is something we don't
+have with Google Docs. With Google Docs, you can't, like, change the Google Docs application to use
+a different syncing service. But really, we should have that, right? And that's one of the things
+that Local First is aiming to get at. It's not saying that we cannot have cloud services. Because,
+to be honest, cloud services are really useful for syncing data from one device to another. You
+know, we've tried to make stuff work as peer-to-peer, and actually peer-to-peer is just really hard
+to make work reliably. It's hard to get away from cloud services entirely. But if you can run the
+system in such a way that you can just use multiple cloud services side-by-side, just the way you
+can use multiple Git hosting services side-by-side, then you've taken away most of the problems of
+decentralization. And, in fact, then we're back to exactly what we were talking about with AppRoto,
+where you now have the ability for different providers to provide competing services. And if they
+use the same protocol, it's an open-standard protocol, like what Git uses for pulling and pushing
+its commits, then you actually remove a lot of the lock-in that you would otherwise have with these
+providers. Of course, with GitHub now, then, people still use the issue tracker and the wiki and
+these other features, which are not stored in Git repositories and therefore not portable from one
+provider to another. So, for those aspects, we still have the centralization. Yeah, that's a whole
+different story. I think it would be great if those were in Git repositories as well, but that's
+maybe a longer story. But at least the core Git repository itself is actually very portable across
+providers, and I think that's a model that other software should emulate. So, just to wrap your head
+around what you mentioned, LocalFirst, the main target is for more broader-used technology, like you
+gave the example of Google Docs, so textual editors, or we can have also issue trackers and stuff
+like that, that are broader-used because technology, Git particularly, is used by people that are
+more tech-savvy. And LocalFirst is thought about having the ability of actually moving your stuff to
+another provider. Because we had that period when you bought software with boxes, CDs, whatever.
+Then we had the SAS movement, and then that meant, as you said, acquisitions, services that are
+killed, and so on and so forth. And then you just remain with nothing, because most often than not,
+they just give you an export that nobody supports to import. And now we are trying to decouple that.
+It's one thing, I want to be able to work with my data. And if I choose to have it in the cloud of
+backups, this should be something democratized and available for the broad amount of people, not
+only for technology enthusiasts. I think that's absolutely right. So we software engineers have Git,
+but Git has a brutal learning curve. And moreover, you can't really use it for anything that's not
+text files. Yeah, you can put a spreadsheet, an Excel file in Git, but you won't get any meaningful
+diffing or merging of that. It'll just treat it as an opaque binary law. So part of our goal with
+Local First here is to take the power of systems like Git and make it accessible to people for whom
+using the Git as a command line tool is just not appropriate. So we want, for example, spreadsheets.
+We want them to have the same kind of real-time collaboration that we've got used to from cloud
+software. But at the same time, we also want the local data storage and the ability to sync via
+different sync providers that we know from Git, for example. Also, we want the version control
+features from Git. This is another thing that, you know, again, we software engineers take for
+granted that, yes, obviously we can review what changes our colleague made last week while I was on
+holiday or like do code reviews on pull requests. This is just part of the natural workflow of
+software engineering. Many other businesses, many other professions don't have the similar kind of
+virtually controlled tooling. You know, people build very sophisticated financial models in
+spreadsheets and they don't have version control for spreadsheets. It's a shocking situation,
+really. But part of the nice thing with Local First is because in order to sync the edits that you
+make from one user's machine to another user's machine, we have to capture what those edits are
+anyway and encode them in a way that we can store on disk and send over the network. And so if we're
+capturing the edits anyway, it's actually not that big a leap to also make this into a version
+control system that can keep the version history of the editing over time and let people see what
+changes their colleague made last week and to diff one version of a file against another version.
+It's actually exactly technically the same mechanism that's needed. That's another reason why I'm
+excited about Local First. It's empowering people, not just in the sense of ensuring that they don't
+use all of their data if their cloud provider goes away, but also empowering people by paying this
+power version control to many other apps that currently don't have version control. One reason why
+I'm very excited about it is because I have an ongoing saga with my colleagues. I'm currently
+working for an IoT company. And for me, it's a bit of a problem not to call it other way, because we
+have the design of the hardware. It's impossible to version it, not in the way how we are used. We
+cannot compare, I don't know, iteration one or version three properly and just see what changed. And
+it's a whole different problem because you have like file storage and then only the person that
+actually built it knows what's there. And yeah, I am totally behind you. Exactly. Even CAD software
+used by engineers for like physical product design or electronic engineering for circuit diagrams,
+even that doesn't have version control. It's just unbelievable. And not in the sense that we know
+from software, you just have a nice little diff where you have with red the component that was taken
+out and with green the component that was put in because that will be amazing. Just technically
+speaking, what is local first? Is it a set of principles and then it's up to each individual, each
+software to define its way of doing because it's not a protocol? Yeah, it's a sense of principles
+and values, I would say. Then there are lots of different software implementations that interpret
+those principles in various different ways. So my collaborators and I work on a software
+implementation called AutoMerge. It's an open source library that you can use to build collaboration
+software. So it provides a data model for storing the data of an application and it can
+automatically sync that from one machine to another. It can do real-time collaboration, but it can
+do version control like use cases as well, where you want to go off on a branch for a while and then
+diff the branch against its space and then decide later whether to merge it or not. It can do all of
+those types of things and it can do it for different file types. So you can use it for text editing
+or for spreadsheets or for graphics or, you know, presentation software for CAD software. People
+have built all sorts of different types of apps on top of AutoMerge already. Okay. Even if it's a
+library means that is implemented in a language, what languages are currently available for? It's
+implemented in Rust, which we chose because we get very good portability across basically all
+operating systems and platforms. So if you want to use it in a web browser, recompile the Rust to
+WebAssembly and then have a TypeScript wrapper around it. And that's actually the way that most
+people use AutoMerge. But there are also native bindings in Swift for iOS and in Java for Android.
+There are, I think, Python bindings, there are Go bindings, C bindings. So pretty much all the
+popular programming languages here. Given that Rust has a compile into WebAssembly, I think that's
+pretty good because WebAssembly is now incorporated in most of the technology stacks. So that's a
+nice way to take it on board. Yeah, Wasm is well supported now. It's still kind of an adventure to
+incorporate Wasm into the JavaScript ecosystem. There's plenty of friction there across that
+boundary. But it works well enough and it does mean that we can use the same optimized algorithms
+across all of the language implementations. We have put a lot of effort into optimizing the internal
+data structures inside AutoMerge. If I would like to start working on something, the best place to
+start is go have AutoMerge incorporated and start playing around it. That's what we suggest, yeah.
+Okay. What would be a Hello World that you would recommend to somebody that wants to get started
+with something? Well, I guess a common Hello World would be like a simple to-do list app also that
+syncs between devices. A to-do list would be very easy to represent in AutoMerge. Now I understand
+why you chose JavaScript to give it as an example that is harder to achieve because that's the go-to
+example for all JavaScript frameworks building a to-do list. But if you build it with AutoMerge,
+it'll think across different devices. That's something that JavaScript out of the box doesn't give
+you. Well, if you solve the JavaScript problem, you should get a Nobel Prize for Peace because
+JavaScript ecosystem probably since we started talking, they have like 10, 20 new libraries that
+appear. So thank you for that. Okay. Do you have a registry of all, let's say, local-first software
+that was built with AutoMerge? Is it like an awesome list where we can just go and see this kind of
+local source? That would be a really good thing to have. To be honest, we don't always hear about it
+because, you know, this is an open source project. Of course, anyone can just use it without letting
+us know. Occasionally we get like book reports from people and then that way we find out that
+they're actually using AutoMerge in production. It's always nice to hear the stories. But yeah, we
+should actually try and put together a list like that. We do have a couple of companies voluntarily
+sponsoring the development of AutoMerge. And so we're very grateful to them for financially
+supporting the project. But it's not required. It's just an optional sponsorship. What would be the
+limitations? Where do you think using AutoMerge or just trying to implement it by yourself, it's
+currently not feasible to think about these kind of applications? Is there somewhere where to say,
+okay, it's not good enough at this point? It has limits? I would use local-first in general for apps
+where the user edits the data themselves in whatever way they want, basically. And so that means it
+works well for apps that are used for creative purposes. But also, as I keep mentioning spreadsheets
+as an example or graphics, those are all things where the user can edit the data in whatever way
+they like. It makes less sense for data where, say, it's a bank account, where, yes, in principle,
+you can edit the balance of your bank account and add an extra zero. But that doesn't make you
+actually have more money in your bank account. In the end, the bank has the authoritative copy of
+what your bank account balance is. And if you edit that locally on your own machine, that doesn't
+really mean anything. So for that type of software, local-first doesn't really make sense because
+there's an authoritative copy on a server somewhere, and it has to be that way. Also, if it's like
+an online shop, for example, in principle, you could make an online shop local-first, but that would
+mean that you download the entire product catalog to your local device, which means you could browse
+offline, which maybe is convenient. But also, the catalog will contain a million items, of which
+you're only interested in three. And so downloading everything up front doesn't really make sense
+there either. And also, you know, customers of the online shop are not going to edit the product
+descriptions in the product catalog. That doesn't make sense either. So that's why I say that local-
+first makes most sense for these kind of creation apps where the user is creating the data
+themselves. It's like having a local-first copy of Amazon is just having like a leaflet. That
+doesn't guarantee that the product you want to buy is still in the shop. So with something like the
+stock in a warehouse, that's just inherently centralized because there's a physical resource and the
+computer just reflects what is actually on the shelf of the warehouse. We discussed about getting
+started with something. It's local for something that you can retrofit. We have an application
+that's currently centralized, and we would like to adhere to the set of best practices. Is it
+something appropriate? Can we do something about that for the new generation? I think it depends a
+lot how the app is built. One of the nice things with local-first is that it means essentially all
+of the business logic of the application is client-side. And you can still build it as a web app,
+that's fine. Or you can build it as desktop native software, if you like. It doesn't really matter.
+If your software is currently built in a way that it already maintains its internal state client-
+side, it's JavaScript state variables in a web app, for example, then you can make it local first
+without too much trouble, usually, because essentially you would be taking that internal client-side
+data model that the application already has and putting a sync engine on it so that that data can
+sync to your collaborators. And we have done that kind of retrofit previously. So take an existing
+single-user React app, for example, and just replace its internal data model with auto-merge, and
+then you get a multi-user app. In some cases, that can be pretty straightforward. But if your
+current app architecture relies on a server doing a bunch of business logic, then that's harder to
+retrofit to local first, because you would then be changing the locus of that business logic to be
+client-side rather than server-side. Okay, so the short answer is, obviously, it depends. If you
+were inspired when you started with the application in the first place and you keep the parts of the
+model that you actually need on the client-side, then it's easier. Otherwise, probably, it would be
+a bigger redesign and probably it would be a lot easier to just get started from scratch and just
+move there all the features that you need. Yes, probably. Okay. How can people contribute? I think
+just trying to build some apps with auto-merge is probably a good place to get started. There are a
+bunch of other libraries also that aim to make it possible to play with local first software, so it
+doesn't have to be auto-merge. That's just the one that I happen to work on and like. But if you
+look on localfirst.fm, there's a nice comparison table of lots of different software libraries there
+that can all be used to build local first software. Yes, I think building some apps is a good way to
+get started. And then if it turns out that you're actually more interested in the underlying
+infrastructure behind the apps, then, of course, you can go deep on that and everything is open
+source and open for contributions. We always have ongoing work to improve the performance, for
+example, new designs of the data synchronization protocols. We're in the process of adding end-to-
+end encryption and a decentralized access control system to the protocol so that there's lots of
+ongoing work happening. And for anyone who's interested in those infrastructural implementation
+aspects, that's all open for our contributors as well. For auto-merge, we also have a Discord chat
+server where all of the core developers are available. So that's quite a good place for
+communication, finding other people who are interested and getting questions answered. Okay. And
+talking about community, I know that you and the local first community are running the conference. I
+think it's July in Berlin. Yeah, it's very exciting. The local first conference started in 2024. So
+this is the third year that it's running. At first, we were not sure, like, was local first really
+big enough to justify having a conference dedicated just to that topic. But the first edition sold
+out, the second edition sold out, and I hear the tickets for this year's conference are going
+quickly as well. And it's been really cool to just see so many different people all sharing these
+values of local first is about, trying all sorts of different software implementations. In some
+cases, you know, they're competing software implementations that are trying to solve the same
+problem, but that's okay and that's healthy and that's a good part of having an ecosystem, I think.
+And what this conference is doing this year is now broadening the scope a bit. So focusing less on
+the detailed technical aspects of, say, sync engines, which are used to sync data between clients
+and servers. There's lots of interesting algorithms and protocols there to talk about, but actually
+the conference is broadening scope a bit more to really look at these themes of user agency, user
+empowerment, which is really the whole reason why we're doing local first. in the first place. And
+this then actually connects very nicely to the ad protocol discussion from earlier as well, because
+similarly, ad proto is founded on these values of empowering users by reducing lock-in, allowing
+users to port their data from one service to another service. It's just that ad proto does it for
+the social media domain, local first, does it for the collaboration software domain, but otherwise,
+in terms of the underlying principles, actually, they are very similar. And so I'm really happy to
+see the ad proto and the local first community coming together. And so, for example, Paul Frazee,
+who's the CTO of Blue Sky and one of the core designers of the ad protocol, will be speaking at the
+local first conference. So that will be in July in Berlin for two days, and you can find it online.
+From what I know, it's a venue that is limited, so it still feels like a tight-knit community. Yeah,
+I think about 350 people. That's a good size. Big enough to be interesting, small enough that it
+still feels like a real community. Yeah, sounds like the proper size. Okay, Martin, thank you for
+your time. It's been a great discussion. Thanks. Thank you.

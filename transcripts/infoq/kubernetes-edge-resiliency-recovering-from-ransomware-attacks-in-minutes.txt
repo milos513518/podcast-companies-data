@@ -1,0 +1,241 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Kubernetes Edge Resiliency: Recovering from Ransomware Attacks in Minutes
+DATE: 2025-05-26
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/kubernetes-edge-resiliency-recovering-from-ransomware-attacks-in-minutes
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2092264557-infoq-channel-kubernetes-edge-resiliency-recovering-from-ransomware-attacks-in-minutes.mp3
+DURATION_SECONDS: 1631
+TRANSCRIBED_AT: 2026-08-05T12:07:21Z
+----------------------------------------------------------------------
+If you're trying to figure out how to actually integrate AI, improve your platform, or make the dev
+experience better for your team, then InfoQ Dev Summit Boston 2025 might be worth checking out. It's
+two days in June, focused on the real-world side of adopting these technologies. You'll hear from
+senior engineers who've already been through it, what worked, what didn't, and what they do
+differently. It's built for teams who want to move past being inspired and start taking action now.
+Join us this June 9th and 10th. Learn more at devsummit.infoq.com. Hello, everybody. I'm Olympia
+Pop, an InfoQ Editor. And today we have in front of us, Julia, who spoke about bringing light into
+chaos at KubeCon. And we were curious to hear more about it. So, Julia, please introduce yourself.
+Yes, sure. Thank you for having me. It's a pleasure. Like you said, my name is Julia. And currently,
+I work as a global technologist at Veeam in the product strategy team. And my background is a little
+bit non-traditional, actually. I worked in law. I'm originally from Brazil, worked in law, then a
+business. And then I found technology. I transitioned into tech. And nowadays, I work a lot into
+helping, you know, explain tech and break down difficult concepts, talk more about the business side
+of tech. And I focus a lot on cloud-native technologies and data protection strategies. So, I work a
+lot with customers and partners to design solutions around resiliency, disaster recovery, and cloud-
+native infrastructures. I'm also a CNCF ambassador. I'm an AWS container hero. I'm ambassador to
+some other programs. I organize events in New York City. So, the KCD, Kubernetes Community Day
+there, the AWS Community Day, and a monthly meetup that is part of the CNCF. So, I'm very involved
+with the cloud-native community. And fun fact, I speak four languages. So, I speak English,
+obviously, Portuguese, French, and Spanish. Yes, that's impressive. Well, today we'll keep it to
+English, even though I'll be happy to exercise the four words that I know in Spanish and Portuguese.
+But let's keep it to English. Okay. So, for me, what was surprising this year at KubeCon, because
+this was my fourth European KubeCon. And for me, what was surprising, it was the first time when the
+discussions were more high-level. So, we heard in the keynotes people talking about how the platform
+team, how the infrastructure team can influence the user experience. And I think that would be the
+optic that I will try to use today in our discussion. You mentioned chaos. And obviously, if your
+infrastructure goes down, that would be chaos among other stuff. And everybody will just run left
+and right. But maybe let's start by describing again what was the scenario. Because you mentioned
+Edge and you mentioned shopping experience, if I remember correctly. So, because Edge is so broad,
+let's narrow it down and understand what were the devices on the Edge to just understand better how
+that is framed. Yeah. So, the talk I gave was called Chaos to Control Kubernetes Resiliency at the
+Edge. And it was recorded. Probably the recording will be available soon. But the scenario we shared
+at KubeCon was from a global retail customer that had over 500 Edge locations. So, each store is
+running Kubernetes locally. Essentially, you know, mini clusters at the Edge. And you can think of
+Edge computing as having mini data centers in each store. Instead of sending everything to a big
+central location. And each store was processing right there. You know, restocking alerts when
+inventory was running low. Running personalized promotions based on customers' data. All the
+operations. So, point of sales, everything. But, you know, with Edge comes a lot of challenges. It's
+not like running on the cloud or on-prem. You know, there are constraints like resource constraints.
+Devices running in Kubernetes at the Edge, they are usually lightweight. So, they have less CPU,
+RAM, and storage. There are network issues because you're not always connected. So, the stores, they
+can lose connectivity at any time. So, everything has to work even without the internet. There are a
+lot of security risks, which is what we focused on at the talk. Because the more Edge devices you
+have, the more doors you leave open for attackers. And that was the case. So, the retail customer
+was hit by a ransomware attack. It started with phishing email, which usually is what we see. You
+know, someone clicks on an email and then it gets access to the whole system. And it encrypted the
+systems and a lot of things happened. And we went over a little bit, you know, everything spread
+through the clusters. And when that happens, usually traditional backup solutions and traditional
+things that we like to say, keep your system resilient. They don't really work for Edge locations.
+Because usually you, like I mentioned, you rely on a centralized infrastructure. And with Edge
+locations, you don't have that centralized failover like with traditional data centers. Also, you
+are in a disconnected environment. So, you know, you can't have like that fast and local restore.
+So, it's very complicated. And you need a backup solution specialized for that. So, we went over,
+you know, backup solutions. Yeah. Let me stop you a bit to consolidate. You had a lot of things.
+You're very enthusiastic about this. So, that means that everything that you have as a system, it
+looks like a spider web. Each of the shops is its own, let's put it like that, box that has
+everything that theoretically needs to run. And at points, it probably connects to the center to get
+more data or to get updates. Can you share how the information kept flowing? I mean, at points, I
+might imagine that you need to get information from the main repository or stuff like that. Can you
+share a bit on how that works? Yeah. So, it's connected to the cloud and a local data center. But
+the connectivity is intermittent. So, it only connects to get the updates. But it's not always
+connected. And that's one of the issues with Edge locations. So, the problem is that intermittent
+connectivity. Okay. Well, that's mainly the definition of it. But this is a more different aspect.
+And you touch on very interesting aspects because more than the traditional thing where you will
+have to worry only about the connectivity and getting the information up right and so on and so
+forth. You are dealing also with probably personnel that has less digital literacy. Because I expect
+that people that are working in a supermarket are not exactly literate. So, that's why probably the
+door is open to other stuff. Okay. So, for me, it's impressive to have like a 10-minute restart of
+the whole system. How far along was the system affected? Was it isolated to one shop? A couple of
+shops were affected? No, a couple. So, several. I don't know the exact number to be precise. But
+several shops were affected. And it was spreading fast. But then we were able to contain it. And
+because it's a huge process. And the talk at KubeCon was focused on, you know, the recovery part,
+the backup and recover. And how to build a more resilient environment. But, you know, the disaster
+response is another aspect of what happened. You know, when a ransomware hit, what do you have to
+do? Do you have incident response plan? Everything. So, several shops were impacted. But I don't
+have the number exactly about that. That's not that important. How did you handle it? I mean, how do
+you prepare for such a thing? Because I'm sure that these things were prepared in advance. The
+system was thought to be recoverable in a decent way. So, starting from scratch, how should I start
+doing that? If I'll be at this point. So, actually, we were brought in after the incident happened.
+You know, they were using other things before. And what we did was build a more resilient
+environment for them. And with that, we used some open source tools, part of the CNCF. And some non-
+open source tools as well. But we focused on backup and recovery solutions. Also, S3 compatible
+object storage for that. And if I can mention names. So, they started using custom by Veeam. Which
+is the data management platform designed specifically for Kubernetes. And edge locations as well.
+For, you know, backup and restore and disaster recovery tasks. And Canister. Which is a project from
+the CNCF. That is a framework. An open source framework. That allows you to define custom data
+management tasks through Blueprint. So, you just write YAML files that know how to handle the
+application. Like if you need to flush a database before a backup. Or if you need to run custom
+logic during a restore. And they work with several databases, several applications. And that helps
+with that resiliency. Okay. YAML is quite a known language among the Cloud Native Foundation. And
+its users. So, what should I have? How should I think about it from an overview? Should I think
+about frequency? Should I think about particular tables that I want to target? Or how would that
+work? Yeah. You should think about what are the most important applications that you have to backup.
+Ideally, you should backup everything. But also, you need to think about are they stateful? Are they
+stateless? You need to backup stateful applications. This is a common controversy in the Cloud
+Native space. We are seeing, you know, stateful applications on Kubernetes. And they need to be
+backed up. And, you know, frequency is something important. But you also have incremental backups.
+That's something that you can do. So, instead of backing up everything every time, which can be slow
+and resource heavy, you only backup what's changed since the last snapshot. So, this speeds up the
+backup window, reduces the storage needs. And it's perfect for bandwidth-constrained edge locations.
+So, this is something that they implemented as well with casting by Veeam. Okay. So, let's assume
+that we have a solution that does that for us. It's the time shuttle that moves us left and right
+depending on what we need. How it will happen? I mean, as you mentioned, it's recording only
+snapshots. If I need, I don't know, I'm losing the whole database. That means that I will have to
+apply multiple snapshots. I suppose that one is done automatically anyway. No. So, first, you do a
+full image backup. So, it's not just snapshots. You have the entire application level backup. And
+then you, with the incremental backup, you do only snapshots. But you have a whole backup of your
+infrastructure, your application. And then you can recover from that. So, you have these two types.
+And the incremental one is only the changes. So, you don't have to do a whole image level backup
+every week, let's say. You can just do the snapshots. If something changes, you have it there. But
+when you need to do a restore, you still have the full image level backup that you can restore from.
+So, you have several options. Yeah. Okay. So, that means that we need to take the things separately.
+We have stateful systems. And then, based on those, we're just ensuring that we have the data. The
+stateless systems, well, they're doing computation and probably they're relying on stateful data.
+So, they're just pulling data out of that and that's mainly it. What else? What else should we bear
+in mind? So, also, like I mentioned, storage. Where are you going to send that data to? So, usually
+people, we would see in the past, you know, file system, etc. But now, we're seeing a lot of object
+storage. So, you send that to the cloud. And it's great because it's scalable. So, it grows with
+your data automatically. It's off-site. So, you can keep them safe in case one of the locations is
+hit. Usually, you store it in the cloud. So, all these big providers have their own object storage
+that is, you know, very powerful. You can make it immutable. So, for ransomware attacks or even
+accidental deletions, those happen a lot. Like you said, people are not very digital literate.
+What's the expression that you mentioned? Yeah, something like that. Yeah. So, there are a lot of
+accidental deletions. But if you make that data immutable, no one, not even the admin, can change
+it, you know, encrypt it in case of a malicious actor or delete it. And it's very cost-effective
+because you pay as you go. Okay. So, let me see if I can translate these things for me. So, what
+you're saying is there are two different things. One of them, whenever we are building the system,
+we should use as much as possible immutable data because that allows us to be safe and not alter
+something that's already existing. And then to put another degree of isolation, like probably zero
+trust, where you're just making sure that always you have to check it. And then that will limit the
+blast radius. Yeah. And part of the zero trust, I would say also, only people that need access or
+you should limit the amount of permissions that people have, you know, to perform a backup, to be
+able to manage the infrastructure. Because the more permissions people have, the more accidents can
+happen. And this is part also of zero trust, etc. You can do that with our back. And it's a very
+famous principle in the cloud native space. And because we discussed that now, I was happily
+surprised by the cloud native foundation's keynotes and the level of the talks. Everybody's talking
+about the user experience. How was it felt on the user side? I mean, 10 minutes, they can have a
+coffee or two if you're really nervous. But theoretically, things should have happened quite fast.
+Yes. You mean the recovery? Yes, the recovery. So now, obviously, during the backup phase, users are
+not affected. They don't know that's happening. It's behind the scenes. It's happening. But
+obviously, at the point when you have a problem with the system, you'll just have probably wrong
+data if the system is not fully affected. Or if, as you mentioned, if the system was encrypted, most
+probably the guys had more problems. They couldn't work. They couldn't use it. So if I would be a
+cashier or whatever, something operator for the warehouse, what would be my experience in Doom or
+the ideal experience of recovering from a failure? So like you said, ideally, the user, not the
+backup admins or the technical people, the users that are just dealing at each location, they don't
+really see any disruption. That's the perfect recovery scenario. And it means your edge location,
+your environment is pretty resilient and has a good backup and recovery plan. But for that, you need
+something. So I didn't even touch on that. But everything is automated. So not only the recovery is
+fast, but it's all automated. So something happened, it already triggers the restore and all the
+policies are enforced. Also, everything should be tested. So if there is a disaster scenario and you
+tested it before, you're going to see you can recover in less than 10 minutes. And then the user
+won't even have to deal with any downtime. That's the goal. Because, you know, even five minutes of
+your system not working, like you said, cashiers at, you know, supermarkets, if the system is not
+working, it means hundreds of money lost into sales, etc. So if you have everything automated,
+tested prior to, you know, anything happening, your user won't face any downtime. They will have a
+smooth experience. Okay. So that means that more than just preparing the system, we need to prepare
+the users. So probably doing something like drills, different type of scenarios where you're just
+trying to cover as much as possible. Okay. That's a good idea. But when you say users, users is
+mostly, I mean, technical people, you know, the infrastructure engineers, everyone that's handling
+those systems. The user, like we said, the cashier, there isn't much that they can do when something
+like that happens. They can, you know, go and open a ticket or something, but it's not in their
+hands to recover the system. And that's a big problem at edge locations because they don't have
+usually IT personnel in each store. So it usually takes even more time. But if you have something
+that's automated and tested and has, for example, GitOps integrated, then it's going to be much
+faster. And the cashier or other users, they won't even experience anything. They won't feel any
+disruption. So that means that each store individually or each edge location individually had its
+backup mechanism locally. Yeah. So each cluster can handle its own backup and restore without
+needing a central control plane. Okay. And that means that these backups are stored in an isolated
+location or they are in an air-gapped environment, given that you mentioned that. Object storage.
+Yes. Good. And do you have any kind of off-site storage? Yes. So at Veeam, we talk a lot about the
+32110 backup rule. I don't know if you've heard of it, but usually you need three different copies
+of the data in two different types of medias. One of them should be off-site in another location,
+just in case, you know, something happens with your production copy. And one of these copies should
+be offline, air-gapped or immutable, which is what I meant. You know, no one can tamper it, encrypt
+it, delete it. And then the zero at the end is for zero errors. So you should be always testing it
+and make sure that there are no errors after the backup recoverability verification. So it's an easy
+rule to remember, 32110. And if you have that, you're probably in a great place. You know, you have
+a very resilient system. Okay. That's good to know. And how often should you have like drills? Is it
+related to the size of the data? What will be another choreography rule? Yeah. So it depends on the
+RTO and RPO. If it's some type of data that is extremely critical, you should have drills often.
+Everyone, all personnel should be able to know, oh, in case of anything happens, who's going to be
+the point of contact? Who will deal with, you know, restore operations? You should have all of that
+documented. And because when things happen, people get, how can I explain? Like it's chaos, like the
+title of the talk. And no one knows what to do. You know, there is also a lot of blaming. Oh, they
+should have done that. They didn't do that. So when you have everything documented, it's easier to
+say, yeah, let's do one, two, and three. Person A is going to do one. Person B is supposed to do
+two. You know, if someone is not on call or, you know, they are traveling on vacation, you know who
+to contact if needed. So everything, this is all part of the, like incident response plan as well.
+And it should be tested regularly. Okay. That makes sense. So that's very enlightening. Thank you
+for that. But during KubeCon, there were a lot of things that were spoken. Any takeaways that you
+would like to implement moving forward for other potential scenarios? Yes. So still talking a little
+about resiliency, that is the topic of the podcast and also my talk. It's mostly resiliency is not
+optional anymore. So everyone's talking about GitOps. We're talking about GitOps, observability, AI,
+ML. But at the end of the day, if your cluster crashes and your data isn't safe, then none of that
+matters. So, you know, and there are a lot of threats like ransomware and especially at edge
+locations, which is so fragile. Resiliency must be built in. And so also security and backup are
+being seen as part of the same ecosystem now and not separate concerns. Security, I'm sure you saw
+that at KubeCon is always a big thing. So this time and, you know, at the last one, North America, I
+saw that as well. It's always a core focus. And now they're integrating backup into that, which I
+think is very important. You know, data is the livelihood of any business. But like you mentioned, I
+saw that they emphasized the importance of integrating security in each layer of the cloud native
+stack with particular attention to zero trust principles. And also they talked a lot about supply
+chain, which I think is also a very important topic. So security in the supply chain. I also saw not
+that related to resiliency anymore. Observability was also a big thing at KubeCon. So ensuring and
+having a strong emphasis on observability to meet compliance requirements, such as, you know, there
+are some outlined at the EU Cyber Resiliency Act. They mentioned that at one of the keynotes, if I'm
+not mistaken. It was Friday. Yeah, exactly. So there was a lot going on at KubeCon. I'm still, you
+know, digesting everything. So to conclude, what you're saying is that now things are happening in
+real time, more or less. So observability is the mechanism through which if we implement it, we'll
+always know what happens and know exactly where we are. And then more than everything else that is
+important. So high availability data is even more than that, because it means that you have servers
+available. But if you don't have the proper data, your system is not working as expected. And last
+but not least, even though the things changed lately, the Cyber Resilience Act will just ask you to
+be more aware of what you're doing on the supply chain side. So those things have to be boiled down
+into the business continuity plan of your company as well. Okay. That was a very interesting deep
+dive. Yeah, thank you for having me. It was a pleasure. Same here. I love talking about cloud native
+things, KubeCon experiences. I always encourage and recommend everyone to attend at least one
+KubeCon if they can. I know not everyone is able to, but for those that don't know, the CNCF also
+provides scholarships for KubeCons. I think you have to apply with at least two months in advance,
+but you should check out their website. So there are scholarships. Usually also, if you've been laid
+off, you can get a free ticket to attend a KubeCon. So there are a lot of opportunities. And just
+for those that are more interested in, you know, cloud native technologies in general, I would say
+just start getting involved, you know, go on the CNCF Slack channel. There are several channels for
+each of the open source projects, or there are like first time contributors. And you can just say,
+Hey, I'm new here, but I want to get more involved. There are so many ways people can learn and get
+involved in that community. And I think it's a very welcoming community. I don't know about you, but
+I always love going to KubeCons and meeting people and learning more about technology. Yeah. It's as
+mentioned and discussed with several people. I just went there without any plans. And I always met
+somebody, old friend or new friend. And that was quite nice. So yes, the Kubernetes is more than
+just the technology, it's a community and everything else that's in its ecosystem. Okay. Obrigado,
+Julia. Okay.

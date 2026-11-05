@@ -8,7 +8,7 @@ Built 2026-11-05. Contains named people with LinkedIn profiles: keep this reposi
 
 | File | One row per | Key columns |
 |---|---|---|
-| `data/companies.csv` | company (1,078) | `company`, `website`, `linkedin_company`, `in_apollo`, `artifacts`, `episodes` |
+| `data/companies.csv` | company (1,291) | `company`, `website`, `linkedin_company`, `in_apollo`, `artifacts`, `episodes` |
 | `data/people.csv` | person at a company | `company`, `name`, `title`, `linkedin`, `type` (`podcast speaker`, `podcast guest`, `staff`), `area`, `notes` |
 | `data/artifacts.csv` | thing a company built for its own people | `company`, `what_they_built`, `serves` (onboarding / enablement / ai_upskilling), `summary`, `why`, `how_it_works`, `outcome`, `quote`, `person`, `show`, `episode` |
 | `data/open_roles.csv` | open job | `company`, `title`, `url`, `area` (Enablement / Onboarding / Technical product manager), `posted`, `checked` |
@@ -31,3 +31,4 @@ Join everything on the `company` column.
 - A handful of LinkedIn links came from web search rather than Apollo; spot-check before outreach.
 
 - **Panels:** panel and roundtable episodes are attached to every company a panelist worked for at the time (Changelog News is a news show and is not treated as a panel). Panelists' employers that the show notes didn't give were found by web search and kept only when confirmed.
+- **Coverage:** every guest company from Engineering Leadership, DX Engineering Enablement, Practical AI, InfoQ and The Changelog is included. Companies Apollo has no record of are listed with their episodes and speakers but without staff.
