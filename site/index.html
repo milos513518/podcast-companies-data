@@ -268,6 +268,7 @@ function render() {
   const dates = c.list.map(a => a.date).filter(Boolean).sort();
   const items = c.list.filter(a => state.serves.has(a.serves) && (!state.outcomesOnly || hasOut(a)))
     .sort((a, b) => rank(b) - rank(a) || (b.date || '').localeCompare(a.date || ''));
+  CUR_ITEMS = items; CUR_CO = c.name;
   p2.innerHTML = `
     <button type="button" class="linkbtn" id="back">← Choose another company</button>
     <div class="block">
@@ -280,8 +281,9 @@ function render() {
       <div class="filters" role="group" aria-label="Filter artifacts">
         ${Object.entries(SERVES).map(([k, v]) => `<button type="button" class="chip s-${k}" data-s="${k}" aria-pressed="${state.serves.has(k)}">${v} · ${c.list.filter(a => a.serves === k).length}</button>`).join('')}
         <label class="toggle"><input type="checkbox" id="outonly" ${state.outcomesOnly ? 'checked' : ''}> Only with an outcome</label>
+        ${items.length ? `<button type="button" class="linkbtn" id="copyall">Copy all ${items.length} shown</button><span class="note" id="copyallmsg" aria-live="polite"></span>` : ''}
       </div>
-      <div class="cards">${items.length ? items.map(card).join('') : '<div class="empty">Nothing matches these filters. Turn a filter back on to see more.</div>'}</div>
+      <div class="cards">${items.length ? items.map((a, i) => card(a, i)).join('') : '<div class="empty">Nothing matches these filters. Turn a filter back on to see more.</div>'}</div>
     </div>`}
 
     ${txBlock(c, seen)}
@@ -300,7 +302,7 @@ function render() {
     const done = ok => { const m = p2.querySelector('#copied'); if (m) m.textContent = ok ? 'Copied. Paste into a sheet.' : 'Copy blocked here; select the table and copy.'; };
     try { navigator.clipboard.writeText(tsv).then(() => done(true), () => done(false)); } catch (e) { done(false); }
   });
-  bindTx();
+  bindTx(); bindCopy();
   const rm = p2.querySelector('#reachmore'); if (rm) rm.addEventListener('click', () => { state.reachAll = !state.reachAll; render(); });
 }
 function speakerCard(company, name, role) {
@@ -468,7 +470,35 @@ function bindTx() {
   }));
 }
 function rank(a) { return a.outcome_kind === 'quantitative' ? 2 : a.outcome_kind === 'qualitative' ? 1 : 0; }
-function card(a) {
+/* ---------- copy an artifact (everything that was said) ---------- */
+let CUR_ITEMS = [], CUR_CO = '';
+function artifactText(a, co) {
+  const L = [];
+  L.push(a.artifact);
+  L.push(`${co}${a.type ? ' · ' + (TYPES[a.type] || a.type) : ''}${a.serves ? ' · ' + (SERVES[a.serves] || a.serves) : ''}${a.for_whom ? ' · for ' + a.for_whom : ''}`);
+  if (hasOut(a)) L.push('', 'Outcome: ' + a.outcome);
+  if (a.outcome_later && a.outcome_later !== a.outcome) L.push('Later in the episode: ' + a.outcome_later);
+  if (a.artifact_paragraph) L.push('', a.artifact_paragraph);
+  if (a.why) L.push('', 'Why they built it: ' + a.why);
+  if (a.how_it_works) L.push('', 'How it works: ' + a.how_it_works);
+  if (a.quote) L.push('', 'What they said: "' + a.quote + '"');
+  if (a.outcome_later_quote) L.push('', 'What they said about the result: "' + a.outcome_later_quote + '"');
+  L.push('', `Source: ${a.person ? a.person + (a.role ? ', ' + a.role : '') + ' · ' : ''}${a.show} · ${a.episode}${a.date ? ' · ' + a.date : ''}${a.link ? ' · ' + a.link : ''}`);
+  return L.join('\n');
+}
+function copyText(text, msgEl, okMsg) {
+  const done = ok => { if (msgEl) msgEl.textContent = ok ? okMsg : 'Copy blocked here. Select the text and press ⌘C.'; };
+  try { navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+}
+function bindCopy() {
+  p2.querySelectorAll('.cardcopy').forEach(b => b.addEventListener('click', () => {
+    const a = CUR_ITEMS[+b.dataset.i]; if (!a) return;
+    copyText(artifactText(a, CUR_CO), b.nextElementSibling, 'Copied.');
+  }));
+  const all = p2.querySelector('#copyall');
+  if (all) all.addEventListener('click', () => copyText(CUR_ITEMS.map(a => artifactText(a, CUR_CO)).join('\n\n----------\n\n'), p2.querySelector('#copyallmsg'), `Copied ${CUR_ITEMS.length} artifact${CUR_ITEMS.length === 1 ? '' : 's'}.`));
+}
+function card(a, i) {
   return `<article class="card">
     <div class="tags"><span class="type">${esc(TYPES[a.type] || a.type)}</span>
       <span class="tag s-${esc(a.serves)}">${esc(SERVES[a.serves] || a.serves)}</span>
@@ -486,6 +516,7 @@ function card(a) {
     <div class="src">${a.person ? `<span><b>${esc(a.person)}</b>${a.role ? ', ' + esc(a.role) : ''} · attributed because: ${esc(a.attribution)}</span>` : `<span>Speaker not identified (${esc(a.attribution)})</span>`}
       <span>${esc(a.show)} · ${esc(a.episode)}${a.date ? ' · ' + esc(a.date) : ''}</span>
       ${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">Episode page</a>` : ''}</div>
+    <div class="row-actions" style="margin-top:0"><button type="button" class="linkbtn cardcopy" data-i="${i}">Copy</button><span class="note" aria-live="polite"></span></div>
   </article>`;
 }
 
