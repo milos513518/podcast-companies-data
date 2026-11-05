@@ -1,0 +1,463 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 741: Sahil Walia on Schema Changes and Data Migrations
+DATE: 2026-10-07
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/10/se-radio-741-sahil-walia-on-schema-changes-and-data-migrations/
+AUDIO: https://traffic.libsyn.com/secure/seradio/741-sahil-walia-schema-changes-data-migrations.mp3?dest-id=23379
+DURATION_SECONDS: 2809
+TRANSCRIBED_AT: 2026-11-04T02:44:34Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. For Software Engineering Radio, this is Robert Blumen. My
+guest today is Sahil Walia. Sahil is a Senior Technical Architect at Snowflake. He has published on
+Data Engineering and Artificial Intelligence and is a previous guest on the podcast in Episode 736,
+which covered Apache Iceberg. Sahil, welcome back to Software Engineering Radio. Thank you again for
+having me, Robert. Super excited to be here. Well, I'm excited because we're going to be talking
+about schema evolution. Before we talk about evolution of schema, what is a schema? And is that
+something that is only associated with databases or more broadly? Sure. I think that's a good
+foundational concept. A schema is basically the agreed-upon shape of your data. To put it simply,
+what fields exist, what type they are, what rules they follow. So I would think of a schema in the
+technology world as a blueprint that both the writers and the readers can rely on. When I talk about
+the writers and the readers, I mean writers writing an application and reader reading from a schema.
+So in my mind, when I think about a schema, it should answer three core things, right? Like what
+fields exist as part of that and what type is each field and if there are any invariants it must
+hold. So for example, it should certain columns be null or should certain columns be unique, those
+kind of things. So another context for my knowledge is that schema comes from relational databases,
+but this concept as such is universal to answer your second part of question. So any system where
+the structured data crosses the boundary, say between services, the storage layers, or even teams, I
+would consider it as a schema. Even the files have schema and we can talk further about it, whether
+it's declared or not. And another analogy I think about is just to keep myself level set is like a
+type signature for a function. It tells you what kind of data goes in and what comes out like as
+part of a return of that function without specifying the behavior as such of that. It sounds like
+your definition is broad enough that it might encompass both data at rest and data in flight. For
+example, an API is a type of function that has inputs and outputs. Would you say that an API has a
+schema or is a schema? Very good questions. So an API has a schema, but I won't say other way
+around. So let me put it a little bit more clearly. As an example, a parquet file has a schema, but
+it's not an API. A database stable would have a schema, but the API is SQL itself. So the way I
+would segregate them is a schema just talks about the shape of the data. While the API can expand
+beyond like the shape of the data, the operations it can do, the behaviors, those kind of things.
+And to put it more concretely, so let's say in the world of API, that's the exact question you put,
+right? So let's say you're doing a post operation on something. You are posting the JSON body and
+the system will respond with a 201 if it is created or 409 conflict for some reason, right? Now, in
+the world of schema, say the JSON body must contain, right? An ID as an integer or a name as a
+string. But if that is not met, the systems break, right? The systems receiving that information,
+systems pushing that information, the contract breaks. So the way I think about it is the API covers
+what you can do and how the systems respond, right? While the schema would cover just the shape of
+the data. So that also makes me think that there are instances wherein a schema might also be
+embedded in an API. I don't know all the technologies, of course, but I know GraphQL is one, right?
+Where schema is the API, right? So what did in the .graphql file, what happens is it has three
+parts, query, mutations, and I think the last one is subscriptions. It defines the data shape, like
+what it can hold and how it should hold and the operations like it can do. For example, what data
+can be fetched and those kinds of things. So it's a combination of both. But those instances are not
+a lot that you generally just see APIs or generally see the schemas. I use a CLI, for example, AWS
+CLI or GitHub, which can often return very lengthy documents. And I am relying on the schema so that
+I can parse information out of that document reliably. Correct. That's absolutely right. You are
+relying on that schema for you to parse through. So a lot of CI pipelines you see, it has a set of
+response types you expect, right? So say you are issuing a command, you expect certain type of log
+to be emitted. And based on that certain type of log to be emitted, you can parse it. And parsing
+that information allows you to do your own observability or maybe do some actions on the next steps.
+I recall when certain NoSQL databases started becoming popular, one of their claims was, this is
+great because it's schemaless, by which they meant you don't have to deal with very strict
+enforcement policies that a relational database typically has. But are databases or the applications
+built on these databases truly schemaless? The answer is, I would say schema flexible or schema on
+read. So say in the old world, OLTP systems, you used to have schema on write. As a refresher,
+schema on write is when you're writing a lot of things getting checked. And schema on read is
+essentially when you're reading it, right? So what happened was, what schemaless actually meant in
+practice was the database engine wouldn't enforce the structure at the right time, right? So you can
+write anything. So for example, in the first transaction, you will do as an end part of a JSON blob,
+name and age as two components, and then do another insert with a name and an email. Notice that age
+and email don't match, right? But when the consumers are reading in every application that reads it,
+the burden goes towards the right, how the data flows, right? So the data expectations about its
+structure, like those expectations are the schema and they just encoded in the application rather
+than the DDL. So if name doesn't exist in the example I just gave, you get a runtime crash, right?
+Unless that is an expected behavior, right? So that's how I'm thinking about it. The further right
+enforcement will move, right? The later you will discover problems. And that's why recently, in the
+last few years, you have been noticing shifts left because it just makes you more reliable
+applications. So it's a matter of where do you want to sustain the complexity of ensuring your data
+is invariant? Absolutely. I would agree with that point. And it also varies on what kind of team you
+are, right? So as an example, if you are a data team or a data lake team, you want to make sure you
+capture all the data, right? But if you're a consumer team, you don't really care about other noise.
+You want to make sure you only get what you need, right? So that's why there are layers that come
+into picture when you try to clean it up and make sure you only see what data you want and also have
+an ability to dump information and be more metadata rich. The main topic we're going to cover is
+schema evolution. Why do schemas change? That's part of evolution, right? That's a very good
+question. And the reason this changes, the very, very, very basic, the business changes, right? I'll
+give you an example. Now you have an application that is running, but there's a feature set
+requirement. And the feature set requires that you include additional columns, right? So that
+business requirement may change. So sometimes it also may be compliance, right? So now you are in
+this business based out of US, but now you're going to expand in EU. They want you to have
+compliance columns, say created at, modified at. So you have to accomplish that by adding the DDLs.
+But those don't really create a problem because those are additive. I can talk about it. And another
+thing is like, for example, you are having an integration requirement. So now let's say a downstream
+consumer needs the data in a different shape. With a lot of AI, the ML pipelines, they need
+features, the analyticals and schemas that don't expose. And another reason I have seen is you are
+just solving for mistakes. And it doesn't mean you're solving for mistakes that were done
+intentionally. It's just that the logic has changed. For example, in one of my previous projects
+that I worked was related to accounting. When the accounting standards change, the way you report
+data also changes. So you need to evolve for those use cases. In the podcast, we have covered a lot
+about APIs. And this episode is going to focus more on schema where you have associated data. You
+proposed a topic to me, Sahil, is schema evolution. If you have a lot of data, you might have to
+migrate the data. Is schema evolution and data migration, are those inherently the same thing? Or
+are they different things that you might do one and not the other? Yeah, I would put them
+separately. But as part of migration, you sometimes do schema evolution just because you want to
+make things right. So let's start with data migration first. So the data migration is ideally done
+when you're moving from a legacy system or a new system or you want to deliver something which meets
+your new requirements. And schema evolution, as we did discuss, spans from multiple reasons. Just in
+your existing system itself, you're not changing anything. You have to just do schema changes just
+as the business requires. So to put it simply, now coming back, in case when your schema changes, do
+you need to migrate data? I think that's an important question. So in that case, sometimes yes. So
+for example, if you're changing a column and it's a bigger change. For example, you're changing
+integer to a text. In Postgres, if you're doing that, it will require your full table rewrite.
+Right. And let's say you are adding a column with the invariant not null. Previously, it was not
+there. Now it is. Now the whole table has to comply with that constraint. Right. Another one example
+I would say is you want to split one column into two. So usually you see that full names being split
+into first name, middle name, last name. Right. So in those cases, when you're doing schema change,
+in my mind, you need a migration. And there are scenarios which are like standard scenarios where
+you don't need to do any schema changes are essentially, you know, like you're just adding a
+nullable column. Right. Because you're adding a nullable column, it doesn't require to do a lot more
+computation at the backend and it doesn't require any schema changes. And similarly, if you're
+renaming a column. Right. And I'll say caveat with that is some files handle it differently versus
+others. So in most modern systems, if you're renaming a column, you don't have to do the whole data
+migration. So the thing that matters is whether schema changes, whether it requires touching the
+existing data. Right. So if that is not being touched, no migration is generally needed. What about
+if we're going to add a new table? Clearly, that doesn't disrupt existing data. But if I also now
+want to add joins to that table, maybe I do need to fill it up with some data before the system will
+work properly. In that scenario, yes. When you populate a new table, you want to make sure it's
+essentially a new initiative or a greenfield initiative, I would say. You're populating that table.
+But the existing joins or the existing views or existing table definitions which are being created
+needs to expand as well for the logic change. Right. So that has to be considered. What are the main
+challenges of schema migration and especially with larger data sets? Sure. Well, usually it depends
+on what kind of changes are breaking versus non-breaking. If it is a breaking, it's high stakes if
+it is in production. So you can have data loss, right? Let's say you drop a column. I know one of
+the cases wherein one column had less than 2% of the values populated and it was initially assumed
+those don't bring value, but later it was realized when it was dropped and everything, there was no
+backup of it, that it was a relatively important one because some of the downstream jobs started
+breaking. Right. So you can have data loss. Let's say if you drop a column, that's kind of a schema
+change you're removing. Let's say if you're doing a type narrowing. So previously you had big int,
+now you have int. Your data is getting truncated, but no one is basically getting to know. It's kind
+of that behavior. Another thing is, I also alluded in my previous example is the consumers break. So
+in example, you would say is, oh, we want to standardize the business columns naming and you do that
+initiative and you change, let's say, user underscore name to username. That was an easy fix on your
+side in terms of DDL, but that now downstream is breaking. The Power BI reports are breaking. So
+those are the things that can happen. And another thing I've seen is silent corruptions, right? So
+let's take an example. You were previously reporting in the dollars, USD. Now you're reporting in a
+local currency. Even though schema did not change, the definition did, right? And it kind of broke
+the whole logic or created the corruption. And the last thing I would say is, when you do alter
+table on a large table, let's say in the OR Postgres, it requires an exclusive lock. And what
+happens is when you're doing that alter, it blocks all the region, right? So if it is a large table,
+you're basically having a downstream impact that other teams can't read or write. There is another
+set of challenges I'd like you to address have to do with availability. Either system cannot
+tolerate downtime, or the data set is too large to do the migration during available downtime, or
+the situation you mentioned just now where you can't have an exclusive lock on a table without
+essentially creating downtime. What are the challenges around availability? The short answer is,
+again, it depends. But the challenge is, you want to make sure all the consumers are not getting
+braked. And the application that is feeding or populating a table is also able to populate it,
+right? So the key challenge is, you do not want any performance declaration, you do not want any
+slowness, and you'd want all your user behavior to be same. So what you can do is, I mean, those are
+the solutions I'm going to talk about is like, what you can do is, you can have parallel run jobs,
+and one is feeding the another one. And while the other one is, other table is getting fed and being
+read from, you do the schema migration, and it's called blue-green swap, and you swap the tables
+once it's ready. And the other things that we do, like kind of replication, make sure you have
+multiple copies. So anytime we do a data migration or any schema migration, you have to account for
+those things, depending on what kind of change it is, like how high severity of the change it is.
+One of the themes in your proposal on this topic was safety. We are going to talk about that. And to
+some extent, we've already been talking about that. Is there anything else that can go wrong that
+you haven't covered? One thing that I did not cover is, and it's not technological, but more in the
+terms of business, when you are a person working with the schemas, when you are delivering data or
+delivering applications, you have not only the logical boundary, but you also have a trust boundary.
+So if you're delivering applications which do not deliver trust or reliable data or deterministic
+data in technological terms, you lose that, right? So you want the schema change. You want these
+things to happen in the most anticipated way. You do not want it to happen in unanticipated ways.
+And you want to make sure that you are being trusted with what you are delivering. And I've seen
+teams' trust being lost just because their schema changes were not handled properly. Can you recall
+any stories or incidents you're involved with that illustrate that in a particularly compelling way?
+Sure. I can talk about one of the examples. So I was working on the Hive migration. And in that Hive
+migration, we were moving data for the claims. And when we were moving that data for the claims, the
+way Hive files work is they are by name. So you have three columns, as an example, as I was talking
+about, name, email, and let's say age. And without going into claim details very much, so what
+happened was one column was dropped in between. So the position ID got transferred to the left
+column. And for the sixth month, the data was being fed from the wrong column in the Hive. And when
+that was realized, since it's a medical record and everything, they had to involve multiple teams to
+mitigate everything that we didn't expose anything and those kind of things. So that is where you
+kind of lose trust. And you want to make sure that you don't make these mistakes. And these are
+dangerous mistakes. And that's why this requires proper planning. In an industry where demand for
+verified skill has never been higher, prove you have the foundation to deliver results with the IEEE
+Computer Society's new software professional certification for emerging professionals. Give your
+career the head start it deserves. Visit computer.org slash certification today. We've been now
+talking about what can go wrong in relation to this idea of safety. What is your definition of
+safety in data migration? Sure. First of all, any data migrations, either small or large, should be
+thought from the perspective of the impact. Some of the things are pretty easy to answer. As an
+example, if you're adding just one column, that is relatively safe. Meaning even if you have
+downstream customers, even if you have anyone adding data to it, even if they don't know the new
+column exists, the risks are low. If they don't discover it, that's okay. If they discover it,
+that's perfectly fine. There are other risks with that. Let's say if you have a sensitive data, but
+it doesn't break anything. So in safe perspective, my mind says it has to be additive, meaning you
+only are adding new things. It should be backward compatible. Nothing that is using the older
+version should fail, right? So I'll give you an example. So let's say if you are adding a new field
+with a default, or let's say the previous example I gave was the other one, wherein you had the type
+not widening, but the other way around. But let's say if you're just doing type widening from int to
+long, float to double, those are the things that don't impact. So they are safe because old data
+still reads correctly and the old consumers would still work. And no one has to be told like, oh,
+hey, the data got changed. Now you need to think through how your application will behave. So those
+are the buckets I'll consider safe in that blast radius. Is this a classification and we have
+possibility of both safe and unsafe migrations? Or is this a standard and you would hold all
+migrations to this standard and you would re-engineer the way you do the migration in order to
+ensure that it's safe? I put the schema evolution as one of the key criteria or the super high
+criteria when moving the data from one system to another, or even for just changing the schemas.
+Just because the level of impact it can have. It can become dangerous. So say if you're silently
+changing one DDL and you have a Git PR coming along your way and you have like, let's say 10 files
+to review and one file is a DDL, which is changing from let's say float to text. Float to text may
+make sense and you're just approving it. It may have the downstream impacts and how downstream
+systems may feel, right? So in my mind, when you're doing a dangerous things, these are removing a
+field. Renaming a field and making optional field required. So the art of scheme evolution is making
+the safe category as large as possible in my mind. So when you talk about the design pattern, the
+design pattern has to be inherently safe. So I'll talk about iceberg and I want to talk about
+iceberg as well. And that's what makes it great that it's inherently safe by convention, right? The
+way it is structured, you have very less leverage that you make things bad. Let me ask this question
+in a different way. There are necessarily going to be times where you want to do something that is,
+by your definition, unsafe, like removing a field or it's destructive. If you did it in place on the
+same table and it's irreversible. Now, would you say in order to avoid an unsafe migration, we're
+going to have a new table or we're going to migrate all the data onto a different server through
+replication and do the schema translation in flight? Or is it a case by case basis where you say
+this is unsafe, but we accept that risk? So it depends on the consumers, the risk appetite and what
+they're using. But in general, there are three principles I go by, right? I would first of all think
+about I don't want to break the readers. I only want to make additive changes. Second is using the
+stable identifier. So let me touch a little bit more about stable identifiers. So there are
+technologies wherein you don't have stable identifiers. So to put it a little bit more plainly, say
+a field number one has an ID, but field number two also has ID. Field number three also has ID. So
+now when you delete the field third, third field and add a new field, it won't take the field
+third's place. It will come into the field. It will be called field fourth and field third is frozen
+in place, right? So by which you created a stable identifier for that column. And now that stable ID
+is permanent. So if you do anything, it makes that safe. And another thing that I do is validate
+before deploy, which is you must have seen in the CI pipeline and everything. You have schema
+registries, the CI lintings, right? The idea is to catch those breaking changes before they reach
+the production. So I'll give an example of protobufs, right? In protobufs, what happens is you have
+field numbers, the one I was talking about, and you have reserved declaration. As soon as you delete
+it or you want to make it reserved, you mark it as reserved. Similarly, in Avro, it has both ways,
+right? It has a compatibility modes, backward compatible that you can choose when you're configuring
+your application forward or full. And I can talk about it, right? So what essentially it means is
+you want to make sure which side it is compatible, reader side or the writer side. Another thing is
+you do API versioning, right? In APIs, you might have seen that, oh, I'm using the version one of
+the API versus I'm using the version two of the API. So version two might have more features but
+also have more changes. That's how you can do it, right? And you can have new fields exist but only
+populated when the new features are enabled that I was talking about. Those are essentially
+additive, doesn't create a lot of problem. And readers kind of tolerate that missing data if they
+don't care about it. So by stable identifiers, did I understand that? The same row will have the
+same ID fields through its entire lifecycle from one migration to another. And once a value, let's
+say values 107 has been used as an identity, that value can never be used for another identity
+later. It's always, it's unique over all time. Did I understand that correctly? Within the context
+of that technology, right? So in that column. So let's take an example of Iceberg, right? Iceberg,
+as an example, maintains its metadata. That is monotonically assigning the columns as field IDs,
+right? And it maintains that metadata and it also have the parquet files which maintains its own
+metadata. We'll come back to that. So every column will have its own field ID. That will stay
+constant. So tomorrow, you rename it. It doesn't matter to it. It's the same field ID. Tomorrow, you
+swap the fields in order, like ordinal positions. The field ID stays constant. Because you broke the
+link between the name and the ID, decouple them. That makes it a lot more safer when you're doing
+schema changes. And those breaking patterns don't happen. I may have misunderstood then and I
+associated the durable identity with the row, but it's the column that has the durable identity.
+Correct. Okay. We will talk about Iceberg. One other area I wanted to touch on is the different
+strategies. If you can have downtime, you take the system down, you migrate, and you bring it back
+up. Versus either the system will not tolerate any downtime from a business standpoint, or the data
+set is simply too big to migrate during any reasonable amount of downtime. So what are some of the
+challenges with systems that have to migrate data and cannot go down to do so? So that's a very,
+very important question. And I think I want to address it in a few aspects, right? So just like in
+data terms, we have two concepts, essentially, consistency and rollback, right? So let me peel that
+a little bit for the audience who is not aware. There should be a logic in place so that says
+consistent reads remain accurate even when data is temporarily drifting amid migration, right?
+Query, you don't want to hit it with the old format and the new format, right? And the rollback is
+essentially it gives you the plan for idempotency. The idempotency in simple terms, if I'm pressing
+the elevator up one time, it always behaves the same, right? So if a migration fails partway
+through, you need to be able to safely retry without corrupting what's already migrated, right? Now,
+another thing, let's talk about locking. When we are making changes on a table, let's say at a
+petabyte scale, which has a lot of workloads, as soon as you do alter table, it will require those
+logs. Even if you did not plan for a downtime, you just landed in a downtime, right? And those are
+the things your teams need to be aware of and when planning and doing everything. Another thing is
+throughput, right? So let's say you have, let's say, I would say 10 TB of data, right? And you're
+moving at, let's say, 200 megabytes a second, during which time your table is still growing. Your
+team still needs to consider whether that migration will ever catch up to the live rates, right?
+Because your data is just so much. And then another thing is testing. When you have a petabytes
+migration on your servers, teams should also be thinking about the fact that the staging
+environments do not have the realistic data volumes. So what I generally recommend is have a QA
+environment, the copy of production for these kind of things to do the testing upfront, to do the
+workload testing. And those are the challenges that you should be thinking when you're moving on a
+live system, doing migrations on a live system without hampering things. Now, we did a previous
+episode with you about Apache Iceberg. It's an area where you have great expertise. What are some
+either use cases or lessons learned or design patterns? You can go however you want that apply these
+concepts to Apache Iceberg. Absolutely. So for listeners who are not aware, Iceberg is the open
+table format. And it's a spec for organizing, you know, the parquet files in object storage. So they
+behave like a reliable analytical table. And it is very much a metadata rich ecosystem. You maintain
+a lot of data about your data. So another thing that is very good about Iceberg is that it is safe
+by construction. So what I mean by that is when we are talking about millions of parquet files
+across thousands of partitions, rewrite everything approach to schema change may mean like
+reprocessing petabytes of data, right? So as I was talking in the previous section, in Iceberg, what
+happens is you have field IDs as part of your metadata. And those field IDs stay constant as your
+data evolves. Even if when your data is changing, your field IDs will stay constant. So anytime any
+change happens, those field IDs will not change. Another great thing about Iceberg is that it's
+generally additive in nature. To put it simply, let's say you have been doing engineering for 15
+years on that particular application, right? And your columns move from 20 columns to 35 columns.
+You do not have to plan going back to 15 years to think of how I make things better, right? So what
+Iceberg does is it enriches the data it has or reads the data it has based on the files it has. So
+let's say from today, I have 35 columns. And for these 35 columns, I have a rich metadata as of
+today, the partitioning scheme as of today. But for the past, let's say, five years, there was 20
+columns. It will have metadata related to that. And it will try to render you information when it is
+read by an engine. So it's very much safe by construction. So any renames you will do, those renames
+are just transparent to you because it's a metadata operation only, right? Any dropping of the
+column you're doing, it's again a metadata operation. Any column reordering you're doing, again,
+like metadata change only because the projection is using the field IDs. Now, if you're trying to
+do, let's say, making a required field an optional, right? And you're widening the type. Again,
+these all are metadata driven. I know I've been singing praises, but I also want to contrast a
+little bit so that the audience understand where we are coming from, right? In the hive world where
+people are usually coming from, columns usually map by position. Like at what position a particular
+column exists. Like let's say ID, name, email. And now you have a new schema where you have a ID,
+name, email, text. So that new text creates a problem. Or if you remove something, let's say you
+drop a name and the position shift, your positions become irrelevant. So those create a lot of
+issues. It's only now hitting to me as you discuss this that many of the relational databases are
+row-oriented. Many of the schema changes, we're talking about, affect columns. If you drop a column
+from Postgres table, you do need to change every single row. Whereas in a column-oriented database,
+even in the worst case, you have to reprocess an entire column. It's still limited to that one
+column in the storage. That's precisely right. And that's the advantage of the column in our
+storage, right? And that's why industry is moving toward that. Industry has, industry is still
+adopting to it. There are still very good use cases when the row-oriented layer matters. And we did
+discuss in the past episode too. But I think that your directionary right is that the columnars
+provide you just more safe by construction design, more shift to left, as we discussed a little bit
+ago, architecture wherein we can make things structurally correct on the left-hand side of your data
+pipeline rather than on the right-hand side. And you still get a lot of flexibility because you get
+a lot more metadata and you get a lot more things that you can edit by multiple engines. Do you have
+any real enterprise computing scenarios where schema evolution was a critical factor in a migration?
+I think we did discuss a minute ago about one of the customers where the trust was lost, but I can
+touch a little bit more about in the detail. So I was brought in to help migrate a large healthcare
+analytics platform. And that was from Hive to Iceberg. And to go into a little bit of detail, it was
+about five years of historical data partitioned by year and month. So when I started to look at the
+data, something just didn't add up, right? The claim status column was already null. And I'm like,
+why? It doesn't make sense because claims have to have a status, right? Either it is being
+processed, under-processing and those kind of things. And the years of data were just like, no,
+blank. And the column we identified was not marked as required null, like the invariant, right? It
+should be not null, right? And those were the gaps I tried to identify. And my mind goes, am I just
+not getting it right? And the team told me like, oh, we had a backfill issue. But I couldn't
+reconcile what they really meant, right? And I looked into the, I think it's called the claim
+processing date. And I was getting strings like, oh, it's paid. And that made me think, why do you
+have a claim date said paid or denied? Those look like a status. So we had to personally inspect the
+parquet files and bypassing the hive. And we identified the problem. The actual problem, as we just
+discussed, was it was mostly positioning of the hive fields. And when the data moves, the schema
+moves, it basically messes up. So now coming back to the story is that we made a decision as part of
+a different engagement. We will come in and move the infrastructure out. Anyways, Hive had its own
+challenges, right? So what we wanted to do is we want to move everything from Hive, outside of Hive,
+to something which is in the system, like, for example, Iceberg, right? So Iceberg made a permanent
+fix there because we had field IDs. And those bugs that we were dealing with were like structurally
+impossible, right? And if you want to do any dropping of the column, add of the column, reorder of
+the columns, you can do all day long, right? So that's how we handle it. But the theme here is, I
+would say, is if you see not technical, but more planning. Even coming out of the technical world,
+more planning and more understanding of your architecture, who your audience is, who is consuming
+this. Do you have a proper team in place to understand any changes you are making, are breaking or
+not breaking? Any release you are doing, do you have proper CI pipelines testing these, right? So I
+would say those are way more important. Then schema change just becomes trivial, right? If you have
+those planning things in mind. So we only talk about these stories because these are happening, but
+we never talk about the stories which just go smooth, right? Because they are not entertaining. So
+when you plan things properly, I think things go just fine. Yes, it is very common in this podcast
+that we ask questions about what went wrong. Which are very important, but it's also important to
+take away lessons. So the next time you do it, it's very smooth. I agree. I see the point you're
+coming from, wherein everyone should understand both the sides and evaluate and make decisions
+accordingly. And the best you can do is understand the business as well as understand the
+technology. The more you understand the combination of the business, the technology and the impact,
+the better and the reliable the applications that you're working on will be. Would an example be
+there's a particular field and you evaluate, we need this to be correct, but that field is only used
+in a report that we run once a month. So if we get it wrong on the 14th, we have 14 days to fix it
+versus another type of change where if it fails, nobody can place an order and you're out of
+business. Precisely, yes. And with the problem you just described, right? And the business impact is
+just so high. And say you have 14 days to make a change and you're just making change to one column,
+which is getting barely used. 14 days is still a lot to plan around and do everything before things
+hit the production, right? But the things that we did talk about is when you're doing a live
+migration, you have to be very thorough. You have to think through the locking aspects. You need to
+make sure your readers are reading. You have the idempotency figured out. And those are the things
+which you just can't mess up. You don't want to win the news. I want to go in another angle for
+these last few minutes. When you gave the reasons why a schema migration is necessary, you talked
+about the business changes. Another reason you didn't mention could be that a team has adopted agile
+development. We're going to look at schema as the same way we look at other code. And we're going to
+break this development up into sprint iterations. And each iteration, the schema might change. Even
+if we knew it all in advance, we're still doing things incrementally. We're talking about most of
+this hour situations, which are high cost, high risk, such that you really only get one shot at it.
+We're not going to do a multi-petabyte migration every two weeks. But not everybody has petabytes of
+data. And there are applications where the ability to do migrations frequently at low cost would be
+the right path. What are some frameworks or tools that have tried to make migration more like a
+built-in feature that you just do, and it's not much different than a code change? Well, there are
+several frameworks and technologies I can talk about, right? And one of the framework is schema
+change when I'm a contributor and a collaborator there. It's called a schema change. It's within the
+world of Snowflake. It's a database change management tool. It lets you create your files as
+versioned files. So what it means by that is every file you create has a version to it. So let's say
+you're working as an agile team, as you just mentioned, Robert, and you created, let's say, version
+1 of the script. So you will say version 1 and the file name. Now, suppose something changes
+tomorrow. You want to make a newer version. You maintain that version 1 and you do version 1.1 and
+then the file name. What it does is it, in the back end, compares the hash and populates, runs the
+newer file and alters the table, by which the team is getting visibility how data changed over the
+years. So that's one, right? And in that case, you can do a lot more other things as well. Don't
+want to go into details, but the simple summary is you can have subscript.run always and you have
+subscript.run on the repeatable side, right? Another thing that you can do is, for example, it's
+called read repair. The core idea is, say, you're migrating profiles from Postgres to DynamoDB.
+Let's take an example. And when a user logs in, you check DynamoDB first. If they are not there, you
+pull the information from Postgres, okay? Postgres is your old system and transform it into a new
+shape and write it to a DynamoDB. So what it is doing is data transformation by demand, if you think
+through this, right? And for example, in dormant accounts, they just still sit in the old system
+until the system background process moves it, right? Another thing I've seen is double writes. This
+is where your application is writing to both the old system and the new system simultaneously,
+right? And this is where you need reliability and everything. And you might have also heard about
+the logical replication. And you will write ahead logs in Postgres or bin log in MySQL. So what it
+essentially does is, it maintains a log of transactions and keeps storing it. And you replay the
+changes into a new system when the new schema in the real time, when the old systems keep running
+normally. So essentially, zero application core changes. So you typically would employ it while
+moving between database versions, right? So that's how I'll think about it. The schema change is
+very much, again, just before I wrap it up, very much limited to Snowflake. There are tools which
+are industry-wide, for example, Flyway, that you can use agnostically against multiple platforms.
+The techniques you mentioned, read, repair, double writes, and replaying the log. I can see how
+those would be applicable in an agile situation where you have frequent schema changes. But I don't
+think they're limited to that. Those are general-purpose tools that could also help you with a very
+large migration simply to avoid downtime by enabling the application to continue to work while a
+migration is taking place. Oh, absolutely. Absolutely. I totally agree with you. And with that
+point, right, I think schema change and Flyway are one of the more... That's why I started with
+those. Those are the more right fit applications for you. And in general, I would say if your
+data... If you're an agile team, that's great. But if your schema is evolving very often, it also
+means that your business processes are lacking something, right? Either you are being fed a lot more
+requirements quite often that you have to change schema, right? That creates a lot more problems, a
+lot more planning for your team, or either you just work in a dynamic environment, but it just
+doesn't make sense, right? So another thing I would say is schema change, if it is additive, it's
+not a sign of a bad business process, right? Just because your business is evolving, you want new
+columns, that is never a problem. I've seen that happen a lot of times. Every sprint you are adding
+new columns, that's okay. But if it is the material changes you are doing, then it's a problem. The
+easiest schema change is the one you don't do. Do you advise teams you work with to model out ahead
+based on where they think their business is going with the goal of avoiding needing to change it
+later? I personally wouldn't. The reason I think through this is if you have additional columns,
+those are great, even if those are null, but they bring their own challenges. You would rather deal
+with schema changes being a little bit broken than the governance failing. So let's say you created
+100 columns first, but only need 20. And later on, those 80 got populated, which you didn't plan to
+use, but the governance on them is not applied properly. The masking is not applied. And it starts
+feeding into it. Other teams can use it. In my mind, that is a risk that it creates. So I would
+rather go with six months ahead planning, like do a PI planning. This is what I want to do and those
+kind of things. But plan ahead rather than just bulk loading a lot of columns. As we wrap up, are
+there a few key takeaways for listeners to approach a schema change? Sure. I think we did discuss
+during the conversation, but the cue of the for any schema change, I would always start with asking
+if it is additive, right? If it is backward compatible or if there's any coordination needed or not.
+Because if you can answer those questions simply, in my mind, they are clearly safe. But if it is
+anything which is dangerous, like, for example, you are doing any breaking changes, you require the
+consumer updates. Those in my mind, I would say proceed with caution. So what coordination is
+required? What blast radius is? You need to think through this and plan with your team how to solve
+for this. Similarly, if you anticipate there are a lot more columns that are getting changed. A lot
+of do you have the right technology in place? Are you using the right technology? Are you having, is
+your data state right? So again, this world is wide. In terms of technology, you can be using JSONs,
+you can be using proto files, you can be using Avro files. So I can't make a generic answer. But
+what I would say is make the architectural patterns safe category as large as possible. And avoid a
+schema migration by just planning or just being making it additive. And use stable identifiers. Each
+technology has stable identifiers. So I just gave an example of iceberg. But in your technology, I
+would say look for that. What technologies provide for stable identifiers like field IDs or the
+field numbers, right? So you can prevent all schema changes from being risky. But you can design
+systems where the risky ones are, you know, explicit, the coordinated and rare. Thank you, Sahil,
+for closing out the episode. Would you like to direct listeners anywhere on the internet? First of
+all, thank you for listening, everyone. I can be reached on LinkedIn. Sahil Valiya Syracuse is my
+handle. And I can be reached out on Medium. I have a blog post that I try to publish there. I try to
+keep writing on iceberg, the data world, where I'm very much interested in. Sahil, thank you for
+speaking to Software Engineering Radio. Thank you, Robert. It was great chatting with you. This has
+been Robert Blumen, and thank you for listening. Thanks for listening to SE Radio, an educational
+program brought to you by IEEE Software Magazine. For more about the podcast, including other
+episodes, visit our website at se-radio.net. To provide feedback, you can comment on each episode on
+the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening.

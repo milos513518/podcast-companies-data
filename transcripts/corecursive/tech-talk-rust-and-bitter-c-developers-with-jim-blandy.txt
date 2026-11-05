@@ -1,0 +1,570 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Tech Talk: Rust And Bitter C++ Developers With Jim Blandy
+DATE: 2018-05-16
+SHOW: CoRecursive
+LINK: https://chtbl.com/track/7D91G/traffic.libsyn.com/secure/corecursive/013_-_Rust.mp3
+AUDIO: https://traffic.libsyn.com/secure/corecursive/013_-_Rust.mp3?dest-id=628353
+DURATION_SECONDS: 3773
+TRANSCRIBED_AT: 2026-08-05T18:00:19Z
+----------------------------------------------------------------------
+Welcome to Co-Recursive, where we bring you discussions with thought leaders in the world of
+software development. I am Adam, your host. So it is sort of asking them to give things up. But the
+thing is, what you get in return is exactly this guaranteed memory safety, right? And this
+guaranteed freedom from data races. And it's just this huge win. Writing secure, performant,
+multithreaded code is very difficult. Today, I talked to Jim Blandy about Rust, a programming
+language that is trying to make this a lot easier. We also talked about why it's so hard to write
+secure code. Jim works on Firefox, and his insights into the difficulty of writing secure code are
+super interesting. I also asked Jim about Redbean Software, a software company that refuses to sell
+software at all. Jim Blandy is the co-author of Programming Rust, among many other things. Jim,
+welcome to the show. Hi, thanks for having me. Yeah, it's great to have you. I have your book. And I
+really hoped I would have made it a long way through it before I talked to you. But I can see the
+bookmark. It's about a quarter of the way through. Yeah, it ended up a lot longer than we wanted it
+to be. Oh, I don't think it's your fault that I haven't made it very far. What we had in mind
+originally, we wanted to do something that was more like, you know, K&R, like this slim volume, just
+covers exactly what you need. But basically, Rust is just, it's a big language that, you know, is
+trying to address the things that people need. And it ended up just being, we took a little while to
+cover that. Yeah, it's not a small language, I wouldn't say. Yeah. So what is Rust for? What is it
+targeting? Well, I mean, the funny answer is that it's targeting all those bitter C++ programmers
+who are sick and tired of writing security holes. Basically, Jason and I, my co-author Jason and I,
+we both have worked on Mozilla's SpiderMonkey JavaScript engine. And that is a big pile of C++ code.
+It's got, you know, it's got a compiler front end. It's got a bytecode interpreter. It's got two
+jits. It's got a garbage collector, which is compacting and incremental and generational. And
+working on SpiderMonkey is kind of hair-raising, right? Because Firefox, you know, even as one of
+the, you know, it's not the lead browser, we still have hundreds of millions of users. And that
+means that when we make a mistake in the code, we can expose just a huge number of people to, you
+know, to potential exploits. And, you know, and of course, you know, as, you know, when you're
+working in this field or, you know, and this is true, I think, of all the browsers, you know, you
+get the CVs, things get published, you find out about exploits. And so it really is very humbling,
+right? And so whether you are writing the code, which is going to go out in front of all these
+millions of people, or whether you are reviewing the code, right? You know, somebody has finished
+their patch and they flag you for review. You know, if you're the reviewer, you're sort of like the
+last line of defense, right? This is the last chance for a bug to get caught before it becomes, you
+know, becomes an exploit. And, you know, and you sort of, you sort of, you sort of get used to it.
+You sort of accept that this is the way, that this is the way things are done. And then you start
+working in Rust. I mean, I just was curious about Rust because the original creator of the language,
+Graydon Hoare, is a personal friend of mine. And we worked together at Red Hat. And Modern Rust has
+gone far beyond what Graydon started with. So I wouldn't say that it's his language anymore. But,
+you know, but I was curious. I've been following its development since the beginning. And so I was
+curious about it. And once I really started getting into it, I realized that this is systems
+programming, where I, as the programmer, am in control of exactly how much memory I use. I have full
+control over how things are laid out in memory. You know, the basic operations of the language
+correspond closely to the basic operations of the processor. So as a systems programmer, I have all
+the control that I need, but I don't have to worry about memory errors and memory safety. And just
+like I say, you know, when you're working on a security-critical C++ code base, like Jason and I
+have been, you sort of get used to it, right? And you sort of internalize that, like, this is just,
+you know, the standard that you're being held to is actually perfection, right? You know, because
+that's what it is, right? You know, the smallest mistake. And these people, you know, when you read
+about the exploits that people show off at Black Hat, it's just amazing, just the ingenuity and work
+and just blood, sweat, and tears that people put into breaking things is really impressive. You
+know, you've internalized that. And then suddenly you work in rust, and that weight is lifted off
+your shoulders. And it is like getting out of a bad relationship, right? You know, you just sort of
+got used to being, like, just treated badly. And then suddenly somebody is reasonable to you. And
+you're like, holy cow, I am never going to do that ever again, right? Right? Because it's really...
+And then the next thing is that when you get to work on concurrent code in Rust, right? Actually
+trying to use... Trying to take a problem and distribute it across multiple cores. Rust is
+constructed so that when your program compiles, once your program compiles, it is free of databases
+by construction. You know, assuming that you're not using unsafe code. And, you know, in C++,
+everybody thinks that their multithreaded code is fine, right? You know, everybody understands what
+a mutex is and how it works. It's not... The primitives are not difficult to understand at all. But,
+you know, then you end up getting surprised by what's actually going on in your code when you have
+to work on it. We had one of the engineers here at Mozilla. Firefox is a heavily multithreaded
+program. I think when you start it off, there's like 40 or 50 threads that get going. And, you know,
+there's... The garbage collector does stuff off thread. The JavaScript compiler will push
+compilation work off to a separate thread. We do I.O. Like, for example, when a tab is trying to
+write something to, you know, local storage, that I.O. is often pushed off to a worker thread and
+it's sort of handled asynchronously on the main thread. So it's a very heavily multithreaded
+program. So anyway, so we had an engineer here at Mozilla who decided that he was going to use
+T-SAN, the thread sanitizer tool, to look for data races, to actually look at our code and observe,
+you know, how well we were doing in keeping data properly... to keep data properly synchronized. And
+what he found was that in every case where Firefox uses threads, we had databases. Oh, wow. Not
+most, every single case. So, yeah, that's kind of astounding. So let's back up. So what's a data
+race? Oh, okay. So a data race is when you have one thread write to a memory location and then
+another thread reads it, but there is no synchronization operation that occurs between those two.
+That's not like nobody releases a mutex and the other person acquires the mutex. Or, you know, the
+write isn't atomic. Or, you know, there isn't like a sort of message sent, right? There are any
+number of primitives the language provides that ensure memory synchronization. And the reason this
+is an issue is an issue for two reasons. One is that whenever you have any kind of non-trivial data
+structure, the way they're always implemented is you have a method, right? Or, you know, or a
+function, just any operation on that data structure. And the method will temporarily relax the
+invariance that that data structure is built on. Do the work and then put the invariance back into
+place. For example, if you're just trying to push an element on the end of a vector, right, usually
+it will write the new element to the end of the vector and then it will increment the vector's
+length, right? Well, at that midpoint between those two operations, the vector's got this extra
+element that it's supposed to own, but the length doesn't reflect that, right? So there's this
+momentary relaxation of the invariance of the type that the length actually is accurate. Or even
+more so, if you are appending an element to a vector and the vector has to reallocate its buffer. So
+first it's going to allocate a larger buffer in memory. Next, it's going to copy over the existing
+elements to that new buffer, right? At which point there are actually two copies of every element,
+right? Which is kind of strange, right? Which one is the owning copy? Which one is live? And then it
+frees the old buffer and then it sets the vector's pointer to point to the new buffer and, you know,
+like that, right? So that's a more complicated operation where in the midst of this operation, the
+vector is actually in this wildly incoherent state, right? But by the time the method returns, the
+vector is guaranteed to be back in shape and ready to use again, right? And so when you have data
+races, getting back to data races, the problem with unsynchronized access is that it means that you
+have, you can have one thread observing the states of your vector or really of any non-trivial type,
+while it is in the midst of being modified by some other thread. And so whatever invariance the
+vector's methods are counting on holding in order to function correctly may not hold, right? And so
+that's sort of the language level view of things. But then modern processors, of course, add even
+further complication to the mix where each processor will have its own cache and although they do
+have, you know, cache coherency protocols trying to keep everything synchronized, it turns out that
+even Intel processors, which try to make fairly strong promises about memory coherence, it's still
+visible that each processor will queue up writes to main memory. That is, if you are one core on a
+multi-core machine and you're doing a whole bunch of writes to memory, those writes actually get
+queued up and reads on that same core will actually, you know, if you try to read a location that
+you just wrote to, it'll say, oh, wait, I see in my store queue that I just wrote to this, and so
+I'm going to give you the value that I just wrote, even though the other cores will not have seen
+those writes yet. And so the other thing that synchronization ensures is that at the processor
+level, the memory that you are about to read is guaranteed to see the values that were written by
+the processor that wrote to them, assuming that both have executed the proper synchronization. So a
+data race is a write to a location by one processor, by one thread, and then read from that location
+from another thread without proper synchronization, and it can cause a variance to be evaluated, and
+it can cause, you can encounter memory coherence errors. The hardware thing you mentioned is
+interesting, and maybe it's a bit of divergence, but so how does that work? So if there's writes
+queued up to like a certain sector or something, and you are reading from it, like, does it block
+until those writes go through? Is that what you're saying? Okay, so this is something that, so the
+processors change over time, and the different processors have different details about exactly how
+they do this. And so I'm not sure that I'm going to be able to accurately describe, like, current
+Intel processors, but this is as I remember it. What you've got at the basic level, you've got the
+caches that are communicating with each other about what they have cached locally. Like, for
+example, if nobody has read a particular block of memory, then that's fine, right? But when one core
+brings a particular block of memory into its cache, it'll actually mark that and say, okay, I've got
+this, but I haven't written to it yet. And it's okay for other cores to read that memory. And so
+maybe all the cores, maybe it's a big block of read-only memory, maybe it's, I don't know, maybe
+it's strings, static strings or something like that. And so all the cores can bring copies of that
+memory into their caches and then use it. However, before a core is able to write to a block of
+memory, it says, I need exclusive access to that. And it actually broadcasts out on this local bus
+for the purpose of this kind of communication and says, okay, all you other cores, I'm about to
+write to this block of memory. Please evict it from your caches and mark it as exclusively mine,
+right? And so all the other cores, they kick out that block from their caches. They say, we don't
+know what's in this block of memory anymore. Only that guy knows what's in it. So then that
+processor that's obtained exclusive access to that block of memory can do what it pleases, right?
+And then in order for the other cores to actually even read from that memory now, they have to go
+and get a copy of it back from or, you know, force the core that was writing to it to flush it. It's
+what it had back to main memory. And so then it goes back into the shared state. And so they call it
+the messy protocol. It's M-E-S-I, which is like, geez, I can't remember what it is. But like E
+stands for exclusive. There are four letters of the names of the four states that a particular block
+can be in. And E is exclusive access, which is when you're writing to something. S is for shared
+access. When it's actually just everybody has the same copies and everybody's just reading from it.
+And I think I is invalid where like somebody else is writing to it. And so your copy of it is bogus.
+So that's just keeping the caches coherent. But then the other thing is that writes are a lot slower
+than reads. And so each core has a queue of the writes to memory that it has made that it is waiting
+to write out to main memory. Right. And so if you do a whole bunch of stores, your store queue will
+get filled up with the list of these things going out. And if the core which has done the writes
+tries to read, then certainly it knows what the current values of things are. But the other cores
+can't see it yet, can't see those writes yet. And so it is the way that you can get incoherence, the
+way that you can end up with different cores having a different idea of what order things happened
+in, is when one core gets a result out of its store queue and then the other core gets the results
+out of main memory. And so you can end up with different cores seeing writes to memory seem to
+happen in a different order. And the history of this is actually really interesting. For a long
+time, Intel would have sections of their processor manuals where they tried to explain how this
+worked. And they would make these very friendly promises like, oh, yes, everything's coherent. Don't
+worry. You just do the writes you want to and everybody sees them. And then there was this group. I
+could look up the reference later if you're curious. But there was this group in either Cambridge, I
+think, or Oxford. Anyway, a very theoretically inclined group who basically said, we're going to
+actually make a formal model of the memory. We're actually going to formalize the memory model that
+Intel has given us here. Well, like formalize it in what? They made up a little logic that says
+which executions are acceptable and which executions are permitted by this and which executions are
+not permitted by this. Now, again, the specification doesn't say exactly what happens. It just says
+what the rules are. So it says this could never happen. This might happen. So it identifies a set of
+acceptable executions, not a specific. It doesn't tell you exactly which one the processor is going
+to do. Right. It just specifies a set of acceptable executions or a predicate that you could run on
+execution to say this was real or this is not acceptable. Right. So anyway, so what this research
+group did is they said, well, let's take them at their word. And we're going to write tests. We're
+going to use this, you know, formal. We're going to use this specification that we've written that
+we made up. Right. Because all we've got is English to work with. And we're going to generate a ton
+of tests that we will run on the actual processor to see if the processors actually behave the way
+their claims to behave in the manual. And, I mean, you can tell, obviously, if the answer is no.
+Right. That Intel themselves in their own documentation did not correctly describe the behavior of
+their own processors. And so this group and the great thing about it, what was really powerful was
+that their techniques allowed them to just, you know, generate lots of tests and then find ones that
+failed. And then they were able to reduce them. So when they published, they had very short
+examples. If you run this sequence of instructions on one core and this sequence of instructions on
+another core, you will observe these results, which are forbidden by the spec. Right. So it was
+really nice. It was really just like, here's your book, you know. And basically what they found was
+that in general, yes, the messy protocols do work as advertised. But the thing that you really have
+to add, the thing that you have to put it, you add to the picture to make it accurate is the store
+cues, the right cues. Because if you have a right that hasn't happened yet, then you're going to
+have this. If you have a right that you've done, if you've just done a right, you will see that
+right before other cores will see it. Yeah. So anyway, this is the kind of thing, right, just to
+bring this back to Rust, this is the kind of thing where, you know, it sort of raises, I think, a
+programmer sort of macho hackles. Right. You say, well, you know, that seems pretty tough for most
+people, but I can handle it. Right. You know, everybody says that. Right. And, you know, I think
+that. I catch myself thinking that. And it's not true. You're not up to the task of being perfect.
+And so to have a language where you can start, you know, pushing your algorithm out across multiple
+cores, pushing your code out to run in multiple threads, and just know that, you know, you may have
+bugs, but they're not going to be these bugs that, you know, that depend on exactly the order in
+which memory writes happened and the exact instructions that the compiler selected and things like
+that, you know, is just a huge win. So data races, data races are out. Yeah. Data races are out. So
+how? Well, so the key idea of Rust, which is something, and this is, I think, really the thing that
+most programmers get hung up on when they learn it, is that Rust takes control of aliasing. And by
+aliasing, I mean the ability to reach the same piece of memory under two different sort of names,
+under two different expressions. Right. The example that I give in the book is, I actually give a
+C++ example. Right. And I say, okay, you've got, this is C++, mind you. This is not Rust. So you've
+got int x, right? And it's beautiful, right? It's not const int x, it's just int x, right? And then
+you take a const pointer to it. So I say const int star x, or star p, right? I've got a const int
+pointer p, and I say, you know, equals ampersand x. So I've got a const int pointer to a non-const
+x. Now, the way C++ works, you cannot assign now to star p, right? If you try to, you know, assign a
+variable to star p, or, you know, use the increment operator on it or something like that, then
+that's a type error. You're forbidden from using p to modify the referent or the pointer. But you
+can assign to x, no problem, right? And so you can go ahead and change the value of x anytime you
+want. And so it's not the case that just because p is a pointer to a constant int, that the integer
+it points to is constant. Right? How perverse is that, right? I mean, like, what does const mean if
+it can change? Okay. The thing is, I want to make clear that there are uses for this kind of thing,
+right? It is pretty useful to say, well, through this pointer, I'm not going to change this value,
+right? So I'm not saying it's useless, but it is kind of, you know, not what you expect. And so, but
+if you think about what it would take to fix that, right, to say, well, if I'm going to say that,
+you know, that this pointer to this thing, that this point, this is really a pointer to a constant
+thing, that would mean that for as long as that pointer p exists, a pointer to a constant, that all
+other access or that all other modification of the thing that it points to has to be forbidden.
+Right? You have to basically, as long as p is pointing to x, you have to make sure that x can't be
+modified. Right? And so that's what I mean by aliasing. That star p, that is dereferencing the
+pointer p, and x are both things that you can write in your program that refer to the same location.
+Right? And this kind of aliasing can arise under pretty much any circumstance, right? Anytime you
+have, you know, two paths through the heap that all arrive at the same object, right? Anytime you
+have a shared object, right, in the graph of objects, that's two ways to get to the same location.
+And there will generally be two different expressions that you could write to refer to the same
+object, right? So JavaScript lets you do this. Java lets you do this. Basically, every language lets
+you create aliases. And what Rust does is it actually restricts your ability to use pointers such
+that it can tell when something is aliased, and it can say, okay, for this period, for this portion
+of the program, these objects are reachable by... Basically, there's two kinds of pointers. There's
+shared pointers, and then there's shared references, and there's mutable references. So it'll say,
+these objects are reachable by shared references, and thus they must not be changeable. Right? And
+so you know, not just that you can't change those values through those shared pointers, but you know
+that nobody else can change them either. So it's really powerful. When you have in Rust, if you have
+a shared reference to an int, you know that int will never change. If you have a shared reference to
+a string, you know that string will never change. If you have a shared reference to a hash table,
+you know that no entry in that hash table will ever change! While you have that shared! reference as
+long as you have that shared reference. And so once that reference goes out of scope, then changes
+could happen? Exactly. Exactly. Exactly. And then the other kind of reference is a mutable
+reference, right? Where what it says is you have the right to modify this, but nobody else does,
+right? Nobody else has the right to even see it. And so a mutable reference is like, it's basically,
+it's a very exclusive kind of pointer. So when you have a mutable reference to a hash table, nobody
+else can touch that hash table while you have it. And that's statically guaranteed. It's part of the
+type rules. It's guaranteed by the type rules around mutable references. And so you can imagine that
+any type system which can guarantee this thing about like, oh, there's nothing else. There's no
+other live way in the system to even refer to the referent of this mutable pointer. That's a pretty
+powerful type system. And working through the implications of that, I think, is where most people
+stumble learning Rust, that there is this strict segregation between shared references where you
+have shared immutable access and where you have mutable references where it is exclusive access. So
+there's this strict segregation between sharing and mutation. And the way that Rust accomplishes
+that is, I think, really novel. And it's something people aren't used to. And honestly, when you
+tell, I was having lunch with a very accomplished programmer who is an old friend. We hadn't talked
+in years. And we were talking about Rust. And he says, yeah, but I can't create cycles. I mean, I'm
+a programmer. I know exactly what I want to do with those cycles. I want to have data structures
+that are arbitrary graphs. And I need those data structures. And Rust won't let me make them. And so
+I'm not interested. And so I think he's wrong. But I think he's making a poor choice. But he is
+correct in his assessment that basically Rust really is asking you to give up something that is just
+such a fundamental tool that most programmers have just internalized. And they've learned to think
+in those terms. So it is sort of asking them to give things up. But the thing is, what you get in
+return is exactly this guaranteed memory safety, right? And this guaranteed freedom from data races.
+And it's just this huge win. So the way Rust works when it does work is when you can take that. I
+think I mentioned the programmer machismo. I want a gender-neutral term for that. But basically, the
+programmer's pride, right? The programmer's little confidence that you've got, right? You want to
+flip that from people saying, oh, I can handle data races. I can handle unsynchronized memory
+access. No problem, right? You want to flip them from thinking that to thinking, oh, I can write my
+code in this restricted type system, right? You want to make them say, I can handle, I can get
+things done even though Rust is restrictive, right? I can overcome these things. I can take this
+limited, you know, buttoned-down system and make it safe. Maybe people just shouldn't be so invested
+in their own pride. I don't know. I'm not optimistic about that ever happening. But one thing is, it
+sounds like what you're talking about, right, is it's like changing the relationship you have with
+the compiler. I mean, I think some people view a compiler as like a teacher with like a ruler that
+hits you on your hands, like, don't do that. But there's an alternative way where maybe it's more
+like an assistant that is. Yeah. Yeah. Yeah. And what's going on a lot with Rust is that your
+debugging time is getting moved from runtime, right, to compile time. That is the time that you
+would spend chasing down pointer problems in C++. You instead spend in negotiation with compiler
+about your borrows and about your lifetimes. And so, and the thing about it is the difference is
+that tests only cover selected set of executions. My tests cause the program to do this. It runs it
+through its paces in this specific way. Whereas types cover every possible execution. Definitely.
+Right.  And so, that's the property that really makes it wonderful for concurrency, which is that,
+you know, with concurrency, you have to just give up on your tests really exercising all possible,
+you know, executions. Because, you know, the rate at which different cores run the code and how the
+threads get scheduled and what else happened to be competing for your cache at the time, none of
+that stuff is really something that you can get a grip on. And so, having a type system that says
+all possible executions are okay is exactly what the doctor ordered for that. So, is there, are we
+at risk of there just being a problem with the type system? Yeah, sure. I mean, if the type system
+isn't sound, then you lose, right? Or we lose. In fact, so, one nice thing is that the people who
+are sort of the lead designers of the type system right now, as I understand it, are Aaron Turin and
+Nico Matsakis. And in particular, Nico is the one who had this insight about, you know, hey, we have
+the possibility of really separating, sharing, and mutation, and keeping those two things completely
+segregated. And that's what I think is really the defining characteristic of Rust. Or rather, the
+defining novelty of Rust. And so, they work, when they talk about type systems, they're playing with
+PLT Redux, which is a system from the PLT group that made Racket and all that stuff, for looking at,
+for playing with formal systems and looking at derivations in formal systems. But they're not
+proving things about it. There is then a project called Rust Belt. I mean, there's also a conference
+called Rust Belt. But Rust Belt is a project at a German university where they're actually trying to
+formalize Rust. It's a research program where they say, okay, we are a group of people and we're
+going to work on finding formal models of the Rust type system and Rust semantics. And in
+particular, there's a guy, Ralph Young, who is really taking this on. And he is working on machine-
+verified proofs of the soundness of Rust's type system. Now, it turns out that there are aspects of
+Rust that make this very interesting and challenging and turn into something that just has never
+been done before. In particular, all of Rust is built on a foundation of unsafe code. And unsafe
+code is code where it uses primitive operations whose safety the compiler cannot check. These
+operations, they still can be used safely. They just have additional rules in order to be used
+safely that you as the programmer can know. So what do you mean to say that it's built on a
+foundation of unsafe code? Well, the Rust vector type, for example, is the vector type itself is
+safe to use. If you are writing Rust code and you use the vector type, it's this fundamental type in
+the standard library. It's the list of... It would be the analog of Haskell's list or something like
+that. You can't get away with it. You can't not use it. And so basically, if you are using vector,
+then you are at no risk. Any mistakes that you make using vectors will be caught by the type checker
+and the borrow checker. Add compile time. Add compile time. So Rust... So vector is safe to use. Vec
+is safe to use. But the implementation of Vec uses operations whose correctness the compiler itself
+cannot be sure of. Right? In particular, when you want to push a value onto the end of a vector,
+right? What that's doing is that's taking this section of memory, which... Again, you've got to
+imagine the vector has a big buffer, right? And it's got some spare space at the end of the buffer.
+And you're going to push a new value. Say you're going to push a string onto the end of that vector,
+right? So vector strings. And, well, okay. That's a... You're transferring ownership of the vector
+from... You're transferring ownership of the string from, you know, whoever's calling the push
+method to the vector itself. And so there's a bit of uninitialized memory at the end of the vector's
+buffer or towards the end of the vector's buffer, which is now having a string moved into it. Mm-
+hmm. Right? And in order for that to be correct, in order to make sure that you don't end up with
+two strings thinking they both own the same amount of memory, and in order to make sure that you
+don't leak the memory, it has to be guaranteed, or it has to be the case, it has to be true, that
+the memory that you're moving the string into is uninitialized. Right? And whether or not the
+location that something gets pushed onto is uninitialized or not depends on the vector being, you
+know, being correct. Oh, okay. Right? That is, the vector knows the address of its buffer, it knows
+its length, and it knows its capacity, right? The actual in-memory size of the buffer. And so the
+vector has to have, A, checked that there is spare capacity, that the length is less than the
+capacity, right? And that length has to have been accurately maintained through all the other
+operations on the vector. If there is a bug in the vector code and the length ends up being wrong,
+then this push operation, which transfers ownership, can end up, say, overwriting some existing
+element of the vector, right? And then that could be a memory flaw, a memory problem. So, but the
+nice thing is that VEC is a pretty simple type. It's built on some modules which have a very simple
+job to do, right? And so that is a small piece of code that we can audit to ensure that the vector
+is using its memory correctly. And once we have verified by hand, by inspection, that the vector is
+using its memory correctly, then we can trust the types of the vector's methods to ensure that the
+users will always use it correctly, right? So the users have no concern. It's only we who implement
+the vector who are responsible for this extra level of vigilance and making sure that we're getting
+the memory right. So the type system can be and is being formally verified, but the libraries need
+to be hand audited? What's vector written in? Is it written in Rust? Vector is written in Rust,
+right? And that's the key, right? Is that unsafe code in Rust is sort of this escape hatch that lets
+you do things that you know as the programmer, that you as the programmer know are correct, but that
+the type system can't recognize as correct, right? So, for example, implementing vector is one of
+them, right? So vector itself is written in Rust. It uses selected unsafe code, right? And so this
+is exactly what the Rust Belt project is tackling, is that in order to really make meaningful
+statements about Rust, you're going to have to actually be able to handle unsafe code because the
+primitive operations of Rust, you know, like the synchronization operations, right? The stuff that
+implements Vue text, the stuff that implements inter-thread communication channels, or, you know,
+the basic memory management things, right? That get memory, that obtain memory, free memory for a
+vector's buffer, or that free a vector's buffer when the vector is disposed of. Or, you know, the
+I.O. operations that say, look, we're going to read memory, we're going to read the contents of a
+file or data from a socket into this memory and without, you know, wiping out random other stuff
+around it, right? All of those things are sort of, they're code that no type system can really,
+well, yeah, I think you can say that. They're primitive operations, and so no type system can really
+say what they do. But you can use unsafe code and make sure that you use them correctly. And then,
+assuming that your unsafe code is right, you can build well-typed things on top of those that are
+safe to use. And so this two-level structure of having unsafe code at the bottom and then having
+typed code on the top is what allows people to have some confidence in the system. And so the Rust
+Belt people actually want to understand the semantics of unsafe code and actually spell out what the
+requirements are in order to use these features safely. And then they want to verify that Rust
+standard library does indeed use them correctly. So they're really going for the whole enchilada.
+They want to really put all of Rust on a firm theoretical foundation. And it's really exciting. And
+the trade-off, as a user of the language, it seems to make sense to me. So you're saying, rather
+than needing to audit my code to make sure these issues don't exist, I can trust that the system has
+been formally verified except for these unsafe primitives, which have been audited themselves. Yeah.
+Yeah. Well, yeah. The way, basically, if you don't use unsafe code, then the compiler prevents all
+undefined behavior, prevents all data races, prevents all memory errors. Right? If you don't use
+unsafe code, you are safe. If you do use unsafe code, you are, or unsafe features, you are
+responsible for making sure that you meet the additional requirements that they impose above and
+beyond the type system. And so, yeah. I mean, and so either you can figure out how to fit your
+problem into the safe type system. And the nice thing about Rust is that the safe type system is
+actually really good and quite usable. And most programs do not need to resort to unsafe code. So
+you can either work in that world, which is what I almost always try to do. Or if you really need,
+if there's something, if there's a primitive that you really know is correct, but that Rust, that
+the type system can't handle, then you can drop down to unsafe code and you can implement that. And
+one of the strategies that we emphasize in the unsafe chapter of the book, it's the very last
+chapter after we presented everything else, is one of the strategies that we encourage people to use
+is to make sure that, or to try to design interfaces such that once the types check, that you know
+that all of your unsafe code is A-OK. And then that means that you've exported a safe interface to
+your users. And so if you have an unsafe trick that you want to use, you isolate that unsafe trick
+in one module that has a safe interface to the outside world. And then you can go ahead and use that
+technique and not worry about its safety anymore. You use the module. And then the module's own
+types ensure that it's OK. The unsafe code doesn't escape, right? Exactly. Exactly. It sounds
+similar to the idea like, you know, people be writing some Haskell function that claims to do no
+side effects, but for performance reasons, maybe it's actually doing some sort of, you know,
+generating a random number. Maybe that's a bad example, but it's totally hidden from the user,
+right? Yes. It acts pure from the outside, whatever may happen. Yeah, that's a good example. That's
+a good example because the question comes, the question arises, is it really pure from the outside?
+If they did it right, if they really actually kept all of the statefulness local and isolated, that
+you can't tell from the outside, then everything's fine. The people, the rest of the, whoever's
+using that from the outside can use it and not worry about it. And they get the performance and they
+don't have to worry about, you know, the details. But then inside, the people who wrote that code
+are, they have extra responsibilities, right? And the normal Haskell guarantees of statelessness
+don't apply to them because they've broken the rules or they've stepped outside the rules and they
+are, they're now responsible. You mentioned the type system of Rust and actually it has a lot of
+features that I guess you wouldn't expect from something that's, well, maybe I didn't expect it. It
+has a lot of functional feeling features. Oh, yeah. You know, I'm really glad, I'm really glad that
+you brought that up because, I mean, so I've talked about safety and I think I've talked about
+performance, right? But Rust, the nice thing, the really nice thing about Rust is that it is not by
+any means a hair shirt, right? It is actually really comfortable to use. It has a very powerful
+generic type system. The trait system is a lot like type classes in Haskell. If you've used type
+classes in Haskell, I mean, everybody uses type classes in Haskell, whether they know it or not,
+right? And, yeah, so Rust has traits. The whole standard library is designed around, you know, those
+generics and those traits and it puts them to full use. And it's actually a super comfortable system
+to use. I did a tutorial at OSCON in Austin last May where we went through, you know, to the extent
+that you can in three hours, writing a networked video game. And so that involved 3D graphics. It
+involved a little bit of networking. And it involved some game logic, right? And when I was working
+on, obviously, I had to have the game ready for the talk. And, you know, I put it off. And so I had
+to do the last stages of development in a rush. And it was fantastic. It was like I had wings or
+something because once I'd gotten something written down, right, once I'd really gotten the types
+right, it was done. It was done. If I had been working in C++, I would have had to randomly take
+three hours out of the schedule to track something down and debug it. And because it was Rust, I
+just got to keep going forward, forward, forward. And so it was just like really great progress. And
+Rust has all these sort of batteries included kind of things. Like there's a crate out there called
+Serdi, which is for serializing, deserializing, serializer, deserializer. And it is a very nice
+collection of formats. Like there's JSON, there's a binary format, there's XML, there's, you know, a
+bunch of other stuff, right? Right. And then a set of Rust types that can be serialized. String,
+hash table, vector, you know, what have you. And Serdi is very carefully constructed so that if you
+have any type which it knows how to serialize or deserialize, then you can use that with any format
+that it knows how to read or write. So you just like, you know, pick something off of this list and
+then pick something off of that list and you're immediately ready to go for sending something across
+the network. Right. And in fact, it will actually, you can actually, and naturally if you define
+your own types, you can specify how they should be serialized or deserialized. Right. You know, you
+define your own custom struct and say, well, here's how. Okay. But the thing is, that's real
+boilerplate stuff. Right. So there is actually this magic thing that you can say, you can slap on
+the top of your own type definition. You can say, derive, serialize and deserialize. And what that
+does, I mean, I guess Haskell has something like this too, that automatically generates the methods.
+It looks at the type and automatically generates the methods to serialize and deserialize that type.
+And so it is super easy to get your stuff ready to communicate across the network. And so for, you
+know, for communicating people's moves and communicating the state of the board, that was, it was
+just, just a blast because there was all of this sort of boilerplate stuff that I didn't have to
+worry about. And those are just the kind of power tools. And I think, just for a callback, I think
+that that's like generic derivation. And I did have a, I did have a Miles on the show earlier who,
+he wrote something similar for Scala and yeah, Haskell has it. I think it was originally called
+scrap your boilerplate, but yeah, very cool feature, right? A lot of boilerplate can be removed by,
+by things like that. Yeah. Scrap your boilerplate is done within the Haskell type system. If I, if I
+remember that paper, right. And, and Surdy is doing a little bit of, you know, procedural macro kind
+of. I'm actually going to exactly looks at your type definition and decides what to do with it. And
+I, I wonder maybe that stuff could be done in a scrap your boilerplate style. I, it's, I can't, I
+don't understand scrap your boilerplate well enough to say. But yeah, it's, it's that, it's that
+style of thing. And yeah, and it's, and those are, those are just wonderful power tools. One thing.
+So it sounds, I think you're making a good argument. So Rust, you know, apparently hard to learn.
+This is what I've heard. However, once you learn it, there's, there's a superpower. Yeah. So is this
+superpower applicable to, to non, you know, C++ devs? Is, is this a useful skill for somebody who's
+like throwing up web services or? I think so. So, so I work in, okay. So, so you had, you had Edwin
+on talking about Idris and Edwin made a comment that I want to push back on. He said, I don't think
+that types really help people eliminate bugs that much because unit tests are still useful. Mm-hmm.
+Mm-hmm. And so I work, right now I work in the, the developer tools part of Mozilla. And we have a
+JavaScript front end. Uh, the, the, the, the, the, the, the user interface for the developer tools
+in Firefox is, is written, they're, they're written themselves in JavaScript. Mm-hmm. And it's a
+React Redux app, basically, um, that talks over a JSON-based protocol to a server that runs in the
+debuggy and looks at the webpage for you. Um, and, uh, we are, uh, I'm, I'm proud to say that my
+colleagues, uh, are enthusiastic about the potential for, for types. And they, they really see the
+value of static typing. Mm-hmm. And we are, um, more and more bringing, um, we're using, uh, flow
+types in JavaScript. We're, we're bringing flow types into our code base. Um, but it's not done,
+right? We haven't pushed them all the way through. There's plenty of untyped code still. Um,
+because, uh, JavaScript flow types let you type one file, but leave the rest of the file, leave the
+system, leave the rest of the system untyped. Mm-hmm. And so you can gradually introduce types to
+more and more of your code as you go. Um, so, so we're in that process. And of the bugs that I end
+up tracking down, um, I think, I mean, I don't want to put a number to it because I, I mean, I
+haven't been keeping statistics, but it feels like, uh, at least half of them, uh, would have been
+caught immediately by static typing. Right. I've heard, I've heard people say this when, uh, when
+TypeScript, like moving to TypeScript, which is similar, right? That, that like often. Yeah. Yeah.
+Yeah. Same idea. Often they found, uh, yeah. Like, uh, you know, not a super obscure bug, but like a
+little bit, like a little, and a corners where things would go wrong that the type system was like,
+what are you doing here? Well, you, you, the thing is, the thing is, I think people like the people
+who work in Haskell or, um, you know, or certainly somebody who works in Idris, I don't think they
+really know what the JavaScript world is like. Right. Java. It's just, it's just insane what people
+do. Okay. In JavaScript, if you typo the name of a property on an object, right. It's just a typo,
+right. You capitalize it wrong or something. Um, that, that's not an error. JavaScript just gives
+you undefined as the value. And then undefined just shows up at some random point in your program.
+Right. And so until you have like complete unit test coverage of every single line, you don't even
+know whether you've got typos. That's crazy. Right. That is just not what humans are good at. And
+it's exactly what computers are good at. And so to, to not, to, to make that, to put that on the
+human programmers shoulders is, doesn't make any sense. Um, so. Now, to be fair to Edwin, like he
+does have t-shirts that say it compiles ship it. So like, oh no, that was, that was a, I thought
+that was a really good podcast. And I, like, like I said, we're, we're all fans of, or we're all
+really curious about interest. Um, so yeah, but I think, I think, I think, I think that, uh, we
+don't want to undersell the benefits of static typing. And so back to your question for people who
+aren't doing systems programming, why would they be interested in Rust? Uh, Rust is just a really
+good productive language to work in. Um, it will make you worry about a bunch of things that maybe
+you thought you shouldn't have to think about. Um, but, uh, in retrospect, I kind of feel like I'm
+happy to have those things brought to my attention. Um, like, like for example, the, the, uh, at the
+very beginning, I talked about, um, you know, how, uh, data structures, the method of a data
+structure will sort of bring it out of a coherent state and then put it back into a coherent state.
+You don't want to make sure that you don't observe it in the midst of that process. Well, you know,
+you can get those kinds of bugs, um, even in single threaded code, right? You can have one function,
+which is working on something and modifying something. And then it calls something else, calls
+something else, goes through a callback and you have, you know, several call frames, right? And then
+suddenly you have something that tries to use the very data structure that you were operating on at
+the beginning, but you weren't aware of it. And so this, this, you know, you basically, nobody knows
+that they're trying to read from the data structure that they're in the middle of modifying. Um, and
+that's something it's called the, um, uh, iterator invalidation, um, in C++, it's undefined
+behavior. Uh, in Java, you get a concurrent modification exception, like, and I just mentioned this
+to a Java programmer and he's like, oh yeah, CMEs, that's the, you know, they had a name for them,
+right? They knew. Um, and that's also, that's a totally a single threaded programming error. And
+that's also presented, prevented by Rust type system. So I feel like Rust types actually have a lot
+of value, even for single threaded code, which is not performance sensitive, but it's just really
+nice to have, um, a, it's really got your back in terms of letting you think or making sure that
+your program works the way you think it does. Um, and so, yeah, I mean, I, I think it has a lot of
+applicable applicability as a general purpose programming language. And, um, Hey, the one thing we
+didn't talk about, but I think that you touched on briefly at the beginning was to do with security.
+So we talked about data races, but you also mentioned security. Right. Yeah. Um, so most security,
+well, sorry, there are lots of different kinds of security holes. Um, and according to the collected
+data, uh, there are a few people who collect statistics on the published security vulnerabilities
+and sort of what category they fall into. You know, is it SQL injection? Is it, um, cross-site
+scripting? Is it, you know, they, they sort of categorize them. And the category that I'm interested
+in, in this, for this particular case is the, uh, uh, uh, memory corruption, memory, memory, memory
+errors. And those have been a consistent, you know, 10, 15% of, of the, all the security
+vulnerabilities being published altogether. Right. Um, and so there's still, uh, a very big issue.
+And most of the time, almost all the time, what's happening there is you've got, um, a buffer
+overrun, or you've got a use after free, um, or you've got some other kind of dynamic memory
+management error. Um, which normally would result in a crash, but in the hands of a skilled, um,
+exploit author, um, can be used to take control of the machine because, and so, so you, after you
+have seen enough of these attacks, you start to feel like pretty much any book could be, uh,
+exploited with enough ingenuity. Right. So like, it turns out like that, that I can't find this post
+anymore, but the, the Chrome security team, Google's browser, Google's Chrome browsers security team
+had a blog post about just about security errors caused by integer overflows. The integer, integer
+overflow sounds so innocent. Right. I mean, uh, but it turns out that if that integer is the size of
+something, you are 90% of the way to perdition. Right. Uh, because basically you can, you can make
+it think that something is much bigger than it actually is in memory. And then you've got access to
+all kinds of stuff you shouldn't have access to. And you're, you know, you're, you're really,
+you're, you're out of the, you you've broken out of jail. Um, and, uh, so, so, so, so having, having
+a type system, having a type system, having a type system, which prevents memory errors and which
+basically for make sure statically that you're not going to, um, that your program doesn't behave in
+an undefined way, uh, really does close off a very significant, um, uh, opportunity for security
+holes. And, uh, one of the, one of the quotes we open up, one of the chapter quotes we open up the
+book with was a tweet by, uh, Andy Wingo, who is a great JavaScript hacker, um, and a great free
+software hacker. And he, his tweet was simply, um, uh, basically there was a bug in a true type
+parser, right? A font parser. Mm-hmm. And that was one of the bugs that was used to break into the
+machines that were controlling the Iranian, um, nuclear, uh, purification facilities. Oh, I didn't
+know that. What, what was that? What was that called? Uh, Stuxnet, right? Yeah, Stuxnet. Yeah. That
+basically it was built around a flaw in TrueType, right? So TrueType, it's a font parser. TrueType
+is security sensitive code. So basically all code is security sensitive. There's no longer, you can
+no longer say, oh, you know, it's just graphics code. You know, it's not, it's not true. If, if
+you're writing, you know, if you're, if you're writing C++ code and it's, you know, got control of
+memory and it's doing pointer arithmetic, you've got to be on your toes. And the standard is
+perfection. And so Russ, like same as a data race, it takes a certain class of these vulnerabilities
+off the table. Yeah. Yeah. Actually it takes, um, in, uh, Rust without unsafe code. If your program
+types, then we are saying it will not exhibit undefined behavior. And undefined behavior is like
+often. Is, is, yeah, is often the root of the security hole. Awesome. Um, so we're, we're reaching
+the end of our time here. Uh, one thing I, uh, one thing when I was Googling you that I found is
+your, uh, is your red bean software site. And I actually ended up forwarding this, uh, to a couple
+of my, my friends. It says on it, uh, to all intents and purposes, it appears you have a consulting
+company that does not sell software. Is that correct? Well, so that's, first of all, it's really,
+really old. My friend Carl Fogel and I, uh, we ran a little company called, um, called cyclic
+software and we were selling, um, CVS support. Um, we were the first group to distribute network
+transparent CVS. We didn't write it, but, uh, somebody else wrote it and they said they didn't want
+responsibility for it. And so we were the ones who were distributing it. And so that we're, I'm kind
+of proud of that because it was network transparent CVS that was really the first, uh, version
+control system that open source used to, to, to collaborate on a large scale. Um, and, uh, you know,
+and then it got replaced by subversion and get and, and Mercurial. Uh, but, but network transparent
+CVS was, was really the, how things got started. Um, so yeah, so, so we had cyclic software and then
+we, we decided we didn't want to run it anymore. We couldn't run it anymore. And so we sold it to a
+friend and we realized we had to change our email addresses. We had to tell everybody, don't email
+us at, you know, Jim B at cyclic anymore. And, you know, that's kind of a bummer. We realized that
+we were going to be changing our email addresses every time we changed jobs. So we resolved to
+create a company whose sole purpose was never to have any monetary value. Right. So we would never
+have to sell it. And so we could keep a stable email address for the rest of our lives. It's, I
+mean, it's a vanity domain and it lots and lots of people have vanity domains. So, but, but our joke
+is that it's a, it's a company whose purpose is never to have any value. Yeah. I found on the front
+page, it says, let me read this by buying our products, you will receive nothing of value. But on
+the other hand, we will not claim that you have received anything of value. And this, we differ from
+other software companies who insist in face of abundant evidence of the contrary, that they've sold
+you a usable and beneficial item. Yeah. Yeah. That's, that's Carl. Well, it's been a lot of fun,
+Jim. Thank you so much for your time. Yeah. Thanks for having me. It was fun. And I enjoyed your
+book. I'll, I'll get through it eventually. I think I'm on chapter four. I'm going to keep working.
+Yeah. Yeah. Yeah. Stick with it through the traits and generics chapter, because once you've gotten
+to traits and generics, then that's really where you've really got everything you need to know to
+really read the documentation. I understand what you're looking at. Awesome. Thank you. And we're
+really sorry. It's chapter 11. We tried to make it as fast as possible. No, it's all good. All
+right. Take care. Take care.                Take care.

@@ -1,0 +1,252 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/03/SED1911-DeepMind.txt
+EPISODE: DeepMind’s RAG System with Animesh Chatterji and Ivan Solovyev
+DATE: 2026-03-12
+SED: 1911
+HOSTS: Sean Falconer
+PAGE: https://softwareengineeringdaily.com/podcasts/deepminds-rag-system-with-animesh-chatterji-and-ivan-solovyev/
+----------------------------------------------------------------------
+
+EPISODE 1911
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Retrieval-Augmented Generation, or RAG, has become a foundational approach to building production AI systems. However, deploying RAG in practice can be complex and costly. Developers typically have to manage vector databases, chunking strategies, embedding models, and indexing infrastructure. Designing effective RAG systems is also a moving target, as techniques and best practices evolve in step with rapidly advancing language models. 
+
+Google DeepMind recently released the File Search Tool, a fully-managed RAG system built directly into the Gemini API. File Search abstracts away the retrieval pipeline, allowing developers to upload documents, code, and other text data, automatically generate embeddings, and query their knowledge base. We wanted to understand how the DeepMind team designed a general-purpose RAG system that maintains high retrieval quality. 
+
+Animesh Chatterji is a software engineer at Google DeepMind, and Ivan Solovyev is a product manager at DeepMind, and they worked on the File Search Tool. They joined the podcast with Sean Falconer to discuss the evolution of RAG, why simplicity and pricing transparency matter, how embedding models have improved retrieval quality, the trade-offs between configurability and ease of use, and what's next for multimodal retrieval across text, images, and beyond. 
+
+This episode is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him. 
+
+[INTERVIEW]
+
+[0:01:45] SF: Ivan and Animesh, welcome to the show. 
+
+[0:01:49] IS: Hi, Sean. Pleasure to be here. 
+
+[0:01:49] AC: Thank you, Sean.
+
+[0:01:50] SF: Awesome. Well, why don't we - since we have two guests today, just so everyone can kind of learn whose voice is who, why don't we start off with Ivan? We'll start with you. Who are you and what do you do? 
+
+[0:02:02] IS: Yeah, my name is Ivan. I'm product manager for File Search on Gemini API. 
+
+[0:02:07] SF: Great. And Animesh, you?
+
+[0:02:10] AC: Hi, I'm Animesh. I'm the engineering lead on File Search. 
+
+[0:02:12] SF: Awesome. Well, thanks both for being here. So, we're talking about this product, which you mentioned, the Fire Search Tool for Gemini APIs. And before we get too deep into I think sort of some general things around like AI, RAG agents, and so on, can you talk a little bit about what the File Search Tool is and what problem it tries to address? Maybe, Ivan, you can take that. 
+
+[0:02:36] IS: Yeah, absolutely. File Search Tool, first of all, is an integrated RAG solution that makes it super easy for you to take loads and loads of data, text, PDFs, codes, whatever you have, upload it into Gemini, and start asking questions about your data. There are plenty of RAG pipelines available on the market. We have Vertex RAG Engine, and there are other providers who do support this feature. It's nothing new. And what we focused on in File Search in particular is accessibility and simplicity of use. 
+
+We made some opinionated decisions. We removed a lot of complexity in terms of configuration setup. You don't need to set up your database. You don't need to set up your infrastructure. The tool is just there. You just upload your data, and you can use it right away. So, we believe this simplicity is something that can help a lot of developers get started and overcome the complexity of setting up their own pipeline. 
+
+The other big aspect that we're actually proud of is how we price the whole product. If you compare it to what's available on the market, first of all, the pricing is usually fairly complex. There are multiple components that are coming into the picture. You are paying for storage, you are paying for inference, you are paying for indexing, yadi-yada-yada. 
+
+What we did was we decided to simplify the whole model. We removed most of the things that you are paying for, and we focused on two simple aspects. First of all, you're paying for indexing. So whenever you upload the file, we do need to do a lot of complex processing. We need to do embeddings. So you'll pay for that. And after that, whenever you do a query to Gemini, you're just paying for tokens. Obviously, they're going to be some addition from File Search, adding data into the context, but that's it. You're not paying for storage. You're not paying for anything else. 
+
+[0:04:22] SF: Why make that change around pricing? Is it primarily to just really try to simplify things for the users of this? Why was it needed to kind of, I don't know, buck the trend of how perhaps people have used to been paying for RAG in the past? 
+
+[0:04:37] IS: Yeah, I think in Gemini API and AI Studio in general, we are aiming a lot for simplicity. And we do hear a lot of feedback from developers that it's hard to deal with lots and lots of products. It's hard to deal with different billing models, and billing cycles, and how the whole cost is being calculated. So we do see it as a decent improvement over other products. And the price is actually much cheaper. So it's a good competitive advantage. 
+
+[0:05:04] SF: Mm-hmm. Okay. And then can you talk a little bit about, I guess, the evolution of RAG? Obviously, RAG was a kind of the buzzword of the moment, I would say, a couple of years ago. Now there's also, I think, been some things out in the zeitgeist of like do we need RAG still? We have agents. And RAG is dead. You hear all this kind of stuff. I guess, where do you stand on that? And also, can you talk a little bit about sort of the history and how maybe things are approached to even RAG and the way that we use it has changed during that time? 
+
+[0:05:37] IS: Let me talk through what I think where we are with RAG, and maybe Animesh can chime in on the history of development of this feature. In terms of where we are, I think RAG is a fundamental capability. RAG's been there from the very beginning whenever those models get really popular in use. It was always a staple whenever you wanted to process the data. And hype cycles were going up and down. Always see this with different features related to LLMs. But I feel that RAG was always there, and it was always useful to some extent. 
+
+In the latest years, we saw improvements in the context size obviously available to LLMs, and this does help a lot with use cases with limited data sets. And we do see much better quality whenever you try to do simple retrieval tasks on a small datasets that fits into the context. And we usually do recommend to use that approach. 
+
+However, whenever you start doing any enterprise use cases, whenever you have a huge code base, whenever you have large file sets, any legal documentation, anything like that, having RAG becomes very, very beneficial. First of all, you can work with the whole database without building the complicated pipeline or infrastructure to actually juggle the data in and out of the context. You can work with the whole data set. The cost become much better with RAG. If you put everything into the context, it becomes expensive very, very fast. And especially if you're using the higher-tier models, like pro models, it's getting expensive. And with file search or other RAG solutions, you are able to actually reduce this cost. And for the large databases and the large enterprise use cases, this actually adds up fairly, fairly quickly. 
+
+[0:07:22] SF: Mm-hmm. And Animesh, in terms of the history, has our techniques and approach to RAG changed over the last couple of years? Has that evolved as well? 
+
+[0:07:31] AC: Yes. I think the use case have evolved. I think to your question, whether the long context models have strengthened the proposition of RAG, I would say that in fact they have encouraged RAG to cover even more use cases. There are a lot of new use cases where people want to upload documents worth their entire semester. And there is now even more focus on making RAG efficient. Because even though long context like retrievals are working fine, we still see sometimes this context rot or lost in the middle syndrome, where models are not great at retrieving data, which is kind of in the middle of the context. Now there are new techniques on making sure that how can we improve even the chunks that we are feeding into the model from RAG? 
+
+There was a recent paper last year, which is called REFRAG, where what they are trying to do is instead of passing the chunks as it is to the model, they are trying to embed the chunks and give all these embeddings to the model and let the model decide which of these embeddings may seem more interesting and only expand those cases. 
+
+Yeah, from the kind of initial vanilla RAG where we kind of find everything, give it to the model, we are trying to make that more smart by figuring out which chunks to give. Also, the embedding models themselves have improved, right? The way we are able to represent data that has significantly improved. So now we are better at understanding the context. We are doing better in languages other than English. Internationalization has also picked up. There are these different parts, using which we can say that RAG as a product is improving. 
+
+[0:09:02] SF: Mm-hmm. And would you say that it's kind of like the wrong, I don't know, question or view to take that around, like tool use versus RAG? Are they really competitors, or are they more like these are collaborators in some sense? 
+
+[0:09:15] AC: I mean, RAG, is, in some sense, a tool that we give it to the model, right? In case this needs more information from your specific private corpus, this is the way to go. Yeah, I wouldn't really see them as competitors. 
+
+[0:09:27] SF: Yeah, absolutely. I mean, I agree as well. I think that it's kind of a misunderstanding of what RAG is to frame it in that way, but I think it is something that you see out there in the wilds of, I don't know, Twitter sphere and so forth. But that's a little bit of the wild west of AI in some sense.
+
+[0:09:43] AC: Yeah, in fact, I would say RAG is coming in popular in different ways now. We recently are kind of public reviewing the personalization, which enables the model to give more context about your persona. And the way to enable is, again, something like RAG, where you figure out relevant chunks and give it to the model. And then it can understand your persona better and answer queries in that context. 
+
+[0:10:08] SF: Can you talk a little bit about how that works in terms of being able to determine what are the right chunks to feed in the model? And how do you reduce the error rate of essentially identifying incorrect chunks? 
+
+[0:10:20] AC: I think what we do is when you provide the data, we chunk it and we embedded using it is Gemini embedding model. And then we basically index it internally. And then at the time of the query, when the user provides the query, we again embed it using the same embedding model. And then try to figure out the relevant chunks from that corpus that the user has uploaded. 
+
+And then we have some knobs on which embedding model to use, or how many chunks do we want to retrieve and pass it to the model. And we have run a bunch of evals to kind of find the sweet spot in terms of latency of how many chunks we want to retrieve versus the quality VC. And there are some knobs that the users can provide in terms of how do they want to chunk the data. But mostly it's the default settings that we have iterated upon. We have tweaked the SI to make sure that the model actually triggers this tool when it actually feels that it is necessary to get more context, and it's not unnecessarily triggering. Yeah, the entire suite of tools we have kind of evolved and evolved through to make sure that we provide the right default settings. And there are some capabilities that the users can override. 
+
+[0:11:28] SF: What is that sweet spot in terms of the number of chunks to return? 
+
+[0:11:32] AC: So I think it's in low double digits right now. And we have kind of kept it open. We don't document how many chunks we want to do that. But yeah, it's not too many at this point of time. 
+
+[0:11:46] SF: Is there some use case dependency on that? Or can you actually have sort of more of a universal approach to this? 
+
+[0:11:53] AC: Yeah. So right now, we are going with the one solution fits all approach because we want to keep it simple. And when we hear use cases of customers who feel the need that they want more of these chunks retrieved, it's easy to expose that as an option in the API. We don't want to do that right now. But if needed, we could do that. If the threshold at which you want to retrieve the chunks or the number of chunks you want to fit to the model, those are all things we could tweak around. 
+
+[0:12:19] SF: Ivan, something? 
+
+[0:12:20] IS: Yeah. So far, what we saw from the partner's integration is that the default configuration actually fits most of the use cases. We do have people doing search of illegal documents. We do have people doing searches over their code databases to provide relevant guidance for code completion and such. And in all of those cases, somewhere around five chunks returned in the response from file search was serving fairly well for them. 
+
+[0:12:45] SF: And then in terms of - I think, historically, if you look at how people have approached RAG, there's a lot of people who want to really exert a lot of control over things like chunk overlap, chunk size, various settings. I guess by abstracting away a lot of that retrieval pipeline, how do you sort of balance that? Is it that you're targeting a specific type of use case or a specific type of user? Or have you really figured out the secret sauce of the right collection of those things that's just going to work for people out of the box? 
+
+[0:13:17] IS: I think most of the quality actually comes from the embedding model. It's like you should think about this as like 80 % of quality is embeddings, 20 % is your configuration. So as long as we have the best embedding models, which we believe we do, the rest is less relevant to the quality of the outcome. 
+
+We do believe that for most people, playing with those configurations will not yield significant improvement, and the time is better spent in building their own pipelines. That's where we focus on. At the same time, we never say don't use any other RAG pipelines. We actually say file search is the simplest tool. You should try the first thing. We should work for the majority of people. But if you really need the configurability - let's say your use case is very, very complex. You're processing very well-structured data, specific tables, specific graphs that our system does not yet recognize well. In that case, you may want to adjust all the little knobs that are coming with the more complicated pipelines. 
+
+[0:14:19] SF: Mm-hmm. And what kind of files are you capable of indexing? 
+
+[0:14:25] IS: I would love to say all of them, but we are indexing text files mostly. PDFs, docs, code files, anything with text. We are currently doing OCR on images. We're not fully ignoring images within PDFs and other files, but we are going through the OCR system. We're extracting text out of them and pulling that into the context as well. And we are actually working on getting the multimodal support in as well. So we want to support native image processing, video processing, and at some point native audio as well. Gemini models are pretty good at reasoning on top of image and video data. So we want to have this retrieval capability to actually find the relevant images and put them into context, so the Gemini model can see them and act on them. 
+
+[0:15:14] SF: Even if you're processing text, there's lots of different types of text files. Code could be a text file, you can have markdown, you could have documents that have not just images, but like tables and so forth. Are you able to dynamically figure out the chunking strategy on behalf of essentially the user? Or does it matter? Do you have to use a different strategy for, say, basically breaking up code to be able to find the relevant chunks versus something like, I don't know, a legal document? 
+
+[0:15:44] AC: So far, we have not done anything really different across these different types of ducuments. And based on the testament feedback, so far, things like code are working fine. We see that in some cases, where there are like graphs or tables, we have sometimes seen that the chunking strategy, the default chunking strategy doesn't work. We are working on techniques to make sure we represent this data in a more structured way, and we can provide it to the model without breaking that structured context. But yeah, that is something being in the works. 
+
+[0:16:14] IS: Yeah. And in a lot of cases, it is about chunking. But if you look at the structured data that is not just plain text, parsing tables and graphs, that's where we see some regressions in terms of quality. But the way we address this is not through different chunking. It's mostly through pre-processing the data, making sure that the columns and rows and the table are aligned well when the data is represented to the model as text. This kind of preprocessing is, I think, more important to get the quality right. 
+
+[0:16:44] SF: And I guess also, going back to what you're saying, sort of 80 % the embedding model. There's also this reliance on, I guess, if you can use the embedding model that truly represent the semantics of what it is that you're creating the embedding from, then you're going to get a higher quality search result. 
+
+[0:17:00] AC: Yes. That's the fact that you are overlapping chunks, so potentially you would be retrieving multiple chunks, which have the overlapping parts. And then together they'll kind of recreate the whole context that is needed. 
+
+[0:17:10] SF: Right. So you're abstracting away the vector database and the indexing that you're doing, but how does this work with updates? I think that's historically been a challenge. If I process a document and then later that document changes, or maybe a website is even a better example, where a website is going to change from time to time, but I've already indexed that particular page, and then I need to re-index it, how does that kind of update process work? 
+
+[0:17:34] AC: There are two parts to this update, right? One is basically you kind of calling our API to ingest those documents. So we try to make sure that we are highly parallelized in terms of our ingestion latency. We pretty much can parallelize at a chunk level and ensure that all of those are ingested into the database. And then Google has the Spanner, which is also exposed externally as the Cloud Spanner, which provides very strong consistency guarantees. 
+
+Once you pretty much write the data, it's almost instantaneously available to be indexed. And we leverage that capability of Spanner to make sure that we can pretty much read our rights as soon as they are available. That significantly reduces the delay in reading the indexes and reading the embeddings. 
+
+[0:18:20] SF: If I've already indexed a particular page, though, or a document, and then I'm re-indexing it, do I have to blow away the initial indexing indexes in order to re-index it, or is there essentially the equivalent of like an upstart in the vector world? 
+
+[0:18:35] AC: Essentially, you have the corpus. You can add your new document to that corpus, which would just mean that the new chunks are indexed. The rest of the index remains as it is. In our world, you are not updating the document. You are inserting a new version of the document, and we're chunking that and indexing it. 
+
+[0:18:53] SF: But if the old version is there, do you run into this potential risk that when you're pulling back relevant chunks, you could pull back relevant chunks that are no longer actually relevant because the fundamentals of the document has changed? 
+
+[0:19:04] AC: Yeah, so that capability we provide to the developers in terms of the corpus management or the document management APIs. If they want, they could delete the earlier document. But from our perspective, it's difficult for us to figure out whether it's the new version of the same document or not. We are not doing data at our end. It's up to the developers to kind of remove the old content if they think that's not relevant anymore. 
+
+[0:19:27] SF: I see. Okay. And then is the search that's going on, is it purely vector-based? Is there a hybrid element to this? 
+
+[0:19:35] AC: Right now, it's purely semantic search, which is vector-based. We have had some requests of users wanting a keyword-based search, and that is something we're considering adding to the roadmap. Given the indexing capabilities that Spanner offers, we think it's like a natural extension to the offering, and yet something which should not add too much complexity to our system. 
+
+[0:19:55] IS: We also looked at the GraphRAG systems in the past. But for now, it, to me at least, feels a bit more complex for the product that we're trying to build. We haven't found the right way to simply integrate it into the system yet. 
+
+[0:20:09] SF: Yeah, I mean, I think that you see a lot in these more complex RAG pipeline scenarios where they're using a combination of vector search. There might be a knowledge graph, or ontology, or something like that to also ground the results in some semantic understanding. Is that something that you see as a future direction for this? Or would it be more you would use this in combination, perhaps, with a separate system that would handle that piece of it? 
+
+[0:20:34] IS: So far, what we saw from our customers is that the current setup is working well for them. And I think we will not overcomplicate it just yet. To answer your question directly, I feel that we better have two separate systems that can complement each other. And as you need grow, you can implement both the search units. 
+
+In a more complex use cases, I would say we also have - I mentioned the Vertex RAG system, which is built on top of the - it's not quite Gemini API, but it's a very similar Gemini API inside of Vertex. For anything that it requires a lot more complexity, configuration, maybe swapping out the databases or adding this additional system on top, we can always guide customers to use more complex solution they really need to. And we can focus on the simplicity and getting started. 
+
+[0:21:28] SF: Okay. How do citations work? How do you map, I guess, sort of the generated token back to the specific source chunk? 
+
+[0:21:36] AC: Yeah. So right now, the models are trained to cite the responses. When they generate the responses, they actually cite every sentence that they have used the original corpus to generate from. And then it's just a matter push processing that response, removing those citations, and adding that separately as grounding data. Essentially, it's models generating citations to the data that they referred to. 
+
+[0:22:01] SF: Yeah. The model is trained to essentially figure out or to provide a reference back to where that text or what the source text was. And then you have to map that source text, I guess, back to the database chunk and the original source in order to inject the link or something like that that refers to the citation. Is that right? 
+
+[0:22:20] AC: Yeah. Basically, when the flow is something like this, when the model realizes that it needs to use file search, it will emit a query that I want this query to be answered by the File Search Tool. You run the query, and you give the responses. Each response in some sense is indexed uniquely. If the model is receiving five chunks of data, it knows that each of them is a different index, and this index can vary per turn as well. 
+
+So now when the model responds, it kind of cites the exact unique index using which we can kind of figure out which chunk it was referring to, and then figure out which document it was part of, and add more metadata about that. 
+
+[0:22:57] SF: Okay. The blog posts that talks about the product that you cover, there's a company, Beam, which is an AI-driven game generation platform that's using this. Can you talk a little bit about how are they using this product in their - I guess just solve problems in their world? 
+
+[0:23:19] IS: I think their use case is pretty neat and simple at the same time. So they have lots and lots of new developers coming to the platform who want to build games with AI, and they don't necessarily experience developers. They are mostly learning. And AI helps Beam to educate and help those developers to create their first game. 
+
+The way they are using file search is they have a huge code base that is their engine, plus the documentation on top of that, that is talking about how each component is used, how animations are happening, how scripts are implemented, et cetera, et cetera. It's a rather big dataset. So what they do is they put it all into the file search, they index it. And whenever the user starts experimenting with the agent and the agents that supports it, they will naturally ask questions how to do specific things. 
+
+And through file search, they can very quickly pull all the relevant documentation into the context and actually present to the developer that, "Hey, you probably want to use this module. Here is how it works. Here is the old documentation." And they've been able to close this education loop for their customers and receive great feedback. 
+
+[0:24:29] SF: What's the performance on the retrieval look like? 
+
+[0:24:32] IS: Performance in terms of retrieval quality or latency? 
+
+[0:24:35] SF: Let's start with latency. 
+
+[0:24:37] IS: Latency is somewhat in line with the model latency, a couple of seconds for the retrieval. In terms of quality, it will depend on the use case. If I recall correctly, we saw up to like 85 % depending on the use case of the retrieval, like correct hits in terms of documents retrieved. 
+
+[0:24:58] SF: As a user of this, given that in any RAG system, is it going to be very difficult to get like 100 % accuracy on retired documents. But what are some of the things or approaches people take to help increase the accuracy? 
+
+[0:25:13] AC: I think there would be a few things, right? One would naturally be the embedding model that even talked about and kind of called out the importance. The second is your retrieval strategy. Sometimes you would want to optimize quality for latency, whether you want to kind of go through your entire database, find all relevant chunks, or kind of figure out the first few relevant chunks and give it to the model. That would kind of be the other aspect on trading of latency versus quality. 
+
+And third, I think is just the model training on triggering the search only when relevant and also not hallucinating the answers. Those are kind of orthogonal to file search. Those apply to any tool that we have trained Gemini with. But I would say those are kind of the three aspects. The embedding quality, or retrieval quality, and just the model quality, which probably is of utmost importance. 
+
+[0:26:01] IS: Yeah, that's mostly on our end. And that's what we are working on in terms of improving the quality for developers. What I saw is some developers actually implement the post-processing. So they would implement file search calls in a sub-agent or a separate flow. And they will do filtering on top of the returned results. So they will call Gemini one more time. They will have a prompt that is doing the verification of the results in comparison to the context that the model already has. And they will callout the results that don't really fit the context implementation and improve the quality of the output that way.
+
+[0:26:37] SF: Is there value in using like a reranker model? Have you found in your own experiments that it actually improves? It's worth, I guess, the investment of introducing something to re-rank the results, return from the vector search? 
+
+[0:26:51] AC: Not so much. In fact, I mean, that just adds more complexity. And if we kind of extrapolate the question that we were talking about a bit earlier, whether even do we need RAG, I think if you kind of take that logic and apply it here, that once you give the relevant chunks and as long as your context and not blowing up too much, I think letting the model figure out what is relevant probably is better. 
+
+Yeah, in terms of like if you are retrieving too many chunks, then we have some threshold on what is the quality score of this chunk, right? And then we have some threshold below which we don't return those to the model. But that's not like re-ranking between chunks is just like a vanilla cutoff beyond which we don't get any more chunks. But between that, in fact, we have not seen any advantage of providing a ranked order to the model. 
+
+[0:27:39] SF: What about in terms of people who look at fine-tuning embedding models for specific use cases? Has there been recent results around actually improving retrieval, or is it, again, just sort of over-complicating the whole process? 
+
+[0:27:54] IS: We have a general recommendation GDM, and I think we made this a year or so back, that people shouldn't do fine-tuning in most of the cases. The speed of progress of the models is so much faster than what individual smaller labs can do in terms of fine-tuning, that it's almost irrelevant. And by the time you actually have a fine-tuned model - and it will probably perform better for a use case for like a month or two. We're going to have the next 003 embedding model. It's going to be better across the board, like 15 % on all the benchmarks, and fine-tuning won't be that relevant anymore. 
+
+With that said, we do see people using fine-tuning in specific use cases. I think it does make sense if your use case is very, very niche and you own a very particular data set, which you don't expect Google or anyone else to pay attention to any time in the future, that may yield good results. But as I said, so far, what we've seen is fine-tuning becomes relevant within six months or so. 
+
+[0:28:57] SF: Yeah. I think that's fair. I've found a similar result working with business on my end. I think that one of the challenges as well is that if you do go through the process of fine-tuning, even if you are getting better results for six months or whatever, then a new model comes along. You've adjusted the weight, so how do you apply that to a new version of the model? 
+
+[0:29:16] IS: Yeah, you need to start over. That's pretty much from scratch. You have to fine-tune the model again. 
+
+[0:29:21] SF: Yeah, it gets kind of expensive. As the model has improved, do you think that a lot of the things that we've historically done with RAG to try to drive that performance ends up - basically, we don't have to make things quite as complicated because we can rely on better performance from the model, and the model is kind of absorbing a lot of the complexity? 
+
+[0:29:40] IS: Yeah, absolutely, we do think so. We did see an amazing progress for Gemini models in the last year, and not just Gemini models. You look across the board, Anthropic, OpenAI, did great work in improving their text LLMs. First of all, these improvements do convert into embeddings models as well. And separately, we are working on improving the embeddings model more and more. And in the next year or two, we're going to see significant improvements in terms of retrieval quality, in terms of use case complexity that those models can handle. I do believe that a lot of this additional configuration that is happening around those models will go away, and you will be able to just embed the thing, hit the search, and get the results that are really relevant in use. 
+
+[0:30:23] SF: And what are some of the things that have happened over the last year or so that had made the embedding models better? What are the particular innovations that have happened there to really drive up performance? 
+
+[0:30:36] AC: I mean, we have added the multimodal embedding support now, which would really improve the quality of understanding of things beyond text. That is one thing. And I think it's in public preview right now. So we are hoping to do a GA launch for that. The other thing, which kind of we launched, I think, in the last version of our embedding model or the one before that, I don't remember, is we started representing embeddings as this Matryoshka representation, which basically means the embedding vector that is generated. The front part of that vector has more context about the thing being embedded than the latter part, which makes it very easy for the end user to just truncate the embedding. 
+
+In case the embedding is a 3K dimension embedding vector and you don't want to store as much size, you could just truncate it at any point, and it would still give you an accurate enough representation of the entity. Some of those things have been really helpful. And some of those we can actually explore. We're talking about the knobs that we could give to the user. That could be another knob in future we could give to the users if they want to reduce the size of their storage by using a truncated embedding instead of the full embedding at the cost of some quality. Based on their use case, users can choose to pick one of the two norms. 
+
+[0:31:47] SF: What do you see is some of the hard problems in the space that are yet to be solved when it comes to RAG in particular? 
+
+[0:31:55] AC: I think, Ivan, please add on, but multimodal we are starting. I'm sure we'll kind of add on more capabilities on the multimodal side. That is one thing. We talked about chunking. That's still an area I feel we can get more benefit out of by kind of capturing the structure better in certain kind of use cases. 
+
+The multilingual or the internationalization, that is another aspect. I feel we are getting great at solving English-related queries. But there are certain languages where certainly we could do more. And as the user base expands to countries across the world, we have more of these internationalization use cases. So that is another aspect where I feel we can certainly improve upon. 
+
+[0:32:35] IS: Yeah. Just in January, I think getting the quality, higher hit rates, better retrieval is something that we always pursue. Multimodal is very interesting aspect. Text is working great for a lot of use cases, but there is a lot more multimodal use cases that people are thinking of right now. Looking for images, looking through video opens up a lot more consumer products that can be built on top of that. And the file search and any record RAG retrieval here is even more beneficial than for text because of the size of the data that you are feeding into the model. So if you can reduce that as much as possible through file search, that'd be very interesting. 
+
+[0:33:16] SF: One thing, just bringing us back to the File Search Tool, in terms of people who've already invested in a particular stack to do RAG, whether it's a combination of vector database, maybe particular framework, they have their chunking strategy, what is it that they need to do if they wanted to migrate essentially over to the File Search Tool approach? 
+
+[0:33:38] IS: Well, migration itself, I hope, is fairly using it straightforward. You upload your data. But the reality is, I think, what I would recommend them to start with is probably use the embedding model that we provide. It is available as a standalone service. So if they have their own pipeline and they want to run the evals and experiment with the Gemini infrastructure, I would recommend using the embedding's model first with part of their data and just comparing the results. And the next step would be using the file search, loading a small portion of their database, and just running emails comparing both systems. 
+
+[0:34:13] SF: And then what is the status of a File Search Tool in terms of its availability? Is this early access? Is this preview? What can you share around the timelines where people can start to get their hands on this more generally? 
+
+[0:34:26] IS: Yeah, absolutely. File search is actually generally available for our 2.5 model family and recently our 3 model family. So 2.5 models are in GA. So it's both models and the two combination are generally available. Flash 3 and Pro 3 models are still in preview, but file searches as an API is generally available there as well. 
+
+[0:34:50] SF: Okay. And then what is next besides moving all the stuff to getting it in the hands of the minute and more users? What can you share about some of the things that you're thinking in terms of additional problems to attack or things that you want to continue to make investments around making the product really, really easy to use? 
+
+[0:35:07] IS: Yeah, as we mentioned, multimodal support is the big push we're doing. We want to invest into a better understanding of structured data. And we keep collecting these examples from our developers in terms of tables, and graphs, and whatnot that they're trying to process. So I think that's going to improve the quality and the applicability of this a lot. 
+
+And then latency being able to work with a much bigger datasets. We do limit at one terabyte right now for the highest tier, but the latency go down quite a bit if you start consuming all of that. So we want to invest in that as well and improve the retrieval latency. 
+
+[0:35:47] SF: Is that one terabyte of total storage? Is that right? 
+
+[0:35:51] IS: Yes, that's one terabyte of total storage across all of your file stores. 
+
+[0:35:56] SF: Is there a limitation around the size of a single file that can be processed? Other than, I guess, it needs to be smaller than a terabyte? 
+
+[0:36:03] AC: It's 100mb right now. We have kept on the file. And for making sure that the retrieval latencies are kind of acceptable and in the good range, we recommend users to keep their individual corpus to about 20gb. So their total data across corpuses can be 1gb. But each corpus or each file search store, as we call it, should be relevant to 20gb. And then at the query time, you can provide multiple of these file search store IDs. So we can find out those queries in parallel. But the size of an individual file search store performs good till the limit of more 20gb. 
+
+[0:36:37] SF: Okay. And then if I want to play with this, like how do I get started? 
+
+[0:36:41] IS: The simplest way, I think, would be to go to AI Studio and play with the file search upload. I think the link is available in the blog post that we published. And the other way is to start hitting the Gemini API. 
+
+[0:36:54] SF: Okay, great. 
+
+[0:36:56] AC: We have good samples that would make it really easy for somebody to just start playing around, just upload the data using the upload API and hit the Gemini API. 
+
+[0:37:04] IS: Oh, and our vibe coding environments in AI Studio also fully supports the file search, so you can just prompt the model to generate the code that uses file search, and it will do it for you. 
+
+[0:37:14] SF: Okay, well, even easier. Is there anything else you would like to share as we start to wrap up? 
+
+[0:37:20] IS: I just want to say that it's been really exciting to see the adoption that we're getting for file search. We actually received quite a lot of great feedback from developers and quite a lot of excitement. And it's been really nice to see how this works for their use cases. 
+
+[0:37:38] SF: Fantastic. Well, Ivan, Animesh, thank you so much for being here. 
+
+[0:37:42] IS: Thank you for having us. 
+
+[0:37:44] SF: Cheers. 
+
+[END]
+
+

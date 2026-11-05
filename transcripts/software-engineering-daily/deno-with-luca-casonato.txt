@@ -1,0 +1,241 @@
+EPISODE 1610
+
+[EPISODE]
+
+[0:00:00] ANNOUNCER: Deno is a free and open-source JavaScript runtime built on Google's V8 engine Rust and Tokio. The project was announced by Ryan Dahl in 2018, with a goal of addressing shortcomings of NodeJS, which Ryan also created. Since then, the Deno project has grown tremendously in popularity, and they recently announced Deno KV, which is a database built into Deno.
+
+Luca Casonato is a software engineer on the Deno project and joins the show to talk about Deno's design. Its new database and the future of the JavaScript ecosystem. This episode is hosted by Josh Goldberg, an independent full-time open-source developer. Josh works on projects in the TypeScript ecosystem, most notably TypeScript ESLint. The tooling that enables ESLint and Prettier to run on TypeScript code.
+
+Josh is also the author of the O'Reilly Learning TypeScript book, a Microsoft MVP for developer technologies, and a live code streamer on Twitch. Find Josh on Blue Sky, Mastodon, Twitter, Twitch, YouTube, and dot com as Joshua K. Goldberg.
+
+[INTERVIEW]
+
+[0:01:19] JG: Luca, welcome to Software Engineering Daily. How's it going?
+
+[0:01:23] LC: Hey, thanks for having me.
+
+[0:01:25] JG: Can you tell us a little bit about yourself?
+
+[0:01:26] LC: Yes, sure. I'm Luca. I'm a software engineer at the Deno company. I work with Santino and various projects related to Deno. I've been doing software engineering for about five years now, mostly working in Rust, doing a bit of JavaScript and TypeScript. Actually, a lot of JavaScript and TypeScript. Considering I'm working on Deno.
+
+Yes, I do some spec work in the WHATWG? So, that's the sandwich group that standardizes the HTML spec and fetch and stream, that kind of stuff. Also, I'm a delegated TC39, working on the JavaScript language there.
+
+[0:01:57] JG: How did you get into doing so much with the JavaScript language in just a few half-decade years?
+
+[0:02:04] LC: Yes. I don't know. We sort of needed somebody at Deno to do spec stuff, and I don't know, we were a team of four people. I don't know, I decided I was going to do it. So, there was not much thought that went with that. So, somebody has to do it.
+
+[0:02:19] JG: It's amazing how sometimes people who are talented and know what they're doing, such as yourself, happen to be in this great place, as this beautiful mixture of I know what I'm doing, and I'm well positioned, and you can make a big impact in the world around you.
+
+[0:02:30] LC: Yes. Thanks.
+
+[0:02:31] JG: So, what's it like working at Deno? How would you describe the team?
+
+[0:02:35] LC: Yes. We've gotten a light over the last couple years now. I've been with the company for, I guess three years. Did some open-source work on Deno unpaid before then. When I started out, I was the second employee to join. We were a team of four people. Reinbert, our co-founders and [inaudible 0:02:52] and me. Now, we're up to a team of I think 25, maybe 30. Scope has increased drastically, right? We're not just the JavaScript runtime anymore. We have a built-in database. We are JavaScript hosting company. I don't know, we power things like Netlify Edge Functions, which people get very upset when they go down. So, we have to make sure they don't go down. Yes, responsibilities have grown a lot over the last couple of years, and yes, super excited about that.
+
+[0:03:22] JG: Do you ever miss the time when you had fewer responsibilities?
+
+[0:03:25] LC: Yes. Sometimes there was a sort of time, maybe a year ago, when things were much more at crunch, we were just like starting to grow pretty quickly. That meant that like, we really didn't have enough people for the work we're trying to do. That was painful, because that means you constantly have to do things you don't really want to be doing because there's nobody else there to do them.
+
+But at this point, I get to work on stuff that I really want to work on all the time, and I don't know if we're launching super awesome things every week. We just launched a bunch of new KV features and just about to launch cron jobs on deploy. We just launched like Jupyter Integration for the CLI a couple of weeks ago, like really all over the place. Super exciting things that like make it easier for people to use, yes, to program. I don't know. I really enjoy that. I really like writing things, and then like writing about the things, or talking about the things to people, and then seeing them being used. Yes, just seeing how excited people are about them. It just feels like you're making an impact somewhere and that's a cool feeling.
+
+[0:04:29] JG: For our non-visual listeners, you have a sparkle in your eyes right now, which I love to see. You seem derive a lot of joy from the idea of helping people develop. Is that right?
+
+[0:04:38] LC: Yes. It's great. It's sort of like a multiplier, right? When you build developer tooling, you're not just building software for an end user, where there's one person there that uses that. But really, you're making tooling that lets other people build really cool experiences for their customers. If you do it well, then you can really help accelerate people, like turning their visions or ideas into something tangible that people can interact with. Yes, just seeing the results of that, like seeing what people have built with Deno, just so fun. Opening Twitter in the morning and seeing like things that you're tagged in, or like, even sometimes when people complain about things so much. They're complaining about, "I'm using Deno in this project." And then the first sentence is, "Yes, I'm using Deno in this and this project." If you look at the project, it's like a super cool project. And the second sentence says, "But this thing just stopped randomly working." Then, you're sort of grounded back in reality, but it's still really fun. 
+
+[0:05:35] JG: There's an old joke template. "You're the worst X I've ever seen", from the Captain Jack Sparrow quote. But you have heard me or have seen me. So, let's talk about those things you mentioned. KV, Cron and Deploy, and Jupyter. Let's go through them in order, what is KV from the Deno perspective and what are you up to?
+
+[0:05:51] LC: Sure. Yes, so let me start slightly somewhere else, which is, let me give you a bit of an introduction about Deno for the people who aren't familiar. So, Deno is a new JavaScript runtime that was originally created by the same guy that wrote Node, Ryan Dahl, to fix a lot of the shortcomings in node. One of the big shortcomings that we found was Node doesn't really have a lot of tooling built in. So, in Node, if you want to set up a new project, there's a lot of configuration you have to do, and a lot of tooling you have to install to just get started. You need to set up a formatter in a Linter and Typescript and probably esbuild or SWC, if you don't want to wait 30 seconds for TypeScript to meet your files, and then you need to like configure your library for publishing to npm, and that's a bunch of work. There's just a bunch of stuff that you have to do before you can even get started writing any code.
+
+So, one of our design principles is to try to remove this boilerplate, and make it super easy to get started. A couple - yes, maybe at the start of this year, we started expanding this beyond just developer tooling in the sense of things that like you may use during development time. So, Linters, and formatters in our language server, and testing frameworks, that kind of stuff. We started working on a database that is built directly into Deno. Because one of the things that we saw people struggle with a lot was sort of setting up a database for your application. This takes a lot of time. You have to go find somewhere to host it, and then you have to configure it all.
+
+Then, often doesn't really integrate very well into the runtime, like you have to - if you're using an SQL database, have to figure out how to get from the data that's in your table, which is not JavaScript data types, but are, I don't know, maybe Postgres data types, where Postgres doesn't have a type to represent a JavaScript begins, for example, or a JavaScript string. That sounds kind of weird, because yes, obviously, Postgres has a string type. But Postgres, a string type is actually UTF-8 and not WTF-16 which is what JavaScript uses, which means that you get into all of these weird edge cases where you want to write something into your database, and then it turns out, you can't, because you have to have a character in there that is not representable in UTF-8. Then, you have to do edge cases, and it's not fun. And then there's obviously libraries that let you deal with this, like RMs.
+
+So, what we wanted to do is build a database that's like directly built-in, and can make use of all of the primitives of JavaScript and really lets you store JavaScript objects. So, we did. We built KV, which is a key-value store. It's atomic, has strong consistency, which has asset compliance, just like many of the SQL databases. It's globally replicated and scalable through our deploy platform. And yes, it's built directly into Deno. So, you can get started with just - you just have to write Deno.openKv in your application to a function a call and then you have a database. We've seen really positive feedback on that. So, that's Deno KV. Sorry for the long-winded explanation.
+
+[0:08:47] JG: No, no, this is great. I love it. I forgot to ask what Deno is, so thank you for that introduction. But this KV, it's built for Deno. Did you build it from the ground up? A new database? At what level is it your code versus powered by other code?
+
+[0:09:00] LC: Sure. Sure. Sure. That's a great question. So yes, we built a lot of our own stuff. We did not build our own persistence layer and this is kind of, you're talking about databases, there's many different layers that you can talk about. There's the layer that takes your data and can atomically committed to disk, and this is usually called the storage layer, and we did not build that in the CLI. We use SQLite for this. In our distributed hosting platform at Deno Deploy, we use FoundationDB, which is the same database that it's developed by Apple. It's the same database that powers iCloud.
+
+But then on top of this, there's a bunch of systems both in the CLI and in Deploy to make it possible to store JavaScript values inside this database, and make it like, give you this nice JavaScript API. It's a mix of existing technologies for things that are really difficult to get right, and that somebody else could do much better job of, persistence, and then things that we're really good at, we did those results.
+
+[0:09:54] JG: What happens if I passed some wild and wacky JavaScript object like a proxy and a function and a getter and a promise, all up in there? How does is that supported by the database?
+
+[0:10:02] LC: Yes. So, we support any value that you can pass between workers. Any value that's structured cloneable. Actually, the proxy, we wouldn't serialize the proxy itself. But we would serialize the sort of values that the proxy points too, or the value that the proxy is proxying, and we don't allow you to serialize functions. But for example, you can serialize recursive objects. You can serialize arrays that contain objects, that contain arrays, that maybe point back to the original array or object. So, the circular sort of structures, we support serializing JavaScript data objects, [inaudible 0:10:37] arrays, any of the type array views, array buffers, begins, bullions, numbers, the whole set of primitives, wrapper object to like, those are like primitives. I'll have wrapper objects that are objects rather than purpose. 
+
+Maybe this is getting into too much detail. But yes, there's a bunch of weird edge case stuff that we support, but we don't support storing functions or proxies specifically.
+
+[0:11:00] JG: Got it. I'm curious, why is it that functions can't be structured cloned?
+
+[0:11:04] LC: That's a great question. So, this actually has something to do in JavaScript functions are all closures, which means that any function that you have can possibly, or actually always does close over some other objects. In the case of a function that you defined at the top level, it closed, at least over the global scope. And actually, you can observe this because if you define some top-level variables in a script, and then create a function of that script, and then you pass a reference of that function to a different script, and then you evaluate that function there, then it's not going to use any variables defined in the script where you call the function, but rather in the script that it was defined in, because it closes over variables.
+
+When you close over variables - if you want to pass this to a different worker, you can't take the function in isolation and pass it to a different worker because the function is not a pure function from input state to output, because it can possibly close over other things. And languages that allow you to move functions across threads, usually only allow you to do this for functions that do not close over state that is local to the thread. Because in JavaScript, you can't share any state across thread. You can't share JavaScript objects across threads, you can only clone them, because functions close over things. They inherently are also bound to a thread, so you can't pass them across workers.
+
+So, in Rust, for example, you can only pass a function across threads if it doesn't close over any data that is thread-local. So, most functions in JavaScript are not closures, but they're real functions that always have like an input and an output, and they can't close over any top-level variables. So, those are really just pure computation, and pure computation is easy to pass. But the way you have to think of this is that in JavaScript, you can get the string of a function by calling a function.toString. And if you could pass that function.toString over to a different thread, and then use the new function constructor to construct a function from that string, and then the function would still work, then you could theoretically, maybe we could support structure cloning that.
+
+But the problem is the second you import something, when you have an import statement at the top of your file, and you use something that you imported inside of that function, this two-string trick doesn't work anymore, because now it's going to be referring to some binding, which is not present in the worker, because you didn't import the value in the worker. So yes, closures.
+
+[0:13:29] JG: Love it. You've used this phrase a few times now, structured clone. This is in reference to the standard structure cloning algorithm, API and JavaScript?
+
+[0:13:36] LC: Yes. So, the structured clone algorithm, that's the algorithm that defines what values can be passed across workers. There's a structured clone function since maybe last year that you can use to just clone objects.
+
+[0:13:47] JG: Everything except functions and similar. If you were to have done the same five years ago, would you have had to reimplement that function from scratch? That structured clone API?
+
+[0:13:58] LC: Maybe. So internally, Deno KV is really baked into the runtime, so we aren't limited to sort of the APIs that we have access to in JavaScript, but we sort of have privileged access to the underlying engine. So, V8 exposes the structured clone algorithm. The algorithm to copy values or network to serialize them, and it has done much before the structured clone function was available on the global, because you needed this to implement workers, right? Even if the structured clone function didn't exist in global scope, we would have still been able to implement this.
+
+[0:14:32] JG: Got it.
+
+[0:14:33] LC: And maybe we would have had to implement slightly more but, still.
+
+[0:14:36] JG: So, that means that you're using Deno KV with Deno. It's not something that can be extracted out and used and say Bun or Node themselves?
+
+[0:14:43] LC: Yes. That's right. You definitely can't use it in Bun. There's a user that has created a module called KV Connect kit that allows you to also use this in Node, and actually, if you're using it a Node, it implements is the serialization algorithm in userland, in JavaScript. And actually, we're working with this user right now to get the documentation up to par and integrate this into our NPM namespace. So, we can just - so we would publish that KV module, and then you'll be able to use KV on Node too, but that's not quite ready yet.
+
+[0:15:17] JG: That's really lovely that instead of trying to shut down using with Node, you're embracing the open-source aspect of it, and actually working with the person?
+
+[0:15:24] LC: Yes. Totally. It's a super cool project. So, why not?
+
+[0:15:29] JG: Yes. All right, let's move on. There were three points you brought up as recent features. KV, Cron and Deploy, and Jupyter. What is Cron and Deploy?
+
+[0:15:36] LC: Yes. So, Deploy is our serverless hosting platform for Deno. It can run arbitrary JavaScript and it's globally distributed, and it deploys in less than a second. You can deploy directly from GitHub, blah, blah, blah, many, many features. But so far, the only way you've been able to invoke JavaScript is synchronous through HTTP request. So, when you get an HTTP request, we would run your Java Script, and then return whatever you returned back to the user. This doesn't really work for all use cases. Sometimes you want to just schedule some work to happen in the background. Especially, with KV, you may, I don't know, want to go look at all of the users you have at midnight, and like send them an email if they've gone over some quota or something.
+
+We now have Cron jobs support, or it's coming very soon, actually. It's landed in the CLI and Unstable, but it's coming very soon to Deploy, where you can sort of give it a function, and it'll invoke that function on some schedule that you passed.
+
+[0:16:33] JG: How similar is this to Cron and other languages or tech stacks, like PHP, Apache-style? 
+
+[0:16:38] LC: Yes. It's actually pretty similar. One of the nice things about Deploy is that the way we implement this, we don't actually have to keep your JavaScript running while we're waiting for the Cron job to trigger, and you don't have to configure anything and like a crontab file or anything. It's just a JavaScript API. So, you can just call Deno.cron, use normal Cron syntax that would also use it with, I don't know, PHP, or Apache or crontab, and just pass this function, and we'll call you back on that function whenever it's time. We don't have to keep running your JavaScript, so it's really cheap.
+
+We're actually thinking, right now we support only the Cron syntax. So, that's like the string that has stars and numbers with spaces in between. But we're actually thinking about a JavaScript API. I forget who asked me this. But somebody asked me this on Mastodon recently, if we couldn't also just have like a JavaScript object shaped for this. And, I thought, yes, that obviously makes sense. Most of the people using Deno are JavaScript developers who don't care about Cron syntax. They only want to specify, I want to run this, every four hours, and yes, you can obviously express that in a JavaScript object or a builder pattern where you call a function that you specify that you want to call it every four hours. So, we're going to do that too.
+
+[0:17:50] JG: This seems like it's although a great feature, much less technically intense than KV feature that you just described. Is there a reason why you're excited about both of these?
+
+[0:18:01] LC: Yes. So yes, it's less technically complex. But also, in some sense, it's not. So, on Deploy, for example, we can't run your JavaScript. Deploy has a free tier, where you can deploy your code, and for most projects, you'll be able to run them completely for free. This is possible because we have the ability to only run your JavaScript when you're actually getting requests, rather than having to run it continuously. If you think about a simple way that you would write this Cron system is that, it's just a JavaScript function that pauses the Cron string, determines when the next time is that it needs to be called, and then calls set timeout, right?
+
+But the problem with this is that, if you do this, you have to keep the JavaScript running the entire time that you're waiting for the set timeout. You can't shut down the JavaScript in between, and then restart it later. Because you'd lose that set timeout then. So, the way this works in Deploy is that, we have to analyze your code up front and figure out what Cron jobs you actually want to be listening for. Then, externally, we can start up your code whenever it's getting close to having to run a Cron job, then let you run the Cron job. Then, when you're done with a Cron job, we shut down your JavaScript again. This means we're not wasting a bunch of CPU cycles doing nothing, right? And we can offer this free service without users having to pay from any of their applications.
+
+[0:19:19] JG: Do you think that there might be a future where one could describe the, when I want to run next logic with a function or something more advanced than just an object or string?
+
+[0:19:27] LC: Yes. Actually, that's not a bad idea. We haven't really thought about it. But yes, the thing is, you can already do this in some sense, by just scheduling more frequently than you actually want to run. If you want to run every two hours, and then every three hours, and then every two hours, again, on an alternating cadence, then what you could do is you could run actually every hour, and then every hour you check whether it's either a multiple of that two or three hours, and then execute whatever code you want. But we haven't really thought about doing that. It's definitely possible. We could do it.
+
+We actually have a different product that probably is better suited for that. So, do you know KV also has queues built in, which are like a way for you to queue some data into the database, and then have a function that is invoked to process these queue items, which allows you to do async background processing, or yes. If you want to send an email, for example, you don't want to do that directly from your HTTP handler, you can instead put something in the queue, and then have the queue send that email soon later. And actually, we allow you to schedule queue items in the future. So, if you don't want to invoke them immediately, but you want to actually queue an email to run, I don't know, say, in 30 minutes, you can say, "Don't deliver this queue message until this time has passed." So, you can implement your own like poor man's client system on top of this queue system where you can listen to one queue item, and then, at the end of that schedule, another queue item to happen, I don't know, maybe three hours later.
+
+[0:20:56] JG: That's really interesting. Did you see users previous to the actual Cron support using the queues as a sort of Cron? Is that part of how you determine to write the queue feature or the Cron feature?
+
+[0:21:06] LC: Yes. It was actually one of the original reasons we did queues first, because we thought it was going to be more powerful, because people could like emulate Cron on top of them. And actually, somebody wrote a little user land module that implements this Cron syntax on top of the scheduled queues, which I thought was pretty funny. But there's some problems with it, because if you ever missed a delivery of one of these queue messages, your Cron schedule gets broken, because you're always relying on the fact that the last delivery schedules the next one. If for whatever reason, there's something that happens that you miss a delivery, usually this doesn't happen because we retry deliveries. But I don't know. If your handler throws like five times in a row, you're out of luck, and your Cron has stopped working. So, yes. First class system is better.
+
+[0:21:55] JG: Yes. I can see users building cruft on top of this, of, "Oh, why don't we set timeouts and then handle them if something failed, and it gets complex."
+
+Let's move on to the final of the three new features you brought up, KV, Cron and Deploy, Jupyter. What is Jupyter?
+
+[0:22:11] LC: Yes, so Jupyter is a - I don't know. Are you familiar with Jupyter Notebooks in Python at all?
+
+[0:22:16] JG: I have heard of them enough to know that I should ask you to define them for our listeners, please.
+
+[0:22:20] LC: Okay. So, Jupyter Notebooks are a way for you to interactively - they are like a really spruced-up REPL, to be honest. They're a way for you to write a document that has interactive code in it, and people usually use this to do data science with. So, what you could do is, you could pull some data from a CSV, let's say, do some processing in line. You could have some like markdown blocks, and then you could have a code block. And that code block generates a table or generates a graph or something. You can define documents using code.
+
+So far, if you wanted to use Jupyter, you usually had to use Python, because Python is the king of data science. But that's unfortunate, because I don't know, the JavaScript ecosystem is much nicer than Python. I think Python, like, who wants to use indentation for anything? Come on, people.
+
+[0:23:09] JG: Careful. Careful.
+
+[0:23:11] LC: Well, I don't know. I stand by my points. And like, you want to have proper types. You want people to use TypeScript. We have really nice ways to do display using JSX in JavaScript, like, I don't want to write some HTML templating using strings. Come on, it's like, I don't know.
+
+[0:23:28] JG: Sure. Each ecosystem has its pros and cons. Sure. There are things that are easier in everyone. And if you're already in JavaScript, or TypeScript, it can be quite pain to have to switch over to Python. Sure.
+
+[0:23:39] LC: Yes. I stand by my point that JavaScript is better than Python. But anyway, the idea is that you can now use Deno to write JavaScript in your books. So, you can do this data visualization using JavaScript, and I don't know. There's some really great visualization libraries in JavaScript like E3, and other libraries that can output like SVG charts, and things like that. We built for the browser originally, but they're really, really useful for these data science use cases, too. And, yes, we made this super easy to use. It's just directly built into Deno. You just have to install Jupyter and it'll automatically pick up, if you have it installed, I mean, you can use that as your thing to power the Jupyter Notebooks, that Jupyter calls these kernels, and then you can write JavaScript.
+
+[0:24:22] JG: Sorry, what is a Jupyter kernel?
+
+[0:24:24] LC: A Jupyter kernel is the thing that actually executes the code that you write in your notebook. So, if you write some Python in there, there's a Jupyter kernel called IPython, Interactive Python that will execute it to write JavaScript in there. They'll use the Deno kernel. It's sort of like a language server on steroids. I don't know if you're familiar with their language server is, it's the thing that powers your editor that can do that gives you back the completion. So, if your editor asks, if you open a file in your editor, and you want to like autocomplete some keyword or something, or autocomplete an identifier, then the editor asks the language server what it should display. The language over does this for editors and Jupyter kernels do this sort of for REPL. It's a standard interface to do a REPL.
+
+[0:25:07] JG: Got it. So, if I'm, let's say writing a Jupyter notebook and I want to run Deno in some code block, then this Deno - pardon me, this Jupyter, Jupyter with a Y, by the way, kernel would be able to - could I have a notebook that has some kernels with Node, some with Deno, some with Python?
+
+[0:25:23] LC: I actually don't know. Maybe? 
+
+[0:25:24] JG: I see no reason why one would want that. But I'm imagining.
+
+[0:25:27] LC: No, I don't either. Just always use the JavaScript line.
+
+[0:25:33] JG: Perfect. Problem solved. But great. So, what is the big draw for spending the time to add Jupyter support with Deno? Why did your team prioritize this?
+
+[0:25:42] LC: Yes. So, as I mentioned earlier, Deno has like a bunch of built-in tooling for all kinds of things, and we really want Deno to be your one-stop shop, or your toolbox that lets you do anything. If you're developing code, Deno should get you 90% there in all cases, and Deno has a built-in REPL, but I don't know, we were not really happy with it. REPLs are so, I don't know, 1980s. You open a terminal, and you don't get any code formatting in there. You may be get syntax highlighting, but probably not. You have this terrible editor that you can't navigate around in. You definitely can't click around it, and especially for people that are just getting started, this can be like a real challenge, right? Like not having a visual interface that can explain things to you, as you're doing it, is really difficult. There's no auto completions in there. There's no type checking that goes on in there. And yes, we really wanted to spruce up the REPL, and the Jupyter Notebooks was just a sort of obvious way to do that. Because it's been proven out in the Python ecosystem, that this is a really great way of doing interactive things that you usually use, you REPL for. It's like the REPL of the 21st century.
+
+[0:26:49] JG: There's a trend now, X of the 21st century. We see companies like Warp, companies like Temporal doing, let's say, the terminal of the century or the scheduling of this century. Do you see Deno having its own X of the century phrase?
+
+[0:27:01] LC: Ideally, we'd want to be the everything of the century. But I don't know, even though I just said it, I think it's like a pretty vague thing, right? I think for REPL, it's pretty clear, because can they see the improvement over having a rebel with no syntax highlighting that if you're running your terminal compared to something that has syntax highlighting and code completion, and whatever. It's the difference between using TextEdit or Notepad on Windows compared to using VS Code. They're just completely different classes of systems. They're not really comparable. And yes, we'd like to offer that sort of experience, not just for REPLs, but for databases and for linters, or formatters, and really everything we touched.
+
+[0:27:40] JG: Sure. And for those who haven't tried it out, there is a linter, and there is a formatter coming with Deno. There's Deno lint, there's Deno format?
+
+[0:27:46] LC: Yes. There's a test runner, there's a benchmarking framework, I could go on.
+
+[0:27:50] JG: Please do. What else you got for us?
+
+[0:27:55] LC: We have like, you can - Deno Compile is really fun feature. So, you can write some code in Deno and rune Deno compile on it, and then it'll turn your JavaScript code into single executable. You may be familiar with this from maybe like Nexi, or PKG, in Node. But those have a really hard time working correctly for complex NPM packages. I'm not going to say that Deno Compile works perfectly for all packages. But I think we work a lot better than most of these do. Because we don't have to rely on bundling. We can do very funny, smart, interesting runtime things that, yes, make this work pretty well. We have yet TS - the type checker. TypeScript is built directly into Deno, so you don't have to separately install TSC.
+
+It's actually slightly faster than than TSC. Because of some, again, internal optimizations we can do, because we're integrated all the way from sort of the JavaScript runtime, all the way to the APIs we exposed, the way you import packages, the way packages are downloaded, all the way to the editor. So, we have a lot of places where we can optimize things to make them work better together.
+
+We have a bundler, I think. Oh, yes, documentation generator is a really fun one also. So, many people will write JSDoc comments on their functions to give nice auto completions of VS Code. That's great. But if you really want to get an overview of like, everything that a function, or everything that a library exposes, right now, your best bet is to open the d.ts file and read through it, and that kind of sucks.
+
+So, we have a documentation generator that you could just pass some TypeScript to, and it'll pull out all the JSDocs, and the function signatures, and all that kind of stuff and generate an output. Either like an HTML page, yes, just in your in your REPL, or sorry, in your terminal.
+
+[0:29:42] JG: That's great. In the more vanilla JavaScript lan, awe have TtypeDoc, which I've used on a few projects. Is this in any way comparable to what you're describing?
+
+[0:29:50] LC: Yes. It's pretty similar to that. Well, it's much faster than that, because TypeDoc uses the TypeScript compiler to try to do a lot of inference and analysis, and we don't do this. We can sort of do a lot of static analysis using a REST tooling, which means that you can generate documentation for large projects in a matter of, I don't know, hundreds of milliseconds.
+
+[0:30:11] JG: Let's switch context a little bit to talking more grandiosely. You've discussed all these awesome things in the ecosystem, specifically Deno, and referred to cool improvements in the JavaScript ecosystem, such as structure cloud and being available in JavaScript web APIs, not just V8. Deno is part of this interesting recent shift in technologies from doing one thing, and only one thing, the way traditional Node often described some of its areas, to we see what users need, let's do it all for them. Node also, funnily enough, has recently started taking that strategy too. There's a node test runner, there's built-in module loader and resolution support in Node. How do you see the ecosystem evolving as tools start to do more and more for the users?
+
+[0:30:54] LC: Yes. That's a great question. So, I actually think that this is pretty funny. Because if you're in the JavaScript ecosystem, then this seems like a recent development that everybody is like doing this all in one thing. But if you're in other ecosystems, like Go or Rust, they've been doing this since the beginning, and like Rust had a test runner, and a linter, and a formatter and the documentation generator, and like compiled support, obviously, type checking all that, built in from day one. We're sort of just catching up in JavaScript. It's sort of an inevitable thing, like nobody wants to spend three hours setting up their formatter and linter, and like, they want to start using JSX, and then they have to install a plugin for their linter, and their formatter, and their test runner, and they're all separate plugins, and they all need to be configured separately, like, why. This is just stupid. We should do this. And I think a lot of this comes from, well, obviously, JavaScript is a very large ecosystem. But also, JavaScript is a pretty fragmented ecosystem.
+
+There's many different ways to run JavaScript. you can run it in the browser, you can run it on a server, you can run it in your CLI, and these groups previously didn't really coordinate very well. Browsers would do one thing, and then Node decided they didn't like that, and they did something else, or Node did something, and browsers decided they didn't like and they did something else. This is how we ended up with like six different streams, APIs, and JavaScript. This even happens between like browsers in the JavaScript Standards Committee. ReadableStream, Async Iterator, Promises, and Port Controller, like these are all things that could be much nicer if integrated together, if somebody had spent more time thinking about them.
+
+But this is not really a - I'm not blaming anyone individually here. This is just a really big space. It's difficult to coordinate. But we should have done a much better job here. I think, this is sort of catching up now. People are using JavaScript for more production use cases, not just on the browser as they were previously, but a lot more people are using JavaScript for server things, too. And reliability is just something that is much more apparent, I guess?
+
+When something goes wrong on the server, your site is down for everyone, and you see the logs of your server having crashed. If a page fails to load for one user on an older version of Safari, then first of all, you don't know that happened. Unless the user explicitly emails you and says the page isn't loading, you didn't even know this happened. Then, if it did happen, there's like a thousand factors that could have been the reason. Maybe they're behind a firewall. Maybe, I don't know. There's a lot of things that are outside of your control.
+
+So, people, I think, did take reliability of sort of client-side browser things as seriously as people are taking reliability of server-side things now. And the shift to using more server-side JavaScript means that we need to make the ecosystem more reliable and have stronger foundations. Part of this is just that, we need to standardize on the tooling that we use, because if there's, I don't know, 10 different linters and 10 different formatters, and you fix a bug in one of them, and that helps 10% of the ecosystem, and the other 90% are still like affected by this, then you're not making this reliability story much better. I think we've sort of gone a long way here with having only a single type checker. I'm very happy that TypeScript is the only type checker, because that means if TypeScript improves something, the entire ecosystem improves, and it's not - like nobody uses flow. I know this may be hard to hear for some, but it's true. Flow is like an interesting project, and there's a lot of really smart people that have worked on it. But in reality, everybody uses TypeScript.
+
+Even at the scale of Meta, right? If there's like 10,000 engineers or 20,000 engineers, probably it's less than that. But maybe it's 20,000 engineers at meta that write flow code, that's nothing compared to the amount of people that write TypeScript. TypeScript has millions of developers using it every single day. And I don't know, improving type checking for some edge case in flow has much, much less impact on the reliability of the web, than making that same fix in TypeScript. As we centralize to more tooling where everybody uses the same tooling, you get more of these like multiplier effects where you fix a bug in one place, and then suddenly, there's a lot more people that are t impacted by this bug fix.
+
+Yes, I think just from that side, we'll see more sort of convergence on a single set of tooling. But also, it's just much nicer to use. I don't want to set up 30 different config files. So, if there's one tool that can give me all of these things working together with no config at all, yes, why not use it.
+
+[0:35:23] JG: Playing devil's advocate, though, one of the advantages, perhaps, of having many different tools is that they compete with each other. They can each iteratively explore new ideas. For example, TS wins the old TypeScript linter, which has been years since killed, was able to do some really nice things around performance that are currently not possible to do in ESLint or with TypeScript ESLint. So, do you worry about, for example, having a single linter, or a single type checker slowing down a bit?
+
+[0:35:48] LC: I don't think so, no. It's obviously important that these tools are maintained in such a way, like they can't be closed-source tools that don't accept open contributions, because people need to be able to improve these things. I think there is no fundamental reason why it is not possible to make, I don't know ESLint with TypeScript just as fast as TSLint is. And there's obviously like, organizational or architectural reasons that make this more difficult in the short term. But in the long term, this is not an unsurmountable problem. If somebody discovers there's a way to improve the performance of Node, and this requires so many factors, they go do those three factors, and they notice faster, and then everybody's happy, right. If your solution is Node is slow, so instead of making node faster, we're going to just do everything exactly the same as Node, but we're going to start from scratch and have a bunch of other bugs. We're sacrificing reliability for performance effectively, then this may work in the very short term, but in the long term, you're now maintaining to effectively identical projects, you have no differentiating factor. There's no reason why anybody would want to use your originally faster tool that have sacrificed reliability over using the original tool, which has the reliability and you just doesn't have the performance yet. You can always improve the performance of systems, and you don't need to rewrite them from scratch.
+
+Sometimes you obviously do need to rewrite because things - sometimes it is too difficult for you to improve something existing because there's too much tech that has accumulated. But these are very rare cases. Rust had something pretty recently, well, actually, it's not that recent now. But Rust, like language server used to be called Rust LSP, or something. I forget. But it was kind of terrible. It was slow. It was an official built-in tool from Rust. Everybody used it. But somebody came along and realized that the architecture that Rust LSP was built in was just, it was not wait for the performance that you expect from an LSP. So, they started building a new language server for Rust called analyzer. 
+
+Even though rust analyzer was not the built-in tool, but it was a third-party project, a lot of people started adopting Rust analyzer. Just a couple years ago, Rust analyzer was adopted by the Rust foundation as the standard language server and is now maintained within the Rust project and Rust LSP is deprecated.
+
+So, I think there is definitely pass to sort of reimplement things if it's really necessary, even in the case of full integration. But yes, I just don't think it's necessary in most cases, I think. If you have tooling that is good, and that is actively being improved, and people have feature requests for, and they can implement them themselves. I don't know, it's fine. We don't see this problem in Rust, or in Go, that, I don't know, could be as Rust linter is too slow, or doesn't have enough lint rules or whatever, right? Because if people really want to lint rule, they contribute it. And then it'll be in the next Rust version. You just need to have good blood project stewardship to make that possible.
+
+[0:38:43] JG: That was my next question. How do you make this possible? It sounds like this is all predicated on project stewardship funding through open-source models, and both of those are things that open-source folks have often struggled with in the past. How is it that you're able to make this work?
+
+[0:38:55] LC: Yes. That's a great question. I think because we're not directly trying to monetize an open-source product. The open source product that we release is the Deno CLI, and like by extension, Deno KV, and all the tooling that comes with it. But that's not where we make our money. We don't sell enterprise support, or we don't like unlock features in the CLI because you paid us something. But instead, we offer you a hosting product. I think, actually, enterprise support is a good way that you can make open source sustainable. I think that's something that many projects have been successful with. SQL Lite, for example, is another project that uses enterprise support as its way to monetize, and even though it's totally open source, and yes - I think these are sort of two separate questions though.
+
+If you have large organizations that use your software, they will inherently want to contribute that back to those tools. Because it is much more expensive to maintain a fork of, I don't know, Rust or of Node, or of Go, or of Deno, then it is to just contribute back the improvements that you make for your own team internally back to the open source project. So, as long as the structure is there for those people to be able to contribute them back without implications to licensing, or implications to royalties, or whatever, then do you need to have a system setup that makes this possible. You need to be able to - you to have like a code of conduct in place, have people that oversee the projects and can make general decisions. But it works out pretty well. Rust is open source. Go is open source. JavaScript is open source.
+
+[0:40:29] JG: This is all true. At the last few minutes of the interview, I like to end with a few rapid-fire questions about the person. Is that something you're ready for?
+
+[0:40:38] LC: Sure.
+
+[0:40:39] JG: Normally, I try to find interesting facts about people. But I couldn't find any for you, and I did try. Could you tell us a few interesting facts about you, please?
+
+[0:40:46] LC: Sure. I used to have hair that was this long, or you can't see that now. My hair used to be below my shoulders. Now, it's short. That's sort of interesting, I guess. Totally not programming related, though. I don't have a driver's license. I like traveling by train. I really enjoy listening to really loud music while I program.
+
+[0:41:07] JG: What is it about riding on trains that you like so much?
+
+[0:41:10] LC: I don't know. It's just great. You can sit down, you can have food. You don't have like somebody squashed up right next to you. You have like a power outlet that works, can see the landscape go by, and you can do things like while you're traveling. Traveling is not like a lost day, especially like night chains, where you can just get on a train at 10 in the evening, and then you wake up in a completely different city the next morning. I think such a fun way to travel. Obviously much, much better environmentally also, than flying, and I think trains are great.
+
+[0:41:38] JG: Trains are great.
+
+[0:41:40] LC: I know it's difficult in some parts of the world, but if folks over in Europe, and I don't know, just want to go to take some trains, it's great. You should.
+
+[0:41:45] JG: Is there a good entry-level train for someone who's only ever been in the States or Canada or other that you would recommend we try out?
+
+[0:41:52] LC: Yes. I think metro systems are maybe good starting points for people that are not super familiar with trains because even if you get lost, you haven't gotten far right. Maybe you've gone a couple of kilometers, you'll still find your way back to your hotel. There are some really excellent metro systems in the world, Tokyo. I was just there for a month, a couple of weeks ago, and excellent, absolutely excellent system. I highly recommend. London's pretty good too. Even the New York subway is even though it sometimes can be kind of scary, but that's fine.
+
+[0:42:22] JG: Yes. When I lived in New York, my then partner and I, now spouse and I, went to Japan. Coming back from Tokyo to New York City, the contrast and subway experience was distressing and disturbing. It's well done over there. Then here we are with rats.
+
+Well, thanks so much. I really appreciate you hanging out Luca. I hope you have a great day.
+
+[0:42:46] LC: Cheers. You too.
+
+[END]

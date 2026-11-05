@@ -1,0 +1,533 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Apache Iceberg and the catalog layer (w/ Russell Spitzer)
+DATE: 2026-01-25
+SHOW: Analytics Engineering Podcast
+LINK: https://roundup.getdbt.com
+AUDIO: https://traffic.libsyn.com/secure/analyticsengineeringroundup/AE_0088_v1.mp3?dest-id=2880773
+DURATION_SECONDS: 3208
+TRANSCRIBED_AT: 2026-11-04T10:49:14Z
+----------------------------------------------------------------------
+Welcome to the Analytics Engineering Podcast, featuring conversations with practitioners inventing
+the future of analytics engineering. Today, I'm speaking with Russell Spitzer. Russ is a longtime
+open source maintainer with multiple Apache Software Foundation projects. Today, he's a PMC with
+both Apache Iceberg and Apache Polaris, working as a full-time employee at Snowflake. I use this
+conversation to educate myself about the structure of the ASF, how project governance works, how
+decisions get made, and how corporate impact gets felt inside of ASF projects. I don't know if
+you've had a lot of direct exposure to the fascinating world of OSS infrastructure maintainership,
+but I find this stuff fascinating. It's what powers so much of the software that we all use every
+day. We then spend the second half of the conversation digging deep on Iceberg and Polaris. We talk
+about what's been built to date, where things are headed from here, the biggest problems the
+maintainers are tackling, and a lot more. If you want to go deep on the tech behind open table
+formats, this is an awesome conversation to do just that. Without further ado, let's get into it.
+Russell, thank you for joining me on the Analytics Engineering Podcast. Yeah, thanks so much for
+having me. This is going to be a fun conversation. You spend a lot of your time these days thinking
+about Iceberg, about Polaris, so I'm excited to quiz you on all related things. I wonder if you
+could start by giving the audience a little bit of a background on how you found yourself into this
+very specific niche of high-volume analytic data file formats. You know, that's super interesting
+because I feel like it's a question I get a lot and I find it hopefully illustrative of how random
+it is to be in computer science and to end up in a position where you're in any particular field or
+any position of power. I started my career at a company called DataStax where I worked on Apache
+Cassandra. I started out as a test engineer and I got quickly drawn into analytics. And the reason I
+did is I saw these big compute clusters and I thought that was just really cool. And I really wanted
+to be involved in that. So I just, whenever it was possible, I would work on the analytics projects
+and things that we were doing there. And while I was there, a very clever coworker of mine, Piotr,
+saw Spark 0.9 being released and was like, you know, it'd be really cool if Spark and Cassandra had
+a connector. And he started working on that, which got me into Spark, which then meant over the next
+six or seven years of my career, I spent all this time thinking about how you move data back and
+forth between Cassandra and Spark and getting it to other systems. And the whole idea of
+interoperability of data sets over these distributed compute frameworks was like really appealing to
+me. I thought it was super cool. And during all that... This is pre-Apache Arrow. This is, yeah,
+this is a long time ago. This is pre-any table formats. So we were just putting parquet files
+everywhere and no one had any idea what they were doing. I mean, pre-Spark, we were busy being like,
+you know what? Maybe a Lisp-like dialect is the right way to interact with distributed compute
+systems. And, you know, I don't know if you remember Apache Pig, but like that was a thing that
+people were spending a lot of time on. And so we've come back to, I think, the perspective that no
+one understands anything but SQL. So we're going to stick there for our end user interface. Anyway,
+so I worked there and I decided after a while I wanted to try something else. I knew a lot of people
+who had gone to Apple, so I decided to apply to Apple. And I applied for the Spark team at Apple.
+And, you know, I'm talking to all these engineers. Like helping build Apple's Spark infra or like
+working directly on Spark or what? So they have an open source Spark team as well as like a Spark as
+infra team. And the two teams like work together. So I was trying to get onto that open source Spark
+team, you know, trying to push the things that Apple would think is important into the project and
+supporting them and running Spark as a service. But when I did that, one of the people who
+interviewed me was Anton, who, if you look on the Iceberg roster, that's another Iceberg PMC. And he
+convinced the hiring manager that I should join the data tables team at Apple. And the data tables
+team was the Apache Iceberg team, basically. And they, you know, very ambitiously were planning on
+trying to replace, you know, everything that was at Apple with Apache Iceberg. And I didn't know
+anything really about the project at that time. But, you know, I was like, that sounds like a fun
+thing to do. I've never heard of this. I'll learn all about it. Did Iceberg exist at that time or
+was it some kind of Iceberg precursor? This was Iceberg like 0.13 or something. It was very early in
+Iceberg. I'm probably getting the versioning. I actually don't know when Iceberg first. Are we
+talking like 2018 or what? Oh, I think the official start of the project at Netflix is 2018 or 2019.
+I can't remember. And then 2020 is when I joined Apple. Got it. So then at Apple, it was all Iceberg
+all the time. We were this scrappy little group that was trying to convince everyone to stop using
+what they were using and use Iceberg instead and get on board with all of our, you know, open source
+as a service platform stuff to save everybody money, you know, get off of technologies that don't
+really handle ACID transactions and stuff like that and into something that actually works. And we
+were super successful. We ended up... That's such... Yeah. Migrations are not easy. You folks must
+have made this accessible to teams. Yeah. Yeah. I mean, the key thing to really make it accessible
+is that we were replacing complicated kind of bespoke solutions with Apache Iceberg. So one of the
+most common things is you're running Hive. And when you're running Hive, you're running the Sadoop
+system. You might get small file problems and things like that. And everyone is writing their own
+custom implementations of compaction and locking and all these sorts of things to make sure that
+their system performs well. And it turns out not having to maintain that is a huge benefit to folks.
+So, you know, we were able to make a good case because we basically say you don't have to worry
+about this anymore. Okay. So that makes sense. It's a different conversation when the trade-offs
+are, do you as a team, like, use Unity or Horizon or Iceberg versus, like, are you rolling your own,
+you know, parquet wrappers? Yeah. I mean, the question is, like, a lot easier, I think, for smaller
+teams. For organizations like Apple, it's always like, we're about to make an investment which will,
+if we go through with it and it saves money, will save a tremendous amount of money, but will
+require us to put in some amount of engineering hours for basically the rest of the time we want to
+use this format, which means that that's a budget that goes on forever. Whereas smaller companies,
+when they're making these decisions, at least I feel like they should be, need to look at instead,
+how much of this can I offload? Like, how much of this runs without an engineer being a big part of
+the runtime? So when you talk to people about migrations at these bigger companies, you basically
+are saying, we're offloading your individual team responsibility onto the shared team
+responsibility. And for smaller companies, you're trying to say, we're going to offload this
+complexity to maybe software as a service that someone's going to run this open source. And the
+reason that we want you to do open source is because we're basically going to make sure that you're
+never locked into any particular combination of other technologies. So you can always kind of make
+those moves as you see fit. But that's basically, I think, the big migration stories is how can you
+do less on your end? Because almost no one actually gets paid to do data infrastructure. You know,
+we mostly get paid to provide business value, right? That's the story of DBT, right? Like, you could
+manually be writing all of this pipeline code yourself by hand, but that's not what your company
+does to make money. So it doesn't make sense to have that as a homegrown thing. Same for table
+formats and file formats and things like that. So, okay, I've now spent the last decade of my life
+making open source software, but I have never been directly involved with an Apache project. So I
+am, and actually I don't think I've gone deep in the kind of maintainership story with anybody who
+is on the podcast before. So I'm very interested to, I think you first became a PMC while at Apple.
+Is that right? So can you tell me, like, what's a PMC? How does a project run? Any of this stuff,
+I'm fascinated by all of it. Yeah. So Apache is really interesting because it's basically when you
+completely are giving away authority over your project to a community. So the Apache projects that
+are out there are all ostensibly not owned by any one company. And instead, the way that you
+exercise influence on a project is you become involved in that community and the people who are
+already in power or on the PMC, which is the project management committee, recognize you and give
+you the ability to merge PRs or things like that, or be joined the PMC itself. And because those
+people are the ones who are controlling the project, as they move to different companies, the
+control over these projects, you know, shifts drastically. Because every one of those people
+basically is always thinking like, I may go somewhere else, but this project stays with me. So I
+focus on trying to develop this project in a way that makes it as popular as possible, it as
+functional as possible and benefits everybody. So Apache is really interesting in that way, as
+opposed to some other foundations or other ways of doing open source software, because you basically
+say, I am just one part of this and there's no CEO of this project who can decide what's going to
+happen next. There's no company that can say like, we're not going to do this or we're going to
+change the license. Just cannot happen. So it's very different. I find this all so fascinating
+because you were talking about how the PMC members really have a lot of control as they switch
+companies and all this stuff. Do you think it is true that if you look at the iceberg PMC list,
+which I don't know, it's like 20 people, 25 people, something like that? Yeah, something like that.
+Are they all, to the best of your knowledge, paid by some company to write this code? There's this
+idea that open source developers like live in their parents' basement. Yeah. But that's not real. I
+don't think it's, I think there, the thing is, I don't want to say it's not real because I would
+like to say it's like maybe two or 3% of like open source developers are not being directly paid to
+do the work they're doing to maintain the software. Like it's a very small pool. There are very few
+projects where it's just one person who's super devoted to making sure that this thing works and
+maintaining everyone's contributions. I think in most really successful big projects, the ones you
+know, the names of like Spark, Kafka, Iceberg, these are Flink. These projects are effectively
+maintained by employees of companies who have a vested interest in that software, continuing to work
+with whatever they're doing, either their software as a service or their frameworks or their engines
+or whatever. But they want to make sure that they have a voice at the table when those decisions are
+being made. So they hire people to work on those projects and hopefully gain merit and gain a
+position of control on the project as well. So it's very different than, you know, other, the way
+their software is developed. So it is very fascinating because, okay, if you, even at dbt labs where
+we, you know, build dbt core and publish it under the same license that Iceberg is published under,
+still it's not an Apache project. And so we control the roadmap. And so, so the relationship of the
+people who are the maintainers to the company is very much like a traditional company employee
+relationship. But it feels like it would be hard. Like, I can't even imagine what your performance
+review looks like because like, you're like not working on the, you know, Apple software or now, you
+know, to, to skip to the current chapter, the snowflake software. And, and I don't think like you
+probably report to a manager who can just say, look, Russell, you now, now need to implement this
+next feature. Correct? Yeah. I mean, that's a lot harder. So the way, the way it usually works in
+these sorts of scenarios is you kind of talk about the capacity at which you will monitor what's
+going in the project. That's a big part of your, your OKR, like making sure that if things are being
+proposed, you kind of know where the product is going, what's being delivered, who's interested in
+working on what. And then internally, you're looking at what your company is doing, what they want
+to provide to users and seeing how does that fit into the project? Who can you convince to get on
+board? It's, it's far more negotiating. You have to have a lot more in your OKRs where you're like,
+we will make this proposal. We will attempt to enlist people to jump on board. We will find out
+what, what compromises we have to make to make this happen. And Iceberg is a great example of this
+because almost everything we do in Iceberg, if it doesn't work with every vendor, every engine, it's
+kind of pointless. Like if we made something, I mean, I work at Snowflake right now, right? If I
+made something that only worked for Snowflake, then who would care? Like that's not valuable to
+Iceberg as a community. No one would do it. So whenever we make changes, we're trying to say like,
+OK, if we do this, how will everyone react to this? How will everyone be able to deal with this
+change? Will it improve everyone's experiences? Will it make interoperability easier or will it make
+it harder? Like, will it lead to a fragmentation of the community? So that's kind of what everyone
+is on, on board for trying to do. So it's kind of like a consortium developing like the HTTP
+standard or something like that. You have people who have vested interests in it working for
+everyone. And the, the good thing about having everyone at the same table is you can act as a
+counterbalance against things that where you're like, well, that actually won't work for this
+particular language or this particular engine. We get that all the time. We've, we've run into
+things where we're like, oh, you use Java conventions for all of that. But like that won't work at
+all for Python parameter names. Like we can't, we can't have this kind of syntax everywhere. It just
+won't pass any linter and break everything. So, you know. There is a point where somebody gets to
+decide whether this pull request gets accepted or whether this architectural decision, like, do you
+get together with the other PMCs and you like you all vote? How does that work? So the, the general
+rules of Apache is like a foundation. We're supposed to be consensus driven. So you're really never
+supposed to have to vote for a code change. Like you're supposed to always have everyone agreeing
+before something goes into the, to the code base, or at least no one objecting strongly enough. So
+every member of the PMC theoretically has a veto on any code edition. But in practice, this ends up
+being very, very rarely used. Like it, it's supposed to only be allowed to be invoked in case of a
+technical disagreement. So like if, if 10 people in the community all really want to add a feature
+and one PMC member thinks like, oh, well, that's just a bad idea. Like, I think we should do
+something completely different or that's the wrong direction for the project that you're not
+actually allowed to block. In that case, you have to have some reasonable thing like, oh, this will
+create a security hole that we will never be able to patch. That will limit the future, the
+project's development, but you are, you're, you're theoretically not allowed to block, you know,
+changes that just change the project in a direction that you don't agree with, you know, mission
+statement or, or features or things like that. Okay. So, and, and thank you. I could, you know, one
+day buy you a beer and ask you a million more questions about this because I think it's so
+interesting. I mean, Apache is like legitimately an important institution in like the era of the
+internet and of software. So it's, it's cool to see how they've done that. Yeah. I mean, I'd be glad
+to talk more about it if, if you want to hear, but it's basically, you can imagine it's, it's a
+committee of very smart engineers who all get together and, and they have to talk out their
+differences all the time. Um, so, so if we zoom in on iceberg a little bit, I, I think that it
+transitions naturally because there's this, um, you know, you mentioned Netflix before you mentioned
+Apple. Um, sometimes, or I think maybe even commonly the, uh, projects that move to the ASF
+originate inside of quote unquote big tech. And then a lot of times it is big tech that has the
+budget to continue to invest in them and employ the PMCs. And, uh, the, I'm curious how you view
+iceberg as a result of that. Like, what does success look like? Because, um, I, you know, my guess
+is if you look at the top 20 tech companies in the world, my, my guess is like probably some
+appreciable percentage of all of them have meaningful investments in iceberg. But then if you look
+at our usage data and iceberg adoption is going up certainly, but it's still something like, I don't
+know, 1% of the DBT community uses iceberg. So like, is your collective goal to support the 20
+biggest tech companies in the world? Or is it like, we want literally everyone using iceberg? I
+don't know if everyone needs iceberg. Uh, cause I, I think there's, there's a lot of use cases for
+which it's unnecessary to have this kind of complexity, um, for a data format. I mean, there's
+obviously OLTP data use cases as well, places where it makes more sense to use something like
+Postgres or something like that. Sure. But just like from an analytical perspective. Big world. From
+an analytical perspective, I, I would hope that no one is using raw parquet files in, you know, the
+next few years. I would love to get to a spot where your data at rest always has a little more
+structure to it than the way that we kind of saw like between 2010 and 2018 or whatever. Um, cause
+I, I don't know if you remember those days, but basically everyone was building these Hadoop data
+lakes and you were just dumping tons and tons of files into places and no one could ever keep track
+of anything. And schema evolution was a mess and you, you just ended up with broken tables. And I
+feel like we still are kind of working our way out of a lot of that legacy kind of thought on how to
+build things. But I mean, I've even talked to people where I I'm trying to get them off of like CSV
+files into parquet. So there's a broad spectrum of, of what we're, we're going for. And I think we
+can at least agree that CSV is probably not the ideal form for storing pretty much any amount of
+machine readable data. Uh, we've got better options. Uh, and I think we'll probably get there
+eventually. Like, I think we, we, we would have, if we looked back far enough, we would have seen
+everything is in text files with no encodings at all. And like CSV and things like that, where
+you're relying on some very specific language, uh, layout to decrypt your files and get what data is
+in them. Um, when I was in grad school, we worked with a, a format designed for protein
+crystallography for 3D structures of molecules. And it was a Fortran based system. So it was like
+column one and column two are the, you know, amino acid type and then column three through 10. And
+like you end up with these really complicated bespoke formats that only work with one system and
+don't have good encoding. And now we're at a, at a time there where we've kind of figured out at
+least how to do relational data. We, we at least kind of know that it should be in a machine
+specific format that supports different kinds of encodings and is extensible. And, um, I think we'll
+be the same way for table formats as well. Like we're going to get to the, to a spot where people
+just don't have a raw parquet partition table where the folder names are the way you access
+partitions. Like, I think that's kind of gonna go by the wayside eventually. That would be my, my
+success is those use cases have migrated over to real table formats. So that's the, the like lake
+moving to the lake house, uh, is, is kind of the direction that you're coming at this from, which,
+you know, I fully supportive. Um, the, the other part of this is like the warehouse moving to the
+lake house. Um, and so, you know, historically, uh, if you looked at more structured data systems
+that look more like databases, um, you know, the, the storage was tightly coupled with the compute
+and, you know, the other 14 tiers of a database. Um, I do, are, are the ways that you folks think
+about, um, the iceberg roadmap, are they mostly like helping people who used to be on pure parquet
+and CSVs and all of this? Are you also thinking about people who were locked into, you know, one
+database and they want to go multimodal or something? Yeah, we're definitely thinking about those,
+those folks as well. I mean, it's that, that, that disconnect between hardware and storage or
+compute and storage is just so monumental and like how it's changed things recently. Again, a big
+change from the Hadoop era where we, you know, I've spent a lot of time. If you look up my name,
+you'll see a lot of talks where I talk about how co-locating certain types of applications like
+Cassandra nodes and spark processes can do way better than talking over your, your network. And that
+kind of stuff just like doesn't matter anymore because everyone is now in this cloud space where
+your storage is basically infinitely elastic and not really local to anything. And your compute is
+also elastic and also completely separate. So we don't have the same design considerations. I mean,
+it's one of the things you look at a lot of these formats, like including iceberg, and we have like
+some default split sizes, default parquet configurations, which are basically tuned around HTFS
+defaults. And we have almost no one using HTFS as their main storage. Now, even people who are using
+HTFS usually put some kind of S3 compatibility layer on top of it. So it actually looks like S3 to
+all their clients. And that kind of throws out all these IO assumptions that we used to have, like,
+does it make sense to have a 128 megabyte file when you're in S3? I mean, maybe not, because who
+really cares? Because our IO operations are kind of unrelated to how we have laid out the disk
+logically or the memory logically, because the S3 system itself is going to lay it out in some way
+that only the current AWS engineers are going to know. And we basically have to do all these
+different IO patterns and things like that. So I think that's a big change. But I do think everyone
+wants to move in that direction, because the ability to decouple those two things is huge. No one
+wants to pay for compute on storage, have them so linked so that you're always paying for your
+compute just because your storage went up or something like that. You want them completely
+decoupled. And I'm, you know, running the risk of asking you to go way too deep. So I'm going to ask
+a question. And then if we end up diving way too deep in the rabbit hole, I'll pull us back. But I
+am interested in the evolution of Iceberg at a technical level. There has been V1, V2, V3. And now I
+think you're primarily working on V4. Working on V4. Yeah, I can describe this at a pretty high
+level now. What are the big arrows of progress? Why don't we like kind of break it into like use
+cases, which is kind of how I think about it sometimes. So like V1 of Iceberg is basically I have
+Hive. I have a transactional analytics table and I would like to store it somewhere with real
+transactions and with less IO. So the big use case is just that basic ETL kind of thing. So
+transactions have been in since the very beginning? Yes. Okay. And then V2 kind of takes us to the
+use case of GDPR compliance. So the big feature of V2 is row level operations. The ability to more
+efficiently deal with the fact that sometimes we have to delete one row in a file that has 10
+million rows. And previously in V1, the only way to do that would be to copy the entire file minus
+that one row. So V2 added the primitives that were required to do that without recopying the entire
+file. Physical delete or logical delete? Basically, you do logical delete. So you add in a file that
+basically marks which rows in the existing data file have been deleted as of a certain point in
+time. This is where I didn't want to get into too much detail. So like for GDP, because you
+mentioned GDPR is a big use case. I think logical deletes are insufficient, but maybe during the
+next maintenance operation. Yes. Yeah. So basically you can accumulate these point deletes and they
+appear invisible to couriers. They can't see the missing data. So as long as your system is shut
+down, you can have that. And then eventually you do have to completely purge them from your system.
+But now you're aggregating those together. So instead of doing it live every single time, which
+would require copying the file over every single time, you aggregate your deletes. The view is
+correct. And eventually when you do compact, when you realize those deletes, they are physically
+removed. So basically a whole new set of use cases opens up in V2. I would say V3 is our first big
+step into other use cases. So geospatial types get added. Variant data types get added. We add in
+these types that basically let you start doing semi-structured data and geographic data and kind of
+opening that up. Because a lot of relational systems already have built-in geospatial types or
+built-in like semi-structured types. And this is bringing those into Iceberg as well. So now Iceberg
+has kind of expanded out to be able to handle just a wider variety of data analytics use cases in
+these other spaces. I think V4 looks to me. Before you move on to V4, I was just talking to Chris
+Child, whom I assume you know. Yeah, yeah. Yes, he tells me what to do. Yeah, okay. I think he was
+talking about you folks contributed a lot of work on the variant data type. Is that right? Yes. It
+was a huge collaborative effort, of course, like all of these things have to be. But there were
+folks at Snowflake and Databricks and Google and Amazon. And we're all together and just yelling
+about how this is going to be. Because again, we want to make sure that when we have it done, you
+can take a file that's written by any of these systems and read it in any of these other systems. So
+we have to get it in a place where everyone can have full agreement before we all start writing them
+or you end up with a split in the format. Is variant actually specified in the SQL spec anywhere? Or
+is that like a thing that is purely of industry? Man, you're asking a question. Did you guys like
+invent variant from scratch and everybody had to fight about what it even means? Variant as a
+concept has existed in a lot of like warehouse systems and things like that. I would say there is
+prior art for it. The specific variant that we are using in Iceberg comes initially from some work
+that was done at both Databricks and at Snowflake. Because Snowflake has actually had a variant type
+built into their format for a very long time. And they were like, we want to be able to have people
+have the option of using Iceberg, but also have variant. And Databricks folks similarly had that
+view. They also want people to be able to use variant. So working together, you kind of come into
+agreement and you decide on something. And we got it moved into the Parquet project. And now there's
+just a well-defined variant type. Oh, interesting. In order to get a new data type, you can't
+implement that. You have to go down to Parquet to do it. Well, you have to at least have some file
+format that supports it. Because otherwise, the Iceberg spec itself doesn't tell you how to binary
+encode anything. Sure, sure, sure. So what is it? You primarily work with Avro, Parquet, and
+something else? Avro, Parquet, and ORC. Although really, Parquet is the one that gets the most love.
+The other two do not have the same backing. But the Iceberg spec will say, like, this is a type we
+support. We support an int. We say the int is going to be, you know, eight bytes wide. That's it. Or
+something like that. And then the file formats then have to have a conversion of whatever their
+underlying type is into the Iceberg type. So you end up with file formats that have definitions of
+types that need to go to Iceberg types. And then the engines that are reading this, like Spark or
+Trino, might have their own type representations. But they only have to understand Iceberg types.
+They don't have to understand the file format. This is actually a little more complicated than that
+because almost all of these engines have custom readers. So they kind of bypass that. But this is
+how they know what type they should be reading as. Because they'll look in what Iceberg says and
+then read it based on that type definition or do type modification if required. Okay. V4. So V4, I
+think, is going to be our big kind of streaming push to kind of make Iceberg a better fit for a lot
+of streaming use cases. And since we still have a lot of time, I think it's also going to be our big
+push into AI specific use cases. Because we know there's some spots in Iceberg where it simply is
+not a good fit for some of the kind of operations that AI users kind of expect. And this is probably
+not for the folks watching this podcast particularly, but for people who are building their own like
+AI services where you have to store huge amounts of vectors. So I was just talking to Chang She of
+Lance. I know that Lance is not currently one of your supportive file formats. I don't even know if
+that is. But like in order to solve some of these AI problems, isn't it partially a file format
+problem? That's a really good question. So there's a question of whether it's a file format problem,
+a table format problem, or actually even a mix of the two. So like LanceDB has both, right? They
+basically have to attack it at both ends to get that solution. And we're exploring some approaches
+now on like whether or not this should be a change in Iceberg alone or something that Iceberg and
+Parquet simultaneously do with changes on both sides that end up with a similar kind of outcome. But
+we're heavily aware of the things that you cannot currently do within Iceberg. that you want to be
+able to do with these kind of AI use cases. And we're actively trying to figure out what the best
+solution is without, of course, throwing out all the Iceberg tables that already exist. So hopefully
+we end up in a world where we just have those capabilities. I mean, it's similar with V3. We're
+looking a lot at other systems that look like Iceberg, but maybe do better for streaming use cases.
+And just being like, well, why don't we just take those bits that we think make sense and make
+Iceberg better for those use cases? So, you know, it's basically the evolution of the format is
+where can we get consensus amongst everyone? We can all agree that this is how we will do it. And
+then widen that user base of Iceberg even more. Yeah. Say more about streaming. I took you down the
+AI path. What does it mean for Iceberg to be better at streaming? So the main things that we need to
+do to be better at streaming, I think, are the latency of the commit process. So this is getting a
+little into the weeds. But the way Iceberg works requires a lot of files to be written before it
+happens. So for very lowly... If you read the original Duck Lake post, they really love to talk
+about how many... Yeah. I mean, it's got a lot of spots there, which, you know, we're talking about
+maybe 100 milliseconds or something. But it's, you know, we would love that to not be that many
+seconds. So we'd love to get to the point where it takes only a single file write to actually do
+that final commit process while the preparation is still very expensive. I mean, that's one of the
+things here is that Iceberg's originally written for this use case where we expect that the time
+writing data files is like 10 minutes, 10 or 20 minutes. It arose out of the patch-based Lake
+environment. Yeah. And then you're like, so your commit takes 100 milliseconds instead of 10
+milliseconds. Like, no one cares. But when we start getting these streaming use cases, we're ending
+up with people who are like, well, I want to write, you know, every minute or every five minutes.
+Now it starts to add up and we really need to start cutting that time down because they're going to
+spend most of that time writing data files and then they need to commit as soon as possible. They
+don't want to have to do any kind of retry. So that's another big thing in our V4 proposals. There's
+a huge one out from us and from Databricks that we've kind of merged them because we both kind of
+had the same ideas where we're going to try to make it so that the retry process. So if you attempt
+to commit and you were beat out by some other committer, you'll be able to retry much faster. So the
+way that it's currently set up requires you to do basically a bit of recomputation before you can
+attempt to commit again. And we're going to try to reduce that as well. We're also looking in the
+catalog protocol itself to try to figure out, can we send the information about what's changing in
+the table in a way that is easier to deconflict. So currently the deconfliction mechanism in Iceberg
+basically says, if you changed from when I tried to commit, just retry. And you'll figure it out.
+Whereas in the new commit protocol, the way that we're thinking about things in the Iceberg REST
+API, this is our catalog API, we're saying, what if instead you say like, I need to add these five
+files. And when I add those five files, these three other files better still exist. And after you
+add these five files, delete those three. So this would be like conceptually describing what it
+would take to like replace those three files with new data. And then having that deconfliction
+happen at commit time rather than on the client. I don't know if that made sense, but basically the
+way it works now is we only save the end. We're like, oh, we made state A. Are you still at state B?
+And if the catalog is not at state B, you stop, you go back and you make state C to be built on top
+of it. Whereas instead we would say like, try to get to this next state. Here are the steps you need
+to do. Are any of these steps impossible right now? So big, big moves in the future. Oh, geez. I,
+um, I think I'm going to leave that one alone, but gosh, I really want to, I, I, I almost want to,
+to go down there, but I think that would be a wrong turn. Um, okay. So we, we've to date been
+talking or to, to this point in the conversation, we've been talking to, uh, iceberg, the, uh, open
+table format, but you're also, uh, I believe involved in Polaris. Is that fair? I am. I am also on
+the PPMC for Polaris. So that's like in that group of engineers who kind of makes larger voting
+decisions on, on the, on the projects. Wait, what? PPMC? There's another P because it's the, uh,
+proposed or is it, um, proposed. Yeah. I think it's proposed project management committee. So
+Apache. See, now you're going to tell me the weeds of how Apache works. And you don't know what the,
+yeah. It's, it's for projects in, in Apache. Do not get to, you don't get to just say, Hey, I've got
+a project and now it's an Apache project. Well, I'm sorry. It's PPMC because it's not a full fledged
+Apache project yet. Yes. It is an incubating project. So basically we're in the process of proving
+to the greater Apache community that we can operate like an Apache project. So they do the things to
+make sure. It's not that it's not that you're trying to prove that the world wants Polaris is that
+you're trying to prove that you, that this group of people is able to do the thing. So Apache is
+very clear about this. They do not care how many projects they have that do the exact same thing,
+unimportant, or how popular those projects are. The important thing for an Apache project is that it
+follows the fundamental principles of how an Apache project should operate. So it's doing things
+like making sure that you've given up all the trademarks. Like you can't be an official Apache
+project unless you have given all the trademarks over to Apache. There are other foundations who,
+you know, you've gotten in trouble with this where like you say you can have a, you know, a project
+join. And then at the last minute, they're like, you know what? I don't actually want you to have
+the trademark. So now you have a project that the foundation owns, but they can't actually use the
+name because the trademark is held by a corp. Like this kind of stuff happens. So this is what the
+incubation period is for. It's can you work as a community? People, multiple people working on the
+project, taking feedback from people in the community and allowing people to join and making sure
+that you're only allowing things in based on merit. You're not excluding people based on where they
+work or what they think, you know. Sure. Okay. So for Iceberg and Polaris, the interface, I believe,
+is the REST catalog spec. Is that correct? It's the thing I was just describing a little bit. And
+now is, who specifies that? I don't think Polaris specifies that. I think that Iceberg specifies
+that, right? So Iceberg has written the Iceberg REST spec because we also write the client
+implementation, or at least we have one of the client implementations. So Iceberg REST spec
+basically has been defining like, this is how this code base, which is essentially a client code
+base, will talk to a catalog and tell it what to do to make a commit appear. So all of those
+discussions happen inside of the Iceberg project with the same PMC that goes over the table format
+itself. And then the Polaris PMC is discussing, how will we implement that? How will we actually
+define how these things work together? It is kind of an interesting relationship, right? Like
+there's a different set of PMCs that get to define kind of the behaviors, the interface of your
+project. Yeah. I mean, it's very similar though. I mean, you have very similar things on like
+Parquet and Spark and Flink and all these, because we have all these systems that work together, but
+the API boundaries between them have to be decided by one group and the other group has to react.
+Although many times the people who are involved in all these projects are on all of these different
+boards. Okay. So I noticed like you're on both of these, Julian Ledem is on both Parquet and
+Iceberg. So like there's this connective tissue. Yeah. You get a lot of people and, and cause you, I
+mean, one of the downsides of being this kind of community-based approach is that everyone, you
+know, kind of gets pulled into your next project. So it's very kind of, you end up a little cliquish
+sometimes and the same people kind of get involved in thing after thing after thing. But it is one
+of like the active things we try to work on is to try to expand that group to allow more and more
+people in. But you will often see a person on, on the PMC of several related projects because they
+simply worked on one and then they were interested in how it integrated with another. So they ended
+up doing a lot of work there and then they ended up with, with, you know, a position in that project
+and you just kind of keep going there. You can feel free to opine as much as you want on, on this or
+not. But I think it is very confusing to, to me, the relationship between Snowflake and Horizon and
+Polaris. And, you know, there's, there's internally managed iceberg or like Snowflake managed
+catalog. There's, there's externally managed catalog, which they went, hopefully you use Polaris,
+but you don't have to. And it's, it just seems a little bit confusing. Can you de-confuse this?
+Well, I mean, hopefully we are going to, we're changing things right now to hopefully make it much
+simpler to understand. Oh, I didn't realize that. Yeah. I mean, we, we recognize that the way things
+were, were set up are confusing and we're working to simplify that and just make it a much easier
+decision for folks. Um, but basically the way that it will look in the future is that there, there
+will be either you are running Snowflake and Snowflake provides you this rest endpoints for iceberg
+catalogs, or you're running your own iceberg catalog, which could potentially be this open source
+Polaris. And then, you know, you're connecting to that, but Snowflake can connect to either, either
+itself or any of these other external iceberg rest catalogs. So it really just comes up to who do
+you want to manage your, your software, right? Do you want to be running Snowflake as a whole stack?
+And if you are comfortable with having Snowflake governance and all of that things on top of your
+catalog layer, you can talk to that using any other iceberg rest client. Or if you just want an open
+source code base, but you don't actually want to run it yourself, there's a managed option of that.
+But again, Snowflake can talk to that and any other iceberg rest client can talk to that. And then
+finally, there's open source Polaris as its own thing. So if you want to run it yourself on your own
+hardware, you can do that and Snowflake can still connect to that. So hopefully it'll be much
+simpler. It's not, not, not so much all these different terms. It's just, where do you want to run
+your catalog? Who do you want to be your catalog? And then everything works with everything else. I
+mean, that's the big promise of the whole spec. Is it fair to say that Horizon and Polaris are two
+different code bases, two different things? And then the third choice is, do you want Snowflake to
+manage Polaris or do you want to do it yourself? Is that right? Kind of. At some level, the Horizon
+support for, for iceberg is Polaris based. Oh, interesting. Okay. Yeah. So, so when you're running
+Polaris, yeah. So if you're running Polaris, either managed by us or on your own, that is the same
+code base that's kind of backing up the support inside of Snowflake for iceberg. Interesting. But
+there's more layers. Yeah, there is because it's still the complete Horizon package. So it's not
+just that. It's also all of the other things that Snowflake supports in terms of catalogs. I
+understand that, you know, as a Apache ASF, you know, PMC member, like your job is not to see
+Polaris quote unquote win. But, but, you know, you hopefully want adoption of this thing. What?
+There's a bunch of implementations of the iceberg rest spec. Do they, are they different? Are they
+strong at different things? Are you like, what are the decision criteria that someone would have if
+they said like, well, what, what implementation do I want? Yeah. I think that's, that's a really
+hard question. And as like this kind of backend dev engineer, I, I don't try to get into those kind
+of like debates that often. Do you, do you have an opinion on like what Polaris is trying to be best
+in the world? Oh, well, I believe Polaris, Polaris is trying to, to be best at, at everything. It's
+a very long roadmap, but it wants to be that full iceberg catalog, business catalog, support other
+table formats and file formats, like support everything. Interesting. So, so Polaris is not
+exclusively the iceberg. No. So we already even have support for basically acting, having your
+Polaris catalog act as a generic Spark catalog. So like, if you have Spark and you connect to
+Polaris, you can save every kind of data source into it that Spark supports. So you can basically
+replace an HMS with Polaris if you're using Spark. But that's, you know, just one, one piece of
+this. So I think we're, we kind of looking to provide that kind of lake house interoperable catalog
+that people can use and can also be that building base for what we're, we're trying to offer to
+people inside of Snowflake. I know there's a lot of other projects and I think the main, the main
+differences between them are all very fundamental architectural ones, but I don't know if they're as
+user facing. So like, should persistence be treated like a key value store or should persistence be
+traded like a relational database? Can you assume that the persistence layer can do transactions or
+should you assume that you can't do anything but a check and swap? Questions about should the
+catalog be responsible for policy enforcement or policy recording? Should it be responsible for
+tagging and identity? Like there's a lot of different questions and where the catalog should fit in
+that. And I think the Polaris project is, is trying to get into a place where a lot of those things
+have a basic implementation, but are pluggable so that folks who want to use Polaris in some
+different contexts can, can do that. So like, for example, we have folks working on open identity
+provider interfaces and things like that. So it doesn't just use Polaris native principles. You can
+actually hook it into like AWS or GCP or I forget what Microsoft is, Entra or things like that. And
+you can basically say, I'm using a completely different identity provider. That's where you should
+be getting all that, those decisions, things like that. One of the things I wanted to make sure to
+hit with you while I had you was, was identity because it does seem, you know, we were talking
+before about the, like, however many tiers of the database you want to, you know, enumerate. And,
+um, while certainly iceberg itself is an important layer, the catalog layer is this really, really
+messy thing to, to determine like how much scope do you want to give it? Because you can, it can
+like expand out to include like most of the database. It, it is wild. I mean, I've seen a lot of
+people use terminology of like business catalog versus like system catalog and things like that to
+try to differentiate some of these ideas. And of course, people are talking about like semantic
+catalog now, which I feel like combining even more of these ideas together. But, um, Polaris is
+definitely trying to stay on the system side of things, but we'll see what happens as, as time goes
+on. I, it's hard. Where's the, where's the scope line in terms of identity and access control and
+all this stuff? That's, that's the hard thing. So like, it's hard to define access control without
+defining how you actually access the table, right? So you need to have those things connected, but
+then there's this whole different notion of how some people work with catalogs where they're like,
+well, for data discovery, I don't need any notion of what is available or how to actually get it.
+I'm just actually cataloging all the data sets that are. And instead I have like a note that's like,
+if you want to access this, you talk to team whatever. And for that catalog, you, you need no
+information about how the underlying tables work. You just need to know all the tables that are
+available and have access control. But the access control is just about listing, listing and
+showing. It's not about reading and loading. So we have, that's, that's what I would consider like
+the business side of things where like those capabilities have to exist. But if you want to do
+actual access control on the data itself, then it has to be a part of the catalog too. But then it's
+a system catalog. It has to actually know how do the files get laid out? Like, what does it mean to
+have a table that you can grant access? So like in the case of Polaris, the way we do, you know, S3
+grants and things like that is if you want access to a table, we basically give you a credential
+that says you can access the directory, which this table has files in for that particular load
+operation. And that credentialing, like vending of that credential can only be done if we understand
+how the table is laid out. Like you can imagine a system that supports a relational catalog can't
+vend credentials in that same way without understanding how the data is laid out. It probably
+instead has to do some kind of like user impersonation or something like that or delegate the
+decision to the other system. So actually accessing the data always makes things more complicated,
+but that's kind of the side of what we're doing in Polaris is a catalog that knows how data is
+actually laid out for for most of the things it does. I am increasingly of the opinion that it is
+going to be this set of things that I don't think prevents iceberg adoption, but maybe prevents it
+from being kind of the mass market default of like how everybody just chooses to do everything. It
+could be. I don't know. For me, I think. At least over the next couple of years, like we're still
+figuring some things out. Yeah. I think we're getting to, it's always weird. What used to be
+considered really complicated now is so commonplace that we wouldn't even think twice about it. Like
+right now, if I told you I had a data set of Parquet files, you'd be like, of course, that's
+everyone has a data set of Parquet files. But if I told you that, you know, 15 years or too long
+ago, I'm trying to remember the early days of Parquet, you'd be like, well, why aren't you using ORC
+files or something like that? You know, like there's things change. And what used to be completely
+unexpected and impossible to deal with is now totally normal. And everyone is just assumes that
+like, yeah, all your data files are compressed, have modular compression and things like that. I'm
+sure encryption is going to get there sooner than later where everyone is just like, well, of
+course, all of your data files are always encrypted. Why would everyone ever not do that? We have
+all of our data on the cloud. We're going to encrypt everything so that our cloud providers can't
+look at our data or whatever. Well, I'm looking forward to, you know, just the way that, you know,
+the team from Databricks and the team from Snowflake got together to, you know, agree on a variant
+data type that like everybody agrees that like, this is how we map users between systems and how we
+understand the grants to the data and all of this. Like it's, that one is getting harder. We have a
+lot, we have a lot more strong decisions there, but yeah. Yeah. Yeah. Well, Russell, this has been a
+lot of fun. Thank you for, for joining me today to, to share the inner workings of Iceberg and
+Polaris development. All right. Well, thanks so much for having me on. Thanks for listening. Thank
+you.

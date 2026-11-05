@@ -1,0 +1,2322 @@
+ This is Software Engineering Radio, the podcast for professional developers on the web at se-radio.net.
+ SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+ Online at computer.org slash software.
+ Hey everyone, welcome to today's episode of Software Engineering Radio.
+ Our guest today is Birol Yildiz.
+ Birol is the CEO and co-founder of Eilert, a Cologne, Germany-based SaaS company doing incident response.
+ And he's built something called an AI SRE, which is essentially an AI assistant for handling production incidents.
+ We're going to get into how it actually works, where it breaks, and what building it taught Birol about AI agents in the real world.
+ Welcome to the show, Birol.
+ So happy to have you here to discuss this topic.
+ Is there anything you'd like to add to your bio before we get started?
+ Thanks for having me.
+ No, that was pretty much it.
+ Thank you.
+ So maybe let's start simple, Birol.
+ When somebody says an AI agent, what does that actually mean to you?
+ Yeah, an AI agent is a piece of software that uses a large language model that produces tools to make decisions, right?
+ Maybe it becomes easier if I give you a counter example.
+ Some people would call a workflow an agent.
+ Let's say I have a workflow that checks my emails once a day or every hour and then drafts responses, right?
+ So there is some level of agency because you have something doing something for you on behalf, even if it's drafting responses or sending emails.
+ But that we wouldn't call an agent.
+ So an agent is really a large language model running in a reasoning loop and deciding its own trajectory, essentially making its own decisions on how to solve a particular problem.
+ So let's get into the details of it with the AISRE and what makes it agentic.
+ But before we get into that, how did the AISRE start?
+ Was it always meant to be agentic from your perspective or did it just evolve that way?
+ In our case, it was always meant to be agentic because another way to look at this space or just another way to look at incident root cause analysis and incident resolutions are runbooks, for example, right?
+ I could have every possible situation somehow codified in runbooks and then have some workflow execute them automatically.
+ And there are solutions that exactly do that.
+ Or even if they're not automatically, they help an incident responder doing an effective response by having something, a document that tells you, okay, given this problem description, you should execute these steps.
+ And these are the likely things that you can look after to mitigate the incident.
+ In our case, our AISRE was meant to be agentic from the start.
+ What we didn't know when we started, when we thought about building an AISRE, we didn't know that this was before reasoning models were introduced.
+ And we made a bet on reasoning models, but we didn't know that they will became reality so quickly.
+ So we started looking into that space by the end of 2024.
+ And our first attempt was like, how can we simulate a human that essentially opens a bunch of tabs and looks at a bunch of graphs and dashboards and looks at logs.
+ And that was our first idea.
+ So let's have an AI use a browser and then make screenshots of images, which is like by image, I mean, could be a list of logs, could be a dashboard, and then try to understand and create a whole picture of the situation.
+ So yeah, to answer your question, yes, we wanted it to be agentic, but we had a different approach in the first place.
+ So can you tell me a little bit about the evolution?
+ Yeah, it started as an idea, and the idea, like the implementation, we never pursued that exact implementation.
+ These were ideas in the beginning.
+ And at one point, I think this was in April, where first reasoning models were launched, and then something else happened.
+ The model context protocol took off, right?
+ So initially we thought, okay, when there is an incident, we have all the data, right?
+ We do know where to go, because when we receive an alert from a system, the responder would look at the incoming, the source links, and would just go to the source of the alert, and then would access its systems.
+ And this is what we tried to initially mimic, having an alert, and then essentially doing all the steps by going to the source systems.
+ But once reasoning models were a reality, and once the MCP protocol was launched, and MCP was something that took off really quickly.
+ So it was all over the place, and people were building their own MCP servers, which doesn't mean that it was good from the beginning.
+ And today, we were even considering different approaches than using the MCP protocol.
+ For those who are not familiar with the model context protocol, it's essentially a protocol that lets agents access external systems using a standard.
+ It was initially published by Anthropic, and was picked up and supported by all the frontier labs, including Google, including OpenAI.
+ Once we had those two ingredients, model context protocol, and we had reasoning models, we started building an agent.
+ What we didn't know back then, you were asking about evolution, so first we started, although we had reasoning models, we wanted to be very prescriptive about that particular problem.
+ We literally had a prompt, the system instructions that were more than a thousand lines.
+ We would tell, okay, this is the usual path that leads to success, please follow this, here are a bunch of rules.
+ And then we did a bunch of iterations, and what we have today is different than what we had a year ago.
+ And this space is, as probably many know, moving very fast.
+ And we're trying to somewhat predict where models are going, and trying to benefit from model capabilities from the start.
+ So as you point out, this is evident in many talks.
+ There was recently something from the OpenAI platform engineering lead, I'll put a link to that in the show notes, where he also points out that models are improving so fast that any scaffolding that you put in, any framework that you put in, becomes outdated pretty quickly.
+ Seems like that has been your experience so far as well.
+ Yeah, 100%.
+ And for us as engineers, we sometimes tend to over-engineer, right, when we look to solve a problem.
+ And with, I think, this happens all the time, right?
+ And what we end up doing is removing things and simplifying things after we've built something.
+ But the difference with AI is it's moving so fast.
+ For example, one of the first AI use cases that we introduced was an intelligent alert grouping that's based on semantics instead of text, right?
+ And we weren't using LLMs, but we were using text embedding models.
+ So we first introduced the vector database, vectorized all the events that we received using a text embedding model.
+ We hosted everything on our own.
+ So that's what people would call a rack architecture, for example.
+ And once you have the vector database, it's, I mean, if something's there, you tend to use it, right?
+ And although we attempted, like it was very tempting, we didn't use a vector database for that problem because now it's very clear.
+ I mean, back then we wanted to keep the architecture very simple, but now it's very clear.
+ And I think everyone would agree that Egentic Search, for example, performs very well.
+ And you don't need all, and you called it all the scaffolding.
+ And I fully agree with the talk that you were referring to.
+ All of the things that you're trying to build around, apparently the weaknesses of an LLM, they become irrelevant.
+ And right now we have an approach, and we literally had a meeting yesterday where we, I think the outcome of that meeting is we're trying to get as much as possible out of the way of the reasoning model and let the reasoning model do its job, right?
+ And there are many, we're still experimenting with different approaches and we're putting a lot of energy into building the right context.
+ But then even if you have the right context, there are still many questions, right?
+ How you can approach this?
+ Do you provide the context upfront or do you let the agent gather the context when it needs it?
+ If you need to process large amounts of data for root cause analysis, which is like naturally for root cause analysis, do you have this in the main reasoning loop or do you have forks off the loop and have sub-agents or forks off the current agents?
+ So there are many ways how you can approach this problem.
+ And right now I think just trusting on the reasoning models and be very high level when it comes to the how, but only focus on the what, like what are you trying to achieve, right?
+ And then let the reasoning model do its perfect job.
+ And we focus on a nice integrated experience because we integrate with hundreds of tools and we want to make it very easy for our customers to be that glue piece and get the job done in a very short amount of time.
+ And the job here is in the first place is a root cause analysis that takes minutes instead of maybe 10 minutes, 15 minutes, in some cases up to an hour.
+ Do you have a number on that, Pirol?
+ What does mean time to root cause look like with the AISRE compared to without across your customer base?
+ Yeah, sure. So we want our AISRE to finish root cause analysis within four minutes while we don't measure time to root cause analysis without the AISRE, because that's something that happens usually when it's done manually.
+ What we do know, however, is two important metrics in incident response are MTTA and MTTR.
+ And MTTA is the time to acknowledge, right?
+ So when you have an incident and you have a human acknowledging that incident and start working towards a resolution and MTTR is the time when the incident is mitigated.
+ And the reason we came up with four minutes is usually across our customers, we took the ones who are mature and where the stakes are high, and they usually accept incidents within two minutes.
+ That's the time a problem is known and they have a human being aware of it.
+ And then we add another two minutes because that's the time when, imagine it's 3 a.m. in the morning, you receive a phone call from Eilert, you acknowledge, and then it takes you maybe another two minutes until you are in front of your laptop and want to get started, right?
+ And by then we want the RCA to be finished.
+ To answer your question, so that's our internal goal for RCA completion.
+ But of course, we do know anecdotally by having customer conversations and from our own experience what an RCA that is completed manually looks like, right?
+ And it usually depends on the incident and it's somewhat between like 10 minutes up to 45, sometimes even like for really complex incidents where you have 10, 20, 30 people in a war room, it can take up to an hour.
+ Our goal is to complete that RCA within four minutes.
+ Sometimes it takes, I mean, we're able to perfectly measure the time for RCA completion, but we're not able to perfectly measure whether that RCA was accurate because these are a human being to do a thumbs up or a thumbs down,
+ which even if there are buttons, even if you prompt them to do that, it doesn't happen.
+ And the technical RCA completion sometimes even takes 10 minutes, right?
+ So if the search space is very big, there are instances where it takes you more than we wanted it to take and we're optimizing that continuously.
+ Viral, what is your definition of agentic search?
+ The agent has a bunch of tools and these are usually very well-known tools that you would have on the command line, for example.
+ So if you look at Cloud Code, it has a few tools like grep or like zet.
+ For zet, I think it uses the bash.
+ So it can use the bash and it can just pipe these commands on the terminal and then build its own search query by piping multiple commands where you maybe you read a file and then you make a search within the file.
+ And then you pipe this output to another JQ command, for example, where let's say you have a JSON document as an output, but you're only interested in certain attributes of the JSON document.
+ So you pipe it to JQ.
+ And then even though the underlying data that is the search space is big, it never makes it into the context because the agent just builds its own search query based on these very well understood and very easy tools.
+ And the other approach would be, I have a vector database which is indexed and you make vector searches and you keep this.
+ And there's another pipeline that keeps this vector database up to date.
+ I guess agentic search is a fancy way of just using old school terminal commands, grep, zet, jq.
+ You mentioned that you're focusing on the what and leaving the how to the model.
+ Do you get the model's advice even on the what?
+ What the architecture should look like?
+ Do you leverage the model for the design docs, for example, and code generation?
+ So first of all, I think right now we use AI across the board and especially for code generation.
+ Our CTO recently shared a stat with me, which is like our AI generated committed code is, has passed in the last month, I think 95% and in the last three months, somewhat close to 90%.
+ So yes, of course, we do leverage LLMs for code generation.
+ Absolutely.
+ And actually for the entire SDLC from design to having an LLM as challenging a certain way how to do things, discussing a certain trade-offs with an LLM.
+ That's something that the team already does.
+ And I think it is rapidly changing.
+ So we're now at a level where I like to use one analogy when it comes to using AI for code generation for software development, which is if you compare an e-bike to a regular bike, right?
+ And some people still think or view AI code generation as an e-bike.
+ What's the core difference between an e-bike and a bike?
+ I think one major difference is, at least to me, is it's a nice to have, right?
+ It doesn't really make you faster.
+ If you use an e-bike, it makes your job easier, but it doesn't really make you faster, right?
+ Like you can be as fast as 30 kilometers per hour using a bike and an e-bike goes up to 25, but it's easier to get to your destination.
+ So that's why, for example, I don't use an e-bike.
+ But it's different with AI.
+ AI doesn't make your job easier.
+ AI makes the very act of writing code easier.
+ But our job is not to write code.
+ Our job is to deliver value to customers, produce something that consumes less than its producers, just be useful to other companies.
+ Therefore, AI actually makes our job harder because we need to master a new skill.
+ And that's something I've been telling to my team.
+ And based on discussions I'm having, people can have different views.
+ But in my experience, the pace of progress that we're making with code generation and the impact it will have for software development is not yet 100% clear, at least in parts of my bubble.
+ Lankit, let's get into the under the hood of the AI SRE.
+ Tell us how it is actually structured.
+ What are the main layers and what do they do?
+ So you did talk about context.
+ So there is the knowledge layer.
+ There is the orchestration.
+ There has to be a testing and evaluation layer and something that constrains it.
+ Are those four accurate?
+ Is there anything else?
+ Can you talk about each of those?
+ Yeah, I think those four building blocks are accurate.
+ Speaking of how it's built, we have a service that we call an orchestrator.
+ So that's the main contact point, the main API where all our AI agentic services or even non-agentic ones go through.
+ And it has a few responsibilities.
+ For example, building purposes of these models, AI features, they consume tokens.
+ And depending on what model you use, the price tag is different.
+ And that's one responsibility.
+ And the other responsibility is just routing the requests to those individual agents.
+ Then we have a second service where we encapsulate all the logic of all those agents that we're building.
+ And there are quite a few.
+ And some of them are exposed in the sense that you can build your own agents, right?
+ So in iLert, the way it works is when I'm an SRE team, I would like to have an agent that is purpose-built for my team.
+ That means that agent has certain privileges, has access to maybe my GitHub, my observability stack, and is equipped with certain domain knowledge.
+ And currently, we keep the knowledge part very lightweight in the sense that we don't have a RAC pipeline, that we index knowledge from a corporate repository.
+ Instead, the agent has its own long-term memory.
+ And it's built this long-term memory, essentially an autopilot.
+ Again, the way we store it, it's very simple.
+ We don't use a vector database whatsoever.
+ If you're using agents for coding, this would be the equivalent of a cloud.md file, right?
+ Or of any context that you would provide in form of markdown files.
+ And this memory is built through multiple phases, like the initial phase we call the discovery phase, right?
+ Where we have a dedicated discovery agent that once an agent is set up, it captures knowledge from its environment.
+ And these could be, for example, service topology.
+ It's like for root cause analysis, it's highly relevant to understand what services are there and what are the dependencies between those services.
+ And we try to do as much as possible on autopilot.
+ So we don't want to rely on our users telling us and creating the model on its own, the service dependencies,
+ and then just having a service catalog where you manually update it.
+ But instead, just deducing that knowledge from telemetry data or from other sources of data.
+ So how is it structured?
+ So you said it's not a vector store.
+ I think you said in the initial iteration it was.
+ Now we're not using it.
+ So how is the relationship managed between the knowledge elements?
+ So we store the knowledge essentially in plain text.
+ And some of the information is office party entities where we store them in a structured way.
+ For example, a service topology, right?
+ We have services.
+ We have a service catalog in our application and the agent updates that service.
+ For some of the elements, there is a single source of truth in iLert anyway.
+ So the agent would just enrich those structured objects, right?
+ And when it wants to use that information, it either uses a tool for that.
+ So I can go, like the agent has many internal tools that it can leverage.
+ Those internal tools would, for example, use iLert's built-in information.
+ And this could be, okay, given these two services, please tell me, is there a dependency between them?
+ Because when you have an alert, there is an alert storm.
+ You have multiple alerts that are completely different, but they still might have the same root cause.
+ If, for example, like one alert belongs to service A and the other one belongs to service B,
+ and they have a dependency on each other, right?
+ So that would be one way how, for example, we use a very low cost model,
+ like not a reasoning model, to do alert triage and use the information that the powerful agent enriched in its discovery phase.
+ Then there is other types of information where we don't have a structured storage.
+ For example, people would call this tribal knowledge.
+ So if, let's say, you have a service where at midnight, the service always, because there are jobs running,
+ it reaches its limits and sometimes it crashes.
+ And that could be a piece of information that the agent remembers in its long-term memory.
+ And again, this is the way it is structured, is the equivalent of markdown files.
+ It's just the text files that we store in a database and then let the agent perform agentic search over those information.
+ Instead of having a vector database where you have to keep information in sync,
+ because a vector, the way it works is you vectorize a piece of text and create vectors.
+ But what if the original knowledge needs to be updated, then you need to update, like keep the vectors also in sync.
+ So that creates a lot of overhead.
+ But we found that agentic search is equally powerful.
+ And for our domain, it's okay.
+ And if you look at, for example, the initial approach of Cursor, they were relying on,
+ and now I'm trying to draw examples also from coding agents,
+ because coding agents, they have reached a level of maturity in the last year.
+ And I think coding looks like it's a soft problem, right?
+ So popularity has arisen in the last year, and they're very mature now.
+ And if you look at coding agents, the way, for example, Cursor started was they built an index of your code base, right?
+ And then you have Cloud Code, which doesn't do any of that.
+ The only thing, Cloud Code has a few tools, maybe a handful of tools,
+ and it just performs agentic search, which is another way of piping these commands and then searching.
+ And it's fascinating to see how Cloud Code is able to process large amounts of data
+ just by piping multiple commands on the terminal without that data ever getting into the context,
+ without that data ever polluting the context.
+ But still, you search across that data, and it's very effective in doing that.
+ So that also aligns with what I said in the beginning.
+ So now we try to get out of the way and just provide tools and let the agent do its job.
+ Beyond the discovery agent, what other sub-agents exist in production today?
+ And during a live incident, what happens?
+ How does the main agent decide to hand off to one of them?
+ Let me start by answering the question, maybe look at the different types of agents conceptually,
+ and then I'll talk about where are we using sub-agents and why we're using sub-agents.
+ So conceptually, we have this discovery agent, which is an initial phase,
+ getting familiar with the infrastructure,
+ with the very specific environment that the customer operates in.
+ And then we have the root cause agent.
+ This is the main agentic loop that runs and tries to find out the root cause.
+ And then we have another agent that does verification.
+ That's also a very important step when you have a root cause analysis running.
+ And when you have, for example, some of that part where the agent mitigates,
+ you want the agent to be able to verify its own fixes.
+ So conceptually, right now we have these three agents.
+ There is another separate agent for chatting with the agent.
+ When you maybe sometimes you have incidents reported manually,
+ like you have no alert, you have no ticket.
+ You just want to, just like you would open chatgpt.com,
+ you want to go to iLert and say, okay, we're receiving reports.
+ Or I think we have a major incident and just give it a brief description.
+ And then you have a chat before the agent starts its root cause investigation.
+ And during each processes, we do have these sub-agents.
+ And there are two types of sub-agents, right?
+ One is a sub-agent and the other type is a fork.
+ The difference between the two is a sub-agent has a fresh context.
+ And this again, we're doing this because like we want to protect the context.
+ We want not to overblow the context and make sure only useful information
+ makes it into the main reasoning loop, which resides in the main context.
+ So we have a sub-agent that means, for example, when we do logging analysis,
+ we usually have a sub-agent that receives a fresh context
+ and a brief description with the problem.
+ And then it's able to do multi-step queries
+ and trying to look into logs and find any evidence
+ where what the next step should be.
+ A fork, in contrast, is also another LLM context,
+ but that receives the entire parent context, right?
+ So you have a child context with the complete context of the parent context,
+ the entire history.
+ And we're experimenting with that as well.
+ Like right now, internally, we have guidelines
+ for when to use sub-agents at all, and we're not.
+ And if we do, for example, for the logging use case,
+ it might be beneficial if the context is not too bloated.
+ It might be beneficial to do a fork instead of like a fresh new context,
+ because maybe the agent needs to have the full context
+ to assess whether the queries I'm doing are relevant,
+ or maybe the agent is then even better at doing queries.
+ And then we have a third approach, which I think we also talked about,
+ which is about, okay, let's not overthink this.
+ Instead, provide the agent with tools where it's able to decide on its own,
+ if I want to check logs, do I do it in a main loop?
+ Do I create a sub-agent?
+ Or do I create a fork?
+ So that's the next experiment we're currently running,
+ where again, we're trying to get out of the way of the powerful reasoning loop
+ and just provide tools where the agent can decide,
+ okay, I need logs.
+ Therefore, I probably shouldn't run this in my main context.
+ I should do a fork or a sub-agent.
+ Other areas where we, I think when we make the decision,
+ a general guideline is whenever we expect a lot of input-output,
+ a lot of tokens being processed,
+ we probably want to fork or create a sub-agent
+ and not have everything go into the main context.
+ So it sounds like in the beginning,
+ the orchestration was a little bit more specific.
+ And over time, you have let the LLM decide on the orchestration itself,
+ drive the orchestration itself.
+ I think that's a fair observation across the last 18 months
+ we've been working on this,
+ where we had a lot of code, a lot of orchestration,
+ and a lot of us trying to be,
+ okay, this is how the agent should behave.
+ And then over time, we, okay, as the models get more powerful,
+ but also as we discovered,
+ these models can make the decisions probably better than we can.
+ We're trying to give it more freedom in that sense.
+ But we're not saying that, okay,
+ we can confidently say that's the perfect approach.
+ That's something that we're exploring right now.
+ That's the next evolution, yeah.
+ And did you actually use a framework for writing the orchestration
+ or was that just code-generated by the LLM
+ during your code-gen process?
+ The first versions, they weren't even code-generated.
+ This was our CTO, writing everything by hand.
+ And then, of course, these days now,
+ we're heavily relying on code-gen.
+ And I think we talked about this as well.
+ Frameworks, in the beginning,
+ we never used any framework because, again,
+ we wanted to have everything in control on our own.
+ We didn't use LandGraph.
+ We didn't use even a proxy to talk to all these different APIs
+ of the foundational LLM providers.
+ But by now, we're using a proxy
+ just to have the abstraction to talk to different APIs
+ because OpenAI has a different API
+ than Anthropic has and versus Mistro, for example, right?
+ So now we're using, I think that's the only framework we're using right now,
+ which is, I forgot the name,
+ but it's a Rust-based framework that acts as an abstraction layer
+ where we just make two calls to the LLM.
+ So you talked about the knowledge layer
+ where you evolved into just using what you're calling as agentic search,
+ which is simple search facilitated by the model,
+ and the model is the one that creates relationships.
+ You talked about the evaluation framework a little bit.
+ I'd like to drill into that a little bit more.
+ And you talked about the orchestration.
+ What about the constraining layer?
+ What about policies and symbolics, traditional symbolic rules?
+ Maybe before I talk about the constraints,
+ let me give some insights on the evaluation.
+ So that's a very important part and very interesting part.
+ And I think we're exploring,
+ but let me tell you our current way how we evaluate things.
+ So again, the use case is,
+ first of all, we have our own, let's say,
+ you can call it vibe testing, right?
+ Where we have a pretty complex infrastructure
+ that is, I think, complex enough
+ where you have a lot of noise,
+ where you have a large search space.
+ Because a root cause analysis is like
+ the search for a needle in a haystack.
+ And so we use our own staging environment to create chaos
+ and then have the agents find its root cause.
+ And even use other agents to create chaos scenarios
+ and then have that agent use our AISRE
+ to fix that problem and find the root cause.
+ But of course, you cannot run these evals.
+ It's a large scale because they require
+ an entire environment.
+ And like I said, our environment is pretty broad
+ and we don't want to have multiple copies of that environment
+ because it would be very expensive.
+ So what we have built in the last three months
+ are semantic tests.
+ And semantic tests, you can think,
+ like those semantic tests
+ are recordings of actual investigations.
+ So when we have an agent in production
+ that runs a live investigation
+ and interacts with its environment,
+ the tool calls, gets responses,
+ we record everything,
+ the tools that were executed, the output.
+ And then this could be a test set, right?
+ Where we have all the path in between,
+ all the tool calls, all the results,
+ and then the final document,
+ which is the RCA document, right?
+ I think that's a good test example.
+ Now, you make a change, right?
+ Let's say you upgrade to a new model
+ and you want to make sure
+ RD is still performing well.
+ And we apply like two different techniques
+ to create and make these tests.
+ One is you just use another LLM as a judge, right?
+ So you have, you run the recorded version
+ of your live investigation.
+ And the good thing is about that is
+ we can rely on data that is not from us, right?
+ Where we can ask customers,
+ okay, we want to record your investigations
+ and all the outputs
+ and use that as a test set
+ to improve our model, right?
+ So that way we can collect test samples
+ from the real world
+ outside of our own domain.
+ Then you have two ways
+ how to run these eval pipelines.
+ One, you'd use another LLM as a judge,
+ you know, where you have
+ the initial recorded one
+ and then you compare
+ and then you have a human
+ that has labeled this
+ with cause investigation
+ maybe as good or not so good.
+ And then you run your investigations
+ in an automated manner
+ with different parameters,
+ could be a different model,
+ could be maybe a different version
+ of your prompt.
+ And then you have
+ an LLM as a judge
+ that compares those two results.
+ And the other one,
+ I think is the approach
+ that we're using is
+ we apply a score,
+ I think it's a paired score.
+ That is something where,
+ again, you have an embedding model
+ that creates a vector
+ of your output
+ and you have this twice, right?
+ You have the expected outputs,
+ the initial investigation result,
+ then you have the one
+ that was executed
+ as part of your test
+ and then you just compare
+ those two vectors
+ and the closer the vectors
+ are to each other,
+ the more similar they are.
+ Currently, we're experimenting
+ with both approaches.
+ Of course, the vector approach
+ is a lot cheaper
+ and you can run as many,
+ essentially, as you like,
+ especially if you host
+ a text embedding model,
+ which we do,
+ like we host several
+ text embedding models
+ on our own infrastructure.
+ So you can execute those tests
+ without relying on
+ an external API call
+ without consuming tokens.
+ Yeah, and we still don't have
+ a final conclusion,
+ like which is the way to go.
+ So we're experimenting
+ with LLM as a judge,
+ but bad score as a judge.
+ Those are the two approaches
+ that we do for evaluations.
+ Maybe if you can take
+ an example of a real incident
+ and then tell us
+ how these layers work together.
+ A real incident
+ is one that we had
+ in our own infrastructure
+ and I think
+ that's a very good example.
+ So this is what happened.
+ We, as part of our product,
+ we offer something
+ called status pages.
+ So it's essentially
+ a page that you can
+ provide to your customers
+ if it's available
+ publicly in the internet
+ and your customers
+ or any other stakeholder
+ can check those status pages
+ and just get an idea
+ of the health of your system.
+ And those status pages,
+ they have also a section
+ called metrics.
+ So you can show metrics
+ such as, I don't know,
+ API response time, right?
+ You want to show
+ to your customers
+ whether your API is,
+ not only is it like working,
+ but how good is it working, right?
+ Whether you're responding
+ on average below
+ 500 milliseconds, for example.
+ And then we had
+ a penetration test,
+ an external penetration test.
+ So this is an external firm
+ that we asked to do
+ to essentially hack
+ our platform, right?
+ Of course, it was using,
+ they were using
+ our staging environment.
+ And the way these
+ penetration tests work
+ is they create
+ a very extensive report
+ and we try to fix
+ those vulnerabilities
+ within the same week
+ as they're doing
+ the penetration test
+ because that, you know,
+ that makes it into the report
+ and we can like
+ still immediately verify
+ whether the fix we applied
+ was effective or not.
+ And in that case,
+ the penetration test
+ revealed that
+ because we have
+ these metrics
+ on our status pages
+ and these metrics,
+ they can be configured
+ by our customers.
+ The way they configure it,
+ they can, for example,
+ tell Eilert here,
+ I'm using Datadoc,
+ please fetch these metrics
+ from Datadoc
+ and show them
+ on my status page, right?
+ So there is
+ a metrics provider
+ that you pass it
+ a URL
+ and then can access
+ a Datadoc
+ or Prometheus.
+ And the vulnerability
+ was an attacker
+ could try to guess
+ the URL
+ of an internal system.
+ and I think
+ the vulnerability
+ is a blind
+ SSRF attack,
+ server-side request forgery.
+ By then,
+ like,
+ essentially get them,
+ although it's very unlikely,
+ but that was the vulnerability,
+ right?
+ So you can just try
+ to guess an internal URL,
+ something maybe local host
+ or maybe
+ some other adjacent system
+ and somehow
+ then try to do harm.
+ The fix was
+ we applied
+ a network policy
+ in our Kubernetes class
+ that it prevents
+ the metrics provider
+ talking to
+ any other system internally.
+ But that fix
+ network policy
+ was too broad.
+ So the result was
+ the services,
+ they weren't able
+ to talk to its own database.
+ So we had an incident.
+ So our status page solution,
+ the metrics part,
+ stopped working.
+ They became stale, right?
+ The metrics,
+ they weren't updated
+ because the status page
+ wasn't able to talk
+ to its own database
+ because of the network policy
+ that we applied
+ to fix the vulnerability,
+ which was a little bit
+ too broad
+ and then we actually,
+ you know,
+ created an incident.
+ And the reason why
+ this is a good example
+ for an AI SRE
+ is because
+ first,
+ this would never
+ made it into a runbook.
+ Like no runbook
+ would tell you that
+ when you have
+ a penetration test
+ and this happens,
+ here is a solution, right?
+ We think that's
+ like one of the problems
+ with runbooks
+ is like they get outdated,
+ yes,
+ but for novel incidents,
+ you don't have a runbook, right?
+ And second is
+ just the term metrics
+ is so ambiguous.
+ Like when you talk
+ to an AI SRE
+ and tell it,
+ we have,
+ like our metrics
+ is not working.
+ Customers are reporting
+ that our metrics
+ stop working on status pages.
+ Like it's very ambiguous
+ because there are
+ lots of internal services
+ that are metric related,
+ but metrics
+ for your own platform, right?
+ So we have Prometheus
+ where as a time series database
+ where there are lots of metrics,
+ there are other services
+ related to metrics.
+ There is some level
+ of ambiguity
+ where the AI SRE
+ and the search space
+ is pretty large.
+ So completely get Birol,
+ this sounds like
+ very fascinating,
+ but if you can help us
+ understand how did
+ the AI SRE perform
+ in this situation?
+ So this was a very long introduction.
+ I just wanted to provide
+ some context, right?
+ And the way,
+ like just to give you an example,
+ like in this case,
+ you could just tell
+ the AI SRE
+ we're receiving reports
+ from customers
+ that metrics are not working.
+ That's the report.
+ That's the only context
+ that the AI SRE has.
+ And what it would do is,
+ of course,
+ the AI SRE
+ has a system problem
+ that it would try
+ to understand the problem
+ and then it would
+ start using its tools, right?
+ And the first thing
+ is it would do,
+ and back then
+ we didn't even have
+ a service topology.
+ We didn't even have
+ additional domain knowledge.
+ It would then try
+ to find services
+ in the Kubernetes cluster
+ that could be responsible
+ for serving metrics, right?
+ So it would fetch
+ all the pods,
+ for example, right?
+ And see, okay,
+ is there a pod
+ that has the name metrics in it?
+ And again,
+ the terms,
+ it would,
+ like even if they don't match
+ on a textual level,
+ it performs multi-step queries
+ where it just tries
+ different things.
+ So you can,
+ this is similar
+ to a Gentic search.
+ And then once it has
+ candidates for pods,
+ it would then search
+ for logs that are
+ symptoms for that problem.
+ And then at one point,
+ maybe it finds,
+ it sees logs,
+ okay, there is a metrics store
+ that tries to access
+ a database,
+ but it's not able
+ to access that database.
+ And then it would try
+ accessing any changes,
+ any deployment events,
+ look for any pull requests
+ in GitHub.
+ And then it would,
+ in a very short amount
+ of time,
+ process pull requests
+ that were merged
+ and then even look
+ at code changes
+ if necessary.
+ Sometimes the pull request
+ is very clear
+ from its description,
+ but sometimes you need
+ to look into the actual
+ diffs that were applied.
+ And this is,
+ again,
+ I'm making it sound
+ like it's prescriptive,
+ like we ask the agent
+ to check logs,
+ check pods,
+ and check changes.
+ No,
+ that's something
+ what's in the nature
+ of an agent
+ is just doing
+ these multi-step queries
+ and trying to reason
+ about the problem
+ and solving,
+ finding the needle
+ in the haystack.
+ But you did provide
+ these sources
+ to the moment.
+ Of course.
+ So that's how
+ it knows to check.
+ Of course,
+ like the sources,
+ we do provide them,
+ but again,
+ there are,
+ like the search space,
+ that's what I was saying,
+ the search space
+ is really big.
+ When it is,
+ we have a ClickHouse cluster,
+ we have a Kafka cluster,
+ we have an observability solution.
+ The search space is big
+ and just because,
+ I mean,
+ yes,
+ of course,
+ the agent needs
+ to have at least
+ the chance
+ to find out
+ about the root cause,
+ like to access
+ the information
+ that are related
+ to the symptoms
+ and then draw
+ a whole picture.
+ So once I drew the picture
+ and what was the next step?
+ Is the agent authorized
+ to go fix it
+ or is there a human
+ in the loop
+ or was there a human
+ in the loop
+ in this specific case?
+ So currently,
+ there's always a human
+ in the loop.
+ So we do have demos
+ where the agent
+ executes all the steps
+ completely autonomously
+ from,
+ you know,
+ doing the root cause analysis,
+ creating an incident
+ to update
+ your customers
+ about an incident,
+ for example,
+ updating your status page
+ and applying fixes,
+ right?
+ But whenever we do
+ this demo,
+ we always say
+ don't do this at home,
+ right?
+ Because it clearly
+ is something,
+ and this is probably
+ the fourth topic
+ that you would like
+ to touch on
+ is like guardrails
+ and constraints.
+ It's clearly something
+ that we don't recommend
+ doing immediately,
+ but we see
+ there's a clear path
+ to autonomy
+ and it starts
+ with an agent
+ that is observe only.
+ So agent is observe only.
+ It diagnosed the issue
+ and a human got involved.
+ What is a human
+ expected to do next?
+ So depending on
+ the power of the agent,
+ so we have,
+ like even if an agent
+ is in observe only mode,
+ can still propose actions
+ that just require
+ a click to approve,
+ right?
+ So if that's the case,
+ if you,
+ let's say,
+ if you have configured
+ the agent
+ and provided it
+ with API keys
+ that go beyond
+ read only,
+ for example,
+ if the agent
+ is doing
+ a certain set
+ of operations,
+ those operations
+ could be like
+ in our case
+ when we do demos,
+ for example,
+ you know,
+ things that essentially
+ like stop the bleeding
+ when you have an incident.
+ These could be increasing
+ when you have
+ an out-of-memory error.
+ Maybe you want to,
+ you know,
+ double the parts memory.
+ That's a very simple operation
+ and that's something
+ that even the agent
+ could execute autonomously
+ or you make it very easy
+ for the agent
+ to execute that
+ or the agent makes it
+ very easy for you
+ to approve it,
+ just click it
+ and then you approve
+ the action
+ and then the agent
+ patches your
+ community's cluster
+ or things like
+ doing a rollback.
+ I mean,
+ doing a rollback
+ in most cases
+ depending on
+ like how you do
+ like rollouts,
+ it's also like
+ a low-risk operation.
+ That's also something
+ that the agent
+ can propose to you.
+ I suspect
+ this is the change,
+ like the change
+ from yesterday
+ is causing this incident.
+ Would you like me
+ to roll back
+ and deploy a previous version?
+ So that could be
+ one way
+ how you essentially
+ with the agent
+ together
+ mitigate the incident.
+ Perhaps you can
+ give me an example
+ where the AISRE
+ reached the wrong
+ conclusion,
+ the wrong root cause
+ and maybe walk us
+ through what exactly
+ happened and
+ how long maybe
+ it took after that.
+ I think so.
+ In general,
+ when the root cause
+ is wrong,
+ what we observe
+ is when the AISRE
+ goes into the
+ wrong direction,
+ right?
+ When it goes
+ into the wrong direction
+ and then it sees
+ more evidence
+ like for that
+ particular direction,
+ then like it is
+ unable to recover
+ from that wrong
+ hypothesis.
+ And that's an area
+ where we're actively
+ working on
+ where we think,
+ okay,
+ should we maybe
+ that what other
+ players are doing
+ in that space,
+ maybe you want
+ the AISRE to follow
+ like multiple
+ hypotheses at the
+ same time,
+ like simultaneously
+ two or three,
+ four hypotheses
+ at the same time,
+ right?
+ So when the AISRE
+ gets stuck,
+ like this process
+ of,
+ you know,
+ basically unstacking
+ and starting from
+ the beginning,
+ that that's an area
+ we're working,
+ but we want to get
+ the initial
+ best guess RCA
+ really right
+ and make sure
+ that,
+ you know,
+ we optimize,
+ like we use
+ all our ideas
+ for optimization
+ before we follow
+ this parallel approach.
+ For our platform,
+ it is pretty good
+ at discovering
+ the root cause
+ for our incidents.
+ Unfortunately,
+ we don't have
+ many incidents,
+ but we're using
+ our AISRE
+ on both
+ our staging environments.
+ and so whenever
+ an engineer
+ breaks staging
+ environments,
+ the AI
+ is perfectly
+ pinpointed
+ their root cause.
+ This is the
+ latest deployment
+ and that's why
+ the staging
+ is probably
+ broken.
+ I already shared
+ an example
+ of for real
+ production,
+ it's in
+ for our
+ environment.
+ Within our
+ customers,
+ I don't have
+ a specific
+ example,
+ but the problem
+ gets harder
+ the larger
+ the search
+ space is.
+ That means
+ the more
+ microservices
+ you have,
+ the bigger
+ the log
+ volume is,
+ and so on
+ and so forth.
+ there are
+ basically
+ two ways
+ an AI
+ system
+ can reason
+ and you've
+ covered that.
+ The first
+ is what
+ most people
+ picture when
+ they think
+ of AI
+ today,
+ where it's
+ probabilistic,
+ good at
+ handling messy
+ situations,
+ but you can't
+ always explain
+ how it got
+ to an answer.
+ And that's
+ where at
+ this point
+ you're headed.
+ The order
+ which you
+ started with
+ is more
+ of a more
+ rule-based
+ approach.
+ It's fully
+ explainable,
+ but it breaks
+ whenever you
+ hit something
+ that the
+ orchestration
+ wasn't really
+ programmed for.
+ Now,
+ neurosymbolic
+ systems try
+ to get the
+ best of
+ both worlds
+ where the
+ model handles
+ the judgment
+ calls,
+ but the
+ output does
+ get checked
+ against a
+ layer of
+ hard rules.
+ Today,
+ you have
+ the human
+ in the
+ loop,
+ and that's
+ the guard
+ rail.
+ Do any
+ action,
+ but as
+ you go
+ further
+ towards more
+ autonomy,
+ how are you
+ thinking about
+ guardrails?
+ What needs
+ to be true
+ before you
+ let the
+ agent take
+ action and
+ not require
+ the human
+ to necessarily
+ approve
+ everything?
+ First of
+ all,
+ we need
+ enough data.
+ We're
+ confident where
+ the agent
+ performed,
+ did a really
+ good job,
+ right?
+ You're right,
+ so our
+ approach right
+ now relies
+ on not
+ letting the
+ agent doing
+ any harmful
+ actions and
+ instead having
+ a human in
+ the loop.
+ And the
+ safest way to
+ do this is
+ not giving
+ the agent
+ access to
+ any critical
+ systems,
+ right?
+ our approach
+ would be
+ to gradual
+ autonomy would
+ be to
+ relax that
+ constraint where
+ it is our
+ job that
+ you know,
+ when,
+ for example,
+ even when you
+ have an
+ API key,
+ when you have
+ permissions that
+ are broader
+ and we,
+ for example,
+ want the user
+ to pre-approve
+ a set of a
+ class of
+ pre-approved
+ actions,
+ right?
+ And it is
+ our job to
+ make sure
+ that the
+ agent doesn't
+ go beyond
+ that pre-approval.
+ Like with a
+ third agent I
+ talked about
+ conceptually where
+ we have that
+ does the
+ verification,
+ we're probably
+ going to use
+ some hard
+ checks where
+ we know,
+ okay,
+ is this a
+ destructive
+ command?
+ Like when
+ you have
+ access to
+ probably no
+ one would
+ give full
+ access to a
+ Kubernetes
+ cluster,
+ right?
+ To an
+ agent.
+ But let's
+ say hypothetically
+ someone does,
+ but even in
+ that case,
+ we want to
+ make sure
+ that no
+ harmful
+ destructive
+ commands are
+ issued.
+ And I didn't
+ go into that
+ direction yet,
+ but if you
+ ask me now,
+ we would
+ probably rely
+ on a
+ combination of
+ LLM as a
+ judge,
+ but not
+ restrict to
+ LLMs as
+ a judge,
+ also just
+ have some
+ hard,
+ you know,
+ plain old
+ processing
+ rules where
+ we check
+ commands and
+ see,
+ for example,
+ does the
+ agent try to
+ drop a
+ table,
+ right?
+ And so
+ far,
+ we've only
+ seen these
+ examples where
+ the agent
+ does catastrophic
+ harm.
+ Like in
+ communities,
+ we haven't
+ fortunately
+ experienced
+ them on
+ our own.
+ Again,
+ based on our
+ approach where
+ we advise
+ our customers,
+ please only use
+ read-only keys
+ and read-only
+ permissions.
+ But that's
+ how I think
+ about the
+ problem as
+ of today.
+ So,
+ you're a
+ German company,
+ so GDPR
+ compliant.
+ When a
+ customer's
+ security team
+ looks at
+ your AISRE,
+ what is the
+ first thing
+ that they ask
+ or the first
+ thing that they
+ push back on?
+ There are so
+ many, many
+ things that
+ they push
+ back on.
+ But one
+ thing that
+ customers,
+ starting from
+ the very,
+ very basics,
+ is, okay,
+ which endpoints
+ do you use?
+ Like, do you
+ use regional
+ endpoints?
+ Do you
+ use my
+ data to
+ train, to
+ build some
+ knowledge that
+ we cross
+ leverage across
+ all our
+ customer base?
+ Or, will
+ my data be
+ used for
+ training purposes?
+ Like, even
+ if it's not
+ with an
+ iLert, but
+ maybe the
+ underlying
+ model provider
+ that you're
+ using.
+ So, these
+ are the
+ very basic
+ questions, I
+ think, where
+ by now we
+ all know that
+ there are,
+ like, yes,
+ there is
+ opt-out of
+ model training,
+ right?
+ That's one
+ thing we
+ always do.
+ We opt-out
+ of model
+ training.
+ This is where
+ our architecture
+ comes in,
+ the one that I
+ described you
+ with, you
+ know, you
+ have the
+ orchestrator,
+ then you
+ have these
+ agents, then
+ there is
+ another proxy
+ service where
+ the access to
+ all these
+ different model
+ providers is,
+ there is an
+ abstraction layer
+ where we can
+ just, where we
+ make models
+ swappable, very
+ easy.
+ And this starts
+ with having
+ companies in
+ AU use
+ regional endpoints.
+ So, we still
+ require these
+ foundational,
+ powerful large
+ language models.
+ So, hosting
+ your own large
+ language model is
+ not an option
+ yet, because we
+ heavily rely on
+ those reasoning
+ models.
+ So, we do
+ require in
+ Opus 4.6,
+ like GPT 5.2,
+ 5.3, you
+ know, these
+ powerful models.
+ But we do
+ use regional
+ endpoints.
+ And customers
+ also ask us
+ to, okay, we
+ already use
+ these models and
+ those models, we
+ have our own
+ layer to ensure
+ our guardrails.
+ Can we use
+ our API key?
+ Right?
+ And this is
+ something that we
+ accommodate.
+ And are they
+ satisfied with
+ your answers on
+ how you test
+ the system?
+ No.
+ Like, the way
+ we currently
+ test, the way
+ we currently
+ run these
+ eval pipelines,
+ like I
+ described in
+ the beginning,
+ it relies on
+ pre-recorded
+ investigations.
+ However, depending
+ on what you
+ want to test,
+ depending on
+ the nature
+ of your
+ change, and
+ we're dealing
+ with reasoning
+ models, if
+ the recording
+ captures, doesn't
+ capture everything,
+ right?
+ But when you
+ have 30
+ tools, and
+ then you
+ deploy a new
+ version of
+ your system
+ instructions,
+ and the
+ recorded version
+ has only
+ leverage 10
+ tools, but
+ maybe the
+ new version
+ will leverage
+ other tools
+ that weren't
+ initially recorded.
+ So what do
+ you do then,
+ right?
+ So to answer
+ your question,
+ I think the
+ way we
+ currently do
+ this is,
+ helps very
+ with changing
+ models, just
+ making sure
+ that there
+ isn't a
+ big regression
+ when we
+ introduce, for
+ example, a
+ new model.
+ But it
+ would be
+ helpful to
+ run these
+ automated
+ tests always
+ on real
+ data, on
+ actual
+ environments,
+ so the
+ agent is
+ not limited
+ because
+ initially the
+ recording didn't
+ include that
+ specific tool.
+ So there
+ is definitely
+ room for
+ improvement,
+ and we're
+ constantly
+ looking at
+ that.
+ Because,
+ again,
+ we're
+ making so
+ many changes
+ and the
+ more
+ customers we
+ have,
+ the more
+ careful we
+ need to
+ be that
+ use the
+ agent.
+ The space
+ is moving
+ so fast,
+ and so at
+ the same
+ time, we
+ need to make
+ those changes,
+ we need to
+ get better,
+ but we also
+ want to make
+ sure that we
+ don't introduce
+ a regression.
+ Okay, let's
+ look a little
+ bit beyond
+ instant
+ respond.
+ I think
+ customer use
+ case, correct
+ me if I'm
+ wrong, but I
+ believe customer
+ support is
+ already a
+ use case that
+ you have,
+ is that right?
+ Is it the
+ same architecture
+ that translated
+ as you
+ expected, or
+ you had to
+ redesign that
+ beyond what
+ you did for
+ the AISRE?
+ First of all,
+ when I say
+ it's a
+ supported use
+ case, it
+ means we
+ don't offer
+ customer service
+ as a product
+ for our
+ customers, but
+ we leverage
+ our own
+ architecture for
+ customer support.
+ And this
+ is a good
+ example, for
+ example, where
+ we started
+ with a
+ rack-based
+ architecture.
+ So we had
+ a vector
+ database that
+ would capture
+ knowledge and
+ store it in
+ a vector
+ database and
+ then build
+ our chat.
+ So we have
+ an in-app
+ support chat,
+ build it on
+ top of that.
+ We threw
+ all of these
+ away so
+ that's the
+ rack pipeline
+ we built.
+ We're using
+ an intermediary
+ solution, which
+ comes with
+ HubSpot, for
+ customer support,
+ but we're
+ developing a
+ customer support
+ agent that we
+ haven't rolled
+ out yet
+ widely.
+ But it
+ uses the
+ same agent
+ architecture where
+ you have an
+ agent that
+ is orchestrated
+ by our
+ orchestrator.
+ And the
+ additional benefit
+ is that that
+ customer support
+ agent is
+ integrated into
+ the product.
+ So let's say
+ you ask a
+ question, the
+ answer goes
+ beyond looking
+ at documentation,
+ maybe looking at
+ tickets it answers
+ previously.
+ Instead, it can
+ check your live
+ configuration and
+ give you hints,
+ okay, this is what
+ I'm seeing in
+ your configuration
+ and it uses
+ the same
+ tools that
+ for example,
+ we use for
+ our agents or
+ AI SRE agents.
+ So this is the
+ broader workforce,
+ we call it,
+ that we're
+ building, which
+ consists of
+ multiple agents
+ for different
+ use cases and
+ one of those is
+ our in-app
+ customer support
+ agent.
+ So with
+ everything you
+ know now,
+ if we have
+ someone starting
+ to use an
+ AI coding
+ assistant to
+ build an
+ agent, what
+ would your
+ advice be?
+ how to
+ avoid
+ mistakes?
+ I think we
+ covered parts
+ of that.
+ I think one
+ general advice
+ or two
+ pieces of
+ advice that
+ are maybe
+ more general
+ but all the
+ concrete examples
+ can be boiled
+ down to that
+ specific advice.
+ So if you're
+ building an
+ agent, you
+ should always
+ own your
+ context, like
+ whatever makes
+ it into the
+ context and
+ this has a lot
+ of implications.
+ For example,
+ we never use
+ the framework.
+ We don't use
+ Langchain, all
+ these frameworks
+ to build
+ agents and
+ to build
+ graphs of
+ agents and
+ frameworks that
+ try to
+ abstract away
+ prompts,
+ roles, what
+ have you.
+ Not because
+ they're bad,
+ because we
+ want to have
+ 100% control
+ over what
+ makes it into
+ the context and
+ we want to
+ make sure that
+ we understand
+ how those
+ models work.
+ And the
+ only lever
+ that you have
+ right now is
+ protecting the
+ context.
+ And that's
+ the only thing
+ that decides
+ the performance
+ of your agent.
+ Do you
+ poison the
+ context?
+ Do you provide
+ too much
+ information?
+ Do you
+ provide too
+ know everything
+ what makes it
+ into the
+ context and
+ have full
+ control over
+ it.
+ Another way
+ of saying
+ that is,
+ for example,
+ MCP servers.
+ We talked
+ about it in
+ the beginning,
+ right?
+ And MCP
+ servers,
+ there's a
+ huge ecosystem
+ of MCP
+ servers and
+ they got very
+ popular and
+ it sounds
+ very good,
+ right?
+ So I can
+ just take
+ these MCP
+ servers and
+ make it part
+ of my agent
+ and then it
+ will work out.
+ We even
+ don't recommend
+ if you're
+ building a
+ purpose-built
+ agent for a
+ very specific
+ use case,
+ I would
+ recommend not
+ to use
+ these MCP
+ servers.
+ I would
+ instead
+ recommend you
+ fork these
+ MCP servers
+ and you just
+ make sure that
+ the tool
+ definitions,
+ because those
+ MCP servers,
+ the tool
+ definitions and
+ the scope of
+ the tools,
+ they are also
+ part of the
+ context,
+ right?
+ we fine-tune
+ them to our
+ use case.
+ That's the
+ first advice.
+ And the
+ second advice
+ is get out
+ of the way
+ as much as
+ possible and
+ get out of
+ the way of
+ the reasoning
+ model and
+ don't try to
+ be overly
+ prescriptive,
+ you know,
+ because you
+ have a certain
+ way of doing
+ things.
+ And a good
+ analogy is
+ you have a
+ senior hire,
+ an expert,
+ and then if
+ you hire that
+ person, you
+ don't want to
+ tell the
+ person how
+ to do
+ exactly the
+ things the
+ way you
+ want it to
+ do.
+ Instead,
+ you tell
+ the person,
+ okay,
+ hey,
+ these are our
+ biggest problems,
+ and you
+ figure it
+ out how
+ to get
+ there.
+ And these
+ are the
+ mistakes that
+ we did in
+ the beginning,
+ and this
+ would be my
+ second advice.
+ Leverage
+ reasoning models
+ and try to
+ get out of
+ the way as
+ much as
+ possible.
+ This doesn't
+ only apply
+ for the
+ instructions,
+ it only also
+ applies, and
+ this is
+ something that
+ we haven't
+ validated yet
+ 100%.
+ But right
+ now, for
+ example,
+ the things
+ that we
+ are deciding
+ is when
+ you have
+ an agent,
+ it spawns
+ multiple
+ sub-agents,
+ right?
+ So, and
+ for example,
+ we decide
+ that, okay,
+ if your agent
+ needs to
+ gather large
+ amounts of
+ data, maybe
+ you have
+ some sort
+ of pre-processing
+ happening, and
+ then you have
+ a dedicated
+ agent, just
+ focus on
+ that, right?
+ But another
+ approach could
+ be the
+ agent has
+ certain
+ capabilities, it
+ can create
+ sub-agents, it
+ can fork
+ agents, and
+ then the
+ agent decides,
+ the reasoning
+ model decides,
+ the main, like
+ there is a
+ single reasoning
+ loop, and
+ all the
+ decisions
+ regarding how
+ do I
+ reason about
+ the problem,
+ where do I
+ create a
+ sub-agent,
+ where do I
+ fork a new
+ conversation,
+ which tools
+ do I run
+ in parallel,
+ are decided
+ by the
+ tool, and
+ if you look
+ at, for
+ example,
+ how cloud
+ code works,
+ it has a
+ few tools,
+ and I
+ think that's
+ also a
+ good benchmark
+ if you're
+ building an
+ agent, benchmark
+ it against
+ cloud code,
+ right?
+ Just try to
+ create a
+ similar
+ environment for
+ cloud code.
+ In our
+ case, it
+ would be
+ like we
+ have these
+ MCP
+ servers, we
+ have these
+ tools for
+ GitHub,
+ Grafana,
+ and now
+ simulate the
+ same thing
+ just with
+ cloud code,
+ but with
+ all the
+ orchestrator,
+ all the
+ custom software
+ that you've
+ built,
+ without all
+ the plumbing,
+ instead cloud
+ code has a
+ few CLIs,
+ maybe MCP
+ servers, and
+ then if you
+ perform a lot
+ better than
+ cloud code,
+ then you
+ know that
+ probably
+ something is
+ there is a
+ reason for
+ being, right?
+ If you
+ don't, then
+ why bother
+ if cloud
+ code can
+ perform the
+ task equally
+ well.
+ Makes sense,
+ Pirol, and
+ perhaps repeat
+ this test in
+ a certain
+ interval.
+ Yeah,
+ absolutely.
+ What's the
+ one thing about
+ building agents
+ that you think
+ most teams
+ will not
+ figure out
+ until they
+ have learned
+ it the
+ hard way?
+ I think for
+ very novel
+ incidents,
+ right?
+ That maybe,
+ for example,
+ there will be
+ novel incidents
+ that even
+ we as humans
+ maybe didn't
+ experience,
+ because until
+ now, humans
+ have been
+ writing code,
+ and humans
+ have been
+ configuring
+ infrastructure,
+ and the more
+ we hand this
+ task over to
+ agents,
+ there will be
+ incidents that
+ are novel in
+ the sense that
+ whatever
+ contributed to
+ that incident
+ was maybe
+ due to the
+ fact that there
+ is a large
+ amount of
+ code being
+ generated by
+ AI,
+ and also a
+ large amount
+ of code that
+ goes just
+ unreviewed to
+ production,
+ maybe just
+ unreviewed by
+ humans,
+ maybe that's
+ probably an
+ area that
+ will hit us
+ hard if I
+ had to make
+ a prediction
+ where you
+ have novel
+ incidents just
+ based on the
+ fact that so
+ much code is
+ generated by
+ AI, which
+ again will
+ lead to new
+ types of
+ incidents.
+ And not just
+ the generated
+ code, but the
+ reasoning loop
+ too.
+ True, yeah.
+ If the model
+ capabilities change,
+ the reasoning
+ will also
+ change, right?
+ And at this
+ point, there
+ is inherently a
+ lot of things
+ that are not
+ deterministic and
+ not, at least
+ for me, not
+ very predictable.
+ So I guess my
+ takeaway from that
+ would be code
+ reviews, human
+ code reviews and
+ testing remain as
+ critical, if not
+ more.
+ I would agree on
+ the testing part.
+ I would agree as
+ much having as
+ much test automation
+ as possible.
+ I am not sure
+ about the human
+ code review part,
+ to be honest.
+ Because right
+ now, it seems
+ that humans are
+ the bottleneck for
+ getting code into
+ production.
+ Probably there are
+ areas for critical
+ path in a
+ software, that's
+ how we handle
+ it, right?
+ We heavily still
+ rely on human
+ code reviews and
+ we don't just
+ push unseen
+ code that wasn't
+ ever seen by
+ humans at scale
+ to production.
+ But I wouldn't
+ say that this is
+ the future.
+ I believe there
+ will be something
+ else where we
+ don't care that
+ much about the
+ generated code.
+ We have
+ different ways of
+ verifying that
+ things are, that
+ we didn't
+ catastrophically break
+ something.
+ How can people
+ follow your work
+ or get in touch?
+ These days, the
+ best way is
+ LinkedIn, probably.
+ Yeah.
+ Okay, well, put
+ your LinkedIn
+ address in the
+ show notes.
+ Perfect.
+ Thank you so
+ much for coming
+ on.
+ Very interesting.
+ Thank you for
+ the insights.
+ Thank you for
+ the opportunity to
+ have this
+ conversation with
+ you, Kanchan.
+ It was a
+ pleasure.
+ So, thank
+ you.
+ Thanks for
+ listening to
+ SE Radio, an
+ educational program
+ brought to you by
+ IEEE Software
+ Magazine.
+ For more about
+ the podcast,
+ including other
+ episodes, visit
+ our website at
+ se-radio.net.
+ To provide
+ feedback, you can
+ comment on each
+ episode on the
+ website or reach
+ us on LinkedIn,
+ Facebook, Twitter,
+ or through our
+ Slack channel at
+ seradio.slack.com.
+ You can also
+ email us at
+ team at
+ se-radio.net.
+ This and all
+ other episodes of
+ SE Radio is
+ licensed under
+ Creative Commons
+ License 2.5.
+ Thanks for
+ listening.

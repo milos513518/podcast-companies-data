@@ -1,0 +1,236 @@
+EPISODE 1792
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Evaluations are critical for assessing the quality, performance, and effectiveness of software during development. Common evaluation methods include code reviews and automated testing, and can help identify bugs, ensure compliance with requirements, and measure software reliability. 
+
+However, evaluating LLMs presents unique challenges due to their complexity, versatility, and potential for unpredictable behavior. Ankur Goyal is the CEO and Founder of Braintrust Data, which provides an end-to-end platform for AI application development and has a focus on making LLM development robust and iterative. Ankur previously founded Impira, which was acquired by Figma. And he later ran the AI team at Figma. Ankur joins the show to talk about Braintrust and the unique challenges of developing evaluations in a non-deterministic context. 
+
+This episode is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him. 
+
+[INTERVIEW]
+
+[0:01:15] SF: Ankur, welcome to the show. 
+
+[0:01:17] AG: Thank you so much for having me. 
+
+[0:01:18] SF: Yeah, absolutely. Thanks for being here. Let's talk about Braintrust. How did you guys get started? What was your original inspiration? 
+
+[0:01:26] AG: Yeah. Prior to Braintrust, I used to lead the AI team at Figma. And before that, I started a company called Impira, which Figma acquired. And at Impira, we were in the Stone Ages of AI, pre-ChatGPT, and built a product that helped you extract data from documents. And basically, every time we would change something, whether it was changing our models or when we started using language models like the prompts or even the code that fed stuff into the models or process the stuff that came out, we would break something. 
+
+For example, we had banking customers. And we might improve our invoice processing model by like 2% or something but break a banking workflow in the process. And obviously, that can't happen. We had to figure out how to avoid that. And we ended up building internal tooling that helped us do evals. And then Figma acquired us. We basically had the same set of problems with LLMs and built roughly the same tooling. 
+
+After doing that a couple of times, I was chatting with Elad Gil, who's one of our investors, and he was like, "Hey, you've built the same thing twice. Maybe other people have this problem too." We talked to a bunch of companies, including the folks at Notion, Zapier, Airtable, Instacart, and a bunch of other companies who are now customers and they were like, "Yeah, we do have this problem and we need a solution." We partnered with a bunch of really great companies early in our journey and built a product and we've just been kind of going since. 
+
+[0:02:50] SF: Why do you think that no one had kind of put a product offering out there for this type of problem? Is it too niche and bespoke? Or is it sort of the classic software engineering thing where people are building and rolling their own auth for a really long time before companies came along and offered that as a service? 
+
+[0:03:08] AG: Yeah, I think a lot of this stuff is timing. Had we not done this, I think someone else would have. Now I think we've kind of set the standard for how to do evals really well as a software engineering team and kind of built the primary workflow that people are using or, in some cases, copying into their product. But I think the reason that something like this didn't exist is that ChatGPT/GPT3 in particular represented a fundamental engineering paradigm shift in AI. 
+
+Prior to GPT3 being available over a REST API and accessible with simple natural language, it was really hard as a software engineer to actually use AI models. I've been trying for a long time. I'm not a stats PhD by background. I am kind of like a traditional old school software engineer. And I struggled through using ML models for a really long time, and it just became dramatically easier when that happened. 
+
+And so, I think that paradigm shift was the first time that software engineers were actually able to use AI models in an effective way. Yet, AI engineering and ML engineering is a totally different discipline than traditional software engineering. It's like an old or well-known workflow for doing evals, but a new group of people that are trying to do it with different preferences and skills that they bring to the table. That vacuum is basically what created the opportunity for Braintrust. 
+
+[0:04:38] SF: Yeah. Essentially, you took this thing that was probably always a problem, but before it was a little bit more narrow in terms of the number of people that were maybe facing that problem. And now because, as you mentioned, you can essentially talk to a large language model or some other generative AI model through an API endpoint, suddenly the scale of that issue becomes much, much larger. Why is like the problem of running something like an eval test more challenging when you're talking about interacting with the model versus sort of traditional ways that we might do this for software engineering?
+
+[0:05:11] AG: Yeah, I think the biggest difference is that it's non-deterministic. In traditional testing, you want your test to be 100% green. And if something's flaky, then it's usually actually a bug. I was debugging something this morning where one of our services would occasionally return the wrong result. That's a bug. On the other hand, in AI, that is something that you deal with literally every day. And no AI model is going to be perfectly deterministic. I think that's kind of the interesting opportunity for engineering with AI. 
+
+And so, being able to visualize, interpret, characterize non-deterministic results is a different paradigm. Many people, myself included, start by trying to kind of cram this into the traditional like PI test, or GES, or VI test of the world and it gets very confusing very quickly. You start to have to do stuff like, "Okay, I'm going to try running this thing like four times. And if it succeeds three out of the four times, then maybe it's good enough." But why three? Why not two? Or why not run it 10 times? 
+
+And then, of course, when you're actually looking at the results, you want to, for example, see all four things that you may have tried in one place and try to see what the variance is. You can't really do that on a terminal screen. I mean, there's no UI around something like VI test that makes that easy. So I think that's the biggest problem. 
+
+The second thing is that you're not just testing based on the code. Unit tests are like a pure function of code. Or sometimes infra, you also need to test based on data. And being able to source good data to build good evals is challenging. But once you embrace the challenge, I think the art of finding the right data to actually evaluate on becomes the highest leverage tool that you have when you're building AI software. And so, that is a completely new activity. And it's this kind of strange thing that requires reaching into your production logs, finding interesting examples, and then utilizing them in your evals. 
+
+A lot of the teams that we meet before using Braintrust, they're doing this just in like JSONL files. They'll log stuff to a Postgres database or log it in their traditional observability system and then find stuff and then like click in a UI, download it and then copy-paste it into a JSONL file and then try to use that in their evals. And that is obviously not the optimal workflow. 
+
+And I think the third thing that's interesting is that, compared to previous generations of software engineering, the role that non-technical people have is quite different in AI. Non-technical folks, for example, support people are often incredibly sharp at looking at poor user interactions with an LLM and characterizing why the interaction was bad. And that is an incredibly good way to get good eval data. And so, you need to figure out ways to incorporate non-technical folks into the workflow and utilize them effectively. And again, that's different than traditional unit testing. 
+
+[0:07:57] SF: And then in terms of doing this for what we considered old school predictive AI versus generative AI, are there differences in terms of how you need to do something like evals for those? 
+
+[0:08:09] AG: Yeah, I think there's a lot of differences. I was talking to someone at a ride-sharing company earlier today, and I think a good example is, let's say, you work at Uber and you're trying to figure out what the optimal price is for a ride. That's like a traditional ML problem. Really, I think optimizing an aggregate is the right thing to do. If one or two riders, things are too cheap or something is too expensive. Airbnb is another similar example where they use ML to figure out the price or to suggest prices for hosts to list their properties. With those kinds of problems, if the answer isn't quite right, then the user impact is somewhat low. And I think optimizing over the aggregate of the correct price is much more important than every single price. 
+
+Whereas a lot of the problems that people are using for AI, for example, if you're working on a codegen-related tool, if you spit out the wrong code, then it's just not a good user experience. It's not like you need to optimize some aggregate number there. And so, I think the cost of being wrong is somewhat different. And accordingly, I think it's very important to look at individual examples and not just try to optimize an aggregate, which is a really popular sort of old school academic thing to do in AI. That's one thing that's quite a bit different. 
+
+I think the other thing that's quite different is that LLMs are very interactive. In the old world of ML, when we were training models at Impira, if we noticed that something was wrong, we would sort of collect a bunch of data and then retrain everything. And you could do that maybe if you're very, very sophisticated once a day. But realistically, many companies that are building traditional models will retrain their models like once a quarter. Whereas with LLMs, because you can do prompt engineering, you can change things really, really quickly. 
+
+One of the most popular features of Braintrust is that you can go into our logs. And if there's an LLM interaction, you can hit try prompt and open it directly in a modal and then actually play around with the prompt and even save it right there. And so, that kind of very fluid engineering is quite different. I think it feels to me quite a bit like the difference between using Python and using something like C++ or even writing assembly code, you can just move a lot faster. 
+
+[0:10:15] SF: Yeah, essentially the sort of feedback loop is much more immediate than you have with sort of the predictive models where you're doing an update maybe once a quarter or something like that. You can immediately make a change and see the change and the impact of that change, which is really powerful. But it's also, because of the non-deterministic nature, hard to always know if the change is actually better or you just sort of the vibes feel better and you're in that direction. 
+
+[0:10:40] AG: Right. Yeah, no. I mean, I think it feels exactly like building software. I mean, I'm old enough to remember when building web servers and writing web apps was - like pre-PHP, it was just really, really slow and really hard. And at that point, it was inconceivable to me that you'd be able to save a file in your IDE. And without even refreshing the page, the browser would reflect the change, which is now something that everyone experiences and, honestly, we all take for granted. I think the sort of power of software is really how quickly you can iterate things. And LLMs have really unlocked that for AI. 
+
+[0:11:17] SF: Yeah, that's absolutely true and I think that's true even outside of the technology itself when it comes to what companies succeed and what companies fail, especially in competitive markets. It's like how fast can the company learn and make adjustments? Because, inevitably, the things that you do are probably going to be wrong in some fashion. But can you learn from that? Iterate really quickly? That's why engineering organizations, you want things like CI/CD set up and be able to do multiple releases a day because that execution cycle allows you to essentially outcompete people who don't have those types of things in place. 
+
+[0:11:49] AG: Yeah. I mean, I'll give you an example. Simon, who's one of the founders of Notion and one of our early adopters at Braintrust, said that, prior to Braintrust, they were able to solve on the order of three issues per day. And now with Braintrust, they're able to solve more than 30 issues per day. And so, you're exactly right. I think with the sort of analog to CI/CD, observability, et cetera, in AI, you're just able to move a lot faster. 
+
+[0:12:15] SF: Can you walk me through the process of actually creating an eval? I want to use Braintrust. I have some AI application that I'm building, and now I want to integrate this. How do I go about doing that? 
+
+[0:12:25] AG: Yeah, I think one of the things that we did that really was very popular in the early days, and I think has kind of now become a standard among products and tools in the space, is we broke an eval down into just three simple parts. One part is the data. And data is just a list of inputs and then optionally expected ground truth values. You don't always have them, but sometimes you do. You have to figure out how to get that. 
+
+Sometimes if you're just starting, you might just hard code it in a TypeScript file or Python file. Maybe you have it in a SQL database. Braintrust has data sets you can use. But somehow or another, you provide some data. And then you provide a task function. A task function is very simple. It takes some input and then it generates some output. And a simple task function could just be a single prompt that you plug the input into the prompt and then you generate the output and you save it. It could be agent. It could be multiple agents. Now it could be something that runs across services. That can get increasingly complex, but it's just a pointer into your application. And then the last thing that you provide is scoring functions. And scoring functions take the generated output and then the expected value, if one exists, the input, maybe some additional metadata. And their job is very simple. They produce a number between 0 and 1. 
+
+We have an open-source library called auto evals, which has a bunch of scoring functions built into it. Some of them are heuristics like Levenshtein distance, which is kind of a good old trick that still works. Some of them are very fancy LLM-based scores. They're all open-source. So you can actually look at the prompts and tweak them yourself. But the scoring functions, you kind of itemize them into these little functions whose job it is just to assess your output on some criteria. And that's it. You just plug those three components into an eval, and then you can run Braintrust eval on your code in Python, TypeScript, or now a bunch of other languages. And that's it. You've run an eval. 
+
+[0:14:23] SF: I mean, how did you come to this design? How did you know that this was going to work? 
+
+[0:14:29] AG: Well, I mean, I've been doing evals as a software engineer struggling through ML for seven years now. And so, this is not the first attempt at trying to simplify this. I think at Impira, I remember the first time I tried doing it, I was working with our researchers who are unbelievably smart. And they had Python notebooks, and Matplotlib, and for loops, and matrices. And I like barely understand NumPy. So it was just really, really complicated. 
+
+And I think through literally years of iteration, I sort of realized that it's just these three pieces. And I think I spent, when we started working on Braintrust, probably like two or three months thinking about how to really boil down evals into something that was very easy for people to use. 
+
+Bryan, who's the CTO of Zapier, was very helpful because he was also new to AI and a very, very sharp software engineer. I would sort of send him a draft and say, "Hey, is this like sufficiently easy for you to digest?" And he would just say, "No." And so, working with him and a few others, I think we kind of arrived on this design. And I remember when I sort of first wrote and eval this way, it just felt right. 
+
+[0:15:39] SF: Yeah. It sounds like you had some really good sort of like early-stage design partners that helped you validate what you were planning before you actually went about implementing it and rolling out.
+
+[0:15:50] AG: Yeah, our core bet was that there are some early adopters. And Ilad and I actually wrote down a list of these companies before we really started the company. But there's like a list of early adopters that were building software in a way that represented how others would build software with LLMs in the future. And I think one of the most interesting characteristics of these companies is that most of them did not have ML teams prior to ChatGPT coming out. They were kind of starting from a fresh slate and thinking from first principles about how to build with AI. 
+
+And we basically reached out to all of these companies. And I think now, almost all or all of the companies on that list are customers. But we sort of bet on what Zapier, Notion, Airtable, Instacart, browser company, Ramp, companies like this, what they would be doing and how they would be building AI software, we sort of assumed that others would build it that way as well. And I think that's largely turned out to be true. 
+
+[0:16:47] SF: Yeah, I mean, that's a really, I think, fantastic approach and insight that you had early to sort of - you ended up identifying what is probably your ICP, your ideal customer profile. And then it's kind of like this is like your initial account-based selling strategy. These are account lists. I mean, now we close those. Let's go look for these other ones that are kind of similar. 
+
+[0:17:08] AG: Yeah, I think what Notion was doing six months ago, I think a lot of companies are trying to do now. And so, it's definitely worked really well for us. 
+
+[0:17:18] SF: That's awesome. And then in terms of the eval itself, what am I doing as a company or an engineering organization wants to incorporate this? Is this a library that I'm running locally? Where's this kind of run and sit?
+
+[0:17:32] AG: Yeah, I think it's a lot like unit testing in the sense that it usually starts by you just running it on your local environment. And when you do that, you basically generate a bunch of logs which get uploaded to Braintrust automatically and then you go to our UI to visualize it. 
+
+And we've tried to make the DX really, really fast. The sort of time from when you run an eval to when you see it in the UI is just a handful of seconds and it feels very real-time. And that's usually how it starts. And then the next thing that you would do is send your friend or your colleague a link to the eval and say, "Hey, look at this. What do you think?" Or, "I discovered this. What should we do?" And then maybe your colleague starts running them as well. 
+
+And soon you kind of realize, "Hey, it would be really great if we could actually run these on all of our PRs." And we built a GitHub Actions integration that's been really popular, that just makes it very easy to kind of translate what you probably have already built locally into running as part of your PR workflow. And we do a bunch of stuff behind the scenes. If you don't change any of the prompts, then we'll automatically cache everything. And if everything is automatically cached, we don't pollute your PR with a bunch of repetitive information about the thing that's changed. 
+
+You know this very well, but there's a lot of those like little things that you have to do to make the workflow feel right. But that's usually how it goes. And then once it's in your PR workflow, then you start actually baselining against main. And every time you run an eval, it gets automatically compared to the latest deployed version and you can get increasingly more sophisticated from there. 
+
+[0:19:06] SF: And then in terms of any increased inference costs that I might be incurring with this, where I'm going to be running these PRs through evals that might also, one, they're probably interacting with some AI component of my actual product, which is going to have a cost associated with it. And then it also might, in the sort of scoring function, be using some sort of LM-based scoring. How do companies think about those types of things? 
+
+[0:19:32] AG: Well, first of all, it's all cached. Both for speed and cost reasons, I think it's quite useful in evals not to just unnecessarily rerun evals. And by the way, there's another cost that you didn't even mention yet, which is doing online evals. We also make it really easy for you to run eval functions on your logs at like a sampling rate that you specify. And that also adds cost. 
+
+But I think the other thing is that I think the cost of doing evals is really low relative to the cost of running a production workload. And yet, the value is disproportionately high. Because evals, for every eval that you run, you're basically kind of ensuring that end users have a really positive experience with your product. And so, in the spirit of iteration and getting to the best possible product and product market fit with your AI company or your AI feature as soon as possible, I think evals end up feeling like a really low-cost way to get there compared to user suffering, for example, with your low-quality app. To be honest with you, I think aside from some competitors or companies trying to create noise about how evals are expensive, it hasn't come up as a practical concern for any of our customers. 
+
+[0:20:45] SF: Yeah. I guess you're really weighing in against what is the cost of a horrible user experience? 
+
+[0:20:50] AG: Right. And it's a fraction of the cost of actually running your application, right? 
+
+[0:20:55] SF: And how does this start to work when things start to get more complicated? If I have some sort of like agentic workflow where there's going to be multiple sort of planning, evaluation cycles, maybe I even have like an agent workflow where multiple agents are communicating and passing information, am I breaking these down sort of piece by piece and running evals a little bit more task-specific? Or am I doing some things that's a little bit more aggregate? 
+
+[0:21:20] AG: Yeah, no. It's a great question. And I think at a certain point, how you engineer your evals becomes a core part of how you actually build the agent or the more complex system itself. And I think what I'll say really quickly there is the best systems are often the systems that can be evaluated really well. And so, you sometimes pick the abstraction boundaries in the software that actually allow you to do evals. 
+
+But yeah, I think the optimal way to build increasingly complex AI systems is to do evals end-to-end, as well as for the components. And the more you evaluate individual components, for example, a planner module, the more reusable and modular it is. So you can use it as its own standalone thing and evaluate it as its own standalone thing and then somewhat reliably and comfortably plug it into larger systems and kind of know that it will do its task really well. 
+
+[0:22:15] SF: And as a business, how do you turn something like essentially evals and testing into an actual business? Clearly, there's pain and people want to solve it. But how does this become something that you can actually monetize and scale? 
+
+[0:22:27] AG: Yeah. I mean, one of the things I'll share is just as a fun anecdote to other entrepreneurs who are potentially starting companies. When we started Braintrust, we weren't the only company that was thinking about building LLM tooling, but I think we were the only company that really focused on evals. And the reason is that a lot of VCs will give you advice about problem spaces. And multiple VCs told us CI/CD was not the most lucrative set of venture outcomes for them in the previous generation of software. And so, it's a very bad place to start a company. And instead, you should focus on things like observability. And I think we just knew better than to really listen to VCs that much. And from personal experience knew that the pain was really around evals. 
+
+I think now the mindset around that has shifted quite a bit. And in retrospect, I think we were right to focus on evals. But with that context in mind, I think monetizing Braintrust has not been that big of a challenge for us because evals represent such a critical part of the development workflow and represent so much pain that it's a problem that people feel very motivated to solve. 
+
+The other thing about evals, and I mentioned this kind of earlier on, is that the data component, like how you actually source data to do evals, turns out to be really important. And, therefore, people actually want to log their production workloads in Braintrust as well. And so, at this point, we've built a really, really powerful and seamless integration across logging and evaluation. And as soon as people start logging stuff in Braintrust for the purpose of finding data to do evals, they start asking us for other stuff as well. Like, "Hey, I'm logging stuff here. Can you tell me how much I'm spending over time? Or can you tell me how much I'm spending per project? Or can you help me understand when my app is really slow? Or can you help me understand when users are liking or not liking the experience that they have with the product?" And so, that's kind of naturally expanded what we do to be more than sort of just evals. But yeah, I mean, I think People are willing to pay for tools that help them move quickly. and, therefore, I think it hasn't been a really big blocker for us to actually monetize the product. 
+
+[0:24:43] SF: How do you go about writing evals for really open-ended tasks? If really the application is customer support or something that's chat-based, how do I go about writing evals there where I don't really know necessarily what the inputs are going to be? 
+
+[0:24:59] AG: First of all, I would say some evals are better than no evals. And a lot of people, myself included, often have analysis paralysis before you actually start writing evals. And the best thing to do is just to start writing them and then kind of iterate and improve them as you go. 
+
+In terms of something like customer support and chat specifically, I think the hardest problem is probably finding good data. There's a lot of like little things. For example, when you evaluate a chat interaction, the best thing to do if you have a multi-turn interaction is to evaluate individual steps of the multi-turn interaction. There's a lot of those little tricks. And if anyone wants to dig into that more, we have some docs where I'm happy to chat with anyone about that. But I think the hardest thing is just finding good data. 
+
+And there's really two things you can do. One is just to log stuff in the right format. We have obviously tools that make that easy. But the other thing is to actually collect useful signals that help you find the signal, like the useful interactions among the noise. One thing you can do is capture end user feedback, like thumbs up and thumbs down stuff. 
+
+What we found from working with customers is that thumbs up rarely means that something is definitely good and thumbs down rarely means that something is definitely bad. But it is still a useful filter to look at the things that people actually took the time to rate and comment on as potentially good data. 
+
+The other thing you can do is you can use online scoring. You can actually have an LLM review particular interactions and say like this one was uncharacteristically long or rambly. Or the user seemed like they got confused or something like that. And actually, use those signals to help you narrow down the data. 
+
+And then once you find good data to actually do these kinds of like open-ended evals, I think the problem becomes much easier. Like most engineers, feel free to correct me if you think otherwise, but I would probably posit that if I said you're working on a support bot, I could give you a hundred really, really representative interactions of what your support bot will actually look at. And you have to manually sort of look at the output that's generated and try to improve your app. But I guarantee you that these 100 interactions are pretty representative of what a user would actually see. I think you'd actually still find that pretty compelling. Because not having to look at an abyss of production logs or just wait to find stuff out, it's way better to actually just look at a bunch of stuff. Sorry. A constrained set of things and improve them. I actually just think even if you just get to that point, it's pretty powerful. 
+
+[0:27:29] SF: Even outside of doing evals for AI models, do you think AI is going to change significantly in the way that we craft and think about regular software engineering tests? 
+
+[0:27:43] AG: Oh, for sure. I think English is the new language. There's a lot of debate about whether English is the assembly language of LLMs and people will be writing traditional code, or if English is the new language. And I think If you look at two parallel trends, I would say like Cursor, for example, represents one trend, which is using AI to build traditional software really effectively. And then maybe Braintrust represents the other parallel trend, which is bringing good software-enduring practices to this new sort of Wild West area of AI development. 
+
+And you look at the commonality of both of these trends, the big common theme is that, if you express what you're trying to do in English, you're able to get a lot more done. And so, I definitely think that the most effective software engineers of tomorrow are going to be writing a higher fraction of English than they do today. I'm not so sure it's going to be a hundred percent English or if it's going to be like a combination of more English or language of your choice and programming and kind of orchestrating a just a work that's happening at once. But I definitely think that the traditional world of software engineering, it's going to change in many of the same ways. 
+
+[0:28:54] SF: And in terms of AI development and productionization, what are some of the other areas that teams really struggle with today that doesn't have good tooling that essentially is an opportunity for other people? There needs to be better tooling for us to do this. Basically, the current state of things is not ideal and we need to fix it. 
+
+[0:29:13] AG: Yeah, I think one of the areas that I'm quite fascinated by is automatic optimization. And automatic optimization is like in the old world, you could say that's training a model or fine-tuning a model. But I think in the new world, automatic optimization is the problem of taking observations or data points. And instead of changing a prompt to yourself, automatically updating your AI system to perform better. 
+
+I think that's a really interesting area for a variety of reasons. The first is that once you achieve a significant kind of level of scale, it becomes feasible. You collect enough data to actually represent what's happening in the real world. A lot of people jump to fine-tuning too quickly. And I think the problem is that the English just general description that you have in your head ends up being closer to what users are actually trying to do than the like 50 data points that you collect about what users are trying to do. At some point, that flips. 
+
+If you look at Cursor, for example, I think they're like at a level of scale where that has flipped. And there's enough data to actually represent what people are trying to do. Another thing is that automatic optimization will get you, if you have good data, significantly better performance than just sort of like manually trying to tweak things yourself. That's kind of been the story of AI and ML in general. 
+
+And yet, the tooling to be able to do that is still very, very early. I think many tools that are focused on automatic optimization, they focus on the fine-tuning part of it or actual orchestration of GPUs or whatever to improve the model or the system. But I actually think the hardest problem is that problem of creating the right data flywheel and then assessing whether the automatically optimized thing is actually better than the previous iteration. And if not, finding the right data to then improve it again. I think that's a big area. And if anyone's working on that and wants to collaborate with us, we'd love to chat. 
+
+I think another area that's really under explored and is going to be very interesting is the security sort of implications of using AI. To give you a small data point, many observability challenges in AI stem from the fact that you need to store the prompts themselves to actually be able to measure the stuff that you want to measure and collect good data to do evals and so on. But that information often contains PII, which if you're storing traces and spans in Datadog or Grafana, you usually don't need PII to look at like the performance metrics that you want to look at. And so, doing that effectively I think is hard and it's a new muscle for a lot of companies. And I think it's going to take some time for really good best practices to develop around it. 
+
+[0:31:53] SF: How do you guys deal with that today if given that you have this logging and monitoring part of Braintrust? 
+
+[0:32:00] AG: Early on, we knew that data security just kind of from like a systems standpoint was going to be probably one of the most important things about Braintrust. It's another thing, by the way, that VCs told us not to do, that we sort of ignored them and did. And I think, again, not everything we do is right, but this is another thing that was right. We've supported running Braintrust in your own cloud from day one. And we actually built this really powerful hybrid architecture, which is embedded at every layer of our product. It lets you basically only run the data plane in your own cloud, but we run all the annoying bits like the UI, metadata, auth, all that stuff that requires setting up a bunch of DNS names and connecting a bunch of things together, but doesn't actually store the data. 
+
+And so, what that means is you can store all the data in your own environment. Our servers never need to or can access it. Yet, you're able to use the latest and greatest version of our software just like a SaaS tool and your browser connects directly to that data. That architecture has allowed us to help kind of solve the very base layer of that problem, which is that customers don't need to surrender their most sensitive data to us to be able to use the product. But I think there's a lot of really interesting tooling that we're going to build over the next couple quarters that actually allows companies to implement the best practices within the company itself. 
+
+And so, yes, now we have all the data in our own servers, but we actually want to have a really good workflow around letting Sean run evals but not necessarily see the data that he is running the evals on, or maybe not see exactly that data. I can't say everything we're doing there yet, but we're going to do some pretty exciting stuff. 
+
+[0:33:40] SF: I want to talk a little bit more about that, but just one quick thing back to on the optimization thing where we were talking about how, essentially, as a company scales, maybe the problem gets flipped. Like Cursor essentially has enough data to understand in general what users actually want to accomplish. Is the problem before that essentially just a matter of when you jump into fine-tuning too early? Is your dataset not representative, so you're going to end up with like an overfitting scenario? 
+
+[0:34:04] AG: For sure. I think fine-tuning, it's like popping the hood of the model before you necessarily have all the data or resources to know how to do it. One of the most common things that I encounter when I talk to customers, almost none of our customers, by the way, use fine-tuning in production right now, but - 
+
+[0:34:23] SF: I think very few people are. 
+
+[0:34:25] AG: Yeah. But one of the most common things that people do is they collect like 50 examples and then they fine-tune a model and then they run the model on their 50 examples that they fine-tuned it on and they say, "This thing is great." And then they deploy it in production and then it doesn't work very well. 
+
+And I think that has less to do with the fine-tuning process itself and more that they didn't have necessarily the guardrails in place to be able to actually tackle that problem effectively. The reality is that a prompt is actually a very powerful mechanism for using general instructions, reasoning, and language to represent a problem. And so, I think the point at which you have enough data to fine-tune is one where you actually have enough data to approximate all of the information you're trying to cram into a prompt. 
+
+But in almost all cases, fine-tuning doesn't work very well. And actually, I'll even provide a more extreme example. There's a wide variety of tools that are pretty cool, like DSPY, for example, that don't just support fine-tuning but support stuff like automatic few-shot optimization and people have exactly the same issue. They'll automatically optimize and few-shot a prompt and then observe it on their 50 examples and say, "This is great." And then deploy in production and it doesn't work very well. 
+
+And the best teams today are actually manually curating the set of few-shot examples that they put in their prompts because they have to kind of use their human, general, logical understanding of the problem and sort of try to represent that in the few-shots themselves. So even that much safer mechanism is very, very prone to the same problems. On the flip side, I think it's a really big opportunity to actually help people do it well. 
+
+[0:36:11] SF: Yeah, absolutely. Back to like the original issue that we're talking about where they're fine-tuning data set of 50 and then running the test against the same 50. You should at least be doing some simple two-fold testing from traditional ML there where you're not testing against the same data set that you use for training. 
+
+[0:36:27] AG: Yeah, but even doing that is hard. 
+
+[0:36:29] SF: You still have to do the manual, essentially, evaluation of the fold. 
+
+[0:36:31] AG: Yeah, I mean, creating good train test splits is a really, really hard problem. 
+
+[0:36:36] SF: Yeah. And then on, essentially, the setup where you're running the data plane inside the customer's cloud and then you're running essentially the equivalent of the control plane inside your cloud, is the control plane like a multi-tenant setup? 
+
+[0:36:50] AG: Yeah, the control plane is multi-tenant. And the invariant that we maintain, which I think was kind of - I didn't realize this at the time, but I've learned is fairly unique, is that our control plane never does or needs to access your data plane. And so, that means that you can run Braintrust in your own VPN, for example, or you could run the data plane on your laptop. You can run it in a variety of very, very constrained ways. Because the only thing that needs to happen is the data plane needs to do some auth checks against the control plane, so it reaches out to do those checks. And your browser/your SDK code needs to be able to talk to the data plane, but nothing else. 
+
+[0:37:29] SF: I'm running that in my cloud. Am I covering essentially the cloud cost for that? 
+
+[0:37:34] AG: You are, yeah. 
+
+[0:37:34] SF: Mm-hmm. Okay. How does that deployment work? 
+
+[0:37:37] AG: We have two mechanisms today. We have a very kind of crafted experience for doing it in AWS. And when you do that, we spin up kind of like the right spec of various databases and services. And we deploy a bunch of stuff on Lambda functions, which is a whole another rabbit hole. But it works out to be pretty effective for this use case because of how bursty it is. 
+
+And we also have a Docker-based option. And we've actually boiled the Docker option down so that you only need to run a single brain trust container. Of course, you can run multiple of those containers and they're stateless and scalable, but you actually only need to run one and then you can hook us into kind of the managed versions of a few different common database services, like Postgres, for example, within your environment. And so, it's just very, very easy to set it up. 
+
+[0:38:27] SF: Storage is going to be in the data plane. Essentially, is the actual database that's running behind the scenes, is that all abstracted away? 
+
+[0:38:35] AG: It is, yeah. 
+
+[0:38:36] SF: Just kind of bigger picture around some of the challenges that people are sort of highlighting in generative AI right now. I think one of the things that's sort of a topic of conversation is around how basically we've run out of the new public information to train models on. Models have been scaling up, but essentially performance hasn't sort of scaled with the amount of inputs. What are your kind of thoughts on that? Have we reached the limits of what we can do with sort of the transformer style models? 
+
+[0:39:03] AG: Yeah. I mean, I think those discussions are very cool. However, I personally don't care at all. And the reason is that if you froze what we have right now, we have at least 10 years of engineering ahead of us to make use of what we have. I'm so excited about what's coming. Please don't interpret it as any less excitement about that. But I think there's just so much we can do with what we have right now that anything else is gravy. 
+
+And there's very smart people working on it and there's a lot of capital, right? I'm sure they'll figure something out. But who cares? I mean, even this riverside tool that we're using right now for doing this conversation, I can think of so many different ways that AI could make the overall podcast experience much, much, much better. And I think there's so many things you could do with what we have. 
+
+[0:39:54] SF: Yeah, I agree. I mean, I think that people get a little bit too sort of fixated on some of the rough edges that exist with the technology today around, "Oh, sometimes there's hallucinations. Sometimes I get a generic response," or whatever. But compared to what you could do in the space a year ago or two years ago, it's pretty insane. 
+
+[0:40:14] AG: That's an age old - I mean, when I was working on AI pre-LLM stuff, it's just always what people are concerned about. It's nothing specific to LLMs or the time that we live in. It's actually just the fact that, as humans, we struggle to come to terms with non-determinism. And non-determinism is an inherent characteristic of AI. 
+
+This thing, it's never going to change. People are always going to be - they're always going to look ahead to like, "How does the model make this thing better?" All the really smart, successful, good AI builders and product folks, they sort of flip the switch and really embrace the fact that AI is like this and they just engineer, engineer, engineer to work around it. And as things get better, it's just gravy for them, right? They've already built a system that doesn't necessarily need things to get better. But as things do get better, it just unlocks things that maybe were difficult before. 
+
+[0:41:08] SF: What advice would you have for somebody who's interested in building on generative AI technology or getting into AI and they need to sort of become comfortable with the non-deterministic nature?
+
+[0:41:20] AG: Yeah. So I think the first thing that's really important is to pick a very, very specific problem that you can solve and attach yourself to the problem rather than AI. A lot of people are like, "Now that there's AI, I can do X." Or, "AI can do X, but it can't do Y. And, therefore, I can do Z." And I think those people never really find their way. I think the best teams are the ones that say something like, "Okay. Wow. O1 just came out. And O1 is incredibly good at reasoning. Maybe now I finally have a way of helping doctors have a real shot at differential diagnosis." I'm just making this up. But like a real shot at differential diagnosis. Let me go and see if I can work on the problem of building what a UI look like for a doctor to actually do differential diagnosis together with an AI model. I don't know, right? 
+
+And I think focusing on a specific problem like that is very important because it sort of motivates you to talk to users who have the problem and then actually understand what characteristics of the problem are challenging and what you maybe need to engineer around the limitations or sort of characteristics of AI today. 
+
+The second thing is, obviously, to run evals. I think the very good folks that build AI software, they flip from only doing vibe checks, to double checking their work with evals, to using evals as a way to actually motivate what they're able to build and see what products they can ship. I'm biased, of course, but I recommend really, really focusing on evals. 
+
+And I think the third thing I would say, maybe my hot take is don't waste your time learning Python or getting involved in the Python ecosystem. I think there's a lot of kind of garbage software and tooling that exists in Python because it's the language of AI and ML in particular. But all the really great software that we use ends up being implemented in the TypeScript world and is really built by people that are very, very passionate about product engineering. 
+
+And I think the same is true with AI. Vercel is a really great example of a company that's both building great tools internally and helping to improve the overall ecosystem around this. We've been working with them since the very early days of Braintrust and they've used us to, for example, run evals on V0. And I think we've helped them ship a number of features as a result. And I think that mindset around building great UI and great products is the sort of prevailing factor for what ends up being good AI software. I would just go deep into the AI TypeScript ecosystem. And there's a lot of fun stuff to work with in there. 
+
+[0:44:02] SF: Awesome. Well, Ankur, thanks for being here. 
+
+[0:44:04] AG: Awesome. Yeah. Thanks so much for having me. It was a fun discussion. 
+
+[0:44:07] SF: Absolutely. Cheers. 
+
+[END]
+

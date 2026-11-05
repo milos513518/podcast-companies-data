@@ -1,0 +1,494 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 736: Sahil Walia on Apache Iceberg
+DATE: 2026-09-03
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/09/se-radio-736-sahil-walia-on-apache-iceberg/
+AUDIO: https://traffic.libsyn.com/secure/seradio/736-sahil-walia-apache-iceberg.mp3?dest-id=23379
+DURATION_SECONDS: 3074
+TRANSCRIBED_AT: 2026-11-04T02:49:06Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Are you a tech-savvy developer with an inquisitive mind? SE
+Radio has an opening for a new volunteer host to join the team and produce five episodes per year.
+To apply, please follow the instructions on our website at se-radio.net slash contact. For Software
+Engineering Radio, this is Robert Blumen. I have with me today Sahil Walia. Sahil is a senior
+technical architect at Snowflake and he has published many papers on data engineering and artificial
+intelligence. Today, Sahil and I will be talking about Apache Iceberg. Sahil, welcome to Software
+Engineering Radio. Thanks for having me, Robert. Excited to be here. Anything else you'd like to say
+to the listeners about your background before we get into the topic? Absolutely. Thank you, first of
+all, for the opportunity, Robert. I am Sahil Walia. I'm a senior technical architect working with
+Snowflake. I specialize in data engineering workloads and specifically open lake house
+architectures. I try to migrate customers outside of their old architectures into the contemporary
+new architectures like lake houses, iceberg, and make sure it's interoperable for other
+environments. Sahil, you just threw out a bunch of buzzwords that sound very relevant to the topic
+today, Apache Iceberg. I will be getting into defining what all of those mean. Let's start out with
+a background question. You can run these OLAP workloads less efficiently on a general purpose
+database. What is the cutover point where you want to switch to a specialized OLAP for your
+workload? Absolutely. For the audience who is not familiar, OLAP is essentially transactional. OLAP
+is essentially analytical. And there is no certain benchmark I would put, but there are certain
+criteria I would look for. So one of the examples I would look for is when you're looking for
+latency budget of milliseconds, you want to stay in OLAP world. But when your latency budget is in
+about seconds and minutes and your audience is mostly analytical, training the ML workloads on data,
+and it's not dependent on transactional data, I would move towards the OLAP. Another thing that I
+look for is where you have read-heavy aggregations and you have wide tables. Those are essentially a
+few of the good candidates where an OLAP would make more sense. But if you need primary key
+enforcements and, for example, you want to do frequent single row writes, in that scenario, I would
+maintain the OLTP. We're talking about workloads with latency budget of many seconds to minutes.
+What are the size of data sets that require that amount of time? Sure. If I understand your question
+right, Robert, you're asking at what latency we should be thinking about moving towards the OLAP. Is
+that right? No, I'm saying if you have a workload that you're willing to wait for several minutes,
+you must be dealing with a very large amount of data. How big is that data set? Oh, that can start
+from anywhere about gigabytes to terabytes and petabytes. Iceberg, which is the topic we are going
+to talk about, essentially can handle petabytes of data. And Netflix, where the creators created
+Iceberg, they actually benchmarked on petabytes of data. Think of petabytes as about, I would say,
+220 million songs. So that's a big data set. What are some other domains where you have data sets of
+that size? Banking is one of them. Healthcare is one of them. And then click stream data,
+essentially meaning how you're clicking on the app or interface. And then healthcare is another one
+of them. Let's now talk about some of the terms that will enable us to have a conversation about
+Iceberg. Data Lake. And in recent years, I'm hearing about Data Lake Houses. Explain what those are.
+Sure. The way I would think from Data Lake and Data Lake Houses to take a step back first to a data
+warehouse. So essentially, data warehouse is anything which manages your analytical workloads. They
+were essentially meant to be very structured, schema on right kind of thing and optimized for BI.
+And then later came a world of Data Lake with a cloud world wherein you had S3, ADLS. What you could
+do is you could manage your raw files into a cloud bucket, dumped into a cheap storage. But the
+challenge that the teams were dealing with was it was essentially creating a data dump, right? And
+data swamp. And they were not able to manage it. There was no structure that the teams were used to
+and the schema on right behaviors the team were used to in the data warehouse world. So then
+essentially the challenge came and we're like, how can we get benefits of the both world? And that's
+where Data Lake House come in. So the analogy I usually use is that a data warehouse is like a
+filing cabinet, while a data lake is kind of a U-Haul storage. And you can put that U-Haul storage
+and within that U-Haul storage, you can put a data warehouse, which is a filing cabinet, and you can
+manage it properly. So you have the Lake House storage, which is cheaper, but you have warehouse-
+like structure and warehouse-like transactions. So data should be easily accessible. You have
+guarantees associated to it. Let's say business is running on it and it provides you a lot more
+clarity. Happy to double click here, Robert. Yeah, I want to go into that a little bit. So what I
+understood is the data warehouse, you're talking about a schema that has invariants, where it's much
+easier to extract data from it, because you know how the data is aligned, what the data types are.
+You go to the other extreme, which you're calling a swamp, which doesn't sound like a great living
+space, where data might not have been regularized, clean, normalized, therefore much harder to
+query. Is that roughly what you said? That's correct. Absolutely right. And data warehouses were
+essentially curated, right? So there had to be a use case and you'll create a data warehouse. But
+data lakes weren't curated for a reason. And what was essentially happening is it was an append
+only. You were putting files. The great thing was you could put any sort of files and those kind of
+things, and you will manage them at the read time. But when you're managing at the read time, it
+created a lot more of burden. So let's go back with the same analogy. Say you have put your winter
+coat in that giant storage locker, but now you need to find it. And in order for it to serve you, it
+just takes so much time. So the point I want to explore here about these data formats versus the
+processing, if I think about Postgres, it can be, and for most people, it is a black box. There's an
+engine and it sits on top of some kind of file format. I don't have to know what that file format is
+in order to use Postgres. There are tools like change data capture and some replication products
+that understand Postgres log formats and can read them. But for the most part, these are very
+tightly coupled things. Now, I wouldn't then say, well, I'm going to get my Postgres file formats
+and run Oracle on top of it. It's just they're very, one is engineered for the other. I have a quote
+here from Confluence website, which I will read. It says, in recent years, we've witnessed the rise
+of headless data infrastructure. Companies are building a more open lake house in cloud object
+storage is accessible by any number of tools. Is this tight coupling from the database world between
+the format and the engine? Is that breaking down to where you mix and match? Yeah. So I think you're
+bringing the right point with the right background. In the world of data, a lot of the things were
+good, but they were tightly coupled. So you have your storage engine and then you have your compute
+engine and any other engine vectorized enhancements are built on top of it. But as a data team, you
+wouldn't have access to it. So you couldn't make decisions or you couldn't change the level of
+compute or change the level of storage what you wanted, right? So the Confluent blog you're talking
+about is, yes, this is about the headless data infrastructure, which essentially means in my mind is
+your data lives separate to your compute. And now you can scale your storage and compute separately.
+It doesn't stop only there. The advantages now team get is, say you have data in S3, right? It can
+be accessed by multiple engines now. You don't have to maintain multiple copies, right? And that's
+the way it's kind of headless. And when you can bring your own compute, say Spark, or let's say you
+want to do Databricks, or you want to do, let's say Snowflake, you can connect any of them to that
+data and start running your, say, analytics workload on top of it. Okay. I think we're ready now to
+talk about what is Apache Iceberg. Where does it fit into this landscape we've been sketching out?
+Yeah. We did talk about data lake houses and Apache Iceberg enabled that. And we did talk about the
+headless infrastructure, right? Apache Iceberg enables that. So let's dissect it a little bit,
+right? But to provide a little bit of background, it started with Netflix. In Netflix, they were
+dealing with petabyte scales of data. They were having a lot of issues with their hive systems at
+the time, right? So they wanted something which can help them manage their metadata better. And in
+short term, I would put Iceberg as an open table format. It doesn't stop there. It defines how you
+organize your data files, but also the metadata files. So multiple engines can safely read and write
+the same table as I was alluding to, right? And it has a few key components. So one is called
+Iceberg spec or specification. And the way I would think of it is like by the committers or by the
+committee, they put a rule document, right? And that rule document is something engines follow. It
+tells you the standard or it tells you how you need to follow the specification for it to be
+interoperable, right? And then there are libraries. Essentially, libraries are essentially Java,
+Python, Go. To boil it down, it essentially means that it's an iceberg implementation for Java,
+iceberg implementation for Python, or let's say iceberg implementation for Rust. And the last thing
+is the REST catalog. It allows the standardized HTTP API catalog operations. So it lets other
+engines connect via HTTP commands, to put it simply. Is this something like XML where it was an open
+data format and any provider could implement bindings in any language they want? Yes, they can
+implement. But right now, the bindings that you talked about are limited to, as I remember, Java,
+Python, Rust, and Go. So those are the four ones right now. I think there's a C++ one as well. But
+these implementations, what I have seen in my experiences, are not something a lot of teams invest
+time on. But what they invest time on is how those are integrated with the catalogs. Because
+catalogs is something which enables that accessibility of the data or writing to that data. I think
+I should ask you then explain what is the catalog, what's in it? Sure. A catalog does a lot of
+things. But in the world of Iceberg, it essentially says when an engine goes to a catalog, it tells
+you, okay, catalog, I need this table. It contains the rich metadata of that particular table. So
+then engines can go through that JSON files in technical world and inspect and understand how it
+should prune the queries if it is reading it and how it should write the files if it is writing it.
+And then they do other work as well. For example, governance and those kind of things. I don't want
+to go into that. But catalog is basically a point access to that particular table. Is this similar
+to what might be called schema introspection in some data products? I may not be able to answer
+that, honestly. Do you want to double click on that? Do you want to give an example? Yeah. In most
+SQL systems, you can, say, describe table or show schema for table and it will show you columns,
+constraints. Yeah. So that's how it does it. Thanks for the clarification. So when you're basically
+going to that particular describe statement, what essentially engine is doing is inspecting that
+JSON file and that JSON file has a lot more details. Happy to jump into details like what those can
+have and how it's the whole architecture. We might come back to that. I want to do some more high
+level. You've talked about the format that the files can live pretty much anywhere on S3 or any type
+of blob storage or on a regular file system. If we're situating Apache iceberg in the landscape, is
+there anything you would compare it to or is it the first of its kind? Nothing comes to my mind in
+relation to the data as such data field, but I would put it in the world of USB-C. So USB-C is
+something you can plug into your MacBook. You can plug into your laptop. You can charge your phone
+with it. So it's kind of a common connector. And that's the way I would think about it. What is the
+history? Was this a consortium of companies that all had the same problem? Or was it invented by an
+open source engineer? Sure. So it started with Netflix, but there has been active contribution in
+its early years by Apple and by other data companies. And these contributions, essentially, when it
+was becoming successful, led it to be donating to Apache Software Foundation. It got incubated and
+then it got accepted and it has been part of the Apache Software Foundation. We're talking about
+these agnostic layers. You can store it wherever you want on any cloud, any file system, anything
+can read it. One of the reasons that the storage format and the engine were so tightly coupled is
+that the storage was designed in a particular way to reflect the physical nature of how data was
+getting moved off of some kind of persistent format and into memory, taking into account the IO
+rates, the number of spindles, the adjacency of things on disks such that the performance of the
+engine would be reasonable, especially for large data sets. Do we give up something in performance
+if we stick it on S3, which no one outside of Amazon even knows how it works? That's a very valid
+question. And in early years when the iceberg, so currently iceberg is on V3 spec, just like any
+versions of iPhone, similarly on the V3 spec. In the early years of iceberg, there was a lot of
+discrepancies in terms of benchmarks, right? And a lot of engines that were closed, they knew their
+files and they could optimize for it better. But in the last, I would say, three to four years,
+there has been convergence towards the iceberg. And even the vendors now are pushing really hard,
+going towards the iceberg and making their engines more compatible or I would say faster towards
+that. And the recent benchmarks, to answer your question, have been showing these days that it's
+effectively same or sometimes better the performance. In terms of S3, you're absolutely right. You
+are leaving the world of vendors in terms of lock-in, but you're still locked in turn kind of with
+AWS. And AWS has your S3 and that's where you manage your storage. But the good part with S3 is you
+can do, first of all, it's very cheap, about $23 per terabyte. So it gives them cheaper rates
+compared to vendors, right? And then companies manage their own data. So tomorrow, let's say you are
+working with VendorX, but with the innovation, VendorX has been very behind, right? Tomorrow, a
+brand new company comes with a shiny object you want to move to, that vendor Y. You still hold your
+data. You still manage your data. You just need to change the engine. So now you don't have to do
+those messy migrations wherein you basically have a lot of table stakes, high-level product, which
+goes down and you do a proper planning. Rather, it should be ideally a plug-and-play depending on
+how data moves, world moves. The point I'm trying to get at is the extent that you have all this
+interoperability and abstraction layers, you make fewer guarantees about how things work versus
+Postgres or Oracle that owns the entire stack all the way down to the file system. They can make
+very strong assumptions. So when you talk about vendors and benchmarks, do you mean the vendors of
+the engines have all tuned their engines? Or do you mean the storage vendors like Amazon have said,
+hey, Iceberg runs really well on S3. We've done some magic stuff inside S3 that's going to make it
+very friendly to your Iceberg formats. Okay. Thanks for clarifying your question. Yeah, I meant the
+data vendors, like, for example, Oracle, Snowflake, Databricks, as an example, not particularly S3.
+And these, I'm just not limiting the storage to S3. You can do ADLS if you want Azure. You can do
+Google Cloud as well, right? And can you repeat your question? Did I answer your question? My
+question is large workloads move petabytes of data. Ultimately, you're constrained by the IO rate of
+the physical device or devices where your data is. You can only move data off of the device at
+whatever rate it supports. And is there a uniformity of IO capacity across all different substrates?
+Sure. Or people say, well, yeah, I mean, S3 is slow or blob storage is slow, but I can live with
+that because it's cheap and it's a trade-off we make. Sure. Yeah, let's talk about it. So over here,
+S3 has its own limitations. So let's say if you're calling the S3 API, you can only do so much of
+list operations. So say you have record, which are billions in numbers, right, on the original
+table, but you only need a thousand of them. So the beauty of Iceberg is it has very rich metadata.
+So in the world of, let's say, Hive or anything, what you would do is you'll go to that particular
+directory and list all the files in that directory. But the metadata is so rich in Iceberg that it
+is at the file level. So what really happens is instead of making those thousands API calls or 100
+API calls, Iceberg is really making only 10 or 15 API calls. And that essentially helps you fetch
+data faster. And then that helps you with your S3 throttling and everything. Okay. What I think you
+might be saying is maybe on Postgres, Oracle, if you had a poorly designed query and it's doing a
+table scan, it's a 50 gigabyte table and it ends up needing to read 50 gigabytes. It's that the
+design of Iceberg, it's so smart that it can have you reading one gigabyte that has the gigabyte you
+need. And so that's inherently faster than reading 50 gigabytes, regardless of how fast your IO is
+on that substrate. Exactly. Yeah. So there are two components to write. One is the metadata being
+rich. And another is your engine as well as the warehouse and the computer using on that, right? So
+let's say if you have a larger compute, you will have more RAM and those kind of things, but you're
+also limited with the metadata as well. So it's a combination of both. I will marry them together. I
+wouldn't separate them together in terms of optimizing it, right? And finding the data faster. But
+your point on the iceberg, I plan to cover that if we have time, the iceberg architecture, how the
+metadata is laid out. But the metadata is so rich and it's at file level that it lets you prune or
+basically skip the files which are not relevant at the backend. A new benchmark for software
+excellence is here. The IEEE Computer Society created the software professional certifications to
+help you evaluate candidates and encourage growth across your teams. Find out how to turn your
+individual contributors into a unified team that delivers excellence at computer.org slash
+certification. Well, let's do this. Let's talk about some of the queries and the metadata. When
+you're using Iceberg, what does the interface look like to a programmer? Are you doing select or
+something that looks familiar? Yeah. The data engineers or the engineers who are working with
+Iceberg, they don't have to understand what Iceberg implementation look like. They just need to
+worry about the SQL or the Python they know. So as an example, if you know select queries, insert
+queries, update queries, the other things are managed by the engines, right? Because they're
+integrating with the REST catalog. Now, let's talk about it. So let's say if you're running a select
+query in SQL, it's pretty much the same select query you will run in Iceberg. If you're running the
+insert query, you'll run the same insert query. And it's kind of an ANSI standard SQL that you run.
+So you don't have to learn that. What you need to learn is about the architecture backgrounds,
+right? How the Iceberg handles data, how Iceberg handles metadata, how read operations happens, how
+write operation happens, what metadata files are. Because if you don't know those things, you may
+not be able to optimize for your workloads. And reading about Iceberg, there's discussion of time
+travel queries. Can you explain what that is? Absolutely. So time travel is basically, I want to go
+in the past at a certain time. And you can do it so many ways, right? You can say, I want to go back
+and see how the data looked like five days ago. And assume you have a lot more events and you're
+doing something. Let's say you're doing a machine learning model or you're doing some DML and your
+code has changed now. And your data looks a little different. Or you'll be like, oh my God, I messed
+it up. I want to back up. I want to go back to the old state and see how it looks. So what you can
+basically do is select from that events table, as an example, timestamp as of, and you provide that
+particular timestamp. Not only that, you can provide other things, right? For example, what you can
+do is there's something called snapshot. So every commit you do is a snapshot. And it goes with an
+ID. And you will say, select star from that, again, the events table. And you'll say, I need this
+particular version, right? And you will say, version as of, and you provide that version. Okay, so
+that lets you go in the past to get that particular state. And this really is very powerful when you
+want to inspect data. Let's say you have GDPR compliance, right? And it really lets you see how your
+data changed and sometimes mistakenly mess up the data, right? You can go back and recover it from
+the past. You don't have to do rollbacks. It automatically is a feature of iceberg. The idea of GDPR
+compliance as an example from this, it sounds very interesting. I didn't quite get how that example
+illustrates GDPR. Could you explain that in a bit more detail? Sure. In GDPR, essentially, there's a
+concept of right to be forgotten. You want your records to be deleted. You don't want to be
+remembered, right? And what you can do is if you can go back and show that this particular time, the
+particular query was deleted. It may not be the right example here. But another thing you could do
+is you need to also remove the metadata related to that. If you can remove that, it deletes all the
+link between that parquet file that you have stored and the metadata. And you can show what you have
+done in the past. That is an interesting example. What I think you meant is somebody's auditing you
+or a customer says, can you prove that I've been forgotten? You could show that five days ago the
+record was there or as of five days ago the record was there and as of today it's not. But the data
+might still be somewhere on disk. It's simply inaccessible because nothing links to it. That's why I
+was saying like it may not be the right example here because you really have to delete the data, the
+parquet files and the metadata link. So there shouldn't be any memory there. But the good idea here
+is like if you do timestamp as of, it gets into the weeds of it, right? If you do timestamp as of,
+it should not be able to show you anything because you want all of the data to be deleted for the
+compliance reasons. That's an interesting example, maybe not a correct example. Do you have any
+other examples of a use case for the time travel queries? Sure. Think of an example. Team ran a
+delete job that was too broad, right? It was supposed to run delete 500 records, but it deleted 2
+million records, right? So with Iceberg, you can run a command like rollback as we do in the old
+world, right? And you roll back the previous snapshot. You tell it, okay, this is the previous
+snapshot I want to go to. And your data is back in seconds. That is a very timely example, Sahil,
+because we now have stories reaching the tech news about people enabling AI agents to talk to their
+database. The AI agent has inadvertently deleted too broadly. That would be a very useful feature.
+Yes, it is very, very much beneficial. And I have seen a lot of AI workloads really value it. No one
+wants to be in a situation where you have to delete and make that mess and then have to explain, I
+executed it without even reading it. Like it was too broad. But it's a tool in your toolbox that
+really helps you feel secure. You mentioned that it supports inserts and updates. Clearly, your
+database product is of no use if there's no way of getting data into it. But is the overall
+architecture highly read optimized at the expense of writes performance being sacrificed? It's a
+sense of iceberg. I would put it for analytical workloads, first of all. And secondly, I would
+assume most of the workloads would be for the read purposes, but it doesn't mean you can't do
+writes. So the writes, I would imagine, in my world would be more of a bulk writes instead of
+transactional writes. Say it won't be a teller-like writes, but it would be, oh, you're doing bulk
+million rows writes. Now, those writes can happen in two ways. There are two things that happen.
+There's a concept of copy-on-write and merge-on-read. So if you want, I can go deep into it. And
+basically, it defines how the reads should be done or how the writes should be done. And just a
+little bit of primer, copy-on-writes essentially means, let's say, if you're doing any DML
+operation, right, it will rewrite the new file. So assume you have thousands of parquet files. In
+one parquet file, which is 100 MB or 100 GB, you have one million records. But you only want to
+change one record. What it will do is it will rewrite the whole new file, right? It's great in terms
+of read because it will be faster and referencing to the new file. And there's another concept of
+merge-on-read in which what it does is it maintains the same files, but adds a kind of a sticky note
+to that file, oh, this particular record was deleted. But when you're reading, your compute engine
+is computing that, oh, I need to do this 10 records minus one and present you the nine records. And
+that's how you define, optimize for your workloads. I would like now to get more of a deep dive into
+the read and write paths, including the structure of the catalog and the metadata. I think this
+would be a good time to ask you to define parquet because you've mentioned that a few times and I
+think it will be important. So let's do parquet first and then do the architecture and metadata. I
+would think of parquet as a file format. So just like you have .xlsx for Excel, you'll have
+.parquet. The advantage or before going to advantage, I'll describe it. It's columnar storage,
+meaning say you have a table or Excel sheet that we are aware of and it has one column with names.
+It's stored by the names. It doesn't store by the row. So it's columnar, but it's also not only that
+it can be compressed. So it's at least three to four times smaller in size than your Excel file per
+se, right? So you can store a lot more data in a lot smaller of a file, right? And each column is
+stored contiguously on disk. So when it is being read, it's faster because it's stored together,
+right? The column. And then another thing that it has advantage of is that it is self-prescribing,
+meaning the schema is in there in the file footer of the parquet. And the compression is highly
+effective. Another thing, I don't want to go super technical, but something called predicate
+pushdown, when you're telling like what filter inside the file you want to do without doing the full
+scan, which lets you be more performant when you're reading it, right? And then another thing that I
+really like what the parquet is, or other engineers do as well, you can have complex types like
+structs, arrays, and maps if you want to do that, right? So when you're doing any reads, it reads
+only the age column as an example, but also note that be performant when reading it. I could guess
+that column or formats are highly compressible because particularly domain-specific data tends to
+have a very few values or a small range. Now, the predicate pushdown, is that something where the
+file may be organized in such a way that if you're looking for, give one example, values greater
+than 10, it can figure out it doesn't need to read the entire file to get values in that range, so
+it reduces the amount of I.O. Exactly. That's precisely right. You're reducing the I.O. And with
+that predicate pushdown, it goes only to that block where the data is. And within packets called row
+groups and those kind of things in the whole architecture, it goes there and find that information.
+What I'd like to do, I'll give you some discretion in how you want to organize this, but walk
+through either read or write paths or both, and to incorporate the Parquet files, the catalog, the
+metadata, how they are all working together to give the user the query. How do you want to approach
+that? I can give an example of a read, but before that, I think it'll be great service for the
+audience that we explain what the iceberg architecture looks like so that when I talk about it, they
+will follow, right? Okay, let's do architecture and then read. Sure. So I'll think of it in three
+layers, right? And it's a tree structure I would think of. On the very top would sit your catalogs,
+right? And it can be any catalog that you can plug in. A lot of iceberg-compatible REST catalogs. To
+put it simply again, you can use any catalog to talk to iceberg tables, right? And in simple words,
+as I explained before, catalog answers the question, where is your table X, right? It points to the
+current metadata file. And the catalog will have the information about the metadata JSON file. It
+has the latest version of that table JSON file. So say if the table has changed, it would know which
+the latest metadata file is. And then that metadata JSON file, in fact, in turn has information
+about the manifest list. And manifest list is an Avro file. It has information about your, let's
+say, partitions in a table, right? And what it does is it helps you prune the partitions or help you
+prune the files you don't need. And it has first level of proning here. And then that manifest list,
+in turn, has information about the manifest files. It's again an Avro file. And that manifest file,
+what it does is it maintains the statistics about the data files, the parquet files we were talking
+about. And those manifest files have per file stats. So let's say I have 100 parquet files. For each
+parquet file, it will have details about what the min and the max values by column. How many rows
+were there in particular parquet file, right? What kind of operation was it? So it maintains all of
+that rich metadata. So that's the kind of a whole architecture. And it's very rich in that. So now
+let's talk about the read pattern as an example, right? So now I want to read where my table events
+is. I'm going to go and I'm going to write a command, select star form events. As soon as I do that,
+the catalog will answer the question, where is the latest file for events? It finds that the latest
+version is v5 metadata.json. That's the latest file. And in that JSON file, it will have a bunch of
+information. But within that bunch of information will be one key thing, which is called snapshot.
+And it will tell you what latest snapshot did. We were talking about it as part of the time travel a
+minute ago. And that snapshot will have a pointer to the manifest list. And that manifest list will
+have all the information about the partitions and anything you need. And then it will take me, OK,
+this is the aaa.avro file. Now let's go to that file. And it will have the manifest files there.
+When it goes to that manifest file, it will have all the details about the files it needs to read.
+So say I did select star form events. But now I want to do select star form events where date is
+July of 2025, right? So it knows which file has the min and the max value of July. And it will only
+go and read that file. So it don't have to pass through the directories or anything. It's just so
+rich in metadata that it can pass through and only read those data files at the bottom. The example
+you gave there covers a column in which the column is a time value. So to avoid having time appear
+twice, say we were measuring some value that's not time like the state in the United States. The
+time dimension that's expressed through the time travel. If I understand that is in this tree at the
+snapshot layer. So if you have a time travel, you would go down to that point in the tree where the
+snapshot corresponds to your time travel cutoff. That's a guess. Is that correct? Yes. So the
+metadata JSON will have that snapshot log. And in that snapshot log, it's essentially a log, but
+also the timeline. Right. So when we do as of that particular timeline, that's what it uses as it's
+cutoff time. Okay. So you took us through read and now we're talking a little bit about time travel
+read. The other major operation would be write. So can you walk us through the write going through
+all those layers of the tree? Absolutely. So say you are an engine, you're trying to do a DML
+operation or trying to do an insert, right? Generally, you can define what size of a file you would
+like to populate in the storage. Let's say you want to maintain 256 GB of files, right? And you want
+to write 2560. So it will create 10 files for you. And the way it does it, it starts from bottom up.
+So first it will write the files in your storage, object storage, but other engines querying
+wouldn't know because it hasn't written that snapshot or that metadata yet. As soon as it writes it,
+it will write the manifest file. In manifest file, then it will populate. Okay. These are the files
+I populated. These are the main and the max values per column, right? And other commit time and
+those kinds of things. And then once it creates that manifest file, it will create a manifest list.
+And that manifest list will be like, okay, this is the manifest file I need to refer. But this is
+part of X snapshot. And then it will populate the partition information, say, right? If you have any
+partition information, it will populate that there. Once it's done with all of this, it will try to
+write a very final thing, the metadata JSON. And that's where it does compare and swap. It starts
+with the latest version and then compares. And so what it does is it tries to figure out, okay, I
+started writing those 10 files. But in the meantime, did the metadata JSON change? If it changed, it
+has to redo the newer version of the JSON, which otherwise would conflict. Or otherwise, it will
+just do version plus one dot JSON and write that metadata JSON file. And that will become the
+current file. Going on forward, there will be read isolation. Anything that is coming into read it
+will start reading from that particular commit. We want our writes to be atomic. Now, this process
+you described, there are multiple files that need to be changed. Something could fail before it's
+completed the process. Does it depend on the final step being created and that the system can
+tolerate, let's say, dangling references or files with nothing pointing to them from prior failures?
+It solves all the problems that you talked about. These were essentially the problems with the hive
+as well, right? So there are two kinds of things. One is read isolation. One is write. In terms of
+reads, what it does is like for the audience, if you start at 2 p.m. reading something and at 2, 1
+p.m. something changed, but it gives you results at 2 or 5, you still see the result at 2 p.m. It
+locked you there at the very first time you started reading. But for the writes, the way it does it,
+it's optimistic write isolation. To put it simply, say, Robert is trying to write and Sahil is
+trying to write. Whoever first writes, get the JSON. The other person will get the rejection and it
+will go to that engine. Okay, Sahil, Robert committed. Go back and start writing the engines. But
+what it doesn't have to do is to rewrite the file. It only has to write the metadata. The files stay
+the same. But assume something happens, the world crashes and everything and say all of the
+operations live in between. You have those orphan files, but they are not rendered anywhere because
+there's no reference in the metadata. So they won't give you corrupt reads. The only thing you will
+have to do is clean up your storage. And that operation has to be done to remove the orphan files if
+you identify. But those are very rare scenarios. Does iceberg support anything for managing the size
+of data? Either I no longer need historical time travel beyond a certain date in the past, or I can
+derez the data by going from every single change to once a week, or something like Postgres vacuum
+that is just cleaning up spaces created by write operations? Yeah, there's something called snapshot
+expiry. So say you're doing a lot of DML operation every 15 minutes, and you don't necessarily need
+snapshot from a week ago or a week ago or later, right? What you do is you can configure through
+engines that I want to expire or remove the snapshots after a certain date. And that's where you
+will see, okay, you can't go back beyond a certain date. And that's a decisions team make depending
+on their workloads, what they want to do, those kind of things, right? And similarly for the, I
+think you talked about the vacuum, there's something called vacuum full in Postgres, if I'm not
+wrong. So essentially what it means is, say you have committed small files over a period of time,
+and over the weekend, you get smaller chunk of files, for example. But over the weekend, you get a
+proper trend. But what you want to do is you want to make sure your whole bucket is clean, and you
+don't want to maintain small files because it still has to read it, still has to do everything. What
+you can do is you can merge all small files into a standard large files, which is best for your read
+patterns. And it's called data compaction. And a lot of engines provide that kind of service when
+you do manage service with them, but you can manage by yourself as well. Most databases have
+something like the query planner that decides what order to access different tables in a join. We
+haven't talked about joins, but does Iceberg support joins? And does it have a query planner? Or is
+that process you described where it's walking through the metadata to find what it needs? Is that
+the query planner? Yes. So Iceberg handles all of those things to InEngine. What it does is it tells
+you, okay, this is the metadata I have. And this is the metadata you should parse through to do the
+query fetch. But it doesn't tell you this is how you should do it. It tells you the spec. It tells
+you that this is what I have. This is how you can traverse through the tree of the metadata. But it
+doesn't tell you, okay, this is up to the engines to implement. So far, we've been talking about a
+single table, or we haven't been specific. Does Iceberg support joins? Yes. Iceberg does support
+joins. You can connect multiple tables together to have rendered results as you need. You can join
+Iceberg to Iceberg, or in case of several engines, let's say have their custom table format. You can
+connect Iceberg to a custom table format, but that's something InGen does. But to answer your
+question, yes. So my next question is going to be, is there a query planner? But since Iceberg is
+not an engine, it's just a format. What's the right question I should be asking? So at the first we
+answer the question, like it does support join, yes. And to our follow-up question, it's very much
+engine dependent. Iceberg does provide the stats for better join planning, right? But it doesn't
+execute the joins. Your engine has to plan those joins. Architecture is a query plan, per se, based
+on that. But Iceberg doesn't prescribe that. Are there multiple engines in the marketplace from
+different vendors? Are they commercial? Are they open source? Yeah. There are multiple engine
+options you have. You have proprietary ones, the commercial ones, and you have the open ones. You
+can use Spark, the Flink, the Trino, which is open source. But you can use Snowflake, you can use
+Databricks, you can use BigQuery. Anything which is compatible to the Iceberg spec can use it. You
+also mentioned there are multiple options for catalog. When I was reading about this, I found this
+list consisting of Hadoop, Hive, AWS Glue, and some others. What are some of the more popular
+catalogs? Sure. Sure. AWS Glue is one of them. And AWS Glue recently became compatible with IRC,
+which is Iceberg REST compatible, right? And then you have Snowflake's Horizon, Databricks Unity
+Catalog, and Hive Metastore. But Hive Metastore is usually... I haven't seen being used a lot just
+because with cloud, Hive Metastore was built better for the HDFS file and everything. But it's one
+of the options as well. What are some differentiators between different catalogs? Very good
+question. So it really varies what you are trying to do. So let me put it this way. As we talked
+about Iceberg spec, there are several versions of it. Version 1, version 2, version 3. So as an
+example, the current version that is GA is version 3, which supports nanoseconds time support. So
+not all catalogs would support it. So you have to think through how the implementations are, what
+you're looking into. Say Spark is writing it, Snowflake is reading it. Can that catalog support it,
+right? And then another thing you want to see is how the Rbacks are handled. So say, since this is
+interoperable, you want to make sure that your governance gets applied from one side to another,
+right? So say you have access via Spark, but you don't have access via Snowflake to a certain area.
+You want to make sure you have the right roles and the governance is handled via the catalog. How
+strong are they with the governance? How they vend the credentials to the storage? Those aspects. So
+it's a variety and I would evaluate in a way when what's my use case? I want to move now for the
+last part of the interview talking about the bigger picture of Iceberg in the application
+architecture for an entire application. The idea of a CRUD application is extremely widespread.
+Almost everything we use on the internet for business is some kind of CRUD application that writes
+into OLTP. By application, I mean something has a database, a middle tier, and a user interface.
+What would be some examples of a database application where Iceberg is the data layer? What is that
+application doing? What is its architecture? I can give one of my examples that I recently
+implemented. We had clickstream data coming in and the clickstream data landed in Postgres. Postgres
+is OLTP. And then from there, it landed via the Pulsar. Pulsar Apache Pulsar is again for streaming
+as well as managing the queues. What it did is it holds data for about 15 minutes and then pushes to
+Snowflake. And then when it lands to Snowflake, that's where you will do a lot of your cleaning up,
+transformation you're going to do, and you prepare it or curate it for other teams. And then
+ultimately, the teams wanted to implement the MLWalk or the model on the Spark side. And that's
+where the interoperability come in. They were able to use the Snowflake engine to do a lot from a
+transformations and loading for the right tables. But the ML teams could leverage the Spark engine
+for the ML workloads by just accessing the table that were written by Snowflake on S3. And to
+summarize this, I would put it in a way wherein your multiple teams need access to the same data,
+but you don't want to have a redundant storage in terms of just, okay, for the same use case. You
+don't want to have that. It's better you don't do it. Secondly, I have seen a lot of teams doing the
+similar transformation or almost similar transformation just to give different kind of data to
+different teams, right? It reduces that. Another thing is, if you have use cases wherein you want to
+do anything analytical, that's where I will use it. Again, AI is one of the use cases. That's
+getting very much popular in which what happens is you can have Git-like branching and you can do
+A-B testing on the data with NACI catalog. And you do branch the data into two layers and do
+analysis on both layers. By AI being an application, are we talking more about training or fine-
+tuning or about using the data to drive inference of models you already have in order to evaluate
+the models? Or what do we mean by AI? Okay, just the training the data. If you're training the data
+with data set A versus B and you have a branch-like structure, data branch, not a Git branch, data
+branch-like structure, you can have A and B comparison while training and do analysis. Well, Sahil,
+we've covered Iceberg from beginning to end. Before we wrap up, anything else about Iceberg that
+you'd like listeners to take away? What I would say is a very exciting field and it's a very
+exciting world of the Iceberg. Now, the Iceberg team is working and collaborating on the version V4.
+It's not final yet, but it's going towards even a better product. And another thing that I've been
+noticing in industry is that vendors are converging to Iceberg as a standard. They are now not
+limiting themselves to their own proprietary one. So I think it's a good time to adopt. Another
+thing that I would recommend teams to take away is be more involved in Apache's dev list for the
+Iceberg. You'll get to know how it's developing, what the discussion themes are, what the common
+themes are, and you'll get to know how things are developing in the world of Iceberg. It's a truly,
+truly exciting time to be a learning Iceberg. Before we sign off, would you like to direct listeners
+anywhere they can find you, your publications, or any projects you're involved with? Absolutely. You
+can reach out to me on my LinkedIn. My LinkedIn is Sahil Walia, as you see my name, and then
+Syracuse, Syracuse, New York. And I can be reached off. I have a Medium page where I publish
+articles, and you can look at my Google Scholar as well. Sahil, thank you very much, and thank you
+for speaking to Software Engineering Radio. Thank you, Robert. It was great chatting with you. I
+appreciate it. For Software Engineering Radio, this has been Robert Blumen. Thank you for listening.
+Thanks for listening to SE Radio, an educational program brought to you by IEEE Software Magazine.
+For more about the podcast, including other episodes, visit our website at se-radio.net. To provide
+feedback, you can comment on each episode on the website, or reach us on LinkedIn, Facebook,
+Twitter, or through our Slack channel at seradio.slack.com. You can also email us at team at se-
+radio.net. This and all other episodes of SE Radio is licensed under Creative Commons License 2.5.
+Thanks for listening.

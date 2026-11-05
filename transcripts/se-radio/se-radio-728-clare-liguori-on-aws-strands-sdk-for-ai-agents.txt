@@ -1,0 +1,643 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 728: Clare Liguori on AWS Strands SDK for AI Agents
+DATE: 2026-07-08
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/07/se-radio-728-clare-liguori-on-aws-strand-sdk-for-ai-agents/
+AUDIO: https://traffic.libsyn.com/secure/seradio/728-clare-liguori-aws-strand-sdk.mp3?dest-id=23379
+DURATION_SECONDS: 4106
+TRANSCRIBED_AT: 2026-11-04T10:18:56Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Hello and welcome to another episode of Software Engineering
+Radio. Today we will talk about the Amazon Strans Agents SDK with Claire Liguori. Claire is a Senior
+Principal Engineer at Amazon Web Services where she works on developer tooling and agentic AI. She
+focuses on Kiro and the Strans Agents SDK. She has spent 10 plus years bringing amazing advancements
+to AWS and to all our developers to our great delight. Claire is also a contributor to the Amazon
+Builders Library. Welcome Claire to Software Engineering Radio. Thanks. Before we dive in, just a
+bit of a primer on AI agents. You know, how would you define an agent? You know, what is an agent? I
+know it's been going on for a while. So where are we today? And as developers, how should we think
+about it? I like to define it as three different things. One, a model. Two, tools. And three, a
+prompt. And I think pretty much any agent system that you look at, agentic framework. Those are the
+three core things that you need to get started building an agent. And, you know, again, we all start
+up with ChatGPD or Claire AI, the web, I guess, you know, entry. What makes an agent different from
+these typical chat use cases? There's all kinds of use cases you can do with agents beyond chat. I
+actually think we, you know, for a while there, we got very stuck on chat being the only agent use
+case. But, you know, I see a lot of customers automating things. Many, many teams at Amazon are
+automating operations, doing ticket troubleshooting, things like that. We're seeing customers
+automating business processes, as well as, of course, chat. Very common today. Obviously, coding
+agents are very common today. But generally, I think compared to something like an out-of-the-box
+agent like ChatGPT, building your own agent gives you a lot more control over what is the prompt,
+what are the models, and what are the tools. You can build tools yourself. You can pull tools off
+the shelf with MCP servers. But generally, you have a lot more control over what it is you want that
+agent to do and what success looks like. Fair enough. Now, I guess that's a really good segue into
+what we're doing here. Strats SDK, I'd love to hear the origin story. How did it come about, when,
+where, how? I was working on a product called Amazon Q Developer in, let's see, two years ago now.
+And that was the time around, I'm trying to think back, maybe Claude Sonnet 2, maybe, maybe three.
+But at that time, you know, the models were not very reliable. They were great for chatting back and
+forth. But when you wanted to actually automate something like tool selection, tool execution,
+coding, they weren't very reliable. I mean, we started back on Claude 2, where they hadn't actually
+yet enabled you to put tools into a tool section that was structured. And so you just had to
+describe your tools in Markdown in your system prompt. And then you would try to get the model to
+give you the response, the tool it wanted to select in a very specific format. So you could parse it
+out of this natural language string. But of course, it wouldn't do it. So you would try to give it,
+parse the JSON that it was giving you. But it would put, you know, a sentence at the beginning,
+like, here's my tool selection. That would screw up your parsing and you would have to give it
+feedback. And so we started building simple loops to improve reliability of these agents, which
+looked a lot like trying to parse the response and then telling the model what the parsing error was
+so it can fix itself. And we saw these wild productivity gains just with those simple techniques of
+just giving the model feedback for reliability. But then we started to, models started to get pretty
+good. They started to train on model selection. They started to train on actually modeling tools and
+tool selection into a separate part of the inference request. We didn't need all of that scaffolding
+anymore. And we also started to see that models started to get pretty good at tool selection. This
+was somewhere around, I would say, Sonnet 3.5 was where we saw it start to get really good at model
+selection. And by that point, we had built up all of this scaffolding. We had built up prompt
+pipelines where we tried to put the perfect rag content into the prompt ahead of giving it to the
+model. We had done all of this work around parsing the model's response. And we found that as the
+models were getting better and better, we were actually making reliability and power of what the
+agent could do worse because we were kind of artificially constraining the model. So that was really
+the key aha moment behind what turned into strands was what if we just throw away all of the
+scaffolding and go towards what we call the model driven approach where you give a simple prompt,
+you give the tools, and you have the model. And you let the model choose the context that it needs.
+So as an example, we stopped doing these mega prompt pipelines where we would try to query from rag
+the perfect context that the model would need and instead provided rag as a tool. And so it would
+come up with the query for rag pretty well. It knew what it needed to get. One really specific
+example was we had an agent at the time that was for querying the AWS documentation, answering
+questions about AWS. And the rag database was about was just the AWS documentation. But we found out
+that the agent already knew so much about AWS that the rag content, the kind of proactive rag
+context was actually confusing the model. There would be an entry that wasn't really all that
+related. And it would just kind of zero in on that. And it was almost like it was kind of doubting
+its own context that it had in its training data. And we found that once we got rid of that,
+sometimes it would query the rag database and sometimes it would just use its own training data. And
+so we found that the quality and the accuracy actually went way up once we stopped trying to
+proactively give all this. I would love to hear about the origin story of Strand's SDK. How did it
+come about? What was it trying to solve? What were the pain points? Well, I started building agents
+as part of a product called Amazon Q Developer three years ago now, I think. And that was the time
+of Claude 2, before models had really been trained on this idea of tools. You could provide a set of
+tools and you could have the model select a set of tools. So we had all of this scaffolding around
+trying to get models to understand tools and to tell us what tools it wanted to run. We had all of
+the scaffolding around describing the tools in JSON inside of the prompt. And then we would try to
+get it to respond with JSON about what tool it wanted us to choose. And we would have to try to
+parse that. But the models at the time were very obsessed with natural language. And so they would
+always say, here is your JSON or here is the tool I'd like you to run. And that would break all of
+our parsing. But we found that we started just adding these kind of retry loops around that. We
+started parsing the JSON and then giving that JSON parse error back to the model. And we found that
+the models were actually really adapted to fixing themselves. On the next time, they would be able
+to provide the correct JSON. So I think that was one learning was the models dealt with feedback
+really well. The second was around the time that Sonnet 3.5 came out. This was when models now had
+structured ways for you to produce, to give them the tools and structured ways to tell you what
+tools it wanted you to run. And by that time, we had built up so much scaffolding. We had these
+massive prompt pipelines that tried to pull from a RAG database the exact right context. And we had
+all of this logic about what context went into the prompt and where. And we found that with later
+models, we were actually making the accuracy and the power of these agents worse. We weren't taking
+full advantage of the evolution and the power of the latest models. And so the big aha moment was,
+let's throw all of this away. Let's see what the model can do itself. Let's just give it a simple
+prompt. Let's give it tools, including access to the RAG database as a tool. It can figure out what
+information it wants to go get. One example was we had all of the AWS documentation in a RAG
+database. And it could choose to go get new information or it could choose to rely on its training
+data for the model. And we found that all of a sudden, we had these much more powerful agents. And
+they were simpler and they were quicker to build because we didn't have to build all of the
+scaffolding. We could just provide prompt tools and choose the model. And that was the kernel that
+led to strands agents. That's that we started building our own agent framework to do that, to take
+on this model driven approach and simplicity approach to building agents. Probably about a year
+later, we looked at the success that we'd had internally. We were shipping agents in a matter of
+weeks. The QCLI, which is now the Kuro CLI, we shipped it in three weeks using this internal
+framework. And so we decided, let's release this in open source so that many more people can take
+advantage of this. This approach that enables you to take full power, advantage of the full power of
+the model, advantage of the full capabilities of the model. That was last May, I think, that we
+went, that we open sourced it. And since then, we've had over 25 million downloads. So it's been
+great to see the community pop up around it. Nice. You know, I feel like I have a lot of amnesia
+because now that you mentioned it, I can recall the pain of having to describe what JSON looked like
+in plain English. Right. Right. So the model would spit out, you know, a closing brace for, you
+know, matching the open brace. And it would get subtle things wrong, like adding backticks all over
+the place. And now we've got a place where you just give it a context-free grammar and LMS can
+generate amazingly, you know, syntactically correct outputs. What a crazy 18 months. You know, it's
+interesting that you mentioned model-driven approach, as opposed to what? As opposed to, like, step-
+driven, manual, like, you know, if you were to kind of call this something different, what is it?
+Yeah, I see two approaches that people take to building agents that seem way more complex than they
+need to be. One is building a ton of custom orchestration around the model. And that's what I
+described around all of the scaffolding that we had built around models, that over time, the models
+made all of it unnecessary. With the model-driven approach, you don't really need to change anything
+about your agent to start taking advantage of a new model and all of its capabilities. You just have
+to change the model ID equals line to start taking advantage because you don't have all of this
+custom orchestration that's now been made unnecessary. The other thing that I see people building is
+workflows. A lot of folks are building things that they want to add determinism to. They want to
+take advantage of these models, but they also want to do determinism, right? And there's a lot of
+use cases where you do need a lot of determinism, but it would be great to automate with agents. So
+things like booking an airline, wanting to automate flight crew assignments to flights. Very hard to
+do. Needs a lot of determinism. There's a lot of rules around it, right? There's unions and all
+kinds of things. Financial services companies I see trying to automate things like mortgage
+processing, loan approvals, transactions. And all of these things are pretty risky in terms of if
+you don't do the right thing, if you don't verify someone's income prior to approving a loan, big
+risk for the company, right? And so a lot of folks kind of fall back on what we know as software
+engineers. We know workflows. We know procedural code effectively. So we want to build for loops. We
+want to build if statements. We want to build while loops. And I actually find that with agents,
+it's important to think a little bit differently. This comes back to some of the additional features
+that we've been building into strands since our launch last May. It's hard to believe that it's
+almost a year now. But I would say strands is transitioning much more into an agent harness, meaning
+we've been adding the lifecycle hooks, the context management that you need in order to build a more
+reliable agent, maybe. Recently, we released a feature called steering. And this is my personal
+answer, I guess, to workflows. I think that workflows maybe appear to give you determinism, but in
+practice, they're actually really difficult and there are a lot of scaffolding. Again, I've seen a
+lot of workflows developed inside of Amazon that over time, again, they just make it less able to
+take advantage of model, improve model capabilities and almost make it worse in some cases. So
+steering takes a different approach where let's take the example of loan processing, for example.
+You want to verify income before actually approving a loan. The model might often do those things in
+the right order, but sometimes it's not going to do those things in the right order. So as
+engineers, we fall back on our procedural knowledge, right? We say, OK, let's create an if statement
+in there and let's ensure that the income verification came back with this value. If so, continue to
+loan approval. But that ends up being very brittle is what we find. So you might have asked the
+agent to do loan verification, loan approval, or you might have asked it just a question about
+what's the risk of this loan. And so you end up with these very brittle single use case agents. With
+steering, instead, you get to define rules about certain restrictions on the agent. Things like it
+must call a loan. If it's going to approve a loan, it must first check the value, the user's income.
+And it must be above this limit or else it cannot call this loan approval tool. And it kind of flips
+how we think about software execution on its head, where it's just in time verification of what has
+already happened, as opposed to when I'm building the agent, I'm going to say exactly the set of
+steps that it needs to take, like a workflow. We found that it can actually produce better results,
+better accuracy than workflows can, which is super exciting. But it's a very different mindset than
+what we're used to with workflows. Interesting. Well, you know, it's funny you mentioned sharing
+hooks because looking at the efficacy of it is pretty impressive, right? Now, if you take the
+traditional agent harness, but, you know, something that's not rule-based, but still a harness that
+calls tools, you know, invokes the model, has lifecycle looks. So, just to go to the baseline, where
+does the agent harness end? Where did you find strands was kind of leveling out at where you got
+with your latest incarnation of the agent harness? One of the biggest changes, the differences that
+we see, and I'll focus on steering because I think overall, you know, we're really working backwards
+from customers who are trying to automate business processes. We see that as one of the biggest use
+case right now for agents. We have the coding agents, like the coding agents are out there. Those
+are the biggest harnesses we know of, right, that we see every day on social media and in our lives,
+right, as software engineers. Those are what we're using. But we find that most valuable agents out
+there are probably automating business process. Often get asked, what is the difference between
+hooks, which pretty much every agent harness has, and steering. Very naively, they look the same,
+right? I'm going to inject myself into the agent right before a tool calls and do something. One of
+the biggest changes is hooks will only give you context about what is the thing it's about to go do.
+And you can say, this is dangerous, or this is not dangerous, or I want to allow this, or I don't
+want to allow this. We see this often with coding assistants, right? You get a hook and you can say,
+I don't want to allow RMRF star, and I can block that with a hook, right? Steering gives you the
+full trajectory of everything the agent has already done. And as it turns out, for automating a
+process, that's super important because you're able to express things like, if you're about to go
+approve that loan, call the loan approval tool, then in that steering hook, I need to see if it's
+already verified income, if it's already called that tool and what the value is that it came back
+with. Some of the other things that we see is models are sometimes apt to hallucinate inputs.
+There's a lot of use cases, right, around taking an output from one tool and providing it as an
+input to another tool. Let's say, you know, a user ID, maybe. You retrieve the user ID from one
+tool, you provide it in another. Bad things happen when you hallucinate a user ID in the other tool,
+right, as input. And so with steering, you can see in that hook when it's about to call that tool
+and provide that user ID, does this user ID actually match what was outputted another tool? So it's
+super important for reducing hallucinations as well. Not every agent use case needs that level of
+control, but I find that there are so many use cases around automating business process, ensuring
+there's low hallucination rate, handling data appropriately, that steering helps so much more than
+workflows. About hooks, you mentioned that today hooks will tell you or at least will signal what is
+happening next. What is the challenge in getting that context, I guess, context in a loose way about
+how it got there and why it got there and passing that as well for the hook implementer to act on?
+Why isn't that possible today? The key that we've added is what we call the ledger. So a recording
+of everything that the agent has done. And in a general agent harness, you can probably build that
+up yourself with hooks. Like you can inject yourself into every single thing that the agent is doing
+and build that up yourself. But strands provides it out of the box and also provides out of the box
+a few steering providers that you can also use out of the box. Things like an LLM as a judge is a
+super valuable tool. And strands makes it really easy to just provide a prompt as a steering
+provider and evaluate what is what has the agent done and what is it about to do? And is that OK?
+And how would this relate or how common is it to various kinds of memory? That an agent might
+maintain or a developer might provide as a sidecar. So are you asking how is it different from
+memory? You want to maintain your own ledger, which you probably wouldn't. But I mean, if you were
+to maintain your own ledger or keeping track of that history of what has happened so far and what
+got you here, what would you say would be the parallels or similarities and differences between,
+let's say, a memory system? I do see a lot of interesting work around turning agent trajectories
+into memory. I think of memory as somewhat maybe a naive way to think about it is a summarization or
+pulling out nuggets of things in natural language that can be retrieved later. And analyzing an
+agent trajectory is one way to do that, right? Looking at all of the tool calls that it's done.
+We've actually seen interesting experiments internally around saving agent trajectories as memory.
+So this gets really interesting where often when an agent figures out a way to do something, you
+kind of want to remember that so it doesn't have to figure it out again. So there is, I have an
+example where we had a use case for, this was again, a set of APIs or AWS APIs, more of an AWS use
+case where particular API within AWS requires you to go and gather a bunch of information from other
+APIs in order to call it. You have to call, like, I'm not kidding, 18 APIs in order to gather all of
+the information that it needs. And so that's very challenging to get. And especially at the time,
+with earlier models, it was very challenging to reliably get an agent to call 18 tools, all of the
+right tools before calling that API, gathering all of the right information. And so we started to
+save trajectories that in a semantic and a vector database, keyed by what was the prompt that led to
+that trajectory. And as it turns out, models are very good at transferring knowledge. So even if a
+prompt wasn't exactly the same as what was in the semantic search, it could retrieve something
+similar and then kind of adapt the agent trajectory to make the right tool calls for the particular
+use case it was working on. So I think that's super interesting where you can also add a little bit
+of determinism for common use cases. Let's say your agent has the same use case 80% of the time
+coming in, saving that trajectory as a type of memory, but more procedural memory than what we
+typically think of memory as like these natural language nuggets. Getting better determinism and
+even better efficiency, right? Because it has kind of the answer, the procedure it needs to take
+right away. Interesting. So it sounds like if you know the prompt, then you can look at the most
+similar close-knit prompts, you know, kind of braggish or, you know, or vector search. And you would
+use that to see what other similar things. Is there a scenario where these similar looking prompts,
+they might be key to the same kind of trajectory, but over time, the similarity would just drift?
+Would that ever happen? And you can even think about, you know, maybe later models find a more
+optimal way to solve that problem too, right? So you kind of have to think about, are you going to
+expire some of those entries over time? Are you going to reevaluate some of those entries over time
+or, you know, not provide that rag, effectively rag tool to the agent and see if it comes up with
+something more optimal, more efficient over time? Because again, you don't want to get into this
+place where you've built all this scaffolding, you have all of this data that's effectively
+generated by an older model, and it's just making your system worse. The challenge in the agent
+building space is that the models have these massive leaps. What seems like every three to six
+months now. And so, you know, potentially what you built or what you generated three to six months
+ago is now potentially making your agent worse than it could be with the latest models. In an
+industry where demand for verified skill has never been higher, prove you have the foundation to
+deliver results. With the IEEE Computer Society's new software professional certification for
+emerging professionals. Give your career the head start it deserves. Visit computer.org slash
+certification today. You know, I think we've talked about tools so many times in this episode
+already. But before I jump to it, there's one thing I want to ask about one of the hooks, one of the
+problems that steering hooks are good at solving. The problem of handoff. You mentioned, you know,
+hallucinations. You know, you don't want to have the wrong user ID being passed across tools, right?
+How does strands kind of keep me, even with having the trajectory and the memory and the history,
+what goes on with strands and steering hooks to actually ensure that verification is accurate? One
+of the things that I appreciate about steering hooks is that it is entirely, or it can be entirely
+deterministic. I talked about LLM as judge earlier, but it can just be Python code. And so you can
+deterministically create the steering hook. Unit does the bejesus out of it, right? To make sure
+that the validation is correct. You can use things like, you know, something like Rego or Cedar to
+actually do something that's verifiably correct if you want. So you can get a lot of value out of
+kind of injecting this deterministic check in the middle. I recently published some findings from a
+project that I did where I wrote most of the steering hooks using just plain Python. And I was able
+to get 100% accuracy across 600 evaluation runs. And I was showing, I think workflows only achieved
+about 80% accuracy. And then a simple prompt was nowhere near that course. But I found that 100%
+accuracy effectively comes from that determinism that you are injecting in there. Being able to
+deterministically look at what were the inputs and the outputs of the tools, which tool outputs are
+significant to you, right? Which ones are critical? And that's only something that the agent
+developer really knows by looking at the tools and what's the data being passed between. So that's
+where it really becomes specific to the agent. Like I can't give you a general checker of how the
+tool outputs link to the tool inputs, but you can provide your own knowledge of the data that is
+transferring between these tools and that the agent is handling about which ones need to be the
+same, absolutely. And which ones are kind of natural language. That like my example agent that I was
+evaluating with steering hooks did have some natural language things like it would send an email to
+the user. And I'm happy for the agent to come up with natural language to send to the user. And in
+that case, I used an LLM as judge just to make sure that the tone was correct. It wasn't rude or
+anything. And then what I was able to do very deterministic checks for the actual data handling in
+between the tools. In this evaluation run, I guess, evaluation set, how did you choose the members
+of that evaluation set? So I took a sample project and I, or I built a sample project where it had
+different rules that it needed to follow. I'm trying to remember, I think there were four types of
+rules. And I think these generally map to a lot of what I see people trying to do in automating with
+agents, automating business process. One is tool ordering. This tool must be called before that
+tool. The other is input hallucination. This input must come from the output of this tool. You don't
+want like a user telling the agent, be rude to me. You don't want it to actually be rude. And then
+the last one was an overall workflow adherence. So one of the things I noticed, actually, I was
+trying with different, I was trying out different models. And I noticed that some of the models, it
+was interesting, I had a confirmation step at the end. It would do an action and then I would tell
+it to, I told it to send a confirmation to the user. There were models where reliably it would not
+send the confirmation to the user because it would consider having done the action as done. I've
+asked, I've done what the user asked me to do. And it totally ignored the part of the system
+instructions where I said, okay, after you do this, you have to send a confirmation message. And so
+that was one thing that steering guided the model to say, you know, before returning a model
+response back to the user, hey, you're not done yet. You haven't sent the confirmation. And so it
+was actually super token efficient because I didn't have to have this like mega system instructions
+prompt defining all of these edge cases and things like that. I could give it general rules, bullet
+points, one, two, three, four. And then if it didn't follow that, if it didn't adhere to those
+rules, I have the steering hooks to kind of guide it back with a little bit of a message back to it.
+And so I was able to get that 100% accuracy, even with very small models that we would not expect to
+do well with being reliable. I was using GPT OSS 120B. Oh, wow. So really, really cheap was a lot
+cheaper than to use, you know, a small model plus steering than to use some of the frontier models
+that would probably be more reliable, but are also much more costly in terms of proof token. You
+mentioned token efficiency. Did the actual, I guess, conversation size or I guess past size matter?
+But today, even though a lot of models promise the 1 million context window, you would very, very
+hardly, rarely go to the full extent in, you know, or have a session that exploits the entire
+session, right? Because you end up having the long context problems and all that. How did this
+compare with longer context areas? The only thing that I compared was what we call SOPs, standard
+operating procedures for agents. So a lot of what I see people trying to do to make agents reliable
+is just longer system instructions, very explicit system instructions that define step by step,
+effectively a workflow of steps that they wanted to take without implementing it as a workflow. So
+that is not usually a million tokens, right? But it is longer, can be very verbose, right? And you
+are adding to it over time. I call it the prompting treadmill where, you know, you start with this
+pretty small prompt and then you run into all these edge cases and you say, okay, don't do that.
+Always, you know, use these very clear words like always, never, must. But you add over time to the
+system instructions and then you've got this, you know, gargantuous system instruction prompt with
+all of these caveats in it. And it does end up requiring a lot more tokens, right? You get better
+accuracy, but you don't get 100. I actually found that we have a tool for strands that does generate
+these SOPs. It can be useful for, you know, pretty simple use cases or use cases where you don't
+really mind it not being token efficient. We use it a lot internally for operations like on-call
+troubleshooting, super easily described as a set of steps in a system instructions. And the accuracy
+doesn't need to be super high. But I actually found for this use case that I was, that I built and
+was evaluating with these different techniques for steering, I found that SOPs actually achieved 99%
+accuracy for the things that I was testing for. But it was three times the input tokens, which tend
+to be the expensive ones, right? And so they don't cost as much as output tokens, but they can be
+expensive on big models. And so more expensive from that perspective, but you can actually get
+pretty far just with a well-structured system instruction set. Interesting. And what about long-
+running tasks, you know, long-coding, long-running tasks? How does it fare there? I also didn't
+evaluate that in particular, but thinking about it, the context window management is what happens
+when you get into long-running tasks. Right. And what's interesting about the steering approach is
+that if you get the full ledger, the full ledger doesn't need, like the full conversation history
+effectively doesn't need to be shown to the agent. In fact, can't be shown to the agent when it's
+very long, but you can still analyze it, right? You can still write a Python function that looks at
+a huge conversation history going back forever to determine if your rules are still applying, if
+it's still adhering to a workflow. And so that makes it a little bit different from, you know, let's
+say an LLM as judge where the context window is going to be limited as well, or even workflows. I
+think what we find with agent workflows is that you lose a lot of context in between the steps,
+right? You have one, each node in the workflow, you lose a little bit of context going from node to
+node. And so what's interesting is you probably are not going to build up that much context, but you
+also are probably missing context from previous decisions in the workflow. So yeah, fair enough. How
+does one get started writing one of these Python functions to, you know, as steering hooks? Like
+what are the gotchas? What are the constraints? Well, we have some pretty good resources. I
+published the example, the complete example that I evaluated and was able to get 100% accuracy on.
+And so that's a good place to start. And then you can also go to strandsagents.com. We have a full
+user guide on using steering hooks. Switching to tools, I guess, you know, tools are the really,
+really integral fundamental parts of an agent harness. I think every agent on the sun today
+integrates with tools. So where does strands take it on from? How is the tool support and
+integration in strands same and different from your typical harnesses? I think that, like you said,
+every agent framework has a tools concept, has a way that you can write tools. Strands supports
+Python. So you can provide like a pedantic style function and it will turn it into a tool.
+Similarly, we are GA-ing the TypeScript SDK for strands. We're coming to a second language. Very
+exciting. And that also supports providing ZOD types for functions to turn that into a tool. We try
+to make it really easy and developer friendly to just take a regular function and turn it into a
+tool. But largely, we also see MCP becoming critical to kind of the tool ecosystem, right? It's
+super powerful to be able to pull a MCP server off the shelf from one of your SaaS providers or, you
+know, just a utility MCP server and connect it to strands. And then what I've been seeing a lot is
+companies thinking about how do I connect my internal APIs to agents now? And MCP becomes that kind
+of lingua franca. MCP becomes this lingua franca for agents where you have an MCP gateway that
+turns, let's say, an open API schema for one of your internal APIs into an MCP server with tools.
+And all of a sudden, any agent developer in your company can start to connect APIs together in
+really powerful ways. So we're seeing a lot of investment in thinking about how to bring internal
+APIs to MCP just in order to bring them to agents. And that's probably not strands specific, right?
+I think every framework supports MCP, but it's certainly becoming an important part of agent
+development in general. You know, in terms of strands own kind of native tooling mechanism, right?
+How far do you see taking that versus, you know, switching more into MCP or where do you kind of
+dial that knob? You know, how would you help developers choose one or the other? The way I like to
+think about it is methods versus libraries in regular software development. When you find a piece of
+code that can be used in a lot of different places, you turn it into a library. And I think of MCP
+servers and sort of native framework specific tools in the same way. MCP came about because all of
+these frameworks had different ways of defining tools. And there wasn't really a way to reuse them
+outside of any particular agent and outside of any particular framework. So when you start to see
+this tool is really valuable, I may have built it in the strands framework or anything else. This
+tool is really valuable. I want to share that across a lot of agents. Turn that into an MCP server.
+Or I already have this API. I want a lot of different agents to be able to connect to it. Turn that
+into an MCP server. We still find a lot of folks writing Python and TypeScript-based tools in
+strands using our native support for tools. It's really easy. It's like the easiest way to get
+started. When you're building an agent and you want to add tools, you just start to write them as
+Python functions or TypeScript functions. It's so easy, right? And then over time, you find the
+things that are reusable across agents. One of the things that we released recently is something
+called AI functions, which is really interesting. We created a new GitHub organization called
+Strands Labs to be a place where we could be a bit more experimental, right? Internally and among
+users, we have folks that are relying on strands for production use cases. So we don't make a lot of
+breaking changes, right? But Strands Labs is a place for us to kind of think boldly about where is
+agent development going? One of the things that we released is called AI functions, where today when
+you write a function as a tool, provide the inputs and the outputs, and then separately you write
+steering hooks to validate what the model is doing, or even regular hooks to validate the inputs and
+the outputs to that tool. AI functions kind of combines them together in a crazy way. You write a
+regular Python function just like you would in strands to create a tool, but instead of actually
+writing a deterministic function, you write a prompt for the function itself. And at runtime, it
+turns that into code and executes it. And then you can also provide what we call preconditions and
+postconditions. Basically, what must be true going into this function? Like the inputs must be like
+this, or we must have some system has to be in this state. And then what are the postconditions?
+What should the output look like? What steps should have been taken? So the example that I usually
+give is a method that's going to do OCR on a receipt image. And you have an image coming in, and you
+need structured output coming out. You need what was the total cost on the receipt? What was the
+vendor? What were the itemized things? So there's some structure to it. Instead of trying to write
+all of that OCR code yourself, you actually have it do it at runtime. You have it generate code at
+runtime, execute code at runtime. And then you have these preconditions, like I must have an image.
+And then postconditions, like I need the structured output. And it will continue to prompt the
+model. Again, going back to that feedback loop for the model and it being so adept at self-
+correcting. Make sure it comes back with that structured output from the receipt. That's
+interesting. So did you find that there are certain runtime or dynamic kind of conditions in the
+space of problems that the agent is solving, which I guess prevented you from left shifting it to
+ahead of time generation? Because a lot of this could be generated by our coding assistants, right?
+We no longer have to actually write this by hand. Yeah, yeah, yeah. One of the things that's
+interesting about kind of the theory behind AI functions is when you run an agent many, many times,
+you're probably going to get this kind of, if you generate code many, many times against the same
+prompt, you're probably going to get this like Gaussian cloud of code solutions for it. And some of
+those are optimal and some of them are not. And when we do coding, it's largely one shot to the
+model, excepting like, you know, running it through tests and things like that and getting the
+coding assistant to self-correct. But what happens when you run that a thousand times in production?
+You're going to get a thousand samples of what code is optimal. You're going to get real runtime
+feedback about how did it perform against real inputs, which is hard to do in a, you know, pre-
+production environment with just test data. You're going to get information about the latency. How
+often did the model have to self-correct itself until it achieved the post condition? And so the
+theory here is over time, can we arrive at the ideal deterministic code and shift that left at that
+point? Bring that back into the code base over time once we find those very optimal solutions to
+some of these problems. Interesting. In fact, the way you phrased it, the interesting takeaway for
+me there was you can both capture the runtime conditions across a thousand, two thousand, a hundred
+thousand runs and use that as both new inputs or new conditions for your function, right? Hey, you
+know, now I'm running on a dark background. Now I'm running on a, I don't know, a different
+language, whatever, right? But if that's the case, do you ever need to have a final deterministic
+version at all? Can you just go, you know what? Our system is its own mini classifier that keeps
+generating this classifying function or whatnot. And we'll keep using that as long as we have the
+way to capture details about what is working, what's not working, you know, some way of getting
+feedback. Well, that comes back to your point about memory, right? If we can build a memory system
+for this AI function, and that's what we're working on now. If you can build a memory function of
+here's the code that I produced, here was the prompt, and here is how it performed. Then the agent
+can start to choose what are the things that are bubbling up with some amount of, you know, kind of
+probabilistic noise to make sure that it's improving over time. But arriving at maybe a few optimal
+solutions or trying different things over time, but mostly choosing what is the optimal solution. So
+no, I don't think you ever necessarily need to shift left, especially as the models get better,
+right? Think about all the code we wrote with Sonnet 4 checked into our code bases. And now we have
+Opus 4.7 now. And so think about how potentially how much better that code could be if it was
+regenerated with latest models. You mentioned the AI deciding what's better, what's worse. So is AI
+in this case identifying and assigning the rewards or are there somewhere else? That's an
+interesting question. I think we haven't really thought through the rewards functions yet. And
+potentially the rewards functions are maybe use case specific, right? Today, the reward function is
+the post condition, which is very binary, right? Of this code works or it doesn't work. But I think
+we haven't gone into defining the reward function around the gradient of performance or the gradient
+of how many turns did it take with the model to get it to actually produce the right result. Or even
+the quality of the runtime environment at that point in time. That's right. No, nice. Looking at
+some of the practical aspects, you know, with tools and the various harnesses and strands,
+obviously. What are some of the deployment patterns? You know, you identified, you recommend, you
+learn from, you would teach us. Well, I think the thing that we've learned over time using strands
+is start as simple as possible. The vast majority of agents that I see can follow the model driven
+approach, maybe add in hooks and steering for, you know, runtime checking. But generally speaking,
+can be a single agent. You know, I think engineers want to build and it's easier than ever to build.
+And so I see a lot of engineers building these very complex orchestration systems that for the vast
+majority of use cases are just not necessary. You're building more than you need. And so what I
+counsel customers on is build the simplest thing first and evaluate and see how it does. And often
+you'll be surprised. You'll be surprised at the power of these models that we have at our fingertips
+today. The one other pattern that I do like a lot, I don't like workflows, as I think we've talked
+about, are graphs. But sub-agents for context management, I think, is still something that is a very
+common and useful pattern. Because even with million token context windows, you might not want to
+fill it up all the time. With context windows that are much lower, especially sub-agents as tools
+are very powerful. So effectively letting your main agent choose when and which sub-agents to invoke
+as tools. And that's really the pattern, is sub-agents as tools. And that allows you to effectively
+encapsulate any contact and thinking and tool calls that the sub-agent is doing while it's executing
+on a very particular task. One that I have used recently was I built an agent that needed to go pull
+a bunch of websites and get very specific information from each website. Extract like an event, for
+example, from a bunch of different websites. That's a ton of context to carry around for your entire
+agent. And so the main agent was able to invoke a sub-agent whose sole job was to extract an event,
+pull one website, extract event, return event. And so instead of carrying around the full HTML
+content from all of these pages, it was able to return to the main agent just that event and throw
+away the rest. That's very much a pattern that I love and use. You know, it's almost like we are
+going to the roots of software engineering and running functions and not one big function. And you
+can get very, very sophisticated with it of like having an input schema and an output schema for
+your sub-agents, literally just like functions, right? We are learning encapsulation all over again.
+No, no, it's interesting how we, I mean, in a way, look, if it's improving the awareness and
+appreciation for software engineering, I think that's amazing, right? Sub-agents is one thing. What
+about multi-agent, multi-agent capabilities? You know, I guess without generalizing sub-agents as
+multi-agents, where would you draw the parallel? Where would you draw the line? How would you kind
+of, you know, look at what Strands offers today? Yeah. So Strands offers multi-agent patterns and we
+offer a really great guide on our website at strandsagents.com that walks you through kind of
+generally with this model-driven approach. When should you think about using some of these patterns
+versus, again, the vast majority of use cases that just need a simple agent? Multi-agent, I find
+most use cases don't need. What I will say is I find that they are often necessary for
+organizational reasons rather than technical reasons. What I mean by that is let's think about
+microservices. Why did we move to microservices? Because different teams can own different logic and
+they can move independently of other teams and we can have APIs as the contract between us. What I'm
+seeing in companies that do have these multi-agent use cases is often it's kind of like
+microservices. We've got micro-agents where one team is owning an agent and another team is trying
+to integrate with that agent. That agent becomes an API that is called and you start to get into
+these, you know, multi-agent use cases. As opposed to a simple tool that's calling a simple API,
+these agents are going off and doing work and they're long running. And so the interaction pattern
+looks a little bit different from typical tools. I see that a lot and that, again, you know, coming
+back to software engineering basics, it feels very much like that, you know, that the separation of
+concerns for more organizational reasons, which is also valid, right? But a little bit less than
+this would also probably be just as accurate and powerful if it was all in one system. Yeah. And
+what are some of the communication patterns that differ from sub-agents versus multi-agent? You
+know, you know, how would you kind of characterize those? What I tend to see is folks trying to
+think about how much of the previous context from the main agent needs to go into the sub-agent or
+the other agent. Exactly. Sometimes for very well-scoped tasks, very little, right? In my example of
+pull down a website, extract event, all that sub-agent or even if that was another agent owned by a
+different team, all it needs is a URL to go and pull. It doesn't need any of the previous context.
+But if you think about, you know, maybe a very complex process like refund processing is a big one.
+Everybody wants to automate refund processing. But that touches so many different systems. And some
+of those teams have built different agents. And so you start to build up a lot of context for what
+those different agents need. It needs to know what is the item, what is the risk profile for this
+customer, what interactions have you had with the customer already about returning this item and
+what did they say. So I think it depends on just kind of what the use case is and what the sub-
+agents maybe need. And that's going to be dependent on the use case of what those do, right? What is
+the information they need to be as accurate as possible? I mean, if you remove the LLM for a second
+from all this, then you're describing or we're talking about giant, giant orchestration, workflow,
+you know, various kinds of saga patterns all over the place, right? So it's almost like, you know,
+90% of this is plumbing that has to go no matter what, you know, what is building it or who's
+building it. You can imagine, you know, in those orchestration systems, we've had shared documents,
+right, that describe what's happened so far, what is the information. So you can think about that, a
+shared document for all of these sub-agents. But then again, you have to worry about the context
+window, right? Yeah. Which reminds me, so context window is one thing. What about history? I mean,
+history across agents, is it more of a resumability model? Is it a transfer model? You know, when I
+say model, I don't mean the LLM, just the pattern. You know, like how is history, I guess, managed
+in this scenario or in this setup? I think one of the changes that I've seen with harnesses in
+particular is a different way of thinking about history. Often with a harness, you're going to call
+the same agent over and over again until done, right? We have the Ralph Wiggum loop effect, right?
+But that means that agent needs to save important information somewhere. Even if it thinks it's
+done, it needs to save what is the state of things that you have left it in. And in coding, this is,
+you know, what is the state of tasks, coding tasks that you've done? But in other agents, it's going
+to be something else. Basically, like save my state to disk. And often it's just disk, which is so
+like easy and nice. But then when the agent wakes up again, because it's not actually done, it can
+resume from that natural language description that it saved for itself in its past life, right? So
+it's almost like I think of it like, you know, sometimes at the end of the day, I'll download my
+brain into, you know, Obsidian or something like that. So that the next day, one, so I don't have to
+think about it at night. And two, so the next day I wake up and I say, oh, what was I thinking about
+yesterday? What did I want to get done in the morning? There it is. It's kind of just like that with
+agents. And they're very good at prompted to kind of save the state of their work and then resume
+from that. I think that's the biggest thing that I've seen, biggest pattern I've seen emerge just in
+the last like four months as agents, agent harnesses started to get popular is that kind of save
+your work. pattern, which is completely outside of conversation history, right? It's about the agent
+itself, almost summarizing what are the important things to resume from the context window that I
+have? What if history itself was a tool? Let's say history was nothing special. And if it just
+happened to be a tool call that the agent knows how to effectively call. Do you see anything
+happening in that sense? Or is that even useful? Is that valuable? Is that just? I've seen that used
+for a while. Well, I mean, in a lot of agent memory systems, you have kind of three different levels
+of agent memory. You have that quote unquote short term memory, which is not necessarily short term,
+right? It can go for a long time, but it's that conversation history, that raw conversation history
+that the agent has the tail end of it, basically. But you can search back in time so that somebody
+can say, what were we talking about yesterday, right? And it can go back and look at that raw
+conversation history. And then kind of the what some people kind of call medium term or long term,
+where it's you just have a kind of a rolling summary of the conversation history. But you're going
+to lose a lot of important details in that. And so then you get to this like semantic memory where
+you pull out these again, these nuggets, right? This person likes Java over TypeScript or this
+person has a very somebody told me was looking at what their agent had saved in its memory and said,
+this person uses a lot of British isms. Uses a lot of British slang. So and for whatever reason, the
+model thought that was very important for its future interactions. Right. So letting the model
+decide what's important. Fair enough. I think history and memory, we keep going. Well, it's only
+been 18 months, but we do keep going kind of back and forth on that dial. Right. So we just see kind
+of where they land. I want to touch base on some of the production aspects of your deployments. I
+mean, AWS strands is, you know, very heavily used in AWS from what I'm hearing. I'd love to learn
+more about the lessons from scale on which products. How does the product specific thing come in?
+Well, we worked really hard to make sure that strands was production ready. What I mean by that is
+that you don't have to add in all of the things you need to put it in production. It supports open
+telemetry out of the box so that you get observability over traces and metrics, things like that. We
+added in out of the box session persistence so that you can save it to S3 or a file or whatever it
+may be, because that's very important once you get into production to actually persist these things.
+And we did that first for ourselves. We were building production systems with us that let us build
+and get agents to production really quickly within three to six weeks is what we were seeing for
+time to deploy these new agents to production. And we've seen that over and over again inside of
+Amazon as well as outside. We just recently added a managed kind of a managed strands service called
+agent cord harness that runs strands under the hood, but it also combines in all of the other things
+that you need, like a memory system, an identity system. What is the identity of the agent? How does
+it get credentials? All of the observability information going into CloudWatch connectivity to your
+MCP gateway, all of these things that you do still have to set up when you are creating an agent.
+You have to deploy it somewhere to some runtime. Agent core harness takes care of deploying it to a
+new VM. Connectivity to the models. All of these things that are still steps that you need to take
+to get it into production. So agent core harness takes out a lot of that work and just lets you
+provide what is the model? What is the prompt? What are the tools? So that you can focus on, you
+know, what is it that you want the agent to do instead of kind of all of this other stuff that you,
+we've seen customers build over and over and over again to get into production. Oh, nice. How can
+customers today, you know, use OpenTelemetry, for example, or Traces, for example, to, I guess, walk
+through ACH, agent, you know, a core harness, right? To understand, I guess, which path the agent
+took at various parts of the, I guess, run. So locally, you can just see them get, you know, dumped
+out of the OpenTelemetry exporter. You know, it's interesting. I was looking for a really good
+desktop application for looking at OpenTelemetry traces. I feel like there's not a great one. So,
+you know, if somebody wants to build that, I would love to use it. You know, in production and in
+your testing environments, you can export it to your favorite hotel compliant provider, be that
+CloudWatch or any other tracing provider, and use their visualization to kind of walk through what
+it is that the agent does, because it is going to show you all of the things that you just don't see
+when you get the final output out of the agent, and you're wondering, what just happened? How did it
+arrive at this conclusion? You know, so you can see the tool calls that it made, the tool inputs,
+the outputs, the thinking that it did as it was, you know, choosing the tool, like, oh, I need to do
+this first. Now I need to do this. Seeing that is super useful in working back from what the result
+was to what actually happened there. And then, you know, you can also use those for offline
+evaluation. Those are super valuable for once you've run this agent in production, you know, a
+thousand times, being able to look across and say, how many of these trajectories do I think are
+good? And how do I, you know, maybe tune the system prompt or the steering hooks or something to
+make these trajectories a little bit better? And then, you know, looking at, again, using that same
+offline evaluation with whatever system prompt tweaks or anything that you're doing. And then often
+we see customers investing in A-B testing because it's so hard to test agents. It really is. And
+sometimes there's just no replacement for testing it with real customers, right, with these agents.
+And so before, you know, even at Amazon, in AWS, we'd never really invested in A-B testing because
+we would always do just testing. Like we would just have, you know, deterministic tests. You give
+this input to the API, you get this output back, it works, right? But with agents, it's obviously
+not true. You're not going to get the same answer twice. And so we've started investing in A-B
+testing for agents quite a bit internally for our own agents, because it can be very difficult to
+predict what are people going to ask this thing or what inputs are they going to give? And it's very
+challenging to confidently roll out changes to your tools, to your tool descriptions, to your system
+prompt, to the model even, you know, just going 100%. And so, yeah, we've been doing a lot more A-B
+testing where we roll out to 10% of users for a couple of weeks and see how it goes. It's like
+changing every part of your car while driving it, right? I mean, in terms of adoption and best
+practices, I think you mentioned, you know, start off small, start off simple, right? What are some
+of the common anti-patterns and mistakes you've seen developers kind of make when they, you know,
+start off with agents beyond, you know? They build too much. You know, playing with agents is so
+fun. And so I can't blame people for wanting to just build a bunch of stuff around agents. And I
+think also people build agents when they probably could have built an MCP server, for example.
+That's one thing that we're seeing a lot internally is we went through a year, like two years ago,
+where it was like, okay, everybody's going to build an agent. And then we ended up with a million
+agents, right? And there's a lot of overlap between them, of course, and it's very hard to
+understand when to use what agent. And so I think now we're on a path of, well, maybe everybody
+should just provide context to a few central agents. Everybody's got an agent harness in their
+pocket now with coding assistance. Everybody's got access to easily build an agent harness with
+strands. But often I think the question to ask yourself is, should you be building an agent for this
+or should you provide context to a centralized agent? That's really the process that we're going
+through now where we're trying to figure out what is that data that we want to make available to
+agents? So recently at AWS, we put the AWS MCP server in preview. What that does is provides tools
+for agents to call AWS APIs and retrieve skills about how to do things with multiple AWS APIs. And
+the learning there was instead of trying to do this kind of provide an agent, for example, and try
+to expose it over A2A and all of this, probably our users just want an MCP server and have their
+agent do it themselves. That's a lot simpler. That's a current pattern for me is pushing teams to
+actually not build an agent sometimes and instead to think about what are other ways to make your
+data and your context available to agents. And as they do this, what would be like a minimum set of
+things that they monitor and kind of observe early on? At least to know that your agent isn't kind
+of going off the rails soon than later. Evaluation is super important for both creating agents and
+even MCP servers, because if you think about the tools that are available through your MCP server,
+that's going to impact people's agents. If your tool descriptions aren't good, the agents using that
+MCP server are not going to be very powerful. So evaluation is super important and figuring out what
+is it that you want to evaluate for. I always tell people, if you want to build an agent, start with
+a use case where you can deterministically evaluate trajectories. So things like, were the right
+tools called for a particular input? Were they called in the right order? Did they have the right
+inputs? The harder things to evaluate are things like, chatbots are honestly really difficult to
+evaluate, because you've got these multi-turn conversations and you end up trying to do these LLM
+judges around like, how good is this conversation? I don't know. It's kind of up to the user how
+they felt about it, right? But a lot of these automation use cases are actually really great low-
+hanging fruit because they can be evaluated against some kind of existing process. As we wrap up,
+what's next for strengths? What's in your kind of horizon? We are going farther into supporting
+folks who are building agents on top of an agent harness. I think that is really, with the power of
+models today, there's so much power around that's been enabled for agent harnesses. And so I think a
+lot more around how do you keep agents running for a long time? What are the things that you need
+out of your agent harness to do that? And what are the new patterns for agents? Things like event-
+driven agents, very, very long-running agents that are interruptible are all in my mind right now.
+Where can our listeners learn more about strengths and get started? Strandsagents.com Are you
+presenting any other communities? Are you talking elsewhere? Do you have any conference coming up
+that they can listen to you? No. All good. We will definitely be adding all the resources that you
+mentioned here in the show notes and in the page itself. Any last words of wisdom for our listeners?
+Have fun with agents. Start with model, tools, prompt. Awesome. Thank you. Thank you. Thank you very
+much, Clay, for joining us on Software Engineering Radio. Thanks for listening to SE Radio, an
+educational program brought to you by IEEE Software Magazine. For more about the podcast, including
+other episodes, visit our website at se-radio.net. To provide feedback, you can comment on each
+episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening.

@@ -1,0 +1,463 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Building the Middle Tier and Doing Software Migrations: A Conversation with Rashmi Venugopal
+DATE: 2025-06-23
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/building-the-middle-tier-and-doing-software-migrations-a-conversation-with-rashmi-venugopal
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2104218945-infoq-channel-building-the-middle-tier-and-doing-software-migrations-a-conversation-with-rashmi-venugopal.mp3
+DURATION_SECONDS: 3166
+TRANSCRIBED_AT: 2026-08-05T12:10:27Z
+----------------------------------------------------------------------
+If your team's trying to move faster with AI or scale more efficiently without reinventing the
+wheel, InfoQ Dev Summit Munich 2025 this October 15th and 16th might help. It's a practical event,
+talks from people in the trenches, sharing what they've actually shipped, fixed, or learned. No big
+launches or buzzwords, just useful ideas you can take back to your team the next day. Learn more at
+devsummit.infoq.com. Welcome to the Architects Podcast, where we discuss what it means to be an
+architect and how architects actually do their job. Today's guest is Rashmi Venugopal, who has a
+track record of building and operating reliable distributed systems, which power mission-critical
+applications at scale. Over the past decade, she has been instrumental in designing and developing
+complex software systems that enable consumers to effortlessly pay for their subscriptions at
+Netflix, calculate tier pricing for various ride options at Uber, and manage Azure cloud networking
+configurations at Microsoft. With a master's degree in information networking from Carnegie Mellon,
+Rashmi currently serves as staff software engineer at Netflix. In this role, she leads cross-
+functional initiatives aimed at driving subscription growth to payment orchestration for over 250
+million members. When she's not immersed in code, you'll find her outdoors either hiking, camping,
+or at a local park, reflecting on the impact of technology on the world. It's great to have you here
+on the podcast, and I would like to start out by asking you how your interest in software
+architecture started. It's not as if you woke up one morning and said, today I'm going to be an
+architect, today I'm going to do architecture. Hey, Michael, thank you so much for having me, and
+I'm excited to be here. You know, an interesting observation, just based on how you phrased your
+question around, you know, being an architect, is how less common the title of the architect has
+become now. That said, the role of the architect is still alive and very much around and relevant
+for folks in senior or staff plus roles for sure. Yeah, you're right. It's definitely not the case
+that I woke up one day and decided that I want to be an architect or a staff engineer, which is
+almost why I feel like my answer here is it was kind of an accident. And what I think I mean by that
+is that it represents a natural progression in my career, rather than like a goal or an end state
+that I was actively pursuing. It is a function of seeking out new challenges and problems and
+questions for me to go after personally at like an individual level. But even organizationally, you
+know, as you move up the proverbial ladder, the open questions that bubble up to you tend to become
+more complex and nuanced. And it's like, hey, the distributed systems challenges or like software
+design questions, those are the ones that bubble up to you. And then when you spend more time
+thinking about that and like living and breathing that stuff, then that's how you, I guess, evolve
+into the role that I am in today. Did you ever think at some point consciously or even unconsciously
+that you were at a branch point? In other words, you could have become an architect, but maybe you
+could have stayed at a individual contributor. Or maybe you could have gone off into quality
+assurance. In other words, this evolution is sort of partly under your control and partly with the
+opportunities you get or the places you go to seek them out. Totally. And one branching point that I
+can think of now that you say it was, hey, did I want to become a manager? Like, did I want to get
+into people managing? And that was an opportunity that came up in my organization as well. And that
+had me reflecting deeper. Like, hey, where do I find work satisfaction? Like, where does my sense of
+accomplishment come from? And I made the explicit decision to stay as an individual contributor and
+not switch into people management. And no doubt you're happier that you made that decision. Yes.
+Like, I'm not saying that that door is closed always. Right. But I definitely feel like I made the
+right decision at that time. Just thinking about this and sort of maybe I have a buyer's perspective
+on this. You may turn out to be, if you do decide to go down the managerial role, you have a better
+idea of what your employees are going to go through having done it yourself. Yeah. As opposed to
+somebody who just goes straight into the managerial role and does not necessarily understand. Yeah.
+So I think that door not being closed, I think you may turn out to be a better manager if you decide
+to go down that route. Fair. Fair. And like managers that have, you know, technical expertise, you
+can actually tell the difference when they're the ones managing versus somebody that doesn't. Yeah.
+And hopefully they know enough to ask good questions, but not to dictate to you. Yeah. So I've
+looked over some of the stuff that you've done and it's been quite interesting. One of the things
+that I personally have found in my career of doing architecture and working in distributed systems
+or even going back to the days of service oriented architecture, even I'm old enough to remember the
+client server days. Hopefully I'm not dating myself too much. But one of the biggest problems I have
+found is that back-end software architects and developers very often view the world very differently
+from front-end software architectures. And this disconnect can be quite difficult for an architect
+to grasp. What I mean by this is back-end software architects, and you can tell me whether you think
+I'm right or wrong about this, obviously, tend to view the world much more in terms of individual
+events, transactions that we can roll back or compensate for. I remember the days in client server,
+for example, where very often people use stored procedures, and that had a tremendous example on the
+front-end. The front-end engineers think in terms of workflow, how users approach things. So, for
+example, let's say you have to fill out an application. Yeah. You don't have all the information you
+need right away. Right. Supposing the Social Security number, I don't have it. I need to get some
+sort of certification. Don't have that right now. I don't have the bank account number that I need
+to set up the payments or the credit card number. So, if you took a very rigid back-end view of the
+world and said, well, the database can't have any nulls in it, and we either have this information
+now or we don't have it at all, from a front-end, you know, that's kind of foolish. Now, I think
+we've learned already how to deal with a situation like that, but I think that's sort of a very
+simple example of this disconnect and the fact that systems that don't resolve this disconnect or
+handle it well have trouble evolving. And the question is, how can we stop this from happening?
+Great question, Michael, and a good one for me especially as somebody that works in the middle tier.
+So, my team operates between the UI layer and the back-end layer, and I view our core capability as
+translating the APIs that the back-end teams provide and generate into packaging them into unified
+APIs or like orchestrating between the UI interactions in the back-end. And this goes back to this
+almost a joke that people say that everything can be solved with an added layer of abstraction.
+Right, right, right. That's what this has come down to. You know, how do we solve the mismatches or
+like the challenges that we have translating UI requirements to back-end requirements? Hey, add a
+layer in the middle, right? If I can inject just a joke for a moment, I've often told people that
+I've done three things in my software consulting career. One, trade-off space and time, insert
+levels of indirection, and try to get my clients to tell me what they really want. That sounds, the
+third one sounds like UI engineers trying to tell us, hey, this is what we want the user to do. Yes.
+So I'm sorry for interrupting, but that's sort of just, this problem goes back a long way. Yep. And
+all those three points resonate with me as well. So, you know, in software topology, we have, let's
+say we have three layered system with front-end, middle tier, and back-end. The layers have separate
+responsibilities and they all exist for a reason. And traditionally, as you said, back-end engineers
+expose APIs. Each of them are useful and meant to be used in a specific way. The mid-tier is an
+orchestration engine that ties the back-end and the front-end. They take the back-end APIs and
+package them into atomic operations and they know how to sequence these API calls based on, you
+know, an action that the user can take. On the front-end side, in addition to all the challenges
+that you already called out with, like, creating a user workflow, you know, I think our technology
+landscape has evolved to, you know, now people want to sign up or, like, fill a form on the TV
+versus your iPad versus your mobile. And just the presentation challenges can be so different across
+the platforms. And now we expect our UI teams to be able to serve all types of platforms. So the
+layers of abstractions are meant to help each of the layers to not think of anything that's not part
+of their core competency or expertise. That said, if I boil it down to the core responsibilities for
+each, the way I think of it is, hey, back-end is the source of truth for user state and user data.
+Mid-tier can do, you know, experimentation or, like, generate data for analytics purposes or provide
+some sort of standardization across different operations. And then UI, of course, presentation
+across different platforms, user feedback, they're optimized for user interactions. But there are,
+of course, obvious pitfalls that sometimes happen, you know, in the way we operate. What do I, you
+know, call a pitfall? If we have a scenario where, you know, there's a tight project deadline and we
+have the back-end API already exists, but we're trying to create, like, a user feature. Sure enough,
+what we decide to do, especially as we're A-B testing something, we don't know how well this is
+going to do when we put it out in the real world and we don't know if a huge investment is worth it.
+So the initial stages are when the UI sidesteps the mid-tier and directly reaches out to the back-
+end API, makes a call, and then that's how they kind of enable whatever this new feature is that
+they wanted to enable. And sure enough, the A-B test did great. And now the product managers are
+like, when can we roll it out to everybody and fully productize this experience? And how quickly can
+we do this? Because here's the dollar amount associated with this feature. This is like an example
+of how your ideal state and your three-tiered architecture then starts to get diluted and the
+boundaries start dissolving and then we deviate from the theoretical best practices in the real
+world. And this is something what I would call tech debt. Like, we've done this once. Absolutely.
+We've done this once. It's worked well. But what does it mean for maintenance? What does it mean for
+extending this feature from its V0 version to a V2 or a V3 that's even better? What does it mean for
+all of that? You know, something that is often overlooked when you take a very short-term view. And
+I do want to say that at Netflix, we're pretty good at balancing the trade-offs and engineers, I
+would say. And a lot of the times I feel like some of these challenges are not obvious for
+everybody. So if you are the sort of person that can kind of foresee the pitfalls or the downsides
+of a certain trade-off, I would encourage them to be vocal about it. Two strains of conversation
+come to my mind when you say that. But one that's the most immediate to me is, do you find it easy
+or do you find people being receptive when you say, yes, going directly from the front end to the
+back end with the middle tier is good for the moment. But this is going to cost us in the long term.
+And maybe we should do it now, but realize it's going to cost you. Are people receptive to that
+argument? Or does the pressure of the constant, you know, turnout functionality really force people
+not to think very clearly about this until it becomes unavoidable to do something about it? It
+depends. It depends on the scenario. Maybe I'll give you an example of both cases. One example is,
+you know, there is a new policy or like a regulation that's come out and there's a strict deadline
+that, you know, companies need to abide by to roll out the specific feature in order to continue
+operating. At that time, you know, all bets are off. We're trying to get this out the door as
+quickly as possible. But even then, I feel like there is a level of due diligence that is important
+to be done, which is in your proposal, call out the risks. It's like, hey, here, be explicit about
+the tradeoffs that you're making and communicate and make sure that your stakeholders know that this
+is the tradeoff that's been made as opposed to silently make it. And then being forced to eat the
+cost for it in the future. Nobody's heard about the fact that the tradeoff was even made. Right.
+That's one example. But in another case where, you know, the PMs or even the leadership is very
+invested in a feature because they see it evolving into the future. They think that it's a big bet
+for the company and it's aligned with the strategic prior, the long term strategic priorities for
+the company. Then there's more room to negotiate of, hey, what is this V0 version going to be and
+how much of an investment we're going to make in that? I think that's fair. And I guess it partially
+depends on how willing the engineers, which I think I've always done in my career, and I think it's
+very important to just state what is important. Because the worst decisions I have found that are
+made are the decisions that get made by default and where people don't realize that they're making a
+decision. And I want to add one more thing to that. But sometimes people hate the messenger. Yes,
+absolutely. Yes, yes. So as engineers, you know, like it's important for you to have good
+relationships with all your cross-functional partners. And then it's hard to do that. Like it starts
+from building the relationship, you know, building some credit with that person to then be able to
+say that, hey, you build up that credibility. So it's a long way to build up to when you can push
+back and bring up something like this. I think that's an excellent point because in the end, very
+often it's personal relationships that often cause technical decisions to be made one way or the
+other. I mean, I often had an advantage as being consultant from the outside, being called in. And
+sometimes I got a little more leeway because I wasn't going to necessarily be there for the longest
+term to be a little more blunt. But even then, you have to be diplomatic. You have to care about
+people's feelings. The fact that someone may work on a feature that's been a long time and now you
+want to deprecate it. You know, people are people at the end of the day. Yeah. This reminds me of a
+common misconception that people have about the role of the architect or even, you know, the staff
+engineer role is that they assume that it is a purely technical role. It is. But in my mind, it is
+also a leadership role where, you know, your persuasion skills matter, your written communication
+matters, your ability to strategize and influence matters. Yeah. Something to keep in mind. A theme
+on these podcasts has been sort of Gregor Hopi's elevator architect, where the architect has to be
+able to go from the boiler room to the boardroom and be able to communicate business requirements to
+the technical people and help the technical people understand that these business requirements are
+coming from real places. And not because management woke up on a different side of the bed in the
+morning. Those are interpersonal skills. And I think too often people can, you know, think of
+architects as enterprise architects that exist in some, you know, on top of some mountain somewhere
+issuing edicts. And not the down and the depths of solution architects, the architects who have
+product responsibility, which is very much, as you say, almost as much personality as well as the
+technical chops. You need the both. Totally. Or you stay as an individual contributor. And, you
+know, where technical chops matter more. I think people are more forgiving of someone who has
+technical expertise and being not the best personality than someone who's an architect, you know.
+The robust. Yeah. I agree. And, of course, as we talked about before, sometimes if you have too much
+personality, you can be too convincing and be technically wrong. I'm sure we've all come across
+those people. Sometimes it feels like, you know, if you have the right kind of relationships and
+you're able to convince the right people, you know, you get to get your way. Yes. Yes. So I want to
+come back to the sort of the second thing that when you were talking about the middle tier, and I
+found it very interesting what you were saying, what occurred to me is very often people want to
+think in terms of orchestration or choreography or event-driven solutions. Do you have any feeling
+about how to use those in the middle tier? Because the way you portray the middle tier, and I think
+it's valid, is that's the view that the front end has of the back end. Yeah. And it's the view that
+the back end has of the front end. And this analogy has occurred to me. The back end is the raw
+cooking ingredients. The front end are sort of like the servers, the waiter, the waitresses. And the
+middle tier is actually the cook where the meal gets created. You know, that's a great analogy
+because that reminds me of a state machine where the state machine knows when to add an ingredient
+and how long to bake something and when to stir something and, you know, when to add the next
+ingredient. And some of it is driven by the feedback from the users from the front end, which is
+user-initiated actions. But some others are driven by the response from the back end. Like, let's
+say we make a call to the back end API and it fails. Now the state machine is like, okay, what do I
+do when it succeeds versus what do I do when it fails? So definitely having a state machine is a
+good way to think about solving this specific example that you were talking about. When I think
+about the middle tier and I think of all the technologies and ideas that people have, you know,
+state machines, choreography, orchestration, event-driven, what is it that's most important to make
+the middle tier successful? That is a great question, Michael. And, you know, I feel like as
+engineers, we focus on enabling, like building to enable features and enable solving problems. And
+it's equally important to know when to get out of the way as well sometimes. So I feel like if, you
+know, you're working in the middle tier, looking at both of those aspects are equally important. How
+can we enable the UI to do something, but at the same time get out of the way when it is a
+presentation-related concern? Another thing that I think of is like scaling the mid-tier. So, for
+example, if you don't have a way to templatize some of the common interaction patterns between the
+UI and the mid-tier, then you find yourself rebuilding very similar versions of interactions and how
+to handle those interactions over and over again, because you haven't invested the time to
+templatize that or make that component that you have in the mid-tier more reusable. And another
+prerequisite for the mid-tier to be successful would be the right level of abstraction at the back
+end. For example, if we've had premature consolidation of APIs at the back end, it becomes very
+difficult at the mid-tier to be like, there's an API explosion because we have very specific APIs
+for different scenarios. So, when do we use what? Ideally, we want to keep collaboration effective,
+but also at a minimum to do something new. So, I feel like having the right level of abstractions at
+the back end is the third thing that I would say is a prerequisite for a successful mid-tier system.
+That sounds in accordance with my experience as well. And when you talk about, you know, the
+replication of efforts if things are not defined properly, you raise the question of scaling. And if
+you don't have the right middle tier, in other words, the middle tier has to scale as well as the
+back end appropriately. And where you scale what, as you say, you have to get the abstraction right.
+And at Netflix, we have this engineering guiding principle that says, build only when necessary. And
+I almost mapped that to Martin Fowler's rule of three, where he says, hey, like refactor the third
+time you come across that. Where, you know, if you have three different scenarios that have like the
+same common interaction pattern, and now is a good time to kind of templatize that and abstract that
+away to be reused. That makes a lot of sense. I wish I had some of this advice when I first got
+started many, many years ago. Because, you know, I remember as I started out with client server
+where there was no middle tier and we watched this evolution and we'd learned a lot of these
+principles. The hard way, hopefully people will take from this podcast, you know, they don't have to
+make the same mistakes that we already made. True. True. True.    And I feel the same way. Like, I'm
+sure five years from now, I would wish that I knew more things than I did now. So that's a never
+ending cycle. Well, that's, but hopefully this is one of my motivations for liking to do these kinds
+of podcasts is to get people to focus on things, you know, maybe while they're in their car or maybe
+they have free time whenever they're listening to podcasts, to be exposed to something that puts
+something in their mind that says, hopefully when they come across this, they don't have to rethink
+the problem from scratch. And understand that people have shed blood and toil before them on these
+problems. Definitely. And that's something that I feel like is more and more important as I progress
+in my career is not just about learning from my own experiences. Yes. But maximizing my learnings by
+learning from other people's experiences. That's a form of intellectual scale. Because if you can
+learn from other people's experiences, however you learn from them, you're scaling in a personal
+way, in personal experience. So there's an interesting segue to the other thing that I find very
+interesting about you work is you, we've talked about software improvement and technical depth and
+refactoring and renovation. And so that leads me to, to almost the question. And when you start out
+a software company, a software company is very small. As you said before, you just want to get
+things done. Yeah. And you don't think very carefully about the middle tier. You put just enough in
+the back end and the front end to get your minimal viable product. Yeah. But then someday, hopefully
+if you're successful and you have customers, so you just can't throw your old product away and start
+from scratch. How do you evolve your software? I mean, is it inevitable that you're going to have to
+reinvent things and start things over again? I guess it's the question that you've thought a bit
+about is why are software migrations so difficult? They seem inevitable. Yeah. As the price of
+success. But is there anything we can do to make them easier? You're right that it is inevitable,
+especially in companies that are successful and growing and expanding their scope and the range in
+which they operate. It is definitely inevitable. I think they are hard to get right for a few
+reasons. Because if you think about it, software migrations don't happen overnight. You know, it
+takes the time that it takes. But you're also changing the plane while flying it. Because, you know,
+company priorities are constantly evolving. The world around is constantly evolving. There's
+turbulence, as you would say, as it could go with your analogy. There totally is turbulence. That's
+one. The second thing is, as your company gets bigger and bigger and as you add these layers, there
+is no one person that understands everything end to end. So now you're all individual experts in
+your own area and you're trying to come together to see, hey, how do we go from where we are today
+to where we want to go? And often I would even consider it a success if we can even align on a
+common idea of where we want to go. Because even that's different sometimes and takes time to find
+the common ground. Especially if the market is evolving quickly. Yeah. And unlike traditional
+architect roles, you know, in construction where you plan your building end to end, like you have
+the whole plan and then you start building. That doesn't work for software engineering. Yes. Because
+your plan is just a direction. It's good to, you know, get started and corral people and get us to
+move in the same way. But you quickly come across unknown unknowns and challenges. Yes. And, you
+know, you find out that this particular technology doesn't work exactly the way you thought it was
+going to. Right. Or, you know, this other thing is important for you. Suddenly it's like, hey,
+security is now more important. Now versus previously, we were just focused on performance. So the
+fact that surprises will come your way means that your migration process needs to stay nimble and
+evolvable. And you need to be able to pivot as and when you find issues that need to be solved. So
+that's the third thing that I think makes some of this challenging. The fourth reason why this is
+challenging is, yes, you're off to go build this new thing that will be great, you know, when it's
+done. But, hey, we still have product features that we want to innovate on and roll out. And there's
+this whole roadmap for the year that we still want to hit while we go do this other thing. So I view
+that as how do we balance innovation with renovation? And is it a good idea to do both at the same
+time? Like when are you going to start building product features in your new systems versus when do
+you want to still build that in your existing systems to kind of get it out the door sooner? And how
+do you isolate some of the changes? For example, let's say you rolled out a feature in your
+migration process and you're like, this is not doing as well as our previous product did. How do you
+even start pinpointing what went wrong? Is it because we have innovated upon it since and added new
+things or is it because we changed the underlying technology as part of the migration? So isolating
+a regression becomes very challenging. Do you ever see a situation? I mean, there are two things
+that come to mind when you say this and I'll mention both of them and then you can just sort of
+react as you want. One of them is that I often find that tools are not quite where you want them to
+be. Because unlike, for example, you mentioned before architecture of buildings where people
+understand when you rip out a room, there's a cost to it. But on the other hand, there are civil
+engineers who can have the job of building the same bridge over and over again. The fact of the
+matter is in software, we only do something because we want to do something new. I mean, if I want
+another copy of Microsoft Word, I just copy the bits. So the problem is our tools are backwards
+facing. They're automating what we knew how to do yesterday, but not necessarily what we need to do
+tomorrow. I mean, you think of it how people take for granted today with Java.net or any of the
+other technologies that people use of having software libraries. For those of us who have been in
+the field for a while, realize it took decades for us to come up with enough common functionality,
+enough common areas to have libraries, debuggers, compilers. These were all invented at one point in
+time and were all very controversial when they were invented. So this is one tension that I see in
+sort of the software migration is the tools might not be there where we want to go. The other
+problem that comes to mind is, of course, the one of databases or stores. For example, if you're
+doing a migration, do you try to get the data model right first and then move both systems to the
+new data model and then evolve things? Or you just create a new system and then migrate the back end
+at some point and cross your fingers and hope it all works? Definitely not the latter. So if you
+have a data migration involved, definitely important to get the data model right. And even
+validation, like once you have the data model right, how can we know for a fact that we have a good
+way of comparing both the systems to validate that, hey, the new system actually does everything
+that we want to. And the way it responds to and the way it responds to some of the queries are
+equivalent to what we used to have. And how do you kind of abstract that away from, say, impacting
+the UI in this case or the consumers of that data? And you also have to plan around having both the
+new and the old systems be operational concurrently for a small period of time while you're
+switching over because it's likely not a cut over at midnight situation. Which means you have that
+back annotation going on. Yeah. So you're likely dual writing in both for some time and then
+validating using like dual reads and then be like, OK, now I have confidence. So let me fully switch
+over and deprecate. Right. I have never enjoyed those kinds of situations. It's one thing to have a
+new system and mess up. But when you mess up the old system in the process of moving to the new
+system, you don't win very many friends. Oh, no, totally not. And regardless of how many times you
+do this, I feel like there's always a new challenge. Yes. Next time you do something that, you know,
+you are having to solve from scratch. Are there any things that pop up into your mind about what
+we've talked about or things that you want to explore? You know, before I move into what the
+architect's questioning that I like to ask everybody. The one thing that I wanted to call out is,
+you know, people sometimes have a tendency to hate on legacy systems. They're like, oh, this is old.
+This doesn't work the way I wanted to. And this is built on old technology. And kind of forget the
+fact that that was maybe the breadwinning system or like, you know, it lets you do what you wanted
+to do. And there is something to be said for a system that's lasted a while. Because incrementally,
+every month, every year, we've made improvements that is hard to get right by just switching to a
+rewrite and like, hey, let me do this thing again. And expect it to be as stable or be as easily
+understandable as the old system that's been around for so long. Somebody, I forget who it was.
+Maybe it was David Chappell. I forget. Said that the definition of a legacy system is a system
+that's making money now. Yes. Yes, yes, yes. Which captures exactly what you've said. And I think
+it's very important because, yes, it's true that some systems do sort of live beyond their useful
+life. But people still paying for them. They're paying your salaries and they're giving you the
+opportunity to do the next thing. Yeah. So, I like to get to some of this, one of my favorite parts
+of the podcast is get to humanize the architects that I have on and get a little more insight into
+what it means to be an architect is. What is your favorite part of being an architect? I will say,
+though, that there is never a dull moment, you know, at work. I like the way my role challenges me
+and keeps me on my toes. And a big part of this is the variety that comes with the staff role at
+Netflix. The aspect of being an architect is definitely one facet of it. But it also includes other
+responsibilities like captaining, you know, a large cross-functional project, kind of like a tech
+lead, for example. And I like the ability to switch focus every once in a while and have that
+breadth of avenues to hone my skills against. What is your least favorite part of being an
+architect? I think increasingly we've grown to expect, maybe I'm speaking for myself here, I'll say
+I have grown to expect, you know, fast feedback loops for effort and reward and instant
+gratification, which is what we have with, you know, technology now. But it is that kind of instant
+gratification is hard to come by in an architect or a staff role because the feedback loop, if you
+think about it, the feedback loop for effort to then seeing the impact of your effort come to life
+only goes up, you know, as you move up the ladder. So the feedback loop is gone from being days, you
+know, when you're discovering a bug and putting a fix out to months when you're, say, leading a
+project or to quarters and years in the staff role. So it takes the time that it takes for your
+impact to be visible. And it requires a level of patience that I currently do not have, but I'm
+working towards building that muscle. Well, I, I, look, patience is something you can learn, but it
+takes a lot. It took me a lot of time for me to learn patience because there's something
+intoxicating about programming and computer because you get it works or it doesn't work. The
+algorithm, you know, and even if you take some time to get it, you get that instant feedback or
+gratification that it works or doesn't work. Yeah. And with being an architect, even the negative
+feedback that you want. So you learn and sometimes it doesn't get there in time for you to stop the
+mistake. Yeah. Oh, my God. Yeah. This resonates with me. And Michael, it's encouraging to know that
+I have a future in which I will be able to get the level of patience I need. Yes. Yes. Is there
+anything creatively, spiritually or emotionally compelling about architecture or being an architect?
+I think the role requires you to not just focus on your contributions at an individual level, but
+also think about the influence and impact that you can have by enhancing the productivity and
+effectiveness of like those around you. So your radius of impact then kind of goes beyond your own
+work as you empower others to achieve more. And we call that the multiplier effect internally. So
+that's something that I find compelling about the role. What turns you off about architecture or
+being an architect? Hmm. When something is obviously flawed to me, but is not as obvious to others,
+I find that to be like a frustrating situation to be in sometimes because I'm like, here I am
+spending time on like trying to convey the problem where this time could have been spent towards,
+you know, solutioning the problem. And I think that's primarily because I have a bias for action,
+which has served me well in the past. There's no denying that. But I feel like right now I find that
+getting in the way sometimes. So I'm working on changing my perspective and telling myself sometimes
+that the way I add value is different from how it was in the past. Yes, I certainly feel that way,
+especially the further you get from actually touching code. You just have to accept the fact that
+somebody who has not been down the road you've been down sometimes just has to learn from their own
+experience. Yeah. Do you have any favorite technologies? Is this like asking if you have a favorite
+child, Michael? No, jokes aside, though, I view technology as a means to an end. Okay. And we spoke
+about this earlier, too. Like, it's important to pick the right tool set to solve your problem. So
+sometimes I feel like being attached to a technology doesn't serve me well, because then I have a
+bias that keeps me from picking something that might be right for the problem or the scenario that
+we're trying to solve. Though, if your question was reverse, I did have an answer. Like, if you did
+ask me, do I have a technology that I dislike? Well, that's good. I have two questions from now.
+I'll ask you that. Or maybe I'll ask it now. What technologies do you hate? This I have an answer
+only because of a bad experience in the past. So I actually dislike Scala. I think it's a great
+language if you're trying to do data processing, like data oriented things. But I think we, back
+when I was at Uber, my tech lead at the time made the decision that we were going to write a data
+serving app in Scala. And the reason was, hey, we'll have succinct code. And that was true. We did
+have, you know, our classes were much smaller than they would have been in, say, Java, even Python.
+But it was so unreadable. Like, it's like a single line that would do 10 lines worth of stuff in,
+you know, Python or Java. And added to the fact that at Uber, while Go, Java, and Python were
+considered first class programming languages that had support, Scala wasn't one of them. So we had
+to kind of solve some of our, like, deploy challenges and, like, operational challenges ourselves
+that made it even worse. So ever since then, I have a bias against Scala. Yeah, but you also raise
+an interesting question because I was always, when I wrote code, sort of thought of code as sort of
+an expository literature, which would be clear that one step comes after another. And it's sort of,
+you're making a technical challenge. In fact, Knuth wrote a very famous essay. I know of people
+familiar with the computer scientist, Knuth, who invented Tappan. He wrote an essay on literate
+programming. It's a very famous essay. You really should read it. It talks about the importance of
+code clarity. Because the thing you have to realize is code is more often read than it's written.
+Oh, yeah. Because you write code, you forget about it, but many other people will look at your code.
+Yeah. And try to figure out what you did. So if you're writing concise code that no one else can
+understand, I don't think you're doing the maintenance program as, you know, a great job. Yeah.
+Which also leads to one of my dislikes of people who write comments, but the comments don't get
+evolved as the code changes. I have been misled more than once in my career by reading comments,
+thinking this is what the code does. And then when I actually read the code and figure out what's
+going on, no, that's not what the code does. And this is assuming documentation exists in the first
+place. Yes. Yeah. Which is one of the reasons why you want to write readable code. Because very
+often the code is the best documentation. True. And I feel like the other thing that I've heard, and
+I think that's true, is too, code lives longer than you think it's going to live for when you're
+writing it. That was a saying that was around when I was doing programming, but just it does.
+Sometimes it lives longer than you at the company. Oh, totally. Like there are a lot of times when I
+look up Git Blame and I'm like, who is this person? Yes, yes, yes, yes. Sometimes you don't always
+have the nicest feelings about that person. And then that leaves me wondering what people are going
+to think about me after I do, you know? Yes. What about architecture do you love? I definitely enjoy
+the problem-solving aspect, which is, you know, both challenging and rewarding at the same time. I
+also like the thousand-foot view that you sometimes are forced to take to, you know, then understand
+the big picture, put all the pieces together, and peel back the layers of the onion one by one to
+then gather the context that you need to go back and think about how to solve a problem. What about
+architecture do you hate? This is easy. Context switching. So there's like two types of context
+switching. One is switching between topics. Like sometimes you're going from this fire to this other
+fire. And sometimes you're like, as you said, in the elevator example of like going from the
+boardroom to the boiler room where you're zooming in and zooming out pretty constantly. And it takes
+me some time to kind of reorient myself. So I end up dedicating a day to this and then the next day
+to that. Versus if I try to switch between multiple topics on a single day, then I find that I'm
+very ineffective. I'll tell you a little secret as somebody who's been in this business for a while.
+It gets harder as you get older. Oh, wow. I'm glad I have heads up. So I know what to expect. What
+profession other than being an architect would you like to attempt? This one is interesting because
+I when I think of, you know, profession, I'm like, oh, it has to be something I enjoy. And then I
+think about, OK, what do I enjoy? I really enjoy dancing, specifically Indian classical dancing. But
+I've never pursued it professionally before. So, you know, maybe that'll be my answer. But I'll also
+be wary of like, you know, the whole losing your hobby by turning it into a profession. Right. Yes.
+I hope that doesn't happen to me. Do you ever see yourself not being an architect anymore? In the
+short term, no. But in the long term, yes. Like, I don't think I want to retire in my current role.
+And with, you know, Gen AI, it does make you think. It's like, can human architects and staff
+engineers be replaced with a Gen AI product? TBD, it's, you know, remains to be seen. I wouldn't
+worry about it too much for your generation. Maybe the next generation. Yeah. But I think, first of
+all, we don't understand really how Gen AI actually works. True. And as you well know, the Gen AI
+architect will utter truth and stupidity with the same degree of competence. True. True. And if you
+look at most of the successes in artificial intelligence, and I hate using artificial intelligence,
+is really in focused applications of machine learning where you have good data and qualified data.
+And that's where the successes are. And people tend to extrapolate that to Gen AI, which I think is
+false. Fair. Fair. So I think for the next 10, 15 years, maybe I'm wrong. I don't think you have to
+worry about it. Maybe beyond that, you know, as people come to grips with the problems of LLMs. I
+still, in fact, I was working with ChatGPT this morning, and I still found that I had to really
+revise my prompts over and over again. Yeah. Because there are things that would have been obvious
+to you in having a conversation between the two of us. I had to really still explicitly tell the
+LLM. That's fair. And maybe this is just a sign of, you know, me overestimating the impact of Gen AI
+in the short term. But I know that humans also have a tendency to underestimate impact in the long
+term. Correct. Correct. Absolutely. I mean, there are some people who have some good ideas on how to
+proceed in this area. But really, I think we're slowly reaching a dead end with pure LLMs. And we're
+going to need some other trick to get to where we need to be. Because these models don't understand
+the real world very well. I mean, think of it this way. You know, that was the third thing I said
+about when I, you know, did software consulting is get your clients to tell you what you want.
+There's so much ambiguity that you have to tease out with requirements or even doing algorithms that
+LLMs just don't understand now. I hear you. Yeah. Encouraging. Yes. Well, all right. And the final
+question I like to ask is, when a project is done, what do you like to hear from the clients or your
+team? This is a great question. And, you know, it's, of course, basically all the usual stuff is
+like, hey, well executed, well done. But what I would really want is for our clients to walk away
+with the feeling that they trust the processes that were behind the successful execution of a
+project. Starting from, hey, this way of gathering requirements and validating the needs of the
+users worked well. Let's use this. The fact that, you know, we did a premortem to understand the
+risks. That was valuable. Let's keep doing that. The way we identified milestones and spread out the
+initiative. That process was effective. And how we tested and added observability and like rolled
+out and added all the safety features. Like that was like, I would want the clients to walk away
+with the feeling that they trust that the success is replicable. And not just focus on the fact
+that, hey, this one initiative was successful. So that then they keep coming back and then you build
+that long term trust with them. I really enjoyed doing this podcast very much. You're very engaging
+and also very honest, you know, as we talked about things. I want to thank you very much for willing
+to be on the podcast. Thank you for having me, Michael. Thank you.

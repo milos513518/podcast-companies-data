@@ -1,0 +1,270 @@
+[0:00:00] ANNOUNCER: The Hypertext Transfer Protocol, or HTTP, is used to load web pages using hypertext to links. And it's the foundation of the web. Tim Berners-Lee Lee famously created HTTP version .9 in 1989 and defined the essential behavior of a client and a server. Version 1.0 was eventually finalized in 1996, and its secure variant called https is now used on more than 80% of websites. HTTP continues to undergo intense development. And version three is now being actively adopted across the tech industry. 
+
+Nick Shadrin is a software architect at NGINX, and Roman Arutyunyan is a principal software engineer at NGINX. Nick and Roman are experts in HTTP and they joined the show today to tell the history of its evolution since 1989 and how NGINX is implementing support for HTTP/3. 
+
+This episode of Software Engineering Daily is hosted by Mike Bifulco. Check the show notes for more information on Mike's work and where to find him.
+
+[INTERVIEW]
+
+[0:01:13] MB: Hello and welcome back to Software Engineering Daily. My name is Mike Bifulco, one of the co-hosts of the show. Today I'm sitting down with some new friends to talk about a cross-industry, pretty broad-spanning project that addresses one of the most fundamental sort of features and protocols that the internet uses. 
+
+I'm sitting down today with Nick Shadrin and Roman Arutyunyan to talk about the HTTP/3 protocol. They're both NGINX employees but have been working on HTTP/3 and software that will affect sort of everyone building on the internet eventually at some point. 
+
+And so, the goal today is to kind of chat about HTTP/3, hear about the protocol, hear about what's going on there and to get a better understanding of why this is such an important fundamental building block for the internet and the future of communication for the world. And to get into some of the nitty-gritty details of building protocols that will be broadly used. 
+
+Let's start here. Nick, Roman, thanks so much for joining me today. Why don't we go through a quick introduction? Nick, why don't you start? Can you tell us a little bit about yourself and how you got to NGINX? 
+
+[0:02:12] NS: Absolutely. My name is Nick Shadrin, and I currently work as a software architect for NGINX. And I've been with a company for about almost 10 years now and did a lot of different technical tasks from the times when NGINX was a startup. Right now, I do a lot of work related to the management planes around NGINX and also working on promoting the different new protocols and new features of the data plane.
+
+[0:02:37] MB: Fantastic. Well, I appreciate having you joining here. It sounds like you're exactly the right person to be having this conversation with alongside Roman. Roman, why don't you give us the quick introduction as well? 
+
+[0:02:45] RA: Thanks, Mike. Thanks for having us. My name is Roman Arutyunyan. I am a developer at NGINX. I've been with the company since 2014 officially. And before that, I was a contractor. And before that, I wrote some third-party modules for NGINX. 
+
+I was engaged in pretty much everything NGINX development, both NGINX open source and NGINX Plux. But lately I was mostly concentrated on NGING open source and particularly HTTP/3 and QUIC. 
+
+[0:03:18] MB: Yeah, that's great. Well, that's definitely teas up an interesting conversation for us today. I have quite a bit of history of building for things on the web. And I think I've been an end-user of NGINX in many ways over the years. But believe it or not, it's something that I haven't had to use directly or configure directly too often. 
+
+And I think maybe a good way to start this conversation, although we're not talking about NGINX specifically today, is to kind of set the stage with what NGINX is and what it's for? And maybe the NGINX 101. Explain why NGINX is a product. Why it's interesting? Who uses it? And then how this sort of tees into the conversation around protocols and HTTP. 
+
+[0:03:55] RA: NGINX started as a web server project to solve some specific performance issues of just very few special projects of the developer who started it. But then, when he started implementing NGINX in his and his friends' environments, it took off as a very popular project. It was built very well. 
+
+And one of the major things that NGINX does is not take in somebody else's libraries or somebody else's radio code, but rather developing the fundamental features straight into the product straight from the software itself. And right now, NGINX is taking a very large percentage of the internet traffic. A huge number of internet domains. And it is a very popular project.
+
+[0:04:42] MB: Yeah, I think that's probably why it's a familiar term to many people who've built things for the web for so long. I think the fact that it's a web server that was built from the ground-up and sort of purpose-built is a very interesting story, especially in like a modern web where everyone's grabbing kind of the Lego brick that they need for everything under the sun, from NPM, or RubyGems, or Python libraries, whatever the case may be. Maybe we can start here as well. If you're just kind of getting started with NGINX, what's the Hello World for NGINX look like? 
+
+[0:05:11] RA: It depends on what you mean by Hello World. If you mean a developer's Hello World, that's a C module, which if you access NGINX with HTTP protocol, it returns you the Hello World string. It's not so complicated, but it's rather complicated. And so, the entry-level for NGINX development is pretty high, I would say. And that's why we had several development trainings and we have some documentation on NGINX development. Yeah, that's it.
+
+[0:05:41] MB: Yeah. Got it. And so, developing a C library Hello World for NGINX is kind of just responding to an HTTP request to deliver a 200 response with Hello World. And is that more or less the idea here? 
+
+[0:05:54] RA: Yes. Yes. The idea was to develop a very fast HTTP server. And over time, the functionality grew. Now NGINX is well-known for its proxy capabilities and for caching. Although, it's way more than that. It's a stream. Meaning, TCP and UDP. Proxy, it's a mail server, mail proxy. It can serve static files. It can do video streaming also, especially the NGINX Plus version. 
+
+[0:06:23] MB: It's well-engineered to handle an incredible amount of complex stuff that I think a lot of web devs just sort of rely on the functionality of rather than really deeply understand the nuts and bolts of it under the hood. That's a bit about NGINX 101. But what makes a good user of NGINX? 
+
+[0:06:39] NS: This is a very important question. Because you mentioned that you are a NGINX user and you've been at some point. And probably, people who are watching this using some of the services are also users of NGINX since they're using our technology. But also, the CIS admin, the operator who configures NGINX is also a NGINX user but in a different sense. And for NGINX engineers, some people would say that people who configure websites and make websites that work with NGINX are engineers for NGINX. But also, contributing to the actual code base of NGINX is NGINX engineer. 
+
+When you're saying what's a NGINX user and what's a NGINX engineer? It's always better to be specific, that we're saying the end users of the website, or web application, or the CIS admins operators who configure it, or engineers who make the web websites behind NGINX, or engineers who make features for NGINX. Those are four different types of people who deal with this.
+
+[0:07:36] MB: Yeah. I think that's maybe why it feels like such a household name too. There's a broad array of reasons that you might hear whispers of NGINX in your world depending on your framing and your focus. It's clearly something that enables quite a few important workflows for the internet and especially for just like communicating with a modern web stack across the web between your applications and APIs and things like that. Yeah, it's good framing. 
+
+And I think for the purposes of this discussion, it's also a good reminder that the audience of this podcast are pretty broad too. We have lots of folks who listen to the show who may be front-end developers or live primarily in like machine learning world or API Devs, things like that. And so, we'll kind of do our best to give some background on the things that go into the building blocks of what we're talking about here. And maybe that's a good place to start talking about HTTP. Why don't we talk about the HTTP protocol in general and what it is and what it does? Can you maybe give a brief description of what HTTP is on a 100 level? 
+
+[0:08:30] NS: I can talk about that definitely. HTTP is a very simple protocol that enables a very standard communication that has a request for something and a response from the server. The very normal understanding of HTTP, it's basically we're getting a URL by issuing a very simple request. Let's say, get/, and then that's the main page of something. And as a response, we get the response code which says everything okay. And we start receiving the content of that page. This is the very, very basic part of that. 
+
+And on top of this, this standardized communication, we have a lot of other modifications to that simple request. We can post information to the server. We can send something to the server, some data, and the server can be responding not just with a very nice, and easy and proper content, but also might send some errors or some commands for that client to do something else. And that protocol is very well-known in the web. 
+
+[0:09:34] MB: Yeah, it goes back pretty far too, right? HTTP is something that's existed for quite a long time at this point.
+
+[0:09:39] NS: Exactly. It's beginning of the '90s when it became basically the main protocol of the web.
+
+[0:09:44] MB: Yeah. Since the 90s then, how has it grown? I know we're talking about HTTP/3 today. What was the step in between? What did HTTP/2 represent in terms of changes? 
+
+[0:09:54] NS: Well, the first version of the protocol, that was the very basic and plain text version of that. And then the people and the standards organizations started adding things like encryption, caching, different headers, different ways of operating with subprotocols like WebSockets and so on. And that was going the whole decade of the '90s. 
+
+And around beginning of 2000s and towards 2008, 2012, there was a few performance problems because of the growth of the web, because of the growth of the web pages and all of those systems, the community found a number of performance issues with that. 
+
+And one of the major attempts of solving that was made by Google when they created the protocol called SPDY. It's pronounced as S-P-D-Y. That's the modification to the HTTP protocol that enables a lot of requests going through the same connection without establishing more connections for those requests. 
+
+And then at some point, a couple of years later, it was standardized as HTTP/2 with some more modifications to the protocol that was called SPDY. Basically, it's not HTTP/2 or for the same reason HTTP/3 or HTTP/1, they're not proprietary standards. They're open. Anybody can do whatever they want according to that standard. And it is suggested that the vendors of the software will follow those standards. 
+
+Going back to HTTP/2, the main ideas there were multiple requests within the same TCP connection. With HTTP/2, browsers tended not to use the unsecure version of the protocol. And another thing about that is HTTP/2 also allowed compression of the headers of the protocol. Those are very important security features. And I'm sure Roman can add a few other things about HTTP/2 that he knows very well.
+
+[0:11:48] RA: Let me start actually from the early versions of HTTP. The first HTTP version was first widely known is HTTP 0.9, which was very simple. It worked over one TCP connection. It had very simple request. One line. And then the response was just everything that was sent back. A very basic protocol. 
+
+The next one was HTTP 1.0, which had like request with headers and response with headers. It worked very well, except for every client request, we needed a round trip. Because we need to establish a TCP connection. Okay? As internet grew and as web grew, we needed a more efficient protocol. 
+
+Then in late '90s, HTTP 1.1 was introduced, which partially addressed this issue. HTTP/1, its main feature was keep alive. You could send multiple requests over the same TCP connection. You no longer needed to have multiple handshakes if you wanted to retrieve multiple files, right? It was way more efficient. 
+
+But, of course, if you have two files, you fetch one file and then the other one. While you're fetching the first one, you cannot fetch the second one, right? You have to wait. That's what they call head-of-line blocking. That's not good. But we saved some time on round trips. Because we only have one TCP handshake. 
+
+And actually, as time went by, there was another reason for saving time on handshake. Because now everyone is using SSL or TLS. Because almost all connections internet are encrypted, right? TLS level introduces two more round trips. Establishing a new connection is even more expensive now. So, we have to save. We have to reuse the connections as long as we can. 
+
+And HTTP 1.1 kind of addressed this issue, but not good enough. So, then, HTTP/2 came around, which was even better. It allowed you to request and receive multiple requests at the same time because it could multiplex the pieces of requests back and forth. 
+
+And so, it was an application level. I say it was. It is an application-level protocol, but it kind of was a little bit of transport in it. But it was not perfect either. Because if you lose one, it's still over TCP. If you lose one piece. Say you send two responses for two requests to the client, and if you lose one packet that carries the first response, but you receive the second packet with a second response, you still can't use it. You still have to wait for the first packet is retransmitted. Because TCP is sequential. 
+
+And that's why, recently, HTTP/3 – well, it's not HTTP/3. It's actually QUIC and HTTP/3 were introduced. Finally, they split the transport part and the application part in two different protocols. Everything that's about transport, the transport part is QUIC. And the application part, which is quite easy, and it's very similar to HTTP/2, is called HTTP/3. And I think we'll later talk in more details of QUIC and HTTP/3, right? 
+
+[0:15:00] MB: Yeah, definitely. I think we're tipping our hands to some of the exciting things that are coming along with HTTP/3 and why we'll probably hear about the companies that may already be digging in HTTP/3, you can imagine sort of the benefits that'll come with it. 
+
+I think it's an important thing to note that this is like the industry relies on these protocols because everyone uses it. Vendors who build application layer stuff, database layer stuff are all using HTTP to communicate. Just as well, your web browser, your phone, anything that communicates with the internet uses a standard shared protocol for that. 
+
+At the same time, you're both employees of NGINX. And this sounds like maybe a larger problem and that this is like a cross-industry thing where we need buy-in from everyone there. Can you give a little more context on who is working on the development of HTTP as a protocol?
+
+[0:15:42] NS: Yes. There are definitely multiple companies who deal with that and different projects are working on HTTP. Other than NGINX, I would definitely name the company, call them out, the company called Google, who is making a lot of efforts on modernizing the protocol for different reasons. 
+
+And Google has a very interesting and very unique situation where they own their own infrastructure. They have their own clouds. They have a huge presence on YouTube, Google websites, docs and whatever other parts of Google ecosystem there is. But also, they have the mobile operating system and the browser, Chrome. 
+
+And that means that Google actually is able to make modifications to the infrastructure and also to the client side. They're able to test a lot of that using a very large numbers of users, very high number of requests and some insane amounts of traffic. I would call them out as one of the primary developers of new protocols and experiments around the protocols. 
+
+As far as what NGINX does, we have a huge presence in the web server market. But we don't do the client traffic. We don't do the client part of that as the browsers, the libraries that would be using the protocols and whoever would be requesting data from us. NGINX only does the server side of things. And we are not related or we are not dependent on what Google does. 
+
+We're following the standards. And NGINX is that piece of software that can be used either inside of Google clouds or actually outside of that using your own infrastructure, or your own machines, or when you building your own systems like a number of different CDNs who actually have NGINX as their primary web serving component.
+
+[0:17:37] MB: Yeah. And so, that's one of the values of it being a standardized protocol, is that you can rely on multiple vendors to kind of keep each other in check and make sure that the protocols are being developed in parallel in a way that's mutually beneficial. Although, certainly, there are some stakeholders that are larger than others. 
+
+There are other companies participating and other individuals participating in the development of the standard as well, right? It's a broader cross-industry that welcomes feedback and that sort of a thing, correct? 
+
+[0:18:02] RA: And also, about Google, I want to add that the initial version of QUIC was an internal Google project called GQUIC. And they didn't even talk about that a lot. But they implemented it in Chrome and on their servers. And they used it way before QUIC as a standard showed up. 
+
+[0:18:21] MB: Yeah. It's an interesting use case that they're able to build both ends of it to test both from the browser and their communication protocol. 
+
+[0:18:25] RA: Certainly. Both the client and the servers. The most popular service. Yeah.
+
+[0:18:31] MB: We mentioned HTTP/2 came around in the 2010s, 2018s, maybe the early years of 2010ish. Call it 2010 to 2012. Whatever that may be. HTTP/3 has been coming along since then. Is it useful now? 
+
+[0:18:44] RA: I would say that big companies like Google, Cloudflare, Facebook, they use HTTP now. The share for the protocol is around 25% mostly because of those huge companies. But I would say that smaller companies are still maybe not using it as much because the protocol is in the early stages of adoption. I think it will take a little while.
+
+[0:19:09] MB: Yeah. 
+
+[0:19:09] NS: Yeah. We'll definitely talk a lot about why there are some challenges in adopting HTTP/3 compared to HTTP/2 and other protocols. But before we do that, I think it makes sense to mention the major differences of the protocol HTTP/3 versus two and one. Does it make sense to go in that direction? 
+
+[0:19:26] MB: Sure. Yeah, please. Definitely. That sounds great.
+
+[0:19:29] NS: And since we already started talking and kind of mixing together HTTP/3, 2 and 1, we'll mention the main difference there. HTTP/3 and QUIC is based on UDP traffic. From the transport level and from the CIS admin level, from the operations of all kinds of devices around the protocol, having the different transport system is a very big deal. 
+
+Basically, everything in the world is optimized for TCP traffic in the sense of web. And we know how to deal with TCP connections really well. But now we need to open at different ports and look at the different types of traffic from the point of view of the networking. All of those boxes in between, they need to properly understand that UDP connectivity, the UDP connections.
+
+[0:20:15] MB: Yeah. And they need to be able to relay information between using the different protocol. UDP and TCP are similar, but different in some important ways. What's the basic difference between the two?
+
+[0:20:26] RA: Yeah. UDP is packet-oriented. UDP basically is all about sending one datagram from this computer to that computer and nothing more. But TCP is connection-oriented, which means you establish a connection and you send a packet, then you expect an acknowledgement for that packet. If the packet is not acknowledged in the expected time, you retransmit the packet so it's a reliable protocol.
+
+[0:20:54] MB: Yeah. I suspect I may be oversimplifying it a bit. But it sounds like TCP requires like the two computers A and B talking back and forth a lot more. They're sending and acknowledging, sending and acknowledging. 
+
+[0:21:06] RA: And, again, the handshake takes some time. And the problem with QUIC is QUIC is built on top of an unreliable UTP protocol. Everything about establishing the connection, everything about retransmission, all should be implemented in QUIC. That is in user space. Because, typically, TCP is implemented in the kernel. And QUIC is – maybe this will change in the future. But so far, it's all in the user space. That has its own consequences, by the way.
+
+[0:21:36] MB: Yeah. The developer story must change a little bit there too. I suspect we'll talk about that a little bit coming up here. I guess, at some level, HTTP/3 relies on UDP a whole lot more. And QUIC as a result has kind of come around because of that. What are some of the other sort of basics of HTTP/3? 
+
+[0:21:53] NS: I can cover the main parts of that. Apart from being based on UDP transport, one of very important things there is how the encryption got implemented in the protocol. If we look at the standards of HTTP/1, it doesn't talk about encryption much or at all. 
+
+In HTTP/2, it is possible to send unencrypted HTTP/2 connections. But the browser systems, the browser developers chose not to do that. HTTP/2 in practice is actually always encrypted by standard TCP-based TLS connectivity, which is nothing different from any other TCP connection behind TLS. But with HTTP/3, since this is UDP, we cannot put a TCP wrapper on top of that or do some normal TLS the way we used to do it in TCP. Because, well, it is not TCP. 
+
+In that protocol, and that being also fully and properly implemented in user space by the web server developers, the web server developers and the client developers as well needed to put the encryption features inside of the protocol. And encryption is a part of a protocol here. This is a big difference from the point of view of how encryption is implemented. And also, one of the big reasons why this development of this protocol for different web server technologies is severely more complicated compared to TCP-based protocols. 
+
+[0:23:22] RA: Yeah. And by the way, because encryption is a part of QUIC, it allows it to be a little bit faster when handshaking. Because with TLS over TCP, you need to handshake TCP first and then you to handshake TLS on top of TCP. That takes even more round trips. With QUIC, it's only basically the TLS handshake, which is a little bit modified by QUIC but pretty much the same TLS handshake. 
+
+[0:23:49] MB: Yeah. Okay. And so, the nature of how you're ensuring that secure connection is a little bit different when we're using the HTTP/3 protocol.
+
+[0:23:55] NS: Yeah. Sorry to interrupt you. Not necessarily secure connection. Encrypted connection. There is a bit of a difference between encryption and security. We're talking about encryption.
+
+[0:24:05] MB: That's a fair point. Yeah. Establishing an encrypted connection changes between HTTP/2 and HTTP/3. Well, that's a mouthful. Let's talk about then what it would feel like. If tomorrow we woke up and everyone everywhere was using HTTP/ 3 and all of the boxes that make up the internet along the way were sort of fluently using HTTP/3, what would the benefits feel like for an end user, the average person sort of consuming things on the internet, what would that feel like? 
+
+[0:24:30] NS: This is a very important question. I would describe it as nothing would change at all. Here's why. HTTP/1, 2 and 3, all the versions have the same semantics of the higher level objects of requests and responses. All HTTP protocols 1, 2 and 3 still have the same verbs, get, post, put, whatever others, and they still have the URLs. That concept didn't change. They have the header, like the host headers. They have the cookies. They have cache on headers. They have all kinds of other headers around that. 
+
+And also, they have the concept of request body. That's what you post to the website. And there is response body, what you receive from that web application. The types of data that is transferred, HTML, or JSON, or pictures and videos, same thing. What changed there between the protocols 1, 2 and 3 is the ways how those semantics are being transferred across the networks. 
+
+This is why I'm saying, when everybody starts using HTTP/3 and all the systems around that on the transport level support everything about HTTP/3, the applications shouldn't care. We still go to the website. And the browser actually, often times, doesn't show us if it's HTTP/1, 2 or 3 being used to connect to that website. There is still a website. Still a URL. Still a host name and still the same HTML page behind it.
+
+[0:25:57] MB: Yeah. And that's maybe one of the most elegant and challenging things about this, is developing a protocol that's effectively more efficient under the covers, but transparent to the end user. Maybe the curse of a lot of these hard software problems is that if you do the job really well, people never notice that it happened. And that's a blessing and a curse in a lot of senses. 
+
+From a developer perspective though, certainly things will change. We touched upon a little bit of those already. What are some of the things that developers need to think about that makes using HTTP/3 difficult compared to past implementations of the protocol? 
+
+[0:26:29] RA: If you mean application developers, then it's very similar. Again, as just mentioned, it's the same protocol. Just different internals. But as for the engineering of HTTP/3 and QUIC itself, there are a few challenges actually. Because as I mentioned before, TCP is all in the kernel, which means it's optimized, it's fast. And we have API for interaction with kernel to make everything perfect and fast. But with QUIC, we have to rely on UDP, which was never meant to work like that. We have to build an entire new transport protocol on top of UDP. 
+
+And the kernel API that we have now that we have for UDP is not perfect for that. Every now and then, we hit performance limits or functionality limits that don't allow us, the developers of QUIC and HTTP/3, to make their perfect implementation. Hopefully, operating system kernels will evolve to accommodate for the new functionality that we need to optimize QUIC implementations. 
+
+Also, I want to add on the previous question about the benefits of HTTP/3 and QUIC. Also, I think that there are two main benefits. The first benefit is that QUIC and HTTP/3, mostly QUIC, can tolerate packet losses. If you have a network that's not reliable with high packet loss rate, QUIC will be beneficial because it can still deliver your information despite something gets lost on the way. 
+
+Your web page will still reload somewhat not ideally, but something will happen. Things will not stop waiting for that single packet to be retransmitted, right? And the other thing is client migration. QUIC supports client migration. When you go to a website on your mobile phone and then you travel to a different place and your mobile phone connects to different tower, you have a different IP address. And normally, HTTP client reconnects again. So, you lose all context to whatever was happening before that. You'll lose that, okay? 
+
+But with QUIC, QUIC supports client migration, which means that you can keep on using the same session even though you have a new IP address. That's a very cool feature. Even though – again, we have a few challenges with that, but it's so good and it's so good for today's mobile phones, for today's networks, mobile networks. 
+
+[0:29:01] MB: Yeah, I think it's one of those things where the – a lot of these subtle benefits make a whole lot more sense in an internet where we're relying a lot more on streaming much more data than we were 10 years ago. Certainly, the internet of 1990 can't imagine a world where there's that much data traffic going across for one user session for a video stream or something like that. And so, protocols like this develop over time as a result of the changing user need, but also the changing sort of developer architecture support for that. 
+
+And it's cool to see the amount of collaboration that goes into making this happen too. But these are definitely complicated problems and there's a bit of, I don't know, unknown area here, right? We understand what UDP is because it's been around for a long time, but relying on UDP for these sorts of protocols on a broader scale at least might come with challenges that are unanticipated.
+
+[0:29:46] RA: The funny thing that UDP was mostly used for DNS. We're basically building an HTTP based on something that was used mostly for DNS, which is a completely different thing. 
+
+[0:29:55] MB: Yeah. Yeah. Wow. It's come full circle in a really interesting way. 
+
+[0:29:58] NS: Yeah. You mentioned the very important thing about reliability between the protocols. And this is when an interesting question comes up on what happens if that UDP connectivity is not working well. When the connection cannot be established there. When the packets are not reaching at all. And that certainly can happen. 
+
+In the protocols, in HTTP family of protocols, there are ways and conventions to properly negotiate which version of the protocol will the client and server will be using. And all of the websites and all of the web applications, well, probably all of them, maybe some aren't, but probably all of them are using HTTP/1 and maybe 2 together with HTTP/3. There should always be the fallback into that HTTP/1 protocol. 
+
+When we're talking about that reliability of connections and reliability of protocols, we should also be thinking of that as not only HTTP/3 that's now existing in the world, but HTTP/3 in addition to HTTP/1.
+
+[0:31:02] MB: Yeah, that degrading of service there. Maybe degrading is probably not the right word, but the ability to fall back on a previous protocol is important. Because it only relies on one – we only need one weak link in the chain. One computer that doesn't understand HTTP/3 sort of breaks the ability to have that discussion across the network. And so, being able to fall back to other ones is really important. 
+
+I would imagine the logic that goes into that sort of handshake and like migration from HTTP/3, down to 2, down to one is some super interesting code to write as well. And, honestly, probably way above my head in terms of software engineering practices. But I find that to be a really fascinating sort of space there. 
+
+How do you see that sort of making its way to other web servers? Is this something that like the debut of the protocol and the protocol becoming more readily available in Chrome and NGINX and places like that will sort of influence other builders and companies to adopt HTTP 3? 
+
+[0:31:50] RA: Yes. There are a lot of web services adding support for HTTP/3. In fact, there is this project called Interop for testing interoperability of different HTTP/3 and QUIC. Mostly QUIC implementations. How? Because it's a new protocol. How do you test it? Because you need – well, with TCP, you have a client, you have lots of clients and you have lots of HTTP clients. But this is all new. What they do, they connect all available clients to all available servers and see how they work with each other. 
+
+[0:32:26] MB: Oh, that's super interesting. 
+
+[0:32:25] RA: This is a great project. And you can see how many implementations are already available and the list is growing all the time. This is indeed a very successful protocol and it's making its way to the market.
+
+[0:32:40] MB: Yeah. That's a really smart idea. One of the things actually I wanted to mention as well going back to this sort of being a transparent feature for the end user of a web browser, NGINX actually made a demo that shows whether or not your particular setup, and browser and connection support HTTP/3 and using QUIC, right? There's a really interesting demo page that I found that's quic.nginx.org, which will drop in the show notes, which basically fires up a browser window and attempts to make a connection over HTTP/3 and then tells you if it was successful or not. 
+
+I think it's really interesting that that's something that is so simple to sort of prove out. But also, something that, frankly, I think a lot of people don't know that they're already using on some level too. 
+
+[0:33:19] RA: And I would say that the end user shouldn't care. The end user should receive the high-quality experience to get their pages, their well-needed data as fast as possible. How we on the back end of things are doing that is not the worry of the end user. This is probably why, now if you open that web browser, you're not actually seeing if it's H/1, 2 or 3. It would be more worrying for the end user to see that some of the websites are using one protocol or another. They might think less or more about one or another website. And that might not be the case.
+
+[0:33:54] MB: Yeah. I can't imagine having to explain a brand-new HTTP to my grandparents and get them to check their email and see pictures of my cats or whatever the case may be. What does the future look like? Is there an HTTP/4? Is that a discussion that's happening already? 
+
+[0:34:09] RA: I haven't heard any.
+
+[0:34:10] NS: No. No. No. No.
+
+[0:34:12] RA: Because for the previous version of HTTP, there always was a reason. It's HOL blocking from HTTP/1 or .1 to HTTP/2.0. Then 2.0 to 3.0, again, same problem but on the transport layer, HOL blocking. Now there seems to be no big issues, except we need more efficient and more reliable implementations for what we already have. 
+
+[0:34:39] MB: Yeah. That makes sense. I think we tend to develop these things out of necessity and not just because we can think of a number higher than three. And so, you know as we explore an internet that uses HTTP/3 more broadly, I'm sure we'll uncover things that we can improve on that may require a vastly new protocol. But makes sense that it's not something that's in the picture right now as well. 
+
+For Devs who are listening to the show, if there is – I guess, from the two of you, is there a call to action or a goal for listeners of this show? What is the purpose of having this conversation publicly? 
+
+[0:35:09] NS: I would say one of the things for the engineers behind the websites is to make sure that their web infrastructure is properly updated. I'm not saying that they must enable HTTP/ 3. Maybe yes. Maybe no. Depending on how their traffic actually goes. Maybe it makes a lot of sense. Maybe it doesn't. But what does make sense is to make sure that their public-facing pieces of infrastructure are well and properly updated to the more or less later versions. First, for the reasons of security. And second, for the reasons of enabling the features if they choose to need them.
+
+[0:35:46] MB: Yeah. That's smart. One of those things that like keeping yourself more modern tends to help for a variety of reasons. Security is definitely a big concern there. But being able to turn on things as they're needed is a great call to action there. 
+
+If the listeners to the show are interested in learning more about HTTP/3 or changes in the protocol, where's the best place to go for that? 
+
+[0:36:06] RA: There is a website of the QUIC Working Group, quicwg.org. 
+
+[0:36:11] MB: Okay. I'll make sure to drop a link to that in the show notes here too.
+
+[0:36:14] RA: Yeah, they have links to the – everything we are talking about is contained in a few different standards. The basic standard is RFC 9000, which is the QUIC transport. And then there is one stand for HTTP/3. It's unrelated to QUIC, but it's based on QUIK. 
+
+QUIC is actually a separate protocol. We can use other application protocols other than HTTP/3 over QUIC. Although, we don't see anything popular. There were attempts to send DNS over QUIC.
+
+[0:36:46] MB: Oh, interesting. Yeah. Okay. That's HTTP – 
+
+[0:36:50] RA: – DNS over HTTP/3 then. Can you believe it? We used to send DNS requests over UDP. Now we have QUIC on top of UDP. Then we have HTTP/3 on top of QUIC. And then we send DNS on top of HTTP/3. So, how many levels we have? 
+
+[0:37:08] MB: Yeah, it's turtles all the way down, I think. What about NGINX? Where can listeners go to get the latest from what NGINX is up to? 
+
+[0:37:14] NS: We did write a few blog posts that relate to this protocol. We have a couple of more in-depth videos available with presentations about this protocol. As much as this conversation is very useful as the general – kind of general set of information. When you want to go deeper into understanding of all the internals, it makes sense to resort from videos into reading of information. 
+
+And as far as reading information, apart from NGINX websites, I can recommend a couple of other interesting ones. There is a nice one made by the creator of cURL from Daniel. We'll post that link there. And there is a good set of information on Cloudflare's website site as well. And maybe Roman adds a few more notes. But generally speaking, we'll post everything in the description of this video.
+
+[0:38:04] RA: I agree on Cloudflare. They post interesting deep articles.
+
+[0:38:10] MB: Yeah. Definitely. I can say openly inv vulnerably here as a typical sort of end user of web Dev stuff, it's not something I had thought about a ton before preparing for this conversation with the two of you and the amount of information that's available and, frankly, readable for sort of an average developer was really impressive to me. I felt like I was able to get up to speed very quickly thanks to NGINX, and Google, and Cloudflare and others like it. 
+
+For our users, if they want to chase the two of you down on the internet to talk turkey about NGINX, or about HTTP/3, or development of protocols, where's the best place to find each of you? Roman, why don't you start? 
+
+[0:38:44] RA: The easiest is my NGINX email, arut@nginx.org or – 
+
+[0:38:49] MB: Okay. I'll make sure to drop that in the show notes too. Yeah.
+
+[0:38:52] RA: Okay. Yeah. Also, if you or any of our listeners have any questions about using NGINX using QUIC or developing NGINX, we have a few mailing lists, NGINX mailing list. You can write any questions you are interested in. We'll answer. Or if you want to participate in NGINX development, send your commitment, your patches, you are always welcome. Again, mailing list is our primary channel of communication with the community.
+
+[0:39:21] MB: Sure. Yeah, thanks so much. And, Nick, do you have a best place to find you online? 
+
+[0:39:25] NS: Yes. I usually post the ways to find me on my homepage, which is shadrin.org. We'll post that one. It's a very, very easy URL. If you can see my last name somewhere, that's .org. Yeah. And the systems to contact people, they are changing all the time. That's why I post my current contacts on the same spot on the internet.
+
+[0:39:47] MB: Yeah. Beautiful. Well, thank you so much for joining me today. It's been a pleasure talking to you about this. Definitely a fascinating area of development for the internet and sort of the underlying infrastructure of what we all depend on for sharing information. 
+
+Roman and Nick, thanks so much for joining today. It's been a real pleasure. We'll hopefully talk to you again soon. 
+
+[0:40:03] RA: Thank you so much. 
+
+[0:40:04] NS: Thank you.
+
+[0:40:05] MB: All right. Take care.
+
+[END]
+
+
+
+ 
+ 

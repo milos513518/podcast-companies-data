@@ -1,0 +1,229 @@
+EPISODE 1812
+
+[INTRO]
+
+[0:00:00] ANNOUNCER: At Uber, there are many platform teams supporting engineers across the company, and maintaining robust on-call operations is crucial to keeping services functioning smoothly. The prospect of enhancing the efficiency of these engineering teams motivated Uber to create Genie, which is an AI-powered on-call co-pilot. Genie assists with on-call management by providing real-time responses to queries, streamlining incident resolution, and facilitating team collaboration.
+
+Paarth Chothani is a staff software engineer on the Uber AI, Gen AI team. Eduards Sidorovics is a senior software engineer on the Uber AI platform team. In this episode, they joined the show with Sean Falconer to talk about the challenges that motivated the creation of Uber Genie, the architecture of Genie, and more.
+
+This episode is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him.
+
+[EPISODE]
+
+[0:01:06] SF: Paarth and Eduards, welcome to the show.
+
+[0:01:09] PC: Thank you, Sean, for having us.
+
+[0:01:10] ES: Thank you.
+
+[0:01:11] SF: Yes. Thanks for being here. I'm really excited to talk about Genie, this on-call co-pilot that you guys were involved in at Uber. But maybe before we get there, let's have you introduce yourselves just so, since there's both of you, people can hopefully learn your voices. But let's start with you, Paarth. Who are you? What do you do?
+
+[0:01:29] PC: Yes. Hey, everyone. I'm Paarth here. I'm a backend infrastructure engineer on Michelangelo, which is like the SageMaker equivalent in Uber. I've been here at Uber for four years working on distributed systems, Generative AI, and core ML problems. Before that, I was at AWS, also building chatbot-like solutions, and also at Microsoft working on Teams and those kind of products.
+
+[0:01:54] SF: Awesome. And Eduards, same question to you. Who are you? What do you do?
+
+[0:01:58] ES: My name is Eduards, and I joined Uber a bit more than a year, and pretty much started right away to work with parts and Genie and also part of ML/AI platform team. And before that was pretty much working in some startups, training mostly some deep learning models, and partially for a year also work in the same manufacturing company and doing some MLOps stuff for them.
+
+[0:02:24] SF: Awesome. So, let's get into Genie a little bit. Can you explain what this project was and sort of how did it come to be?
+
+[0:02:30] PC: I can maybe take a first shot at it. So, at Uber, generally, there is so many platform teams supporting many engineers across the company. There is a lot of like tooling and all of that that gets built to support all the engineers and to make sure that infrastructure is very highly scaled, right? As part of that, there's many, many like support forums, specifically Slack is a very popular one. People generally, engineers will come to Slack for help. What we also went through as part of like our background and what not is like there was a lot of pain that we as engineers face when asking for help from other support teams or other platform teams. This was a recurring pain across the company. So, that was something that prompted us to think like, "How can we solve this kind of a problem?" And that's where inception of Genie started, that we wanted to have an automated solution which can look at all the internal knowledge sources and be able to answer questions that use customers across the company, engineers across the company can take help from and really improve their efficiency.
+
+[0:03:43] SF: I mean, I think that this is like a super common problem that many companies all suffer from. It's certainly as you scale any organization, it becomes more and more of a problem where you end up with all these sort of data silos that exist or in the Slack world, they're like chat silos of one-off, bespoke conversation that's happening where someone gets help. And then inevitably people ask sort of same types of questions. It's hard to surface that in a uniform way and it becomes this kind of like death by a thousand cuts. Basically, every company like suffers from this and certainly at scale become a real hindrance.
+
+So, I totally get that. I want to get into Genie's architecture a little bit and like how you built up the project. Can you talk a little bit about what's actually going on? What is the user interaction and sort of what is happening behind the scenes to support that user interaction?
+
+[0:04:30] ES: I mean, I'll just maybe start with the user experience of it and pretty much assuming I have a team and then we maintain our own Enjwiki and we have our own helpdesk channel. So, we want customers, we want to onboard Genie. How it happens is pretty much we have like a platform, Michelangelo, then you go there, you create a project, you specify the Enjwiki which you want to use, and then everything else happens on our happens on our side. It creates the pipeline, you run the pipeline, on backend, it pretty much scrapes the data, embeds everything, and stores it.
+
+There is another backend service which actually is queried when someone asked a question, meaning that on other end there's a, let's say a Slack bot, and then it calls this backend service, which gathers from which channel it is queried, and then sends the question to LLM with the provided context.
+
+[0:05:34] PC: Yes. Just to add to that, basically like our goal has always been a simplified very collective user experience where people can come in. They just specify the sources and then boom, that's it, and then everything else is just one click set up for them to be able to use Genie in their own Slack channels or in their own UIs, but not - that's our North Star experience that we have been always trying to build towards.
+
+[0:06:00] SF: So, me as a user, I point this to some internal wikis and knowledge bases. And then this RAG pipeline kicks off where it's going to go and essentially parse those, presumably go through some chunking process, create embeddings, land that in some sort a vector store. Can you get into details, like how does that pipeline work? What are the steps and components of it?
+
+[0:06:20] PC: Yes, so underneath, we use a lot of big data technologies like Spark, which helps us be able to take a lot of internal sources, be able to generate embeddings on the fly, paralyze basically with different, let's say we have executors taking different chunks, trying to create embeddings, either through in-house models or third-party models, embedding models. And then even for something like when we want to push the data to a vector store, we have workflows and open source technologies that we have used, something like Cadence, which is an overgrown workflow system, to be able to ingest data into a vector store at scale. There also, we have Spark behind the scenes to be able to take all this data and do a faster ingestion on the fly here.
+
+[0:07:07] SF: When I come in and I select these sources, how long does it take to essentially generate the vector embeddings to a point where I can start actually interacting, going through sort of the user experience, being able to get my questions answered by this co-pilot?
+
+[0:07:21] ES: Let's say, there's a different thing, like one is when you onboard yourself, and because of there's some like, you have to wait for approvals and whatnot, so it can take like a day, for example. But if you, let's say, update your sources or you completely revamp your sources, whatever, it doesn't matter, run the pipeline. But yes, it takes maybe today around one and then took 15 minutes, then it completely updates the sources.
+
+[0:07:45] SF: Yes. Why have it where it's sort of a user configuring these sources for their specific needs versus sort of more of like a wholesale pipeline that is scraping everything, building one vector representation of all these internal knowledge bases in wikis, and then presumably being able to use the semantic search to attach the right context for the user when they're interacting with the co-pilot?
+
+[0:08:09] PC: No, that's a fantastic question because that was very much like our first thought as we wanted to build something like that. I think some of the things we learned also, so we were trying to explore some solutions like Glean, which could support something like this out of the box. And what we found was that the way we had configured Glean inside Uber, it was very, very individual access oriented and there was not something like public data, which was all scraped for us already.
+
+So, that was one problem that we surfaced very, very early on. I think we also found like when we are more focused on ingesting sources which are, let's say, more hand curated, more filtered, the vector store always does a better job at surfacing that information and also the accuracy is much higher, versus when we experimented, like, we tried ingesting all, for example, Enjwiki and the accuracy of the answer seemed all over the place for a given use case. So, we felt like not the best of the performance either.
+
+We tried to find a sweet spot where we can enable people to bring in their sources, but then again, make it more like a magical user experience so that it's more UI driven, people don't have to do much and that's what we have been building towards.
+
+[0:09:31] ES: I just want to add that it's also the use case driven. In our case, we have a helpdesk channel for Michelangelo for our ML platform. So, people are coming there to ask specifically about Michelangelo. It's better to narrow down only to Michelangelo and not to surface anything what someone else have written about Michelangelo, which might not be updated. Maybe they once wrote it. They're not updating, but now because of their outdated information, they will surface the wrong answers. So, we might also kind of eliminate that.
+
+[0:10:04] SF: Got it. Yes. It's sort of like an easier way to get the performance and accuracy that you need by having people sort of self-select into where, how they want to constrain the universe, then try to programmatically essentially figure out what the right context is going to be because you're going to end up with a lot of noise across these different potential internal wikis?
+
+[0:10:22] PC: Yes.
+
+[0:10:23] SF: Was there consideration around essentially scraping everything, but then for each chunk, keeping the representation of the source, that way, when I'm selecting my sources, I don't have to go through the generation process of the pipeline based on sources. I'm essentially just sub-setting the existing set of sources and embeddings?
+
+[0:10:42] PC: Yes, we definitely wanted that kind of experience to start with. I think we found some infrastructure gaps where we pretty much don't have all these internal sources in an offline store that we can just pretty much take and create embeddings in the background. So, we found some limitations there and which is where we went with the next best experience, which is like, let's just create it on the fly. Also, the other thing is there is a lot of wastage. If we just were to create everything behind the scenes, the reason being that it feels like almost every team runs its own processes and own style. So, some teams prefer like Michelangelo for example is very wiki driven. We will be very meticulous in updating the keys with all FAQs and all user documentation and some other teams seem to not have that discipline, which is, where again, enforcing something like this means like if we were to just blindly do everything we pretty much might waste a lot of resources also and not have much business gain either, versus letting people choose.
+
+I think we have given them the capability to refresh knowledge, which means like once they know what they need, then they're able to refresh it at their own pace, which pretty much is like a second-best experience of like what you're talking about.
+
+[0:12:00] SF: So, if internal information gets updated in any of this source information, do I need to go manually do a refresh? Or is there automatically when these updates happen to the actual like internal knowledge base or wiki, it kicks off this pipeline to do the updates automatically?
+
+[0:12:18] ES: I mean, it doesn't detect anything so far. Meaning that initially it was only manual. If you update and you want to update, you go ahead and click. But then, now it's also orchestrated in a way that it's like a cron job in a way that you can update it daily or whatever cadence you prefer.
+
+[0:12:34] SF: Okay. And then what model are you using for generating the embeddings?
+
+[0:12:38] PC: Yes. So, we have two different flavors of models. We have some of the third-party models which are open source and which we have hosted inside. Those are some options and other options are also third-party models which OpenAI and other providers also give. So, I think we have those options, but generally we preferred the ADA embedding models from OpenAI to begin with, and those have worked reasonably okay for what we have been trying to test with so far.
+
+[0:13:08] SF: What are you using for vector store?
+
+[0:13:10] PC: We have a homegrown solution right now for vector store and we are trying to move towards other better vector store solutions. But that homegrown solution is what we call a SIA and that's a solution that we have been working towards and we're trying to embrace a new technology as we called open search as we are trying to kind of become more open source compatible.
+
+[0:13:34] SF: Was that something that existed already at Uber or was that something you built specifically for this project?
+
+[0:13:40] PC: Yes. So, the technology did exist, but the technology existed for more for like the typical search which is more text-based search. I think when we started the project, there's like more of like company started realizing that there is a much better, bigger need for VectorDB store-hosted solution, in-house hosted solution. Then the team, one of our sister teams, they spin up infrastructure to be able to host a managed VectorDB solution. So, it was more like, I think we learned as a company, there was a need across for GenAI solutions like this to have a very nice, highly available infrastructure for VectorDB here.
+
+[0:14:25] SF: In terms of both from the pipelines and also like sort of the user experience interacting with the co-pilot, how is that essentially built to maintain like reliability and durability so that parts of essentially this pipeline don't end up breaking or going out at some point?
+
+[0:14:43] PC: Yes, I can start and maybe, Eduards, you can chime in. Be as part of any production internal or external applications, we have a highly available monitoring system. As part of that, what we do is we make sure we have alerts on the backend APIs that surface responses to the Slack channels or any UIs that we are supporting for Genie. That's obviously part one. We also look at logs to make sure like if there's nothing obvious that is going wrong. Then, Eduards can probably chime into more of the evaluation and what we have built around to make sure customers learn about how their applications, how their channels and UIs are performing against our backends and the whole end-to-end.
+
+[0:15:32] ES: I think it's one of the solutions is that we constantly receive feedback, meaning that when Genie replies, there's like a pop-up of, you can reply with the emoji saying, "Okay, is it good? It's resolved by Genie or it's not good enough?" So, this also kind of keeps is a feedback loop for us to know, okay, if something is good or not good. Then we kind of built some evaluation on top of it. Meaning that one of the more like interesting solutions what we did is that we thought, okay, that kind of Genie has an interesting perspective on the documentation. Because like when you as an engineer, you write the documentation, you think you know what people need to know, but typically it's not true. 
+
+When customers ask a question, it typically it means that something is not covered in the computation or they were just lazy to check the computation. What we actually built is that we check what answers were not good. Meaning that if the answer is not good, it means that either rack components were not good or actually the computation was not there. If the documentation was there, with another like LLM as a judge, we tried to suggest what is missing in the documentation. It's kind of summarizes all the unanswered questions and tries to points out where it should be added and what should be added. Specifically, how to run this pipeline, how to debug it kind of points out.
+
+Obviously, it doesn't know how to do it because it's open internal knowledge, but yes, it helps. Actually, yes, some users actually kind of acting on it pretty well.
+
+[0:17:14] PC: Just to add to this, basically our idea is give people these tools that Eduards was talking about, where they can pretty much figure out some of the high-level themes around what documentation is missing, where the bot might be underperforming. They have at least a headway to figure out how to improve their channel quality.
+
+[0:17:35] SF: In terms of the feedback loop, is that primarily for you to monitor performance and also give the team some insight into where maybe the documentation isn't meeting the needs essentially? Or is some part of that also factored into sort of the learning cycles of the actual copilot? So, if I know that the response wasn't good, I can take that into account the next time I generate a response to a similar query.
+
+[0:18:04] ES: So, that is more of our first one that, yes, it's to hold us accountable, that knowing how good it performs, and to make sure that we also motivate customers to update their Enjwikis and, yes, to point out what is missing. But it's also, yes, now it's, we're kind of adding more on top of it. That means that you can help to update the documentation right away. I think, Paarth can maybe explain it more, but it means that you can update the FAQs and then it will go eventually to the knowledge base and it will help to answer the question later on.
+
+[0:18:41] PC: Yes, it's more like building a loop where people find out what is missing. They add FAQs to the documentation and then we have the refresh knowledge pipelines which pretty much take this FAQs refresh it, so it's like a quick feedback loop and we actually found out inside even Michelangelo that there were parts of our documentation which are outdated, we didn't know about it, and then the bot surfaced some answers and we were like, "How did this happen?" Then we took initiatives to clean the documentation. That was like a quick feedback loop that without even looking at our evaluation reports, we found out immediately that, "Hey, there is this problem within our documentation where we give conflicting information that we ourselves have not reconciled."
+
+[0:19:24] SF: Yes. I mean, I think that's super valuable because I know any significantly large organization I've ever worked for the internal documentation usually is like, can get really horrific over time. There's not a huge incentive to keep those things up to date so it can really fall out of date. But they're really valuable, especially for new people because they don't know where to get those answers. The only option you have is internal documentation, or you end up having to message somebody and get that sort of bespoke answer. Can you take me through sort of the life of a query? So, I'm interacting with this over Slack. I put in a query, then what happens sort of behind the scenes?
+
+[0:19:58] PC: Yes. So, behind the scenes when you're querying, basically, we will invoke API, which pretty much underneath tries to figure out what the user is trying to do. There is also, as part of the query, we also have a very customized Slack workflow functionality that we have built a plugin inside, which can take additional information from the user and what they're trying to do, what is the action they're trying to perform, which particular product they're trying to interact with, what is the way to reproduce their problem. So, pretty much think of all additional context that on-call and a bot needs to be able to even figure out what the user is trying to do.
+
+With this whole additional information that we send as part of the question, then we pretty much generate embeddings on the fly for the question. We do a VectorDB look-up. We make sure we have all the right context. And as part of the ingestion that we have done for the source data, we make sure the ingestion follows the schema. That way, there is source URLs, there is metadata around what the page was about. All of this pretty much is part of available as part of the ingested data in VectorDB. So, when we are sending all the information to LLM, we want to make sure that there is information around citation. There's much more metadata that we can surface for different use cases pretty much.
+
+All of the metadata is fetched along with the source URL and everything and we send that to LLM with different prompts and we allow users, different users to configure prompts. There is flexibility in what they want to solve. As part of this, then the LLM pretty much decides what the answer should be based on the prompt and all, and then that's what is surfaced to the user today.
+
+[0:21:43] SF: In terms of the LLM, what model are you using?
+
+[0:21:46] PC: Yes, we have experimented with different models that OpenAI came up with. So, we started with GPT-4, then we moved to Turbo. There's GPT-4.0 now, and then we're trying to look at the reasoning models also to see how we can have certain questions answer in a much more crisper and cleaner way with the detailed reasoning still.
+
+[0:22:08] SF: You mentioned at the beginning of that query-to-response pipeline that you're trying to figure out what is the user actually want so that you can s attach that to creating the correct context. What's involved with figuring out what the user actually wants, what the intention behind the query is?
+
+[0:22:28] PC: Yes, I think part of this, what we're trying to also currently experiment with is user intent detection, where we can figure out, is the user trying to debug a problem? Is the user's question about a product? Those kind of things we are trying to experiment and see, where intent detection can help us figure out more of the user's thought process. Because not all type of questions we have understood also the bot can into a great job at. So, we want also as part of our accuracy enhancement is to be more mindful of where the bot can excel and where the bot cannot excel. That's part of where we are trying to do experimentations and detect some user intent detection right now.
+
+[0:23:12] SF: What about metrics around evaluating sort of the effectiveness of this? Do you have things that you're tracking, even in sort of the development process, like using like an eval framework, some of these newer frameworks exist for building generate AI applications in order to figure out? If you make a change to how you're generating your embeddings or how you're figuring out the intent, that's actually a performance improvement versus a degradation of some sort?
+
+[0:23:38] ES: I think the main metric is the customer feedback. That's, I guess, our end goal.
+
+[0:23:44] SF: Yes, so if you make a change, essentially, you're waiting for sort of live feedback to see if your accuracy is improved based on the feedback from the users?
+
+[0:23:52] PC: So, I think that's part one of it, obviously, and then there's the golden datasets that people generally hand curate so that we make sure there is more like quality built-in before also deploying a change. So, if somebody changes a prompt or something, we generally ask the users to do more golden datasets against testing so that they have thought about what kind of implication that have. And Eduards can maybe chime in on the post-production rollout here.
+
+[0:24:18] ES: I mean, I also tried with a different evaluation and I think like more classical NLP and then also LLM as a judge, and apparently most of the cases actually, LLM is just more simple, but it actually typically works better.
+
+[0:24:31] SF: Were there any challenges or thought around the risk of like sensitive information being shared with Genie?
+
+[0:24:39] SF: Yes. That was something we really brainstormed and thought a lot, and I think me also coming from Amazon where I was like a security certifier. So, security was always like top of our minds when we started this, and we want to be very, very mindful of what data gets exposed to the outside the company. So, in the beginning, we were very, very thoughtful about hand curating which data sources are secure and we have different levels of gradations like many other companies or what data is private versus public, or what is very sensitive that cannot be leaked outside.
+
+So, we'll work with our security teams. We hand-curated certain data sources, which were reasonably, you could say public inside the company and we obviously went through a lot of different processes inside the company before we were okay to even create embeddings for those kind of data sources. That was our due diligence to make sure that as we develop a new productivity enhancement, we don't leak out data that will mess up our company's reputation.
+
+[0:25:39] ES: One thing to add, I think there's a very cool solution which is built in Uber. It's a GenAI gateway. It's pretty much, imagine that you have like OpenAI API, but then it doesn't go directly to OpenAI. It goes through a gateway and the gateway, they actually, they filter PI data. So, there's not high risk of leaking anything.
+
+[0:26:03] SF: Yes, so if I put in my social security number for some reason, it's going to get filtered out by the gateway.
+
+[0:26:09] ES: Yes.
+
+[0:26:09] PC: We really wanted, as Eduards mentioned, like the redaction PII data should be redacted before it gets sent out. So, I think that's built into our other ecosystem that our sister teams have built to make sure that we have security built in into - we don't have to worry. But still as application owners, we have still done our due diligence to even make sure PII doesn't even come in our ecosystem.
+
+[0:26:31] SF: Yes, basically shift that problem left before it enters the model.
+
+[0:26:35] ES: Exactly.
+
+[0:26:36] SF: In terms of building the system, like what were some of the biggest sort of technical hurdles that you had to work through?
+
+[0:26:43] PC: Yes. So, I think there are many, many different angles to where we struggled in the beginning. One was obviously hallucination was a start where we were like just spitting out things that were pretty much wrong sometimes and not right. So, there was a lot of this prompt-based evaluations that we had to do. There was also the UI experience that we really, really thought very deeply about because there were other solutions that Glean provided for example and those solutions were very individual access driven needed approvals from users even to see the answers in channels and we didn't want that kind of experience because we wanted a frictionless experience. So, definitely the experience was part of it. Then obviously, when we started developing, there was no industry standard on how to evaluate GenAI apps.
+
+So, building like the feedback loop and system, for example, we had to come up with methodologies on how we can even compute and say we are saving time for the company and users. There was some methodology we had to develop inside to figure out how to even say there is some productivity gains here. Then obviously, Eduards can speak more about the eval part, which he's driving the whole evaluation of how to showcase what is problem with your documentation. That was like a unique thing that we had to brainstorm and the UI, the product we built around to support this kind of monitoring. That was a very new thing. There's no industry precedence as such and this is how other people have done it. There's a lot of these new things we had to maneuver and also we were working in a very small team, pretty much a two to three-person team. That was like, we were very short on people to try something like this. Also, other challenge was how to platformize this kind of stuff, not only prove that this works well, how to platformize it in a way that we can benefit a lot of other parts of the company and make sure that people can leverage this fast enough and show gains.
+
+So, the speed of execution, the accuracy, the UI experience, the monitoring and working in a very small team. I think all of these were like different challenges, we had to really maneuver all throughout to deliver something here.
+
+[0:29:02] SF: I think just to jump in for a second, like I think like one of the challenges that probably anybody building, sort of an AI or GenAI application like this today is facing, is that even if you have deep expertise in ML, very few people have 10,000 hours of experience building these types of applications. There is a lot of net new ground to figure out, and you can't necessarily draw on your 10, 20 years of engineering experiences that you've seen this problem 100 times before.
+
+[0:29:32] ES: I think one of the challenges was not maybe UI, but the UX, like how to make sure that everyone can make it scalable so that everyone can create their own Genie and be like specifically tuned for them. I think that was a kind of quite a lot of, let's say, design thing in how to do it. Also, I think one of the, not also a technical problem, but it's an expectation management. I think, ChatGPT works well, and then everyone has this miracle experience, right? But then you see, you go to other helpdesk channel, and you see that it performs very well. Even though you feel that it performs well, because you don't know much of a context, you think that it works very well.
+
+But when you run it on your own documentation, like, "Oh, no, it doesn't work as well as you expected." You look, okay, why is it? And typically, maybe just because the documentation is not up to date. So, it was challenging to explain that, yes. Let's say, in machine learning, we say garbage in, garbage out
+
+[0:30:35] SF: Yes, I mean, it goes back to the data quality problem. $If your data is bad to begin with, or some portion of it is bad to begin with, what can you expect in terms of what? The model can only do so much, right? It's not going to fix your data problem for you.
+
+[0:30:51] PC: Yes. Also, circle back to the question you're talking about like the lack of experience in building this kind of thing. I think there are some parallels that I kind of sense still like, yes, while nobody had experience in this technology and whatnot. I think, inside the small team we were all part of, we were trying to be scrappy at the same time, speedy in execution, and we had to balance obviously security. I think those three angles we tried to do and I felt like pretty much most new projects have that kind of thing where you're wanting to be scrappy, you're wanting to be showing something, but also being mindful because we are in a bigger company. We're not in a smaller company where you can afford to make mistakes and this is a public company.
+
+So, I think drawing from our previous experiences, we try to have these principles in mind, and I think these principles helped us guide while we didn't know the nuances of the technology. But I felt basics of software engineering was still in place to make sure they were our guiding light as we delivered something.
+
+[0:31:58] SF: Do you feel like, though, with building this type of application where you're relying on kind of, there is a certain amount of non-determinism going to be involved in sort of the stochastic nature nature of some of these, that the models themselves like, does it require a bit of a mindset shift when you're engineering in that way versus traditional application development where it's going to be very deterministic? You can rely on, if the output is not what you expect, you can kind of trace back to a bug in the program that you put in there.
+
+[0:32:27] PC: I think that definitely non-deterministic aspect did threw us off and I think we had to even build stuff in our experience and UIs and explicitly call out, "Hey, the answers, make sure you don't take it for the word of it. You make sure you evaluate right." That non-determinism definitely is one of the things that makes this whole product building so challenging. Though I felt like that aspect has also changed as the models have become better, as we have learned how to restrict the prompts, restrict the citations and we started doing citations and that also has led to more like let's say trust in what we are now saying, versus just being so open-ended that you just don't know what it's saying is true or not. 
+
+So, I think that with evaluation stuff that Eduards led and build, I think like many of that stuff is starting to come together now and it's become more deterministic where we feel like, okay, there is more control on what we are saying now versus what the system is generating versus what it was before.
+
+[0:33:34] ES: I think we're going to build the muscle when the models are less deterministic. Now, we see like with all this progression of new models, we're like we are healthy skeptical, which is, I guess, good.
+
+[0:33:49] SF: Yes, I've definitely seen in that two years or so that I've been building on large language models, like a significant improvement in terms of like reliability of their performance and answers and, the problems haven't completely gone away. But it's a lot better than it was, I guess, two years ago. I think they've addressed a lot of these challenges.
+
+[0:34:09] ES: Yes, I think it's also a good thing that LLM is becoming cheaper, right? What helps is that, I mean, before it was, you'd make one LLM call and then you're like, "Okay, it's enough." Now, you can make like, okay, validation calls like two, three times to validate the answer. So, you can make it artificially more deterministic because first of all, become better and then become cheaper.
+
+[0:34:32] SF: Yes. That helps a lot with applying some of these like basic patterns basic patterns around like reflection and go through a series of iteration of refinement and so forth so that you can actually get a much better response, validation that you mentioned, especially if you're expecting a certain type of output. Then of course, all the things that are happening with even agents where you can bring in tools to help evaluate or request data as needed and so forth.
+
+You mentioned productivity gains earlier and how it was important to be able this demonstrate that this project is worth the time investment, worth the presumably the compute resources that you're putting into this the token costs and stuff like that. So, what were sort of the impact and productivity gains that you saw?
+
+[0:35:14] PC: Yes, I think that as we were publishing the blog also like we have been able to roll the bot out to more than 150 plus channels, and it's answered like 70,000 plus questions. We've seen around like 48% helpfulness rate, which is like mix of the questions that the bot auto-resolved and where the bot actually helped the user to prompt in the right direction. So, I think from that perspective, we estimated roughly when we did math around like 13k engineering hours, so far we have saved across the company. As I was saying, we had to do some creativity here to even figure out how to measure these kind of things.
+
+[0:35:52] SF: How did you figure that out?
+
+[0:35:55] PC: I think first part of what Eduards was previously mentioning, we have this emojis that people react on. So, that is something we did. Some other things we did was also to gain more data. Some of the partners that we were working with, we wanted to have a higher rate of feedback there because like Google search, not many people leave feedback on accuracy because users just want answers. They don't like to leave feedback and that's something we have seen. I mean, I personally observed in my own experience that while working with any customer support in like airline or anything, just never want to leave feedback. It's waste of my time. That's what I feel always.
+
+[0:36:33] SF: Unless it's negative feedback. 
+
+[0:36:35] PC: Yes. Unless it's negative feedback. That's what we found. So, some channels, some partners, we enforce the feedback because that gave us more confidence that is the bot really even performing well, right? So, that was one of the features we initially built. Also, other experiences we also built is with some teams we try to experiment and say where the bot is like the first level of resolution always. And the on-calls only come when the customers say I want to escalate to on-call. So, that was another experience we've built to validate and see how useful is the bot.
+
+So, this mix of different experiences plus us doing some creative math to incorporate these feedback emojis and converting into some engineering hours and determine how much we are actually saving to the company. That's how we came up with some of this math response rate evaluation.
+
+[0:37:27] SF: The 13,000 hours over what time frame is that?
+
+[0:37:32] PC: Since the inception of the bot, roughly, I would say a year plus.
+
+[0:37:36] SF: Okay. So, that's like pretty substantial amount of time saved.
+
+[0:37:41] ES: I mean, the adoption, it's not like everyone is on boarded. Meaning that you have to come in on board yourself. So, I think most of the heavy weight was also in the latest months.
+
+[0:37:51] SF: What's next for this project? Are you continuing to invest in this? What are you looking to do with this?
+
+[0:37:57] PC: Yes, definitely. I think like what we have seen is the expectations have completely shifted while it answers your giving six months back and what was acceptable has completely shifted. Users are expecting much more. So, what was a helpful answer six months back seems like not a helpful answer anymore. We are definitely very much thinking about like taking this and making it a V2 version where we can have a very high level of accuracy and work with substantial partners. That way we can bring this to the next level of expectations that people are having from the bot. That's like an ongoing investment for sure.
+
+[0:38:36] SF: As we start to wrap up, was there anything else you'd like to share?
+
+[0:38:39] PC: Overall, anybody building GenAI apps, definitely this landscape is extremely very fast evolving. It changes literally in days, not weeks, not months. So, I think the pace at which technology is changing here is way faster than any other technology that I've ever worked with in my career so far. I think people have to just be open to the fact that whatever we build is it might be thrown away in a week or two. That's something, just like being open about that just makes us not feel frustrated because I think we were at times when we were feeling like pretty much, "Hey, what have we built? Do we have to throw everything?" I mean, that was the question that we would get a lot. So, I think just being open about the pace of the change and being open to experimentation is a healthy mindset for GenAI, I would at least I feel.
+
+[0:39:30] SF: Yes. I think you would have to - ideally, you factor that a little bit into your design as well so that you have flexibility and sort of the architecture of the design to swap in and out of models as those things improve or other components essentially where you might be able to squeeze out a little extra performance by going through an additional cycle of inference or something like that.
+
+[0:39:51] ES: Yes. I think, I also wanted to encourage to build this GenAI apps. I mean it's first of all, it's kind of fun, and second of all, also sometimes it feels frustrating because like you build something and then something developed very similar to it. But then like, okay, so we feel like it's a waste of time, but at the same time, I mean, you build something and then you can make it adapt to your specific case. Then I think it also was kind of also with the Genie that okay, I mean, we build a chatbot, but then like at the same time, like Glean was coming up with something similar. But because we build something on our own, we can put agentic stuff. We can put like, "Okay, if someone put a log, we can go and check the log." And then that's something what other solutions cannot do and will not be able to do, at least in the pretty near future. So yes, I just wanted to encourage people to experiment.
+
+[0:40:46] PC: To add to that, I think like what Eduards was mentioning is very spot on. Build unique features, because I features because I think that's what creates value in the long run. So, I think while we had other competitive solutions also being built outside by third-party vendors and whatnot, I think we focused on trying to be unique with the experience of UI or the tools that we allow users to integrate. I think that probably proved us right in the wrong run that we're able to customize a lot more things because it's in-house, and the experiences can be tuned in, changed much faster. So, overall being unique also helps like stand out in the long run.
+
+[0:41:22] SF: Yes, I think even from like, if you were building a company around some sort of AI application today, kind of going deeper might be better than going like really wide in general. Because a lot of the hyperscale companies are going to probably address the wide, but you can out-compete them if go really deep on a particular thing, that you can create like the best possible, I don't know, like medical device-related to AI experience or something like that. And that's probably not going to be something that Amazon is going to put a ton of resources into or OpenAI or something like that, versus sort of the generality of what they're trying to solve.
+
+[0:42:00] PC: Yes.
+
+[0:42:01] SF: Awesome. Well, Paarth and Eduards, thank you so much for being here. This was great. 
+
+[0:42:05] ES: Thank you.
+
+[0:42:04] PF: Thank you, Sean, for having us. It was really, really nice to have this podcast here.
+
+[0:42:09] SF: Cheers.
+
+[END]

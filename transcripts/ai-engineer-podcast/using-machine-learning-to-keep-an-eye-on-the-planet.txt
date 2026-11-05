@@ -1,0 +1,466 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Using Machine Learning To Keep An Eye On The Planet
+DATE: 2023-06-17
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/iceye-ml-on-synthetic-aperture-radar-episode-19
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/6385305393042659183f775db8-c78e-4c35-b6b7-ed11926df657v1.mp3
+DURATION_SECONDS: 2553
+TRANSCRIBED_AT: 2026-09-17T03:28:06Z
+----------------------------------------------------------------------
+ Hello, and welcome to The Machine Learning Podcast. The podcast about going from idea to delivery
+with machine learning. Your host is Tobias Macy. And today I'm interviewing Tapio Friberg about
+building machine learning applications on top of synthetic aperture radar data to generate insights
+about our planet. So, Tapio, can you start by introducing yourself? Sure. So hello, everybody. My
+name is Tapio, and I'm a machine learning engineer at iSci. And do you remember how you first got
+started in machine learning?  Sure. It's quite pure of gate theory, you know. So so I was working in
+a lab for material science, actually. And they were also working a summer job in there, and I was
+working on this laboratory equipment and I was really bored. I was thinking that there must be a
+better way of doing this thing, and I started rewriting a script in MATLAB for doing the same
+experiments with image processing. I got super excited about that, then I decided to do a minor in
+computation science. Later on, I did a minor in computational science in my master phase also. And
+it turns out that I never did a single day of work in in the so called pure,  material science
+fields even though I do have a degree in that. And so in terms of what you're doing at ICI, I'm
+wondering if you can just describe some of the overall context and some of the story behind, the
+company or at least your involvement with it?  Sure. Eyesight is a Finnish Polish aerospace company.
+It's dedicated along around building and operating synthetic aperture radar satellites. So, SAR in
+short. SAR, it's a technology where you use microwave frequencies and exploit the movement of the
+platform, which might be an airplane or satellite or otherwise to create radar images. These radar
+images, they they for the human observer, they kinda look like optical radar, optical satellite
+images in the beginning, but they are quite different. Most notably, they are famous for, doing
+really well in change detection, being able to detect metal objects quite well, so for example,
+ships and airplanes. And also with the radar imagery, we are able to image through clouds and
+through through darkness. So there is no single time in the day or no weather conditions that we
+cannot observe. So for example, we have emitted through active volcanoes through the ash plume. We
+have witnessed extreme flooding through a hurricane and we have observed during a multi month cloudy
+season under Amazon rainforest. And the company, it was founded in 2014. I joined the company in
+2019, after we the company had launched the first few satellites, and I joined the freshly formed
+analytics team to perform analytics on the satellite images.  And in terms of the analytics and the
+applications of machine learning, I'm curious what are some of the problems that you're trying to
+solve or the types of questions that you're trying to answer with those ML applications?  So for me,
+machine learning is a tool of desperation. So you use machine learning if you cannot do it in any
+other way. Typically this desperation comes from scaling. So the situation for us right now is that
+we have performed over 20 launches up to date and we have a very large constellation of satellites.
+These satellites, they are taking images all the time and each of these images are 100 of square
+kilometers. So in that sense, for many applications, machine learning is the only way to do it. Of
+course, the human brain and the human eye is is still much better than machine learning, so so in
+some use cases you still want to have an operator look at the images, but in many cases if you want
+to observe or monitor or do persistent monitoring, machine learning is in my opinion the only way to
+do it. Of some particular extra kind of like applications I have worked on, I could maybe maybe
+mention deforestation and flood detection. Both of them are aren't aren't really, like, super
+exciting machine learning applications, meaning that they're not not cutting edge. They are,
+typically just semantic segmentation. Deforestation is done over stacks of SAR images, so we monitor
+monitors the same site and we take images between every day and every week, and then we run it
+through some kind of a model and and create, for example, deforestation alerts from that. And then
+the flood solution is something that, you opportunistically take, acquisitions or images of
+flooding. You use machine learning models to refine this information and then you don't do anything
+with that particular information but you pass it forward to other teams and model models.  And in
+terms of the source data that you're working with, you mentioned that it's synthetic aperture radar.
+It's being captured via satellites that are orbiting the globe with varying periodicity. I'm
+wondering if you could just talk to some of the ways that that source data poses a unique challenge
+to ML applications and maybe some of the ways that you have had to customize your solutions to be
+able to work on that data versus some of the kind of prior art that's available in the ecosystem.
+You know, I I often heard that there's, like, a discourse, about the challenges of Earth
+observation. And then quite often, the discourse turns into the amount of data. So everybody is
+saying that we have so much data and it's always terabytes of, data and 100 of millions of pixels
+and and this and this and this. But I never thought of that as a real challenge, or it is a real
+challenge but it's also the price of admission. So those problems, if you cannot solve those
+problems, you're already out of the game. So so so by definition, we have to have some kind of
+solution and by definition everybody else has already some kind of solution for that. So maybe your
+real question when you're talk we're talking about the, SARS specific stuff, and not only are those
+version specific stuff. I I think the real problem is that we we really can't, like, stand on the
+shoulders of giants as easily as as the so called traditional computer vision community. So so when
+talking to computer vision people, nobody wants to train their own models, from scratch, I mean. So
+everybody usually wants to use some kind of baseline model. You can take ImageNet and then put it on
+some reasonable model and then fine tune it and you get some reasonable results. But because of the
+SAR physics and the SAR image domain, you can pre use pretrained models. You can use ImageNet. It's
+not harmful, but it's not very useful. So you cannot really bootstrap your processes off the, other
+people's work so easily. There are no no pictures of cats and dogs in in SAR images SAR images or
+SAR images. Another another kind of subtle subtle difference in in Earth observation and then maybe
+traditional computer vision that usually, in terrestrial computer vision, you have an image of an
+object. So there if you take an image, it's usually the, the zipping something. So there is like a,
+car in the object. And because of that, there are some interesting features in the object. But if
+you take a satellite image and you were to turn it into patches, for example, something small enough
+that you can put through an error network, there is no guarantee that there is anything interesting
+in any given patch. The opposite actually. Most of the patches, there isn't anything interesting.
+Just some kind of texture. There might be forest, there might be fields, there might be a single
+road going through. But the image isn't actually depicting anything. And this has very subtle
+implications for topics such as self supervised learning. So if you are doing self supervised
+learning, you're you're augmenting an object, and then you're hoping that the model understands
+kinda like the latent space behind that and understands the the the things that make the object an
+object even though you crop a part of the image. But when you're doing self supervision and it's
+just a field or something, then you're cropping a part of the field, You're you're not really
+changing the problem in a meaningful way. So in both self supervised and semi supervised domains,
+the augmentations have to be extremely strong, and it can be quite weird results or unexpected to
+compare to literature, I'd say. And then of course, there's the physics. So the physics of the
+problem, that's maybe the reason for for why we cannot use transfer learning so easily is because
+the physics of the problem is so different. So radar's backscatter is very, very anisotropic.
+Meaning that if you change your, look angle, sometimes even slightly, the features can change, very
+strongly. So there there might be like flares and and, like the the backscatter intensity can go up
+a very large amount with a relatively small change of, field of view. There's a very high dynamic
+range. So so it's not uncommon to have 4 or 5 orders of magnitude difference between weak features
+and strong features. So working in a logarithmic space, that's necessary but that's not enough. And
+then there's a phenomenon called speckle, which comes from our wavelength. So so then wavelength at
+the center of the car park or radar is typically in the order of centimeters or typically, I think
+always in the order of centimeters. And because of because of that, you start getting, these kind of
+like interference, effects. And 1 of them is is is called speckle, which causes the images to look
+extremely grainy if you are looking them at full resolution or at a single look as we say. So this
+causes, very high entropy in the images, which has implications on the dimensionality, of course.
+And it also breaks almost all old school image processing techniques such as, edge detection, and
+such. On the other hand, there are some very interesting frequency domain approaches that 1 can
+take. So so there is a huge amount of information hidden,  just be below the surface. In terms of
+what you're mentioning of the physics of the problem, the fact that you're collecting this data via
+satellites also brings in the question of the, kind of level of consistency and accuracy as far as
+the kind of bounding boxes of the data that you're consuming, where on 1 pass, you're, you know,
+collecting within a particular range of latitude and longitude. And then when you pass over that
+same space on Earth, then maybe the angle of direction of the satellite has drifted briefly or,
+like, that there's, you know, even a a quarter of a degree of difference in terms of the latitudinal
+section that you're collecting. Maybe that causes enough variance in terms of the actual physical
+attributes that you're viewing that you have to account for those variances within the, kind of
+matching of the time dimensional data that you're working on across a given geographical space, and
+I'm curious kind of how much of that variance you have to account for and how much of it is
+accounted for within the kind of data collection and data preparation stages? Yeah.  In my mind,
+there there is kinda, like, 2 different ways that you can work with the the SAR data. 1 is that you
+have this, like, opportunistic, acquisitions. So you're doing multi incidence annual acquisitions.
+So it might there might be something that we cannot predict, for example another natural catastrophe
+and then because we have a large constellation of satellites, there might be some satellite not
+always the same satellite, looking at the the ground, from some direction during some time. And then
+you can gather, between 1 and 3 of these images or or or even more And then you need to make them
+fit in some kind of way. And that can be very, challenging and then you're working in in only the
+the amplitude domains. So you're only looking at images and you cannot do any, face stuff. The other
+or other part where it gets really interesting is that when you, have a so called ground track
+repeat. So if if you are able to, image from the same satellite, the same satellite is, going to,
+almost identical orbits, when it's passing through the next time. So so, we have a temporal, in in
+some of our test cases for example or in some of our cases, we have a temporal frequencies once per
+day. So we can have a satellite in orbit where it goes over the same site every day and in the
+almost the same location. And in in that case, you'll start gaining access to their face information
+and you get what, so called coherent imagery. And then that becomes very interesting and and,  you
+can withdraw a lot of information relatively easily from there. You mentioned that you're not able
+to stand on the shoulders of giants for a number of elements of the ML applications and the ways
+that you're working with that SAR data specifically. And I'm curious in terms of the overall work
+flow that you are building and the ways that you are approaching the machine learning capabilities
+within the company, what are the elements that you are able to use off the shelf and some of the
+specific areas that you have to focus on custom solutions because there isn't any prior art where
+maybe you're able to use some of the network architectures that are applicable to, kind of image
+analysis and computer vision, but you need to customize them because of the fact that it's not
+purely optical data that you're working with or, you know, maybe you're able to use some of the
+existing, like, feature stores and the typical kind of mechanical elements of the machine learning
+workflow, but you have to do a lot of customization in terms of the actual network architectures.
+I'm just curious if you can talk through some of the kind of off the shelf versus custom built
+solutions that you've had to work through.  Sure. As in most machine learning work, at least in the
+industry, the model itself isn't really the interesting part. So we like to use models that are
+proven. We like to use models that are a couple of year old, and and something that we we don't have
+to reinvent the wheel. So we can just use models, of the self in most of the cases. Of course, they
+behave, differently. So we had some interesting results. For example, we had the dense net was
+performing better than the ResNet, in some of the cases. And and we we never figure figured out why,
+but that's just a part of the job. Do a huge amount of experiments and see what happens and try to
+keep track of that. The part that we where we had to customize, that was a quite a rough awakening
+for me when I joined the company. I was thinking that I get to work on all of these cool machine
+learning applications straight out of the gate. Like, you know, Kaggle competition, here's the data,
+training model didn't exactly go like that. So, so for example, the SAR image, we, we typically work
+working in radar, gametry or so we work in SAR SAR gametry, imagery. And that means that, the x and
+y axis of the images, they are more defined in in the sense of of time than in space. And they have
+very weird kind of artifacts. They distort in in non linear ways. So so in reality, when I when I,
+joined the company, my work was to start writing libraries that can do projections. So we can even
+get the labels, that labels are typically like like a little longitude. So map map And it just to
+get the labels from map geometry into saw geometry took me a surprisingly large amount of time. And
+that same kind of like thread has continued during the years and during many different projects. For
+example I wrote this 1 library and in this 1 library I started wondering how much of this machine
+learning library is actually machine learning? And literally 90% was something else. Pre processing,
+post processing, projecting, and the machine learning part itself is just call a couple of functions
+and then you're done. Because of the fact that there is so much  extra work around the project of
+building the model and the actual building of the network or building of the of the algorithm is
+just those few function calls, how much domain knowledge have you had to acquire since joining ICI
+to be able to be effective in understanding what approaches to machine learning, what network what
+network architectures are useful, what are some of the data processing steps that you need to do to
+be able to feed it into those algorithms, and, just kind of the overall understanding of the space
+that you've had to build up to be able to then say, okay, I understand what I need to do and how I'm
+going to do it.  Quite a lot. There was a quite a big threshold in the beginning. So so the first of
+the the first, few machine learning projects that we did weren't very successful. Partially because
+we couldn't scale them up enough. So we didn't have the process infrastructure in place to, gather
+enough data. And partially because we lacked the domain knowledge to avoid all of the stumbling
+stones. And there were many stumbling stones. Luckily in the company, we have a lot of people that
+have done a long career in SAR. And we have this like large roster, excellent SAR Express that we
+can use, even though we have people like me from a machine learning background, with no previous SAR
+knowledge.  As far as the organizational aspect of using machine learning on this specialized
+problem domain, I'm curious what the kind of organizational structure of your engineering team looks
+like, kind of what the relative sizes of ML engineers versus data engineers versus software
+engineers and some of the communication patterns and, the kind of general team topology that you
+have settled on to be able to use these machine learning approaches to be able to figure out what
+are some of the, features of interest as far as the problems that we're trying to solve for, whether
+it's the flood detection that you mentioned or deforestation or being able to understand property
+damage after wildfires and just how you how the kind of organizational mission has been reflected in
+terms of that team topology and the relative focus of which strengths you need in which spaces.
+Yeah. I don't want to go too deep into the team team, topology, but but but let's say that machine
+learning people, we do models and models are not products. So what people want to buy is products.
+They want to buy something that is useful. And and the raw output from a machine learning engineer
+is is very rarely, straightaway useful. So so we do have many teams, and they are collaborating
+quite intensely to create our products based on our models.  As far as the kind of productization of
+the analytics that you're producing, I'm wondering if you can talk to the operational requirements
+that that imposes, whether you're doing largely just batch execution of, I'm going to process all of
+this data through this ML model to determine, is there a feature of interest and then pass that to a
+human operator to do confirmation, or are you doing more kind of real time detection of every time
+there's a pass over a certain geography? I wanna make sure that I can see, is there a feature of
+interest within this particular problem space that I'm addressing? Or if you're doing any sort of
+interactive inference where the ML models are being exposed through an API and getting fed certain
+requests or certain information to determine, you know, yes or no. This is something that I need to
+care about.  That depends, heavily on the product or or, that we are we are developing on. So that
+depends on what you're trying to achieve. Previously, I was talking about how an interesting amount
+of data is, but but still, the minimum unit of data that we have is is, a couple of gigabytes. So if
+you if you want to use all of the resolution on the image and if you assume a medium resolution,
+image, that means that that most of our jobs are typically batch jobs. So you want to do con divide
+and conquer. You want to run it on the cloud or you want to run it on batch jobs. We have done human
+in the loop sometimes just to to catch the bad cases, and just to, to gather more training data. So
+if the model is young, we want to be sure that it's working as we think it will work. And then when
+it makes mister mix, we want to capture those mistakes to feed them back into the training day. And
+as far as the training data and the labeling, I'm wondering  if that's another area that you've had
+to do some sort of specialization to be able to streamline the workflow where there are already, you
+know, preexisting solutions for being able to feed in a large batch of image data and do bounding
+boxes and labeling of that of the, you know, various types of objects that you're trying to detect.
+I'm curious if there if any of that is applicable to the the SAR imagery or if it's something where
+you've had to build your own workflows around, how to actually label the features of interest and be
+able to pick out the, the the interesting aspects of the, the the radar data to be able to have your
+ML models pick up on that and do the training?  Oh, yeah. There's maybe 2 points I would like to
+raise. First of all, when you're just counting that that, area on the pixels, there there's a very
+large amount of stuff that needs to be labeled. So if you want to label a single image, then you're
+laboring label label an area that might be or a single, frame of a single image. You might be
+labeling an area that's 70 kilometers times 15 kilometers. So if you're trying to click on every
+interesting thing on the ground that gets very tedious very fast, been there. Done that. And the
+second part is that the labeling platforms, as you probably have noticed, there is really a gold
+rush going on and and a lot of people are are selling the tools because during the gold rush, the
+people that got through got rich are the people selling the shovels. But we were we had a lot of
+problem in finding a nice geospatial labeling, platform. We haven't done a review in a in a while,
+but when we when we did, we found multiple platforms that did have a geospatial support to a limit,
+but then they were missing some kind of features. So we did have to end up, writing, some of our own
+solutions, which is as a engineer point of view, I never want to write my own solutions. I always
+want to to use somebody else's if possible.  Talking through the end to end workflow, you mentioned
+needing to be able to have this labeled data. You have your ML models that, as you said, are largely
+a lot of kind of data cleanup and data prep. I'm wondering if you can just talk to what that end to
+end process looks like for, saying, okay. This is the feature that I'm trying to optimize for,
+trying to detect with this model. And now I'm going to go all the way through to delivering this
+model. It's being used in a production context and kind of what production looks like for that
+particular model.  Sure. So so like I said previously, we don't want to reinvent the wheel. So so,
+ideally, we don't want to start training from scratch. We have done that multiple times, but it's
+always a very large process and too large. So so if we have the previous model that we think that is
+is on a kind of like, related domain, we want to fine tune that or or use use a self supervised
+model. Then once we have that, we will have to have some kind of labels just to tune the self
+supervised model or or the the previous model. And those labels, we have to get them into the right
+geometry. So we have this kind of backproject and prior process. So we back back project, all of the
+labels to fit the sort of geometry. Then depending on the project, what we want to do, we're
+batching usually the images. Single image is too big of a unit to put into most of the different
+models. We we're always trying to look at the literature around. We found a real some some promising
+candidates, but just because of computational memory issues, we never managed to fit a high
+resolution single image in a, single model, so you have to work with batches. So you we might want
+to, batch into a monolithic dataset, or you might want to have an iterable dataset. So sometimes,
+what we want to do is we have the sampler that, have the sampler sample the satellite images towards
+infinity and then until convergence, which has to relate from. We start prototyping typically in a
+local local machine with GPUs. I think I think that's very valuable because it has lowers the
+overhead of of, the code overhead. But at some point, the computational overhead will catch up with
+the code overhead when you start, increasing the model complexity. So then we move into our MLOps
+platform in the cloud. And in there, we can just start doing stuff like researches and and trying to
+find some parameters and running experiments. No matter what we we think that we have learned, I
+still can find that there is a very strong correlation between the number of experiments, and the
+the success of the model. So typically, the model starts working somehow on experiment number 30 and
+then it becomes useful on experiment number 60%. Production models, we don't want to run them on the
+MLF platform, we have a different, solution for that. So then we pass it into the data engineering,
+and then they turn it into a product and harden it, something that we control completely.  And in
+terms of the actual model development itself too, I'm curious how much interference you have to deal
+with where you're sending these radar signals from, you know, these orbiting satellites down to the
+ground. You're measuring the backscatter to figure out what are the actual interesting features and
+the topologies that I'm measuring. I'm curious if there are other, kind of radio signals or radar
+sources that will potentially cause interference in that backscatter result or some of the ways that
+you have to think about filtering out, maybe out of phase information or information that is, you
+know, operating at a different frequency, looking through some of the videos that ICI has on the
+overall SAR process, I know too, that you have some, frequency modulation that you do for chirping
+the signals to be able to get more information out as the satellite traverse is over a particular
+range of its orbit. I'm just wondering kind of how much of that noise and interference you have to
+contend with in the process of trying to pull out this useful information.  Sure. Sure. So so, we do
+have some RFI interference sometimes. So we attempt to filter it out, but sometimes it comes
+through. Typical example might be that if you're, imaging a harbor, there might be a maritime radar
+in there. And if you get unlucky, it will it can, take a quite a large portion of the image and and
+create an artifact that is not, acceptable. And then you have to do something about it. Another 1 is
+that the the images, they look like images to our eyes, maybe because we're we're we're so used to
+looking at stuff in the optical domain. But maybe a bad analog is that that, the the image, it more
+resembles how a bat sees world than how a human sees world. So so things, are measured in in
+distance and in time, more than, distance and in time and then the box scatter intensity, more than
+than, like the the the analogs in the optical domain. This causes, artifacts called ambiguities. And
+because, quite often, 2 different things can be exactly the same distance from the radar. And that
+might cause a situation, where it's impossible for the radar, or the signal processing side, to to
+direct, which is which. And then when you're looking at it, in the image, you can have, objects that
+are impossible, floating, in a in a wrong location and those are ambiguities. Another, example of
+that, that is that when you are compressing the, the sourcing all into these, images, you are making
+this so called 0 Doppler assumption. So you are making a assumption that the thing that you are
+monitoring in the ground, is going to be static or it's not gonna be moving. If and when you break
+that assumption, for example, if there is a train moving at a large speed, there will be a resulting
+displacement. We will not be able to geolocate the, the the location of the, train. And the train
+will appear in a different part of the image. So, what this looks like for an outside observer is
+that it looks like that there's a flying train, 50 meters away from the, train track. And that's
+just something that it's not an artifact in the sense that it's something that we did wrong. It's an
+artifact in the in that sense that that's just how the SORINs works. And then once you have the ML
+model, you're using it to generate outputs and  flag certain features of interest. I know too that
+some of the output of what you're providing is some maybe map representations to show this is some
+of the physical damage that has occurred because of this wildfire, and we're able to detect that
+using the SAR imagery. But you don't want to have a human just looking at the raw SAR output because
+it's going to largely be incomprehensible. You need to put it into some representation that is,
+understandable to human observers and and, kind of a human level representation of that. I'm
+wondering what are some of the complexities that you have in terms of mapping some of the outputs of
+the machine learning models that you're building to a, you know, a a a map or a coloring a
+particular region of a map based on the feature detection that you're doing within the model and
+just some of that, kind of product level comparison between, I have this model. It tells me this 1
+thing. Now I need to figure out how to turn that into something that is understood by somebody who
+doesn't have all of this domain knowledge about SAR and geography and, you know, satellite imagery.
+Yeah. Models are not products. So so in order for them to be useful, in order for order for us to
+sell them, we have to transform them into some say in some ways. And here, if you're thinking about
+it, the compression ratio can be quite amusing. So so if you're thinking about it, you have
+satellite image that's 2 gigabytes or something like that and 100 of millions of pixels. And what
+you want to do is compress it into an Excel table. So so it might turn into a single column in Excel
+table, and that's the the resulting output. Quite often in machine learning, at least on our side
+also, it might be that we're only providing a partial answer. So so, we have a partial answer to a
+question question, and then we have to do something else, sometimes something significantly
+different in order for us to do, be able to use that product. So for example, those, I was
+previously mentioning those flood images. So we have this machine learning model that is, turning
+our images into flood segmentation maps. But, those in in in some itself,  they will still have to
+be passed through other models in order for to be able to use the import. Given the fact that SAR
+data and even Earth imaging are still very niche domains that aren't kind of widely adopted
+throughout the industry, and a lot of the kind of technology space is focused on widely different
+problem spaces and data types. I'm wondering how that influences your ability to hire for open
+positions within your team and some of the ways that you think about onboarding as well as some of
+the ways that you think about, how the work that you're doing can be propagated back out to other
+practitioners in the space. And if there's any sort of kind of open source policy you have around,
+you know, these are some of the useful techniques that we have for data cleaning and data prep for
+SAR data. We want to make this, something that is more widely adopted, and so we want to kind of
+ease the on ramp for other people who are trying to solve adjacent problems within the same data
+domain?  For sure. Somebody with deep machine learning and our knowledge, that would be a unicorn.
+So so typically people are missing either or. I think it's very, very expected and very healthy for
+people to have to spend some time learning their ropes when they join the company. Nowadays, it
+seems like that every SOR practitioners or everybody is trying to go into machine learning or
+everybody is going to machine learning. So I think that will change with time. But but right now,
+know, it's very expected that if you hire a machine learning engineer, most likely, they will not
+have SAR, knowledge. If they have Earth observation knowledge, that's already really great. There's,
+like, a quote from an astronaut that he was saying, it's easier to teach a geologist to be an
+astronaut than a astronaut to be a geologist. So in that kind in any case, I don't know which 1 is
+which. Is it harder to do machine learning or is it harder to choose R? But but I do know that
+machine learning is getting much easier every year. While finding the right problem can be very
+hard. So so if you want to have less, like, pre done images and then train a convolutional model to
+do something, it's so easy to find somebody to do that. But to find somebody that finds the right
+right problems, find finds interesting new approaches, cancel, like, hard technical stuff when the
+obstruction start to leak, that's very hard. Sometimes we we we we were starting now to see the the
+the kind of flip side of that that Python does. They now import PyTorch and then then you're done
+with it. Sometimes you see people that do have very advanced machine learning models, but they are
+lacking some of the fundamentals or the basics. So so, very advanced models, multisize models that
+do some very advanced stuff, but then lack the understanding of how the basic components of those
+models work. I'm very much an engineer by education, so I don't really mind. As long as stuff works,
+it's great. At the same time, if you don't understand the subcomponents, it's fine when stuff works,
+but when stuff stops working, you get some very intractable errors. Some very complicated, things
+that can take weeks or months to untangle.  And another interesting aspect of the problem space that
+you're working in is that it is potentially adjacent to other kind of 3 d imaging approaches. I'm
+thinking in particular around, capabilities like LIDAR and then also some of the ways that your,
+processing techniques for the SAR data can also be mapped back into computer vision and object
+recognition. And I'm wondering what are some of the opportunities for cross pollination between the
+work that you're doing and the work that's being done in things like self driving cars, and then
+vice versa from things like lidar into the SAR domain, and, you know, what are the areas where
+they're completely disjoint?  Of course, challenge bridge solutions. So so if you have a hard enough
+challenge, it doesn't really matter what the challenge is about because, people will still still
+have to innovate in order for them to meet that. So so I would use maybe as an example that that
+really, great, you know, technology stacks coming out of Uber or, of course, Facebook AI research or
+or, you know, people like that. Sadly, in the store, I can only think of it going the other way
+around. So we are we're kind of taking the lessons and not giving them. Maybe the closest analog
+field for me would be magnetic resonance imaging. They they they share, share quite a lot, in of of
+kinda like the background of things that, we are doing. And I really admire the way that they work,
+effortlessly with their case basis. So so they have a long culture of working in the frequency
+domain and, like doing work in there. Particular example would be, I, I really, enjoy the way that
+they do compressed sensing, almost routinely. For them, compressed sensing, not meaning in the sense
+of of trying to improve the resolution or something like that because that always gets all of the,
+old school Earth observation guys super angry. But, I mean, that in the sense that, you try to take
+the best possible image given an imaging budget time. That's something that they do quite a lot in
+MRI, and I hope that at some day, we could start, applying some of those techniques to take the best
+possible SAR image given an image acquisition, limited image acquisition  time. And in terms of the
+work that you have been doing at ICI and working with SAR data and building ML solutions on top of
+that, what are some of the most interesting or innovative or unexpected ways either that you have
+seen ML approaches applied to this SAR data domain or some of the most interesting or innovative or
+unexpected ways that you have seen the outputs of your ML efforts used for other purposes?  Sadly,
+the when when when asking asking about the the most interesting parts about in the SAW, I I wouldn't
+maybe answer machine learning yet. So so machine learning for me, it's it's this is kinda like
+production factory and the scaling factory. Maybe the most important part, if if I'm allowed to do,
+to change the answer, it might be my my most important part about the SAR imaging is the, INSAR. So
+that's what happens when you got this repeat track and you have this coherent images, and then you
+start, getting the image, them Observation geometries so near each other, that you can start taking
+into advantage the the, wave nature of this or the longer wavelengths and the wave nature of these
+acquisitions. And because of, that you can start doing interferometric techniques. And by applying
+some of those interferometric techniques, you can start, looking at features, of height differences,
+of sometimes millimeters. So you are in this situation that you are 500 kilometers above the ground
+in low Earth, orbit and you can measure tire tracks that appear in the middle of a field or you can
+measure a herd, of cattle moving around in a field because you can see their footprints from a
+space. That's, for me, something that it it has never lost my the the magic, while I've been working
+with SAR imagery. And, of course, nowadays, quite a lot of people working with machine learning and
+not in SAR. But that's, quite a hard combination because, at least in my mind, machine learning is
+all, has been historically better in in getting this fuzzy ideas that the this thing is
+approximately like this, and being very robust about it. But it's quite hard to make machine
+learning models that are extremely accurate and to the level that you need to be in order for
+looking at tire tracks from from space. Absolutely. And another challenge of any machine learning
+problem is the availability of data, which is something that is, I I I don't see that as being a
+problem for you in the company that you're at since you are running your own satellites. You're
+doing massive scale collection of all of this information across the globe on a continuous basis.
+And I'm curious how much of that you're able to, provide as a useful dataset similar to kind of
+ImageNet for computer vision, to help to  encourage more people to start leveraging SAR data for
+different problems that they're trying to solve? I would love to do that. I would love to do that.
+It's above my pay pay grade, but but I really need to pitch that. So so 1 thing we do have is our
+SOAR archive. And, by this point, SOAR archive is massive. And we are working right now, on self
+supervision, for example. And and, of course, it's a bit of a fashion topic right now, but what I I
+think if we would have a, like, a self supervised baseline model, available for the community, that
+will help a lot. I remember still being in the university, and we were completely dependent on the
+company's data, and that would limit and and bottleneck almost all of your projects. So that was 1
+of the biggest improvements for me is when you're booking the company and you have control over your
+own data generator. It takes the work to the next level. And  as you continue to build different
+models, you continue to iterate on the capabilities and the overall workflow. I'm curious, what are
+some of the, near to medium term projects you have planned for ML applications at ICI or any
+particular problem spaces that you're excited to dig into?  For example, the project I'm working on
+right now. So I'm I'm working on self supervision. And the idea is that as we have this, like, large
+constellation of satellites, all of these satellites, they are slightly individual in that sense
+that their calibrations vary slightly. They are different ages. And then, of course, you have the
+situation that they there's a very strong incidence angle dependency. So if you want to create
+classifiers or or segmentation models, you have to have a very large amount of incidence angles,
+ideally all of them, represented in the training dataset. So because of that, when you're training
+something from scratch, you need a very large amount of training data, which is, unfortunate. You
+don't want to reinvent the wheel every time. But we do have this archive, and we have the self
+supervised models. So we can train a self supervised model, and then we're gonna use it as a
+backbone or fine tune it or whatever we want to do to do with that. And that general is quite a lot
+better. A newer initiative that's something that I'm I've been, trying is that, have a self
+supervised model, that you don't really train in batches, batches, but something that you train
+continuously. So you're having it up on a cloud machine, and it's up there all of the time. Then it
+sees a dataset, and the dataset gets, updated all of the time also. So, as we get new acquisitions,
+we can now satellite images. Those satellite images are getting pulled into the instance and then
+the instance is training the model continuously. The the training never stops. And then when you
+need need a new model, you can always pull the model from that instance and you can, use that model,
+as the baseline model and expect it to represent the distribution of the satellites and the
+calibrations and the incident signals happening right now, quite well. So that that's a project that
+is still deep into r and d phase phase, but something that I've been working on on.  And are there
+any other aspects of this SAR data domain and the work that you're doing at ICI and the different
+applications of ML for this Earth imagery with SAR data that we didn't discuss yet that you'd like
+to cover before we close out the show? I think that those are all the points that I wanted to make.
+Thank you. Well, for anybody who wants to get in touch with you and follow along with the work that
+you're doing, I'll have you add your preferred contact information to the show notes. And as the
+final question, I'd like to get your perspective on what you see as being the biggest barrier to
+adoption for machine learning today. Biggest biggest barrier to adoption for machine learning today.
+Right now, you can see people are really smashing through the barriers. I don't think there are
+gonna be a new AI winter.  The opposite, the things are overheating. So much people are coming into
+the field, and so much people are working on that. What I would like to see is I would like to see
+the the machine learning spill even more into different domains. So if you're looking at
+universities and research labs, all of the research labs, they're always starting machine learning
+groups and the universities are starting machine learning groups. I would love to see more machine
+learning in in material science, for example. That's where the new ground is and that that's where
+the really exciting things will happen, I think, is that when they take the the, not not only
+necessarily the the basic models of machine learning, but the approach of machine learning on
+iterating and the approach of machine learning on approaching a problem and and get, generating and
+gathering data. I think very interesting things will are going to happen. Alright. Well, thank you
+very much for taking the time today to join me and share the work that you've been doing at ICI to
+bring ML solutions to this SAR data domain and the overall  capabilities of Earth Imaging. It's
+definitely very exciting problem space. Definitely great to, see the work that you and your team are
+doing. So I appreciate that, and I hope you enjoy the rest of your day. Thank you very much. Thanks
+for having me. Have a nice rest of the day. Thank you for listening, and don't forget to check out
+our other shows, the Data Engineering Podcast, which covers the latest in modern data management,
+and podcasts. Init, which covers the Python language, its community, and the innovative ways it is
+being used. You can visit the site at the machine learning podcast.com to subscribe to the show,
+sign up for the mailing list, and read the show notes. And if you've learned something or tried out
+a project from the show, then tell us about it. Email hosts at themachinelearningpodcast.com with
+your story. To help other people find the show, please leave a review on Apple Podcasts and tell
+your friends and coworkers.

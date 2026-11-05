@@ -1,0 +1,293 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/03/SED1919-FireworksAI.txt
+EPISODE: Open-Weight AI Models
+DATE: 2026-04-28
+SED: 1919
+HOSTS: Gregor Vand
+PAGE: https://softwareengineeringdaily.com/podcasts/open-weight-ai-models/
+----------------------------------------------------------------------
+
+EPISODE 1919
+
+
+[INTRODUCTION]
+
+
+[0:00:00] ANNOUNCER: Open-weight models are AI systems whose trained parameters are publicly released, which allows developers to run, fine-tune and deploy them independently rather than accessing them only through a hosted API. While closed-weight models from companies like OpenAI or Anthropic are delivered as managed services, open-weight models give organizations direct control over how the models are deployed and used. Importantly, the performance of these models is steadily improving, and they've become credible alternatives for production workloads with advantages in customization and data privacy.
+
+Fireworks AI is building a platform focused on serving and customizing open-weight models at scale. The platform includes optimized inference infrastructure, multi-hardware support across NVIDIA and AMD, and reinforcement fine-tuning capabilities.
+
+Benny Chen is a Co-Founder of Fireworks AI. In this episode, he joins Gregor Vand to discuss his path from Meta's ML infrastructure teams to co-founding Fireworks AI, why open-weight models are becoming increasingly competitive, how custom kernels and speculative decoding improve performance, reinforcement fine-tuning, and much more.
+
+Gregor Vand is a security-focused technologist, having previously been a CTO across cybersecurity, cyber insurance and general software engineering companies. He is based in Singapore and can be found via his profile at vand.hk or on LinkedIn.
+
+[INTERVIEW]
+
+
+[0:01:45] GV: Hello, and welcome to Software Engineering Daily. My guest today is Benny Chen. Welcome, Benny.
+
+[0:01:51] BC: Thanks for having me.
+
+[0:01:52] GV: Yeah, great to have you here. So, we're going to be talking all about Fireworks AI, which is a company that I believe you co-founded, I think, three and a half years ago. Is that right?
+
+[0:02:04] BC: Yeah. So before we dive into Fireworks AI - and, I think, especially today, this is quite pertinent to sort of where maybe Fireworks AI came from. You spent a lot of time at Meta and in their ML team, which means you were doing things with ML probably way before many of us really had it on our radar. But what was kind of your path? What's been your path through software engineering and especially the Meta phase as well?
+
+[0:02:36] BC: Yeah, that's definitely - it's been a while. What the journey was like in the beginning. In the very beginning, I joined as a software engineer in 2014 on the integrity team, where most of, I would say, the sort of non-recommendation system experiment started.
+
+Early on, it was sort of decision trees for different fraud behaviors. And then, also on the team, we started doing image classifiers for different rules for advertising. And then come 2016, switched over to the ads infrastructure. Worked on supporting the recommendation system models. And then in 2017, I think the Facebook leadership back then started thinking about having an ASIC in-house that's more like Google's TPU. So we started collaborating with Intel back then on an ASIC for recommendation systems. If there's anything about doing something that's not cool before everyone remembers, definitely doing ASICs in 2017 isn't necessarily cool. But yeah, it was a interesting project for sure.
+
+And I always tell people that the ASICs I worked on supporting back then was 17 watts. If you look at the new NVIDIA GPUs, that's like 1000 watts. Some of the peripherals on that chip is more than 17 watts. But yeah, it was a very small chip. It's like how many years ago? Almost nine years ago. Nine years ago, at this point. So it's like time really flies, and things really change up quickly in Bay Area, I guess.
+
+But yeah, worked on supporting that chip for about 2 years. And then fast forward, NVIDIA started shipping A100s. That's when everyone realizes, "Hey, I guess AICSs are not going to be as good as A100s." And then worked on supporting the PyTorch enablement for all the ads models in 2019, 2020, around the pandemic time. But yeah, NVIDIA also wasn't a huge
+
+company back then. I probably should have just loaded up on NVIDIA stock rather than doing anything else. And after that, it was sort of like all the Nvidia GPUs for another two years until we decided that it was time to start something new and then started working on Fireworks.
+
+[0:05:12] GV: Yeah. Nice. Because yeah, I was going to sort of ask, I guess. Yeah, why leave Meta, I guess? But I mean, everyone's always got their own reasons for doing their tenure at one of the big tech and then starting their own thing. But was there a sort of defining moment for you? Was it just like the time is now or you know?
+
+[0:05:30] BC: Yeah, to be frank, I probably could have premeditated more. I probably could have think it through more analytically. At the same time, I do think AI infrastructure will take off. We, in fact, started before ChatGPT came out. So we couldn't time it better. We started maybe like 5, 6 months before ChatGPT was shipped.
+
+But yeah, it's not so much that there's any particular trigger, but definitely being at Meta for about eight years. I mean, all good show must end, right?
+
+[0:06:03] GV: Yeah, absolutely.
+
+
+[0:06:05] BC: And for me, I think I also maybe is a little bit more risk prone than some of my friends. I do think taking on more risk is a good thing. So, I probably didn't think it through as hard as I should have in retrospect.
+
+[0:06:19] GV: Yeah. But I mean, that's where some of the best things come from. Yeah, and that's probably why we're sitting here today speaking about Fireworks AI, which I think, yeah, let's get on to what you did next. Let's just sort of start a super high level. What is Fireworks AI?
+
+[0:06:35] BC: Yeah, Fireworks is a platform that serves and train open source models. And we mostly stuck to that mission since ChatGPT shipped till today. And to be frank, our play hasn't been super sophisticated for our customers. At the same time, the work itself is very complicated, and a lot of our customer appreciate the support we're able to give them.
+
+Specifically, a lot of our customers are very - they're either AI native or they are very AI-leaning enterprises who are looking to either offer products that's based on language models or looking for automating large part of their organization through large language models. We're here to help them customize their open source models and then scale them up.
+
+A lot of startups we work with also start with the frontier models. And as they scale, they needed to make sure that their unit economics are good. And we're here to help customize open source model, so they can reduce their total cost of ownership for their customers and start making money. In general, I really appreciate a lot of our customer support for having trust in such a young company versus all the big clouds and other offerings out there. And yeah, we're here to help.
+
+[0:07:54] GV: Nice. And I think, usually, we kind of, later in episodes, go into sort of customer stories, I guess. But I think one that's maybe useful to pull out now to help set the scene for the listeners is Cursor. I believe that you guys do work with Cursor. I'm taking a guess that this is, for example, when - well, I think code completion is one area that you guys supply to Cursor. Could you just talk a little bit about that? Because I think that's going to help kind of set the scene for the rest of the episode just in terms of what does Fireworks actually do and for whom. Yeah.
+
+[0:08:29] BC: Yeah. Honestly, the Cursor people are amazing. And we're mostly here to help support them. I think early on, a lot of work around supporting Cursor was their custom models, like tapped and editing models. And we helped design solutions that would work very fast with their model in a cost effective way. I think one thing that we publicized early on was the fast supply model we serve for Cursor, which require a lot of special support for speculative decoding in order to support the model properly with fast decoding.
+
+In those settings, inside the editor, you want to edit a very large file in one go. A lot of times, there's a lot of nuances on how to serve those kind of models. And we work with them to set up sort of a dedicated algorithm so that we can serve those models very, very cost effectively.
+Yeah. And I think recently, Cursor also published a blog around how to do online learning with their tab models. Yeah, they are a very sophisticated team.
+
+[0:09:44] GV: Yeah. No. I mean, I've been a fan of Cursor for a long time, I think, since it almost came about. Unfortunately, I don't do as much hands-on coding today as I did even 18 months ago, but that's just a function of where I've gone in in life. But, yeah, still love Cursor as a product. Still use it if I do code.
+
+Let's kind of walk through some of, I guess, the features, if you like, of how Fireworks' inference infra actually operates. I mean, just to kind of give some scale idea here. I probably should have mentioned this at the start. But you guys process something 13 trillion tokens a day. Is that right?
+
+[0:10:26] BC: Yeah. Yeah. And I think I'm probably not here to share the latest numbers. But at the same time, I think the 13 trillion number was larger than the Gemini and OpenAI number they shared for their APIs. I think Gemini was like 10, 11 trillion, give or take. And we've been growing quite a bit since we shared a number last time as well.
+
+But yeah, open source models are very strong. Definitely, it was a leap of faith from us to focus on open source models. At the same time, I'm very pleasantly surprised on how strong the open source model has been getting to a point where it is price competitive against closed source models. This year, and just in the beginning of this year, is amazing.
+
+I do think a lot of open-source models last year shows promising benchmark scores but are not competitive end-to-end. I think what really helped set the scene this year is when OpenClaw came out, which, one, people realized, "Wow, these models are amazing." Two, "Wow, these models are expensive."
+
+I had a friend who set up OpenClaw, and he's like, "Yeah, this is so good. At the same time, I don't know why one message cost me a million tokens. Just send one message on Telegram, and then a million token gone. He doesn't even know where it went. Just sees the money going away. And two, yeah, a lot of the open source models that are offered are very competitive in like a real OpenClaw setting, where you don't necessarily want the most expensive model just to book you a restaurant. You probably just want something normal can book you a restaurant but with 120th of the price. Yeah, I think there's a lot of competition heating up. And Fireworks is here to support the open- source model thing as much as we can.
+
+[0:12:18] GV: I mean, would it be fair to say that because you came from Meta ultimately, and they had been working - well, the things I'm trying to line up the timelines here, which is Llama. And was that really a thing internally when you were still at Meta? Or did that only really come out? What I'm getting at is were you already working on something Llama related before you left, and that got your kind of brain jogging on these open-weight models, or not really?
+
+[0:12:49] BC: Maybe the closest answer is kind of. When I was working at Meta, the Llama, or like the Large Language Model Program, wasn't really that well-funded. It was different from where OpenAI was doing the YOLO run for like GPT-4 and with like - I forgot. Thousands of A100s. There was nowhere near as much of a commitment in Meta back then as of now.
+
+But I worked a lot on recommendation system models that had transformers. And there was a clear sign where you just throw more compute at the problem, and the model just gets better. The ROI for those increased compute may or may not be worth it. At the same time, there was a clear trend. While people were talking about scaling laws for language models, I guess we were sort of seeing the scaling law for recommendation system models in real-time as well. The migration between the tiny 17-watt A6 into the 200, 300-watts A100, there was a clear payoff for that. And then keep on migrating to H100, there was also a clear payoff for that as well. Yeah, I guess I was working in related fields and seeing the scaling law working but in a different way.
+
+At the same time, I think the commitment or the belief in open source models right now seems obvious, but I think it was definitely contrarian 3 years ago. People forget the models we had back then were OPT, Llama 1, and Falcon. And if those models could hold a three-turn conversation, that was already amazing. And people also forget, three years ago, there was no function calling. We also worked on open sourcing function calling models, which wasn't really a straightforward thing back then.
+
+Yeah, I would say it wasn't straightforward at all to say, hey, Llama is here, and it's here to stay. In fact, it's not here to stay anymore. But sort of the belief we had, because we worked on open source software for so long, and sort of the belief that the models are more software rather than some kind of hardware kind of setup. I think that sort of leap of faith was important for us and I think carried a lot of weight even in today.
+
+[0:15:07] GV: Yeah. And I realize we're sticking a lot on models generally. But I think this is quite interesting just for a second. I mean, I think, just to be clear, a lot of these open - well, first of all, just to clarify. You mentioned open source models. I mean, is there a distinction here open-weight? Are you using interchangeably with open-weight or - yeah.
+
+[0:15:28] BC: I am using it interchangeably. And then for all the people out there who really understand the distinction, I think they will hate me for using these term interchangeably. I'm more of an attitude where I don't really make those distinction when the goodies are still flowing to be honest. As long as the final artifact is produced, I think it's good.
+
+But I have huge respect to both the Olmo team and the Nemotron team. The Olmo team is Allen AI. They have funding from NFS, as well as, I think, other sources. And they really publish all the results, as well as all the intermediate artifacts. I think that's like a really good foundational work for everyone working in the field. And then I think NVIDIA also is really committing to keep pushing on open source models. And they also publish all their trainer code or their recipes to benefit the community.
+
+[0:16:22] GV: Yeah, absolutely. Yeah, I guess to keep some of our listener base happy when we talk about open-weight models, which is a lot of, I guess, what Fireworks is working with. If I look at most of those names, well, especially on the Fireworks platform site, but I think just known generally, they're mostly coming, would it be fair to say, from Chinese companies and Chinese tech? Is that a good way to -
+
+[0:16:47] BC: Yeah.
+
+
+[0:16:47] GV: Yeah. Yeah. I mean, I'm someone who's based in Asia. I fully appreciate just the amazing talent and innovation that comes out of this part of the world. And I think it is helpful to maybe just talk through have you hit any bumps with the fact that you are a US company and then pushing models like this from that part of the world? I'm just curious how that looks, because it's something that obviously gets talked a lot about maybe in the news even, especially when DeepSeek landed. If you want to call it that. And I think all that's kind of settled down to some respect. But what was your thinking around all of that when putting these models into fireworks?
+
+[0:17:25] BC: Yeah, I think that's a good question. I would say 90% of our customers don't really care about the origin of the model, especially if they are doing fine-tuning, because they will be sort of running these models in very specific environments. For example, for coding environment, often you don't really care about the political preference for these models because you're just writing React, Rust. It doesn't really matter as much.
+
+And then, definitely, for certain customers who are more consumer-facing, they are much more aware of the origin of the model. And we are more constrained to serve things like Nemotron, gpt-oss, these kind of American models. I do think Fireworks is here to help support our customers. And we don't really judge why are they making these distinctions. We're just here to help support them as much as we can. Mistral people also do a great job, and they also publish very strong models. And sometimes we also serve Mistral model as well.
+
+Yeah, I will say one thing I keep chatting with my colleagues on for - it's like a year on. And gpt- oss is surprisingly competitive today amongst all the American models. Huge respect for OpenAI as well for open sourcing the model back then. Yeah, there are new models coming out every day from NVIDIA, from Olmo. Those are also getting more competitive. And I do think, at the end of the day, given like the same data set and the same model size, the results will converge. And then the data set should converge as people start sharing more and more of those intermediate artifacts and recipes. I bet the American models will catch up this year very quickly.
+
+I honestly feel there's so little secret out there today. I feel there's so many conversation, I mean, where people think they have alpha, and then they sort of exchange notes, and be like, "Oh, I didn't realize some other people are doing the same thing." But yeah, I do think a lot of things will converge, and American models will be very competitive this year.
+
+[0:19:27] GV: Yeah. And I guess Fireworks has a platform, which we're going to get into in more detail in a second. But I guess part of your offering is to help your customers understand which model would suit their case best. BecauseI think, at least to me, when I was doing a bit more hands-on, call it, 12 months ago, I think trying to pick through which model. Why? Even the, "Okay, this is kind of the same model, but one's like 4B and one's 16B, or whatever." This is, I'm
+
+sure, where you're actually able to give more direction and input to your customers given the size of them. And this isn't just a - you can't kind of make the "wrong decision" on these.
+
+[0:20:09] BC: Yeah, that's a good question. How we talk with our customer on when to use which model depend on the use case quite a bit. I would say for probably a third of the use case, our customer is more sophisticated than us. They have run the evaluations in-house. They explicitly come to us and be like, "This is the model you need to serve. Don't argue with me. I will pay you for this. Just serve this model."
+
+And then one-third is more somewhere in the middle, where they kind of know they're going to pick between two or three models. They mostly need some judgment call on the cost of serving on whether it scales on our platform. They run the evaluation locally, and then they just need to know the cost or the scalability of the setup.
+
+And then the last one-third is where the customer are really looking for us for advice on which model to use in which use case. And in those cases, we share our evaluation results internally and try to paint a full picture on, "Hey, this model is much better at coding. This model is much more malleable and a good starting point for reinforcement learning." And show them the data point and give them the judgment call.
+
+To answer that question more concretely, for example, a lot of choices are more nuanced depending on what you want to do. For example, Kimi is a very big model. So it's very easy to do reinforcement learning or fine-tune on it. Easy as in like infrastructure. It's difficult. But it's easy to push results out of big model rather than trying to RL a small model and try to get the small model to be smarter.
+
+At the same time, the evaluation initially may be worse. Then it is not going to be obvious to our customers, "Hey, Kimi is a much better starting point than a lot of other models." For example, when uh some of our customers are just looking to serve open source models and not customize, then, for example, if it's like a coding use case, then GLM and MiniMax, both are great. And then just depends on the cost effectiveness depending on their use case. We help try to paint a full picture to our customers and still rely on them to decide what's the best for them.
+
+[0:22:15] GV: Yeah. No, it's very interesting. I maybe hadn't appreciated, yeah, what you said towards the beginning, a good chunk of people come and just say, "This is the model. Already figured that one out. Just run it for me." Let's get on to the just run it for me bit. You have quite advanced infra as it has to be running all of this. I believe you have things called, or a piece of the puzzle, called FireAttention, for example. Maybe could you walk us through what is that? Let's just kind of start there, and we can go through some of these interesting bits of the Fireworks stack.
+
+[0:22:51] BC: Yeah, we've set up our own kernel in-house for a few reasons. One, a lot of kernels in the open source world are not numerically pristine in the sense that it will work. It may not work in the way that you expected, or it may not be working because of the reason you think it's working. There's always new kernels coming out every which way. We try to make sure our customer, when they use Fireworks to serve the model, they don't think about all the complexity for all these weird kernels. They just understand that we provide the best trade-off between quality and speed. We'll push as much as we can on speed but not compromise on quality. And a lot of our customer appreciate that. That's sort of the first reason why we set the kernels in- house.
+
+The second reason is we have a very, I would say, expensive but important commitment to do multi-hardware. So we work with AMD team quite a bit to make sure we can properly support their hardware. And not everyone is willing to sink the time and effort into supporting different hardware. Yeah, we set up those AMD kernels in-house as well just to make sure that we can serve on different hardwares and try to find the best price for our customers.
+
+And also, maybe the last reason I can go through on these internal fire attention kernels is because we do a lot of reinforcement learning workload. Making sure that the training inference consistency is minimized is very, very important. You see a lot of fancy algorithm getting published every day. There's so many variants of GRPO at this point. I bet if you put two random letters in front of it, there's probably a paper for it. I would not know where it came from, but there's probably a paper on it, or all three letters for certain people.
+
+But from our observation, those algorithms are important but not as important as controlling the numeric and making sure the numerics are aligned across training inference. You see a lot of
+
+headlines on, "Hey, there's a reinforcement learning stack where we use trainer from one stack and inference from another stack. And then it should just work for a big model." From our experience, it's far from it. We really take it seriously and make sure that we align the numeric across training inference for those kernels. That's why we have to have those in-house. And that's why we have to spend all the sweat and tears, so then our customer don't have to think twice and be like, "Hey, did these people do their job? And is this RL run not going up because their numeric sucks?" We try to really make sure our customer trust us to make those happen.
+
+[0:25:32] GV: Yeah. And then something called speculative decoding, which again maybe context-wise, I believe cursor built their fast apply feature on this API. Could you maybe just like speak to that?
+
+[0:25:47] BC: Yeah, speculative decoding, I would say, at this point is a pretty well-known concept for many serving stack. It's a setup where you have a small model that try to guess which token the big model would like, and just ask the big model, "Do you like these tokens? If yes, let's spit them out all at the same time."
+
+There's a lot of interesting research in this area. I think, recently, there's using different model architectures to do the speculation. We also spent a lot of time doing those research in-house. Yeah, speculative decoding is definitely also workload dependent and making sure that we can train different form of specular decoding models while the data is coming in to make sure that we keep up with the change in distribution in our customers data. Those are also very important as well.
+
+I think one other thing that people often don't appreciate enough is that training an ego model is often like training a large language model, or like a training a small language model, in the sense that data quality is important, training infrastructure is important, dev efficiency on the stack is important. There's a lot of nuances on how we can support our customer with good speculative decoding models. And we spend a lot of time and effort on that, making sure that when they bring a open source model that they fine-tune, we can quickly train a really good speculative model for them.
+
+[0:27:07] GV: Yeah, because I was going to sort of just ask this. Yeah, the idea of you got effectively a sort of draft model and a target model. And I guess you're hinting that the target model is often actually the customer's fine-tuned model, and Fireworks is needing to pair that speculative draft model. Yeah.
+
+[0:27:26] BC: Absolutely. A lot of our customers are very, very sophisticated. They may have most of the things 70%, 80% of way there. And we are here to, let's say, deploy the model, scale the model. And often part of scaling the model is to train the speculator for them as well.
+
+[0:27:41] GV: Yeah. Nice. And then you have something called 3D FireOptimizer. Yeah, I'll just let you take that one.
+
+[0:27:49] BC: Yeah, I think it's an interesting name when we came up with the concept.
+
+
+[0:27:54] GV: It sounds something you might find in gaming. Yeah, that's quite interesting.
+
+
+[0:27:57] BC: Yeah. I think, conceptually, it's very straightforward, though. It's a database of all the previous performance optimization results we have, as well as predicted results of what the customer workload will be. Because there's so many dimension to do trade-offs. For example, workload patterns, hardware types, cache hit rate, many, many different variants to deploy the same workload. And it's important for us to be able to scale the engagements for our customers in an automated way. We have a database for these performance optimization techniques that our automation can make use of and make sure that we can get back to our customer and answer very quickly. Yeah. Oftentimes, how to set up the workflow correctly is like 50% of the work. And 3D optimizer is an in-house stack that helps us get there.
+
+[0:28:51] GV: Nice. And then, I mean, you have mentioned hardware, I think, especially in relation to the FireAttention kernel. You are a sort of hardware agnostic, if you like, shop. And by agnostic, I mean, we're talking basically two providers, because that's kind of what it boils down to. But, yeah. I mean, what is your thought process apart? I mean, let's assume that cost comes into it somewhere. But cost plus what else sort of is what you're looking at when you're deciding NVIDIA and AMD, basically, which I believe you run both.
+
+[0:29:23] BC: And just to be clear, both are our investors. I don't want to -
+
+
+[0:29:28] GV: Gotcha.
+
+
+[0:29:30] BC: We do love NVIDIA and work a lot with NVIDIA, just to be clear. I do think when we're running a business, we need to make sure we maximize our customer value. And in the world where we maximize customer value, it's definitely a little bit weird to be locked into one hardware vendor.
+
+And I really think this year is honestly not so much about loyalty to NVIDIA and whatnot, because NVIDIA is already producing chips as fast as it can. It's just that everyone else is buying them up. Practically speaking, as well for multi-hardware vendor, oftentimes it's all about supply chain reliability. Making sure that you can actually buy the cards when you have the money. And at any point in time, there may not be NVIDIA cards available, and you have to buy AMD cards. Available as in like available at reasonable price. Because, of course, if you are willing to pay, there's always someone willing to sell you. It's just that the premium will be very, very high.
+
+And honestly, while I was working at Meta, because I worked on ASICs, I was also in conversation with all the procurement process. Of course, I'm not the one negotiating the contract. But because I was on as a team, I was providing all the inputs on like how many CPUs and GPUs we need. And often, in those - even very early on in those conversations, it was AMD and Intel for CPUs back then. And it was important back then even just to have a dual supply strategy that works surprisingly well.
+
+In case where people think two suppliers may or may not be enough, oftentimes it is enough. It will be great when you have three suppliers. That's really when you get to benefit. But having more than one is very, very helpful. And that sort of is ingrained into how I think about this process. And that's why multi-hardware is so important for us. And I do want to be honest about it, that it is a lot of work. And there's always a tradeoff between working on AMD for FireAttention versus working on other stuff that we can serve our customer better. At the same time, we really believe that the AMD investment will pay off.
+
+[0:31:40] GV: Yeah, I think it's really, really helpful, I'm sure, for our listeners to hear just sort of actually what are the things that you have to consider when running something like this. And obviously, investors come into it as well. I think that's what people forget about as well, is most companies in the space have investors. And that will often have a bearing on some direction at some stage as well. I think that's really helpful.
+
+Let's maybe sort of move on to evals. I mean, most of our listener base should be, I think, somewhat familiar with the concept of evals and why it's important to anything, especially running your own or wanting to fine-tune your own models, but even just picking between models as well. And I think, at least as a company, you've kind of made the sort of statement, which a lot of people agree with, I think, which is one of the biggest barriers to this whole AI, ROI problem. Or mystery to some people. For those just ROI, return on investment. Is the money being put into your AI within a company? Are you getting something that effectively is larger than the investment you put in? That is very simple. And Fireworks is saying the biggest barrier to that isn't cost as such, but it is like define good. What is it that you think good is that's coming, you know? Yeah, I mean, could you just sort of walk us through what does Fireworks do in this area? Do you help your customers do eval? Yeah, just walk us through kind of what that looks like.
+
+[0:33:09] BC: Yeah, Fireworks investment on the eval is, I would say, 70% on the infrastructure side and 30% on the consulting side. The 70% on infrastructure, we have a project, open source project called Eval Protocol, where we help people author evals for reinforcement learning.
+Oftentimes, when I ask customers whether they have evals and then recommend them to write evals and what not, my pitch often is even if this engagement falls through, the worst outcome is that you'll have better evals, which hopefully isn't a bad outcome. Because there's so much innovation coming out of these frontier labs, closed-source even. How do you decide which one to use?
+
+Every day, there's something new. Okay, every day is an overstatement. But every week, there's something new. And this is say, even the most straightforward case. Let's say you love Elon, and you want to use xAIs model. How do you know when it's appropriate? You can't even pay Elon, unless you have the evals. It's very important, I think, for a lot of customers to realize that these are assets, and Fireworks is here to help you build up those assets.
+
+And as soon as people have evals, the gap between using that eval to evaluate model to the gap to use those evals, to train in reinforcement learnings, to train your own model is very, very small. It's very helpful for a customer to first be able to pick different models. And then second, once they are comfortable, start training new models on Fireworks with reinforcement learning through eval protocol is something that we've seen repeatedly happen over and over again.
+
+At the end of the day, if you know how to evaluate your model, you have all the power. You get to decide which supplier to use. In what setting, and when. And that power is very, very important to a lot of our customers. It's just that some of them haven't realized how important that power is.
+
+The other part is, also, we work with some of the large customers to help them set up the eval as well. Because in certain settings, it's just not practical to sort of like leave our customer hanging and ask them to author the eval themselves. We have a lot of know-hows in-house as well after all these engagements. And we help our customers really use our know-hows and author the evals themselves as well.
+
+[0:35:35] GV: And you have an eval framework that has actually been open sourced. Is that right?
+
+[0:35:41] BC: Yeah. Yeah. Yeah. It's called eval protocol. It is focused on helping people author evaluations for reinforcement learning settings. You focus on writing the evaluation itself. And then Fireworks can help take care of the rest for doing rollouts on inference, passing those rollouts to the trainer, and making sure that the reinforcement learning graph goes up and to the right. And also helps with observability for which traces went wrong and why. And what did the model trip on?
+
+It is often understated on how much people focus on sort of the fancy algorithmic side of RL. But in practice, a lot of time, the observability is very, very important. Making sure that you have an open- source SDK that help people hook into any part of the infrastructure however they want.
+And they need that assurance. Because unless they can own the code themselves, they don't want to touch it. Making sure that all the observability stuff can be set up so they can see the environment's behavior at any point in time.
+
+Because oftentimes, the RL problems are coming from the environment itself. Something broke in the environment, and you want to fix the environment to continue on training. Those things are all very, very important. And eval protocol helps you with all of that.
+
+[0:37:02] BC: Yeah. And I encourage anyone interested in any of these topics, you guys have a really good blog. And something was published on there. "Traces are all you need" to rank LLMs. This is in reference to production trace data and being sort of a better signal, say, than benchmark suites. And there's probably a catch somewhere. So, I think just maybe if you could briefly unpack what is that about?
+
+[0:37:27] BC: Yeah, I think when we talk with our customers, a lot of them feel that it's intimidating to author evaluations. A lot of them didn't start out as machine learning engineers. But that's the beauty of this wave of innovation. A lot of people coming in from product background who has the ability to clearly articulate what is good and what is bad for their customers. And oftentimes, I feel like that's underappreciated in a lot of settings.
+
+Because, honestly, if you can clearly articulate what is good, what is bad, you are 90% of the way there. The only delta is then now you need to take traces from your production workload and run a language model through those traces with your articulation. And oftentimes, I think in a lot of settings, our customers tend to have more elaborate setup for the evaluations and whatnot. But what we find is, honestly, if you can articulate it, you're 90% of the way there.
+
+There are definitely special cases where, for example, we have an example for like SVG agent, where you still need to render the output through a Chrome server to be able to get the screenshot to even use your articulation of what is a good SVG. At the same time, honestly, Opus 4.6, you say the word, it comes out the other end. I don't even know what happened in between, but like it works. Then the only important bit is can you pull your traces out of your production system? And then can you articulate what is good or bad?
+
+[0:38:58] GV: Yep. So we're going to move on probably sort of the fairly - well, final, fairly meaty topic is just on reinforcement fine-tuning. Something that I believe, again, Fireworks helps people figure out. Supervised fine-tuning, it's been around a while. So, what does reinforcement fine-tuning - why does that change things like fundamentally, which is sort of my understanding
+
+of it's a huge shift? It's not just a sort of small incremental change. It's kind of a step change in this area.
+
+[0:39:28] BC: Absolutely. Absolutely. Yeah. Maybe I can start with how it changes the industry. And then, specifically, how it changes Fireworks. I would say reinforcement learning is a new lever that the industry found while the pretraining sort of free-riding slow down. You definitely see a lot of articulation from like Dario on saying like, "Hey, Anthropic does not see the improvement slowing down, whatnot. And pre-training is still giving a lot of gains."
+
+At the same time, my current understanding is that you need sort of exponential amount of compute to get the straight line going. And at some point, the money aspect will kick in. Reality will have to kick in. Even if part of reality doesn't kick in, the electricity part of reality will kick in. There are limits to how far you can push these ideas. And reinforcement learning was a new paradigm that the industry found to keep the scaling going. Because even for relatively small models, if you can push RL, you can get really good results out of the model.
+
+And I think the other thing that people don't tend to talk about for reinforcement learning is that it really consolidates your evaluation as an asset. Meaning that the same evaluation on the same environment can be used across different generations of model without significant changes.
+This is different from SFT datasets, where depending on what's needed for this model, you may need more supervised fine-tuning data to sort of push the model to certain direction. And that is definitely important work that a lot of frontier labs people are pushing in every day to make sure they curate better and better supervised fine-tuning data set.
+
+At the same time, when the models are really good, you have to throw certain things out just to even not confuse the model. Whereas for asking the model to do a Excel spreadsheet is always going to be valuable no matter where you start. Because you always want to make sure that it knows how to read a spreadsheet and knows how to manipulate a spreadsheet, right? Those assets are sort of more enduring for these settings. And that's why I think so many frontier labs are investing so much money into these environments.
+
+But specifically, for Fireworks, it is very important because it now finally unlocks the customization loop from a software engineer directly to a tuned model. Previously, to do
+
+supervised finetuning, the conversation often goes like, "Oh, do you have a team of MLEs in- house who knows how to work with data labelers?" Because these MLEs need to have some experience managing labelers, and making sure that they can sort of clearly communicate with another set of human that they never worked with before on what is good, what is bad, and what I'm looking for. And then it also takes a few iterations. Because oftentimes, these data labeling companies will have to assign you certain set of people repeatedly just so that they don't lose the context.
+
+But also, you need to have quality control on the other end, making sure that the supervised data set, the supervised fine-tuning data set, are consistent. And it will continue to be what you're looking for at the thousandths label. That is a very tedious process and very difficult process for many, many people. And the process also breaks down when it's long context. Because, honestly, at certain context length, I really don't think I even understand what's going on.
+
+It probably takes me an hour just to read through all the conversations to figure out where we went wrong for me to like edit the conversation to make it work correctly. Whereas for reinforcement learning, as long as you have a product manager who can articulate what is good or bad, they will be able to author a language model as a judge snippet and then send it to Fireworks and be like, "Hey, teach my model this." Right? Everyone else is out of the loop. And then we can sort of bootstrap this very, very quickly.
+
+And as the coding model gets better and better, I really think that there is a lot more we can push out of these coding models to get reinforcement learning more automated. I think that will be like a interesting topic to dig into more this year.
+
+[0:43:49] GV: Yep. And I believe it was Vercel has used RFT with you guys. And that sort of come out with putting numbers on it. Something along the lines of 40x faster code fixing and with better outputs. That's like sort of interesting use case for RFT.
+
+[0:44:09] BC: Yeah, absolutely, absolutely. And we have a lot of smaller customers in general who benefits from RFT as well. I would say, for example, Vercel has a very, very strong engineering and product team. Those teams are exceptionally well fit to do reinforcement
+
+learning. Because just with two or three people, they can intern totally align on what's good or what's bad, and they can just go.
+
+[0:44:31] GV: Nice. Yeah, that's a really kind of powerful image there. We are sort of starting to wrap up. But something I did want to touch on, it's this competitor as a vendor problem that we've seen play out over the last, I guess, 18 months especially. Some examples on SED News, which is our monthly podcast that myself and Sean Falconer do. We've covered actually quite a few of these. So this is why it's quite interesting. So the fact that Anthropic effectively cut out Windsurf. And then OpenAI launching, Codex, which competes with Cursor. You've then got things like Google Search versus Perplexity in some respects. If you're the vendor, how are you thinking about where this risk for you potentially lies, or doesn't, even?
+
+[0:45:20] BC: I honestly think we are such a small player in this market. And the market is so early still that I don't know if the competitive pressure matters yet. Yeah, I keep telling my colleagues, if we don't do single digit percent of what NVIDIA is doing, I feel like we're doing something really wrong. And we're not there yet. Well, NVIDIA's, I forgot what the exact number is. 400 billion this year. Give or take.
+
+[0:45:51] GV: Something like that.
+
+
+[0:45:52] BC: Yeah. I would say probably before, we do a few percent of what NVIDIA is doing. I really don't think that we will run into those hard constraints on competitive vendors and whatnot. But I do think I can be more helpful for this answer in the sense that when our customers are thinking about Fireworks, what they're looking for specifically. And honestly, I think at the end of the day, it's mostly about trust. Trusting that we get the numeric right, so they don't have to figure out all the details. Trusting that we got all the serving details right, so the function calls can happen properly. The constraint generation happens properly. The trust that we set up our reinforcement learning rate correctly, so they don't they have to do the numerical debugging themselves.
+
+And I don't think a lot of those are competitor related. In the sense that a lot of our customers are making, honestly, a lot of money, and they just want to make sure that we handle those complexities for them. I do think in the fast-evolving field, maybe I should think more about the
+
+competitors' landscape and what not. But I really don't think it matters as much yet. And it's more about helping our customers make as much money as they can at this stage.
+
+[0:47:10] GV: Yeah, exactly. And you work with some very big names. So, it's sort of anyone potentially smaller coming along and that sort of that trust piece, I think. That's where you've got some of the bigger names to kind of back you up at this stage in terms of if you're able to work with the Cursors and the Vercels. That surely says something.
+
+Yeah, I mean, we are coming to time. But I think for anyone out there, developer, or anyone maybe slightly - I don't want to say higher level, because IC versus business is kind of the same thing. But someone who's not hands-on keyboard. I mean, if someone wants to get sort of "started with Fireworks", what's kind of the best path there?
+
+[0:47:48] BC: Install OpenClaw, hook up Kimi on Fireworks with OpenClaw. Honestly, Peter is amazing. I watched some of his podcast. The author for OpenClaw.
+
+[0:47:59] GV: Yeah. He just joined OpenAI at least a couple days ago before this recording. Yeah.
+
+[0:48:05] BC: I don't know how much he's paid. But he definitely deserves it. It is surprising, honestly, how fast everything is moving still. Just as soon as you expect things to slow down maybe a little bit, all the models come out in the last two weeks, right? And then OpenClaw gets their fame to acquisition in like a few weeks. Things are not slowing down.
+
+[0:48:29] GV: No.
+
+
+[0:48:30] BC: And I do think that for anyone who's listening, any amount of effort in this area I think will pay off. Anything. If it's not OpenClaw. And, I don't know, vibe code something.
+Because I really think a lot of the difference that I'm seeing for some of our customers, just that they are two month early. And the fact that they are two month early makes the world of difference.
+
+[0:48:54] GV: Yeah. Yeah. Amazing. Yeah, I mean, thank you so much for coming on today, Benny. Is there anywhere that you personally are on that people can follow you? Are you on, I don't know, X or anything like that? Or not really.
+
+[0:49:10] BC: I guess I'm old. I still say Twitter.
+
+
+[0:49:12] GV: Yeah, nice. Twitter. Yeah, I would still say Twitter. The number of times I hear X, formerly known as Twitter. We've got to pick one, don't we? Cool. So, you're on Twitter. What's your handle on Twitter?
+
+[0:49:23] BC: Bunny Chen.
+
+
+[0:49:25] GV: Oh, cool. Okay. Bunny Chen. Nice. Awesome. Well, yeah, thank you so much for coming on. I've learned a lot as well as, yeah, it's just kind of really awesome to see a company in this space. And looking back to the beginning, when you were saying maybe you weren't analytical enough about when you left Meta and started this. I mean, this sounds amazing. And you've obviously done a huge amount of work in this space that someone else hasn't done. I think that says it all, really. Yeah.
+
+[0:49:54] BC: Thank you for having me, Greg. Thank you.
+
+
+[0:49:55] GV: Thanks a lot. Okay. I hope we get to catch up again in the future.
+
+
+[0:49:59] BC: Thank you.
+
+
+[END]
+
+
+
+

@@ -1,0 +1,1066 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Adventures in Data Corruption
+DATE: 2025-07-10
+SHOW: Oxide and Friends
+LINK: https://share.transistor.fm/s/7ecc4244
+AUDIO: https://media.transistor.fm/7ecc4244/54e7259c.mp3
+DURATION_SECONDS: 6216
+TRANSCRIBED_AT: 2026-08-05T16:44:26Z
+----------------------------------------------------------------------
+Hello, Brian. Hey, how are you? Good. How are you doing? I'm doing well. I'm doing well. Every time
+I log into Discord, now, tautologically, every time I log into Discord, I am getting older,
+obviously. It's the oldest you've ever been using Discord. Every time I've used Discord, that is
+just a statement of fact. That said, it feels like the average age of Discord or at least the people
+in product of Discord is getting younger faster than I'm getting older. They're still the same age.
+Yes, they do. Some of these updates are like, am I... Is this me? I don't know. If you click enough
+layers deep, I feel like I always get to a screen which is like, basically, I don't like what I just
+saw. Please don't show me this again. Then it shows me it again. It seems to have enough buttons for
+the oldsters. Yeah, I just kind of feel like, you know, I always tell parents with the Scout troop
+that you should never linger by the tent of a bunch of 15-year-olds. One, it's invading the privacy.
+But two, you may hear some things that you can't unhear. And I just frequently feel with Discord
+that I am accidentally lingering by a tent that I don't... Like, why? What is... I just... I don't
+know. I get a... It's... It creeps me out a little bit. That's what I'm saying. I get a Discord.
+Like, Discord, we're not all tweenagers. Like, there are some adults using this thing, right? Maybe
+that's it. Are we the only ones? Is that possible? I mean, I'm not sure this is like the perfect
+intended demographic in use, but... But they are getting like, you know, dozens of dollars out of us
+per year. Dozens. Dozens. Maybe a dozen. But, you know, maybe... Okay. Or, okay. Maybe only one
+dozen. A dozen dollars. That ought to go somewhere. That's a... That's right. It's a market. This
+one's overdue. This... Today's topic is overdue. It goes without saying. I'm so excited. I'm so
+excited because I didn't realize that the events we're about to talk about occurred like two years
+ago almost to the day. Two years ago almost to the day. Yeah. And then, two years ago plus one day,
+I started hassling you about having an episode about it. I don't know that it was two years ago
+minus a day. Okay. Okay. Because... So, part of... And we're obviously going to get to this wild
+tale, but we were legitimately concerned that we had stumbled across a very serious microprocessor
+vulnerability. Yeah. I guess that's fair. I mean, I think... I think I asked about it... So we
+actually had to follow a AMD's P-Cert process to make sure that we were engaged in responsible
+disclosure. Yeah. But then they responsibly told us to go bounce sand. Yeah. That's the future,
+right? Yeah, exactly. So, I guess we could have done the podcast at that point. But then we needed a
+cooling off period after that. So, you know, you know what I'm saying? You add all these things up
+and it adds up to about two years. So here we are. That's right. That's right. Perfect. I don't
+know. It is that obviously you did the same search that I had kind of mentioned to you this morning
+that if you search back for, if you look for TLB speculation in actually all of Oxide Chat, but
+certainly at least in our personal chat history, it is basically you over and over again suggesting
+that we do this. And me, not even really dignifying it with a response, although occasionally
+laughing at it. Well, I do, like, at one point we were sort of like, what should we do? And I said,
+TLB speculation or OMDB? And you're like, ooh, OMDB. I'm like, OMDB, other one. Why did I give them
+two choices? And then I switched to just trying to convince you it was your idea with like a classic
+maneuver. Oh, that is a classic maneuver. Is that what worked? Is that what finally got us here?
+Because I did, I was suddenly struck by this. We should do an episode on this. And I don't know
+where that thought came from. I tried to piece together where that thought came from. And I don't
+know. I accepted you. Yeah. Exactly. It occurred to me completely independently of anything else.
+Yeah. I mean, of course you're right. There we go. I, okay. So I think that, and then there was this
+piece or reason for sure. But I think then it was like, okay, there's just a lot of context I've got
+to go remind myself of and ramp up on. But as I was ramping up on the context, I'm like, you know
+what? This really does merit a podcast. I mean, how is it? You know, actually, exactly. You know,
+people think that we are chronic over shares, which we are, but there are actually some things that
+we have not had a podcast episode on. Although there will be one fewer such things after that.
+That's right. And I'm really glad that John and Rainer are here because I think part of what makes
+this so wild is that the manifestations are the, the kind of, the symptoms of this are so far
+removed from the underlying root cause. and it's just, we just never would have imagined. It was
+that, I mean, and there were a couple of times along the way where I think that we had pretty strong
+conventional wisdom where, where the bug was emanating and, uh, we were all wrong. So, um, John, D,
+would you mind kicking us off? Because I think you're the first person to run across, uh, the
+ramifications of this. Is that right? Yeah. Yeah, that's right. I, I was going to ask you if context
+is okay, but it sounds like context is exactly what we want here. Yeah, exactly. It's, it's strongly
+desired. Weird. Okay. Yeah. So I, I have, I took notes cause there's a lot, there's a lot of stuff
+even before we get into the actual problem. Okay. So have we talked about the update sled recovery
+process on the podcast? I was going to say, I don't think we, if we have it, it merits review. I
+don't think we have.  so I would actually like you to go into like kind of what this thing is doing
+actually, what the actual problem that we're solving here. Okay. All right. So we have a, so we have
+a rack and let's say that we have a sled in it that we need to make sure has the latest version of
+all software. It is possible that that sled can't boot, like say one of its M.2 drives, the one
+hosting the OS has died. It's been replaced with a new one from the factory or even suppose the
+sled, like the software on the sled itself is ancient and it has no hope of possibly talking to
+anything else in the rack. Um, so we want to like assume the sled itself is completely unable to
+help us and we need to bring it up to speed. So we have a sled recovery process. I'll probably call
+it Mupdate a bunch because that's what we call it internally, uh, for reasons that are probably not
+relevant here. Um, but the way that this works is we upload a, a tough repository, which is a zip
+file containing sort of like all the software that we might possibly want in a given release. and
+it, we, we upload that to, yeah, go ahead. Yeah, just to be clear, just because, you know, the kids
+do say like the highest praise that the youngs have for anything is tough. T-O-U-G-H. So this is
+tough. T-U-F. This is, I mean, it is tough in the, in the, in the, the, the kind of the Gen Z sense,
+but it's also tough T-U-F, the update framework. So, sorry. Yes. No, no, no, that's good. It's, it's
+hard to, to pronounce acronyms, I guess. The, so we upload, we upload a tough repo, T-U-F, which is
+a zip file with, with some, like it contains some hashes and metadata and signing and all this sort
+of thing. We upload that to one of the sleds that is functional. So that, the sled that we're
+driving the process from, this goes through a service, a service called Wicket. It has a very cool
+terminal interface. I know we've talked about that on the podcast before. Wicket. Wicket. Yeah.
+Yeah, Wicket. Wicket. Wicket is great. So Wicket unpacks this zip file and then keeps the contents
+of it in memory for the duration of this sled recovery process, which is relevant to more of the
+context later. So the way this works is we've got this sled in the rack that, that we assume can't
+boot. We, we do need to be able to talk to its service processor over the management network. That
+is a pretty safe assumption to make. We can't talk to the service processor. The sled is just
+completely dead. So we can set a bit in, when talking to the service processor, we can set a bit
+saying, when the OS boots, tell it, instead of looking on its local M.2 drives for the OS image, to
+ask you for it instead. And you, by extension, you service processor, are supposed to fetch it from
+me over the management network. And I will serve it to you like a block at a time over UDP, over the
+management network. And you then turn around and stream it to the host CPU over a UART, running it
+like three megabit. So this process is slow, right? We don't want to, like we did some sort of
+napkin math at the very beginning. For the size of our like real OS images, we're going to be
+sitting there for hours waiting for this thing to be streamed over the UART. So instead, we send
+over a very stripped down recovery image or trampoline image. If we start posting links to code, you
+may see both of those names. That is sort of like the minimal thing required to bring up the
+networking stack and then run a program called Installinator. And Installinator's job is to ask the
+service processor. Sorry, Brian, did you? I was going to say that one thing I love about this is
+you're talking about this as the recovery path. And I love the fact that we deliberately use the
+recovery path all the time because, you know, one of the, I think one of the many object lessons of
+this is not of this bug per se, but of this design is a recovery path that is unused will also be
+untested. So a great thing is that we know we can recover when we have a sled that has never had
+anything on it because we are required to do this recovery path all the time. That's right. I
+neglected to mention this, but this is the way that we did and are still doing most of the time
+updates to sleds, just like normal updates. We want to update the software, we'll treat you like
+you're dead and go through the recovery process. At the time that this bug happened, that was, I
+mean, we had started doing that, but it was pretty early in the lifecycle of like actually using
+this process regularly. Yeah. All right. So we've, so we've, we put this sled into recovery mode.
+It's, we're streaming in the stripped down OS image that contains, you know, the networking stack
+plus installinator. Once that thing boots up, it takes, it takes something like on the order of 15
+minutes to stream in this very stripped down OS image. Installinator starts up. It then asks the SP
+also over that same UART that itself was streamed over to ask, excuse me, it asks the SP, what are
+the hashes of the real OS image, like the full size one and a hash of like a tarball of all the
+control plane software, right? All the services that run that are not part of the operating system.
+Then it, it uses some other stuff from our, our networking folks, Magamite, et cetera, to find peers
+on the bootstrap network and ask them, hey, which of you have like an OS with hash, blah, blah,
+blah, and a control plane software tarball with hash, blah, blah, blah. In practice, the only one
+that does is Wicket, the place where we uploaded the tough repository because it's driving this
+whole process all along. So installinator finds Wicket on the bootstrap network, says, please give
+me OS with hash,  blah, blah, and Wicket sends it over. This is over like the real network, so this
+takes seconds, right? Regardless of the, you know, the fact that the real OS image is considerably
+bigger. It does the same thing for the control plane tarball. It then writes the OS image to the
+boot partition of both the M.2 drives. It writes the control plane software to the right place on
+both the M.2 drives. And then it'll tell Wicket, you know, I'm done. I've written everything. I'm
+recovered. And Wicket then powers the sled off, reboots it, you know, unsets the recovery bit and
+tells it to just boot normally. And at that point, we're on our merry way and we've got a recovered
+sled through this whole update, you know, sled recovery path. If installinator fails at any point
+along the way, it will tell Wicket that it has failed and Wicket basically stops at that point. And
+this is, this is sort of important. Like there are a bunch of, there are a bunch of ways that it
+can, yeah, exactly. There are a bunch of ways, like there are a bunch of ephemeral errors that, you
+know, don't cause a permanent fail. Like if we, if we try a peer on the bootstrap and it doesn't
+have the data, we just try the next peer, et cetera, right? But like there are a lot of ways that it
+can fail that installinator just by design is like, I don't know what I'm supposed to do here. I'm
+just going to give up, report the best error message I can. And a support operator who's already
+involved, they had to, they have to be on the tech port anyway to have uploaded this tough repo.
+They will have to look at this error and then log into the sled and see what's gone wrong. Okay. So
+that's, that's background part one. Is that the sled recovery process in five minutes? Is that?
+Yeah, that's great. Yeah. Awesome. Okay. All right. So background part two is that we started to use
+this process regularly to update all of the sleds in the, the rack that we have in the office in
+Emeryville. And we had a, I think Sean ran into this. I'll post a link. So Sean was on the, we call
+it dog food duty that week where he was updating all of the software in the rack. And what happened
+was installinator had reported success and then Wicket rebooted the sled and the sled did not boot.
+And this, this is sort of weird because Wicket claimed the sled recovery process is complete.
+Installinator told me it was successful, but then the sled never came back up. And when Sean got on
+the console, the, the error message there indicated that the OS image was corrupt. So we, the, the
+OS image has a hash in it. It's split into phase one and phase two. Details aren't super important,
+but the OS image sort of does a check at the very beginning. It says, did I find like the exact
+SHA-256 match of the image I expect to be here? And if not, I'll refuse to boot because I don't, you
+know, I don't know what I'm supposed to do in that case. So I saw this and assumed naturally, I
+think, that I had screwed something up in terms of writing to the disk, right? So like the very
+first time we developed this feature, like I haven't even opened the pull request yet and I run it
+for, from a test the very first time and I like installinator finishes, Wicket powers it off and it
+comes back on and like there's nothing there. Like the, the OS image didn't finish writing. There
+are no control plane zones at all. I'm like, oh yeah, I'm an idiot. I, like I did all the rights and
+then I immediately powered the sled off without like F syncing the rights, right? So like all this
+was like still in development. So I, which you should not have to do, by the way. I mean, I think it
+speaks highly to you that you, highly of you that you think that your first thought is the problem
+is in my code. Adam, I don't know about your first thought. My first thought is like, oh God, the
+problem is in either we, we have either data corruption. Somehow we've got data corruption in ZFS,
+which is bad. ZFS is not the business of data corruption. And the only time I have seen data
+corruption in ZFS has been when it has been handed corrupt data or we've got something much more
+pathological that's happening in the hardware or system software. So I, John, my mind is going to
+like much, much darker places, but in the same vein of like this, somehow there was corruption that
+happened between writing this data to disk and writing the state of the stable storage and disk, but
+writing the state of the stable storage and then arriving on stable storage. That's right. So I went
+back and double checked and when I was developing the feature, I'm like, I'm not a ZFS expert. Let
+me go ask someone who is. So I'd asked Robert, like, what should I do if I'm writing these images
+and then I'm going to immediately, like the very next thing that happens is literally like the sled
+gets powered off. And Robert gave me a list of things to do, like F syncing the drive, like flushing
+the disk write cache via an iOctal, which I never would have thought to look for, you know, on my
+own. This is why we have people around like Robert, I can ask, which is awesome. But I went back and
+double checked and like all of that is there. Like I did all the stuff Robert said to do. So I did
+the thing that Dave has said this to me probably a half dozen times in the last two years is like if
+we have a problem and we don't have enough information to fix it, what other information do we wish
+we had? So like go add extra logging or details or whatever. So I opened a pull request and I was
+like, okay, installinator gets this package of data from Wicket and then it writes it to disk. So
+there's like, there's the first time that we get it from a peer and there's sort of like the last
+time that we've sort of written it and we're going to claim success. I'll put checks at both ends of
+that, right? So after we fetch data from Wicket, I'll just double check the SHA-256 hash, right?
+Like we ask for it by hash, so we're supposed to get a payload that exactly matches that hash.
+That's what Wicket is supposed to give us. So I put a check in at the very beginning right after we
+download the thing and then at the end after we write it to disk, I just go back and reread the disk
+and compute the hash again and make sure it matches the thing that we already checked that we pulled
+from Wicket, which again, like we asked, this whole process is like based on SHA-256 hash is
+matching. Yeah. So in- With the assumption that we will catch this corruption, we wrote something
+that we thought was good then we read it back. I mean, my assumption is when we read it back it's
+going to be corrupt. But I do think just to put a really, I think, fine point on this because this
+is a, one of the most important lessons from this whole adventure starts kind of here because we did
+not have enough information to debug the problem. We had a corrupt file system, which is very
+troubling. We had corrupt data and too often you kind of, one can create for oneself a false
+dichotomy of I'm going to root cause it or I'm going to close it as I wish this were not a bug. And
+there is actually a very important essential in this case and in many cases middle ground, which is
+what information do I wish I had that I don't have? And how can I take a half measure? It's not
+satisfying because we're not fixing the problem. We're modifying the software without fixing the
+problem, but we are now going to hope that this bifurcates the problem space in some way, that we
+are now going to take an implicit failure and make it an explicit failure or we're going to have an
+assertion failure. In some way, when we see this again, we're going to have more information. I
+think this is one of the most important things about this. Sorry, John, not to put too sharp a point
+on it, but this is really essential. No, it's great. One of the best things to me about working at
+Oxide is that when something goes wrong, especially if it's non-deterministic, like the sled thing
+that Sean ran into, he had updated a dozen sleds, two of them failed with this error, and when he
+re-updated them, everything was fine. It's sort of tempting to just let those things go. If it's a
+problem, but you just try it again and everything's fine, just let it go. I've certainly had
+coworkers in the past where that's enough to move on. I don't know what you're talking about, that
+other thing that happened. Let's just unsee that. Exactly. We hit some weird edge case, I'm sure
+it's fine, but no one at Oxide has this attitude, which is fantastic. It's like, no, no, no, that
+should never happen. If it did, we need to figure out why that happened. Yeah. Yeah. Okay, so that
+led to this PR. I'll just link to the PR. And in review, Rain said, so in the initial version, I
+just put the checks in. And in the PR review, Rain said, hey, should we retry if we try to fetch the
+thing from Wicket and fail, should we retry? And I was like, I said, no. And I put a comment, a
+block comment in the code. The PR is very short. I basically put my reasoning for why we should not
+retry. And that is that Wicket has unpacked this tough repository that has its own cryptographic
+checks on the contents. It's now holding all of those contents in memory. We have been told the
+exact SHA-256 of a thing we're supposed to fetch from it. And we ask for it by that SHA-256. We're
+like, hey, Wicket, give me the OS image with this SHA-256. And it streams it to us over the
+Bootstrap network. At this point, we're not going over the management network and the UART. This is
+just regular old TCP between two closely connected computers going from its memory to my memory. And
+we've addressed the thing by hash. So any way that this could go wrong is super disturbing. So I put
+this check in basically because I was afraid that Wicket was serving the wrong artifact. Our tough
+repository has multiple OS images in it. Maybe somehow, even though we're indexing by hash, maybe it
+just screwed up and unpacked the wrong thing and put it in the wrong place. Whatever. That's my
+expectation. If this one fails, it's because there's actually a bug in Wicket. It's giving the sled
+the wrong data in some non-deterministic case or something. And also, again, it's great that you're
+thinking about the failure modes in your own software. I mean, my mind is just running wild. I mean,
+we built our own computer. We trained these DIMMs. Anything could be. Spin the wheel. It could be
+anything. Spin the wheel. And in particular, it is ECC memory and we hadn't had problems with memory
+corruption yet. But that is where you get really, really terrifying, where we have something that is
+deeply wrong in the hardware or the lowest level of the system. So we're just like, anyway, I'm so
+glad you did this. I'm pretty much braced, though, for there is something that is something in the
+I.O. path that is corrupting this on the way down, is kind of my thinking. And John, this is all
+TCP, right? This isn't UDP. Yes. So UDP was used to, so the management network runs exclusively on
+UDP. So like streaming this recovery installinator image over goes over UDP and then over UART. But
+at this point, installinator is running on the host. It's brought up the real networking stack and
+it has found Wicket and is just talking TCP to Wicket to download this stuff. Like HTTP, TCP? Yeah,
+that's right. Yeah. So I put these checks in. I put the one in at the front and the one at the end.
+I'm expecting the one at the end to fail, right? We have written sort of like Brian, you said
+earlier. I'm expecting we've got some kind of like data, you know, file system corruption. We wrote
+a thing, something got screwed up along the way and then we read it back and the data's missing or
+has corruption or whatever. So I merge this and then my part in the story basically ends because I
+literally went on vacation for the very next week. So I will hand it over to someone who was around
+the next week, I think. I, I, you, your part of the story takes a hiatus, John. It does not end. I,
+the, I, having, I don't know how much of the, of the, the footage, the security footage of us
+debugging you ended up watching, but John, you were very active in, in what was actually, we came to
+know as data corruption week, I'd like to say. So we saved the good bits for when you return from
+vacation. But so, so you disappear on vacation. Um, and yeah, then I guess rain, I, I guess you're
+up next, right? Because now John has disappeared. And, uh, we, this thing that we assumed was
+happening very rarely as it turns out not happening as rarely as we thought. Yeah. Um, if, uh, I
+don't remember the exact statistics, but it would like happen to at least, I remembered like two or
+three sleds every time you did like a recovery of, uh, of like, you know, the full rack, uh, like
+you would encounter two or three sleds which had, um, which had something, uh, you know, some kind
+of data corruption going on. And like, you know, the nice thing about what John added was that, you
+know, we'd kind of get like an error message, uh, in Wicket. So we would, uh, get a message a bit
+earlier. Right. So, so, you know, what, you know, John didn't fix it. Right. But John did add like,
+so that, you know, you get an error message inside Wicket while the, you know, while installinator
+is running as opposed to getting an error message all the way at the end. Um, so, uh, I think, I
+think at this point, uh, I think Brian, did you pull me in? I think somebody like somebody was like,
+Hey, uh, uh, you know, this is like installinator isn't downloading the right data. And I think I,
+at that point kind of, you know, I was like, okay, I think I should like take a look at this. I
+remember like, so which itself was a major surprise. Yeah. Again, I think that the, the assumption
+that more or less we had all had, I think is that the, that there was something happening between
+installinator getting this data and actually getting it to stable storage, but installinators like
+when it's getting the data, it's wrong. I'm like, what? Yeah. Okay. Yeah. So, so right. So, so John
+added two separate checks for hashes. It was actually the first check that failed, not the second
+one. Um, and, uh, yeah, I mean, that was, uh, that was, I think just like, you know, incredibly
+surprising. And, um, I think what I remember is that I, um, I think there, there were definitely a
+lot of calls, but like, I think, you know, I think I think if you just say that like, Hey, there's
+corruption happening, right? Like when you've received this, it's corrupt. Our, and, and we kind of,
+our thought is like, all right, well, when do we, we know that like the image, this image is a good
+image because other nodes are able to get this. So it's like, there's gotta be something in the, and
+I think the thought now, at least my thought, I don't know why my thought goes like super dark on
+the CFS path and less dark on the networking path. But my thought is like, okay, there's gotta be
+something in user land in Tokyo, as you're saying, rain, there's gotta be something in there that is
+somehow corrupting data, which definitely seems strange, but, um, I don't know. Um, I think, you
+know, one of kind of one of the things we decided to do pretty early is that we decided to add some
+instrumentation to Tokyo, uh, to try and rule out Tokyo as much as possible. Um, Brian, did you want
+to talk about like some of the D trace, uh, probes and stuff that we added? Yeah. Did we add that as
+part of this? I got, I kind of forgot. And this is where it gets a bit murky for me too, because
+right at some point you get this to be, you're able to separate installinator from this kind of
+this, this kind of difficult environment that it's running in. Um, or a little, one that's a little
+harder to bug and you're able to get this just kind of like reproducible on again, what I think,
+cause I think that that, and that was a major lurch towards, towards getting this thing
+understandable. Uh, yeah, yeah. So, uh, so, uh, you know, like installinator is this automated
+process, right? Like it's part of this bigger process and it just kind of is this autonomous thing
+that runs. Um, so I think, you know, one of the first things we did was that, um, we can actually
+run installinator as like an independent binary. And so, you know, one of the first things we did
+was, okay, you know, all right, we have a server running wicket on another host. So, you know, we're
+getting something like, uh, the, you know, the, the production use case that is failing. Um, but
+then over here, we're logged in over SSH and we run installinator by hand over SSH, uh, uh, doing
+the same things that, uh, that the autonomous installinator would be doing. And we get to see these,
+uh, we get to see like, you know, these, uh, these errors happen, uh, even with that. And like, you
+know, you run it in a loop, like sometimes it works and sometimes it fails and it, uh, it's failing
+like I think 10 to 15% of the time or so, which is right. You know, which is a very, I mean, a very
+tough number because it, on the one hand, it means you 100% do not have a product, um, at, uh, and
+yet it's like, but it is actually working most of the time. Like whatever is happening is non-
+deterministic. And then rain sometime in here. And I, I don't think I'm getting too ahead of things,
+but stop me if I am. We're like, okay, you, well, you're the, we need to actually, we know that
+there is no, I think run of zeros in the actual tough binary that we're getting. So we begin to
+modify the code to be like, and we know that like one of the, the, the, we determined that like when
+we were seeing corruption, we're seeing the wrong thing. One of the manifestations of this, which is
+not like not all of them, but one of the manifestations is we were expecting to see data and we got
+zeros. Yeah. And, and I think the way we figured that out is that we told installinator to write,
+uh, so rather than, you know, to write it out to the, you know, M dot two as a, as an image, we
+write it out to a file on disc. Right. And then we, you know, SCP the file over, and then we did a,
+like a hex diff of the contents of what we actually want to see and, uh, what we don't and what we
+were actually seeing. And like in all the cases we saw that there was like some weird run of zeros
+in the, uh, you know, inside the, the image that we installed, it was actually fetching. Um, and you
+know, we knew that the actual artifact, because it's a, it's a G zip dire ball did not have any such
+run of zeros. Um, so, you know, one of the things I did was that I, I, I think I went in and tweaked
+Tokyo source code because, you know, at this point it's like, okay, you know, is the bug in Tokyo is
+the bug in the solinator is the bug in like rust async somewhere is the bug in like, you know, the
+network stack, where is it? And, um, so one of the things I ended up doing as part of this was that
+I went into Tokyo source code, um, in like the net library. And I wrote a little loop, which was
+like, you know, like if I think it was, it was more than 32 bytes. And like, if, if, if the whole
+like thing is like 32 zeros or more than just panic. Right. And, um, you know, like, uh, see, uh,
+like seeing that and like actually being able to reproduce that was I think, uh, a major step
+because, uh, what that did was that because this was deep inside Tokio's internal and this was data
+that we had just fetched off the wire, right? Right. This is, this is not, this doesn't have any
+Tokyo machinery. Like we've stripped it all down to literally like, you know, receive a, receive
+some data into a buffer and read that, read that buffer and see if that buffer has a lot of zeros.
+And if it has a lot of zeros, then panic. Then panic. And part of the reason that you were pulling
+this closer and closer and pulling off the wire is because the software that we were running through
+to go from between the wire and actually install anator, like actually doing something with it, you,
+I know, cause I know you had written some or modified some of the software in there. Cause I just
+remember at some point you being like, I like how like I, I did, I, I did property based testing for
+this. Like, I don't see how this could be broken. Like you were genuinely like frustrated at the
+gods of like, I accept that this was a bug in my code. And I like, I, and I just know that feeling
+where like I'm beginning to break down because like, I, I think this code is correct, but it's
+obviously not correct. And so you're just like chipping away at it to be like, okay, it's gotta be
+in my code, gotta be in this code. And then like, it's the point where it's like, okay, wait a
+minute. Now I'm like, before my codes, my code hasn't executed yet. And we're getting a run of zeros
+and weak. I should add something here. I think this was, this was, this was sort of important that,
+that we put the checks on. So earlier I said, we pull two artifacts, over the network, right? We
+pull in the OS image and we pull in this, this GZip tarball of all the control plane artifacts. We
+were seeing the control plane artifact fail at a much higher frequency than the OS image fail. Even
+though like it's, it's not even, it's not different code paths at all. It's just like run the same
+code path with two different hashes. But once we figured out the zeros thing, the host OS image is
+not compressed at the point at which we're downloading it. And it actually does have long runs of
+zeros. So if we were seeing, if we were seeing corruption that zeroed out buffers as they were
+coming in, like a lot of the time as we're pulling the OS image, that's actually fine because the
+real data was also all zeros. But because we were, because we were also checking this GZip tarball
+of control plane artifacts, that one failed much more often. Yeah. Yeah. Right. Right. Well, so we
+get to the, the point where Rain, you write code that says, if we've got a run of zeros here, we're
+going to panic. Yep. Right. And then at some point we decide to also, I remember like one of the
+moments when you really begin to feel the fabric of reality start to tear is you wrote code saying,
+if we've got a run of zeros here, we're going to panic and then we're going to eat print Lynn, like
+the actual buffer. Yep. And then panic. Yep. And what we were seeing was that we would hit that code
+path and to say, we detected a run of zeros, but then the E print Lynn would print the correct non-
+corrupted data. And it was super crazy. This is about what I think. Yeah. Yeah. This is when we
+begin to like slip, just like slip. And you begin to realize like, oh, oh God. And I know you just
+said it, but to reiterate that the code was literally like if zero print, if this is zero, print the
+value, print the value, which like, you're like, Hey dummy, you just said it was zero. Like, why are
+you printing it? It's got to be zero and it's got to be zero. It's actually, it's good data now. Now
+it's good. Now it's been uncorrupted. It is, it was corrupted. Now I have decorrupted it back to its
+original state. And I just remember single stepping through that and we're like, yep, we see it. We
+see it. We see it. Not a bunch of zeros. Wait a minute. Why is it not a bunch of zeros? Like we just
+checked that it was a bunch of zeros and it was a second ago. It was just, you're right. Tearing at
+the, the fabric of reality. The fabric of reality. Okay. So the, and the, and actually, and maybe it
+was before we got the e-brain because then the other thing that was very odd is like, okay, so we've
+got like, why are we, we, we, I've seen this conditionally correctly. We're using D trace a lot
+heavily, obviously. And, uh, in particular, and also I would say that, you know, in, in our
+strangest reference to a previous episode, Adam, we, in all of this, we record an episode of oxide
+and friends on manufacturing the first crack. That's right. Right. Like, like you have to leave the
+call and like, we, we, we gotta like, we gotta take a quick break from data corruption week to go
+talk about manufacturing the rack and pretend like we still have a product because by the way, I'm
+pretty sure we don't right now because all it does is corrupt data some fraction of the time. So
+let's just put on our bravest possible pace. Let's just, you know, splash some cold water over those
+tears. And, uh, let's Steve, let's record the podcast everybody. So, uh, I don't know. I'll have to
+go re-listen to that podcast knowing that I was a part of me was like actually terrified that we had
+no company. Um, so that ends great podcast. Thank you for all the operational operations folks that
+died to Eric Anderson, a bunch of other folks that joined us for that. Um, and then we get back on
+to continue to debug and we just, we just go further and further down the rabbit hole of just like
+nothing. Everything is weird. And Adam, did you re-listen to any of that by the way? Um, because we
+get to the point where we're using detrace all of the time to try to understand this. Um, we are, so
+one of the things that we're doing is like, okay, so there is some like, are we seeing like we're,
+we're snooping the wrong line. We've got cash corruption. We've, we've got, if there's something,
+some CPU structure is somehow been, is incorrect. So what we would do is we would, uh, stop the
+process after it hit that conditional. And then we would, uh, we would stop it for some period of
+time and resume it. And it would then the ePrint land would print the correct data. And you're like,
+what? And then you would go in and you would inspect it. If you would, if you inspected the, if you
+took a dump at that point, when you hit that, you know, if it's zero, if you actually, uh, took an
+actual, uh, if the system aborted and panicked, you would see one thing. If you went in with trace
+mem, you'd see something else. So it's like the, we, we begin to, so trace mem is a, is a, a, a
+detrace action that traces memory. And we begin to think that actually trace mem itself is wrong.
+Yeah. And the, we like, maybe that's what the problem. And maybe we have actually like two bugs
+here. We've got like a data corruption bug. And then we've got like a trace mem bug where it's
+showing that, which it just, nothing made sense. And there, it just absolutely nothing made sense.
+And we are trying, we're finding like, okay, so what, what, what if we actually like, when we hit
+this, when we hit the corruption, because the thing is like, once you started hitting the
+corruption, you would continue to hit the corruption, which is very odd. If you didn't hit the
+corruption, you wouldn't hit the corruption. Once you started seeing it, you would continue to see
+it. And so that was kind of a, a, a strange artifact. We did the experiment of like, okay, when you
+hit, when you hit this conditional, I've detected the corruption. And the, so instead of panicking,
+we continue to operate. Let's stop the process. Let's move it onto a CPU that it's never been on
+before. So we're actually going to create a processor set with a couple of cores over here. They're
+never going to run this process before this process has started seeing the corruption and it started
+kind of flickering with it, with it, with this data is like flickering between corrupt and not
+corrupt. We'll move the process over to the CPUs that is never executed on. And I'm like, okay, this
+is going to be, then the flickering will go away because there's some, there is some, some state,
+some machine state that is incorrect. Yeah. And then, but you would move it to CPUs you've never
+seen, it would continue to flicker. And you're like, what's going on? And if, and if so, this feels
+like, what was the hypothesis there? I think we have departed from like scientific method to sort of
+what if we randomly perturb the system and then see what happens. Okay. Well, so actually we are,
+this is true. So I think that we, the, the, the methodology, I mean, we're definitely bewildered. I
+think we are, and this is so an adage of mine is that bugs can be psychotic or non-reproducible, but
+not both. And when I say psychotic, I don't mean just like difficult. I mean, like when I say
+psychotic, I mean, ripping at, at the, the fabric of reality, the fabric of reality that is created
+by the computer, by the operating system. It creates these abstractions that we view as kind of as
+bedrock abstractions. And when those start, when those start to break, that's a psychotic bug. You
+know, when you are, when you have a thread that is executing on two CPUs at the same time, it's
+like, it can't be, it's like, well, no, it can't. I know it definitely shouldn't. That's right. But
+it's like, you know, these, and the abstraction is designed to prevent that. And if that does
+happen, it you begin to have you in, and we, we used to call these can't happen panics, right? You
+have a, you have state in the program that like this state can't happen. Like the, the, the program
+is, it is not the, the program's a victim here. And the, the perpetrator is much deeper in the stack
+of reality. And those bugs don't have like those bugs have to be reproducible. If those bugs are non
+reproducible, you won't debug them. So you, when you have one of these things that you just see once
+or is non reproducible, the actual act needs to be just like John, your first act of, you know, of,
+of just like checking this stuff at different phases, see if we can get this to fail in a different
+way. See if we can get to be more reproducible. Oh, good news. It's happening all the time. Oh, oh,
+okay, great. Uh, then, you know, being able to, so we're trying to like tighten the cordon around
+this thing, but the coordinates, like it keeps like spilling out and like showing up another, it's
+just like, what's going on? And at some point in this, Adam, you and Dave are like, and this is, I
+mean, you, you, you, I couldn't find the exact line. I know it's, I said, there's like whatever, you
+know, 10 hours of video of us. Oh yeah. I found it. Yeah. Oh, did you find it? Yeah. Yeah. Yeah. I
+think, I think, you know, Dave and I, I think we had, uh, as, as is becoming clear, many hypotheses,
+like none of them satisfying in any way. And I think this is, this is before we stumbled onto the
+phraseology of like haunted virtual memory or anything like that. But Dave and I were wondering if
+this was a virtual memory bug of some description. And like, and, and to be clear, the thought was
+exactly as deep as that, which is to say not particularly deep. Not particularly deep. Yes. Not
+particularly deep. And you were like, we think it's a virtual memory bug. And I'm like, you're like,
+how you're like, what? Okay. You can create a bug with your mind, like describe the bug. And, and I
+mean, which is totally reasonable if a bit acerbic, you know, but, um, but like the idea of being
+like, what? Okay. Like, let's say there's a VM bug, like just describe anything about this VM bug.
+And yeah, we were, we were not, we did not have a much more satisfying answer than that. This sort
+of gets to what you said earlier about like, you gave me credit for assuming there was a problem in
+my code, right? Like as soon as we got to the point where rain injects the like, if it's all zeros
+printed and it's not zeros anymore, that killed like every reasonable hypothesis that we had from
+that point moving forward, right? Somebody would throw out a hypothesis and we're like, look, that,
+that can't be it because that, that can't possibly explain what we're seeing there. That's right.
+That's right. And I think, and now, I mean, this is the other important thing is that when you
+begin, you know, you're kind of trying to get this cordon around this problem and you're beginning
+to get a lot of the symptoms and the symptoms are very, very bizarre. And now anything has to
+explain I mean, you need to be able to explain all this stuff. And, you know, I think that one of
+the pathologies, I don't think we see at Oxide, but I think one sees in the broader world is where
+people find a bug. That's not the bug. And, you know, in, in this case, like it's not, even if you
+were to find a other data corruption in the program, you'd be like, well, okay, that's great. Like
+that's a bug, but that does not, I can't be this bug because this bug has got these very, very odd
+symptoms of this, this kind of flickering on and off of going oscillating between our actual correct
+data. This is what is so bizarre about this thing, which was unlike honestly, anything I'd ever seen
+where it's like, you're seeing the correct data. And then it's like, nope, now you're seeing like
+just wildly wrong data, like not even close to correct data. And then, oh, there's your correct data
+again. It's back. It's like, what the fuck? And so you're like, it's a VM bug. It's like, oh, okay.
+Walk me through it. Like, because like the, I mean, the, the VM system is not a magician. It's not
+like responsible for, it's not the memory system. It's, it's the VM system. What it does is like, it
+establishes mappings. It loads those into hardware translation. And then it gets out of the way. It
+doesn't like, oh, let me just go like create a thread that like fucks everyone's page tables. Let me
+go do that. It's like, and actually to make it really funny, I'll oscillate between like memory eye
+makeup and their actual true memory. It's like, it doesn't do that. It doesn't, I mean, I guess you
+could envision a system that did, but like that. And so I, I think the closest I got to coherent on
+that was like, what if there's some sort of page aliasing, right? Like the, this, you know, physical
+page is like mapped in two different locations and you're sort of fighting over it. But of course
+that does not explain why, why, like it explains corruption. It doesn't explain why like you would
+pull a rabbit out of the hat and suddenly it would be the right data again. So, you know, well, and
+I think this is where you do get to the thing. So like there are, and we don't, you don't have these
+issues on, on our, on, and on this particular microprocessor, but there are, if you have a
+virtually, a, a, a virtually indexed, physically tagged cache, you can end up with aliases in that
+cache, right? Where you can have, and you can have the same, you can, and there are things that you
+need to go do to make sure that you don't actually have, you have, you can get data corruption if
+you don't manage those things properly. But the problem is like one, like a vac alias does not
+symptomatically resemble us at all. Two, when we move that process to a different CPU and it
+continued to flicker. And if you take one, it's like not flickering and you move that to a new CPU,
+it continues to not flicker. It's like, what? I, I, I, no, I just like, again, this just makes,
+nothing makes sense. So we were starting to think we had it reproducible on, on, you know, pretty,
+pretty readily, right? Like we, we, I think at this point. Which it's not the solace actually. Yeah.
+Not just solace. Not just solace from, because now like my, like it's not just solace from the
+perspective of like, okay, this is like, we, we do have a cord around this thing. Like we're being,
+but it's also like the, another thing that is so strange about this is this is like so reproducible
+over here. If we had something again, like my fear of like, you've got a dim issue where you've got
+like corruption in like the memory system of the, where we have like an SI issue, right? It's like,
+it would not be this reproducible. Right. Or, or if we had, it's like, what is going, why is this?
+And the fact that it was like so strangely, what was always to me that we were not, and we're not
+seeing like cord ups all over the place. Right. Which is what we would see. You know, if you really
+screw up, if you have truly, truly rampant data corruption, like you will see this is when LS dumps
+core, you know, and these are not good days. Exactly. So, so, so we had a reproducible. We, but we
+had a, we still had lots of theories. Like we thought KPT, is it KPTI was potentially involved? We
+thought maybe, as you said, maybe trace mem was lying to us, although we couldn't really get our
+heads around that one particularly. Well, I was like, okay, trace mem's lying to us. Like, I'm going
+to, I know you at one point, you're like, I'm going to go look at the code for trace mem. And I'm
+like, I don't know what you think you're going to find, but like trace, oh yeah. Cause I mean, it's,
+it's tracing memory. It's really not like, you're going to find what you, it's like, you're like,
+this is like six lines. I don't see how this, like, what? Like, oh yeah. Sorry. Did you miss the
+flickering code I put in the trace mem where I give you the wrong answer? Some fraction of the time
+where I roll the die and give you the wrong answer. Yeah. Sorry. Yeah. Was that a mistake? Should I
+not have done that? Exactly. And we also, we still had not let go of the fact that, or the thought
+that it might just be, I think we described it as sort of like a pedestrian user land bug. Like
+basically we've got multiple threads in this process that are somehow conspiring. Um, I am gone at
+the, by the time we are flickering, I'm like, this is not like this process is a 100% victim. I
+don't understand how yet. I just, I just watched you and Keith having a chat about that where we're,
+we're like wrapping up for the day and we're like, yeah, that's, that's a real possibility. Maybe
+you're just, maybe you're just. I think one of the things we did see, uh, looking at some of this
+history was that, uh, I think if we had pinned it to one specific CPU, we wouldn't be able to
+reproduce it. But then if you pin it to like say eight out of the CPUs, you would be able to
+reproduce it. Um, so I think that was, that was like, you know, one of the concerns about that, but,
+but I mean, I, I don't, I personally like, yeah, I, I think I don't see how you get the flickering
+from there. Like we also like the, this, this thing that would pretty reliably reproduce did not
+reproduce on any other system. Like we, we ran it under Linux, we ran it under macOS and never saw
+it. Right. Well, in particular, not on a Lumos on stock gear, this was just on the, on the homegrown
+stuff, uh, which made it even more terrifying, of course. Yeah, exactly. Which is a, yeah, I'm glad
+you find that relaxing, John. That definitely caused me shortness of breath. The, uh, um, but no, it
+did make it odd. And I think Adam, you're right in that we, I'm like, if you suppose that we have a,
+there's a bug in trace mem and there's a bug in the program. So the, the, the flicker is somehow
+being caused by trace mem and the truth, but then you're like, but why is the, the program is
+actually detecting the correct corruption? Also we're here because the program detected corruption.
+That's right. And we just did a, if zero print value and it's not zeros. Right. It's not zeros.
+Anyway, I think it's safe to say we did not have a, a solid hypothesis. No. And then I also love the
+fact that you could stop the process for like a minute and walk away, then resume it and it would
+start flickering again. Yeah. So you could stop the process for a minute, move it onto a CPU it's
+never been on and it would flicker and you're like, what is going on? All right. So that is like,
+but again, I think we, we end that night being like, we're going to get this thing and whatever it
+is, it, it, this is super weird, but it is, uh, it, the fact that it's so isolated is actually, and
+also, you know, the other thing that is actually that I took solace in the operating system is not
+dying because the operating system itself is a stress test of many things. The operating system
+itself really cannot tolerate like having its memory corrupted. Yeah. It's pretty sensitive to that.
+Really. One of our many dumb lunch conversations at fishworks were like, if we start corrupting
+memory, how much memory can we just go corrupt before the operating system panics? And then, and
+then we like, we get started corrupting memory. And of course we didn't really have the patience to
+do this. And so we just like started corrupting memory randomly. Nothing panics. We get a little bit
+bored. Like, okay, let's do something different. Let's just actually like, let's change mutex enter
+to like, I do remember that. Yes. And then let's see how long it, then I, and like you get, like you
+write the knob and like the system immediately blows up on your corruption. It really does. It does
+not, uh, it does not mutual exclusion. Like the operating system takes pretty seriously. Pretty
+serious. Okay. Mr. Eddent about mutual exclusion. Yeah, exactly. Yeah, exactly. But, uh, so the fact
+that the operating system is not dying is also like it, this is a big program. It runs all the time.
+It very much relies on the, the correctness of the hardware at the least. Um, but God damn, this is
+weird, whatever this is. So then we get to the next day. Um, and Adam, this is when, and I, I, I'm,
+I'm sure you went to, to rewatch the, uh, us getting back together that next morning. Yeah. I, and
+we did in, and not initially, but like, I think everyone, everyone, we had pulled in more folks at
+this point. We were trying lots of different theories on lots of different systems. John is
+definitely back from vacation. Cause John, I, I was, I was, yeah, you were, I don't know if you
+were. Yeah. Well, I got back from vacation and Brian is like, so while you were gone, we saw this
+comment that you wrote, right? Which is like the one that I put in there, like why we should never
+retry this because the only possible explanation is something horrible has gone wrong. And Brian
+basically said, Hey, by the way, something horrible is going on. Right. Oh my gosh. I forgot that.
+Yeah. Yeah. Yeah. Well, welcome back from vacation. It's all broken. Unfortunately you thought we,
+but the, so we're all, yeah, we're all kind of in there. Yeah. And I, I feel like, you know, there's
+this, this aphorism that like all systems problems are either kernel problems or compiler problems.
+And I feel like in the back of my mind, I was trying to turn this into a spreadsheet problem. So I
+was like, just doing sort of random analysis on the virtual addresses. And the weird thing that I
+kicked over was like all of the virtual addresses of the buffers that we were, that were corrupted
+were really highly clustered. In fact, we had this, a heap that was almost like, I think like two
+gigabytes in size and all of the addresses came from a range that was like 600 K or something in
+size. So it's just a teeny fraction of the heap. And I had no idea what to make of that. I almost
+hesitated to bring it up just because it was such a like, I mean, clearly meaningful, but also like,
+yeah. So what, like, I have no idea what this could possibly mean. Yeah. And my, my comment that
+this might be a VM bug was so like, so poorly received that maybe I'll just keep my comments to
+myself. My smart ideas to myself. Right. I was, but no, so this, I mean, and you, and I, I don't
+know. And actually even re-listening to it, I honestly can't tell if it's just like false modesty or
+if you genuinely don't know if it's relevant, but you know, I think we get, I think you can just
+live in that kind of ambiguity. That was definitely not false modesty. That was definitely like, I
+am a little embarrassed that I was just like looking at numbers. Like I felt like I was doing
+astrology on virtual addresses. You know, these are all Sagittarius. There's one that's a Virgo.
+Nevermind. No, scratch that. Oh, what a Sagittarius thing to say. Yeah, exactly. That's right. No,
+but I'm like, that is definitely relevant. I think that is definitely relevant. And okay. That, and
+you look at it, it's like, okay, they're not like, they're not so tightly clustered that they're in.
+I mean, this is part of what made this is like, it's not like they're in the same cash line by a
+long shot. They're within the same 600 K range. Turns out it was actually like, it would have been a
+two meg range. Right. Spoiler. Spoiler alert. But we, but, but 600 K when you've got a multi
+gigabyte heap is like, okay, that is, that is definitely interesting. And this is like, okay, this
+is, and we started calling it the haunted VA region. Um, and it's like, we have a haunted VA region
+and this is where, so there are a couple of things that are kind of interesting. And to be clear, VA
+meaning virtual address. Virtual address. Yeah. And the thing, so one thing that to me was really
+about that, first of all, the, and we've said this in the past, but debugging is something that
+really scales very well, kind of surprisingly well, actually. Yeah. And, um, and then it's also like
+really amenable to remote work. Um, you know, the, you know, we, we, we've talked about it, you
+know, in our, our RTO or GTFO episode in terms of like the importance of being remote and oxide, but
+the, us, the fact that we are, and we're obviously recording it as well, but like the fact that you
+can have people be in the conversation at zero cost to the conversation, you know, and there's no,
+where it's like in an office, you're like, okay, like now like the 30 people gathering around like
+one person, which inevitably is going to be like, do you really use Dvorak? You know, or something
+like that, you know what I mean? Like there's going to be, and you're going to be like, you know,
+actually there's a faster way to use that. And you just like, it just, it feels like inevitably
+there's like a level of like backseat driving that's just in the monkey brain. Well, there's so much
+value. Yeah. I mean, it's just the recording it. Cause then I remember Keith joined in, but late,
+but then he was able to catch up by like watching part of the recording. Yeah. I mean the, the, the
+ergonomics of it, as you're saying, you know, while I'm watching you type into the shared screen, I
+can be off, you know, piping, you know, my, my, my you know, results, you know, through, through,
+you know, or whatever. Yeah. That's right. And I think, and then you can also, it, it paralyzes
+really well because people can just go off and like, I'm just going to kind of quietly go off and
+explore this idea that I've got. And I like, I'm kind of getting all the data, but I'm not, and
+there's no kind of drag induced from that. And then, so once we are at that point of like, oh wow,
+this VA region is interesting. Then John and Dave both kind of in parallel and talking to one
+another, but begin to work on different ways of, reproducing this. I think Dave was actually running
+maybe even a C program. John, you were doing this ballooning where you're like, okay, let's take
+this thing and I'm going to inject a balloon and I'm going to force its VA range to be into the, so
+it's, in other words, I want, I want to force this thing to allocate out of the, when it allocates
+in the heap, I want to be able to force it to allocate in a certain address range. Yeah. I had
+completely forgotten about that. I had just run across a commit. So we ended up, I mean, maybe this
+is jumping ahead a little bit. We ended up actually committing a variant of that balloon exercise
+to, to installinator itself as a workaround until we could get this thing really fixed. Oh wow. Do
+you remember this? So this, I actually forgot that. Wow. So this commit still exists. Basically we
+just, we allocated a VEC of two gigabytes at the heap at the very top of main as a way of like sort
+of forcing us past the haunted VA region. And like we merged this like the day, like as soon as we
+realized that's what the problem was, like I don't know how long it's going to take to actually fix
+it, but we can, we can just avoid the, this region completely by just sticking a vector there that
+we never touch and just guarantee everything else is above. I rewatching the recording. I love how
+quickly we latched onto the term balloon because it's such a fucking stupid idea of like, Hey, why
+don't we just create a VEC? And then I think you had to like print out a, the last element of it to
+like, we were, we were sort of worried about the compiler outsmarting us and yeah, balloon kind of
+sanitizes what is kind of a dumb idea that, that we all came to and thought was the best idea we
+had. Yeah. Yeah. And I, and actually, you know, just rewatched that. I'm not sure what that John, I
+think John, you would come with the term balloon, but certainly, you know, VMware has got the term
+balloon to force a guest. Yeah. You, you, the kind of to force a guest to, to get rid of memory. So,
+and Adam, I don't know if you, if you just rewatch that recording today, but when we, we got to the
+funded VA region, you may have, you can keep this on there. You may have caught me saying this looks
+like rich and I stop. I'm like, I won't say the rest of it. And so that, that's a reference to
+Richmond 16, which is a bug that we had to join. And this is where the, in different, but it's a
+different symptoms, but, but kind of rhymes in that there was a PA region that would get stepped on.
+And as it turns and minutes after boot, and this is actually, you can, you can, you can argue that
+the, the headwaters of oxide can be found in Richmond 16, because this was the BMC. We believe it
+was the BMC that was doing this. Um, so the BMC was just like, just stepping on our memory a long
+time after we had booted, like a long time being like, you know, seconds, minute. It's just like,
+actually I'm still using that memory, I think. And it would, and it was one of these things where
+it, we were chasing this thing for a long time before I realized like, oh, it's actually hitting the
+same region, um, the same physical region. And we just ultimately ended up just being like, okay,
+we're just not going to allocate out of that region. Um, but, uh, it was, um, so I stopped short of,
+because I didn't want to, you know, that, uh, the, Richmond 16 cast a long shadow, uh, cast a long
+shadow at Joyent, as did OS 1028, which was another data corruption bug we had, um, that actually
+ultimately was data corruption that, that, uh, could manifest itself in on-disk data corruption
+because we pushed the corrupted into the disk. So the, the, we're like, we're beginning to get all
+these flashbacks, but when we were talking about the, uh, we also did, uh, again, Adam, I don't know
+if you, if you, if you watched all that recording, we did have an interesting like, so turn into
+Scooby-Doo, a little Scooby-Doo discussion there about. Yes, we did. Yes. And I, and I, I feel that
+this bears re-emphasis because I feel that Scooby-Doo on the one hand has left the generation,
+generational chasm. My kids all are like our Scooby-Doo scholars, which I appreciate. They
+definitely, I mean, kids watch Scooby-Doo, which you can with, you can drop a Scooby-Doo reference
+to basically any living human at this point, because even the boomers are going to get it. Because
+when it was on, it was on private. Scooby-Doo is ultimately like the fabric of mindsets. Third
+nation Shakespeare. Yes. It is. It is. It really is. It really is. But with this very important
+shift where Scooby-Doo, and I feel that it does represent a shift in the zeitgeist when Scooby-Doo,
+when we were kids, you know, there is, there's the ghost at the amusement park. And as it turns out,
+it's like actually at the end, it's, you know, it's, it's, it's the crooked operator who's trying to
+scare off the kids or whatever, you know, it's always like, I feel like real estate scams. Isn't
+that what? That's right. I feel it's like, um, the, but there was always a, a rational answer. And
+at some point between then and when my kids started watching the remade Scooby-Doo's like, no, the
+answer is it was a ghost. That's the conclusion. And I'm like, what? Where's the end? It's like, no,
+no dad, it was a ghost. I'm like, who was the ghost? Who was the ghost? What part of the post credit
+scene? Where's the crooked real estate deal? If this is obviously, and I'm like, no, this is a real
+problem. This is like a decline in science, in scientific education in this country where it's like,
+no, now it's just like ghosts happen. And I'm like, you know, put a straight line to like anti-
+vaxxers from this. I got to tell you, I mean, I end this, you know, not to, not to turn into one of
+those podcasts, but anyway, it's a problem. I'm old school Scooby-Doo. We don't, the answer is not a
+ghost. The answer is a crook and we're going to find the crook. But in the meantime, we have a
+haunted VA region until, until we actually find the crook and unmask them right now. It really does
+feel like a, a lot like a haunted VA region. And then while we're looking at the number, Keith is
+like, okay, wait a minute. I actually recognize that, that number, they, in terms of the actual like
+hex address and the hex address is where we, we map the RAM disk when we boot. Yeah. So we, we, uh,
+we end up with a mapping that we use to map the RAM disk, um, that we intend to discard. Um, this
+ends up being a, this is a, this is a temporary mapping and Keith discovers pretty quickly that, oh,
+there's a bug. We don't correctly discard this mapping. And if we do correctly discard the mapping,
+then the problem goes away. And on the one hand, you're like problem solved. And you're like, what?
+No, the ghost can't be the answer. That's actually, that's having a ghost be the answer because it's
+not a mapping like in this process, right? Like it's a, it's a mapping in the kernel. It's a mapping
+in the kernel. It's a mapping in the kernel. And it is like, that is, it's a kernel mapping. And
+this is a process process. Like these things, yeah, it's like, and so it's like, oh, well it's a
+stowaway mapping that's getting from the kernel to the process. And then it's like, and then
+flickering and then leaving and then coming back, leaving like coming back. It's like, that's not
+making sense, but we do have like a, a kind of important breakthrough in that like, okay, it does,
+if the mapping is present, this problem happens. And at the and in particular, we could see that if
+the, if the mapping is present and at this point, by the way, we are actually, this is another like
+kind of important breakthrough is like, okay, we've got the haunted VA region. We don't need
+installinator at all. We don't need any of this stuff. If this is like a, and in particular, I'm
+like, actually I can just act. And I'd kind of forgotten that we had done this. I can just use
+detrace to show the bug because I can do a, uh, using the copy in action, copies memory in from a
+user region into the kernel. And we can go into one of these, the, the, the haunted VA region, which
+we don't expect to be mapped in a process. So we would not expect this to, to that, that copy and to
+be correct. We would expect to get an error and just an artifact. Effectively like, like a, like a
+safe segue almost you can imagine from detrace. That's right. Reading memory is not mapped, but it's
+like a soft error rather than like crashing the process. Yeah. And something that's extremely
+important detrace is like, it's very important that when you are doing a copy in from a process, for
+example, you're just tracing memory. If you give it an address that is incorrect, it's very
+important that the, I mean, obviously we can't die. We can't panic the system clearly. So what
+detrace does detrace gives you an error. It gives you an explicit error. Like you tried to do this
+and that address is not there, but your detrace program continues to run. Like the program's not
+aborted. You can, but what is aborted is the clause that you're executing. So if like you have an
+error, it's like, we know that we're, we can't, we're not going to execute this clause any further
+because we've had this error. But we're going to allow the enabling to continue to operate. And so
+what that allowed us to do is like, all right, so what we're going to do is we're going to attempt
+this copy in and kind of do a bogus copy in, and then that should fail all the time. And then we're
+going to have an action after that, that actually, you know, does whatever we want to record that we
+got here, you know, aggregating by process anymore and have it, what have you. And then you, you run
+that and you're like, I, I think I know what I'm going to see here. And it's very scary. And sure
+enough, you run this and you're like, oh yeah, all these processes, like, oh yeah, like, you know,
+config D and all these other processes that are running on the system. Like, yeah, they all, they
+all have this little bonus haunted VA region, some fraction of the time as well. That's right.
+Right. Like, so in other words, like if they had just constructed a pointer into that area, like
+sometimes if they did a load or even a store, it might have worked. It might have worked. Okay.
+Yeah. That's the other thing is we realized is we were, we were poisoning this region and we, by
+storing to it and we begin to realize that like, oh, if we store to it, another process will see the
+same corruption over time. And you're like, okay, so they, the, so there's no, and then we like,
+okay, so this memory at a key was like, I can't remember if like, if this memory is being
+deallocated or not, like, I think it must not be being deallocated because otherwise we'd be just
+kind of corrupting random memory all over the place. But we like, okay, so we are, we, and we now,
+so we now can see this in every process, which is, and then we can also see that like, okay, if I go
+into that page table and I, uh, if I clear the access bit in the kernels page table, so clear the
+access bit, my D trace program that is doing the copy in is setting the access bit. And this is
+like, okay, this is both good and terrifying. Good because like, we're beginning to connect some
+dots here and like, there's blood in the water. We're definitely going to get this thing bad in
+that. Like this page table is like over here. And when we are doing the copy in, we are, we are, are
+on a CR3, which is kind of the base of the page tables that is going to be pointing into that, that,
+that the, the user address space. It's like, it should, it somehow is accessing this other page
+table. And the other kind of interesting data point that we had across this is like, it definitely
+like you needed a context switch to actually to flicker. That's right. The, the oscillation between
+good and bad data required a context switch between them. That's right. You had to like go in and
+out of the kernel to see this and you're like, okay. So then you, you, you begin to add all this up
+and I become increasingly convinced that like, this has got to be speculation. And we have got to
+be, there's got to be something that we are doing where we, and in particular, this has got to be,
+so the, and it should be said that this address, and I'm going to, I'm going to upload the, the doc
+that we sent ultimately to AMD. And that will go into, to, to the, the details of, and I don't know
+that it even yet does actually, unfortunately, you're just a team say project, but this was the,
+the, the doc that would, that we submitted to them. And that this kind of describes now the entire,
+the entire problem. But the thing that we, that is important to know is because of kernel page table
+isolation, you kind of mentioned this in passing, Adam, but this is really important. So KPTI is,
+was invented, had to be invented by us all at the tip of a bayonet due to meltdown. So meltdown,
+people remember specter and meltdown were the, the anus horribles of 2018. So this was discovered in
+early 2018, January 1st, I believe 2018 is when that was kind of publicly disclosed. The, and the
+specter, these were both bad. Meltdown was extremely bad. So what meltdown allowed you to do is get
+the CPU to execute speculatively based on addresses that you weren't allowed to read. You as a
+process, and you could then execute conditionally based on that speculation. And you could use that
+to actually begin to figure out what was in, and then by using a timing attack, figure out what was
+in cache and what was not in cache. And that in turn allowed you by, by kind of changing the way you
+do the space on every bit, you can actually begin to like map cache lines that you can't read, which
+is very scary. And in particular, and it was meltdown was very, very bad because it, there's no like
+worker, like the, the CPUs busted Intel CPUs just flat out busted. And the only, fortunately they
+discovered that, that you could prevent this by having true kernel page table isolation. So in other
+words, it used to be that you would have a user application and the kernel would be in pointed to
+from the same CR3. And then, then there's a bit that would basically determine whether this is a
+user mapping or not. And, uh, but as it turns out that bit is like, okay, well, though, apparently
+I'm going to ignore that bit. So what we're going to actually do is we're going to move you. We're
+going to have a user CR3 that is for, for, for mappings only for your mappings only. It can't see
+any kernel mappings. And then we had a kernel user C3. We have a kernel user CR3 that is a CR3 that
+point that includes both kernel mappings and user mappings because the kernel needs to be able to
+see user mappings to be able to copy and copy outs and so on. So the thing that's wild is that the,
+our, our stray mapping that we have, our stowaway mapping is in fact, not in either the user CR3 or
+the kernel user CR3. It's actually in a different CR3 that, that we, that we call this document, the
+kernel only CR3, but this is a very, very small CR3. And this was basically done. I mean, this is
+like kind of funny. We actually did this as kind of a protection mechanism against the kind of belt
+and suspenders against future possible kind of attacks, um, that we wanted to switch you on to a
+kernel only CR3 before we switch onto the kernel user CR3. And it becomes pretty clear that we are,
+when we're in that, that kernel that, that we are, uh, when we are in that kernel only CR3 for that
+very brief period where we do have the stowaway mapping, the processor is executing speculatively.
+And in particular, it is loading a page translation to the stowaway mapping. And then when we later,
+and then that is being loaded into the TLB. And this is where we get to like the difference of
+opinion, whether that should be allowed or not, but that gets loaded into the TLB. Then later when
+we were to do the D-Trace copy. And for example, that would hit in the TLB and we would use the
+wrong mapping instead of the right mapping. And this would, except first of all, this explains the
+flickering because it depends on whether you have the wrong mapping in the TLB or not. And you have
+the wrong mapping in the TLB, depending on if it happened to speculatively execute through, uh, the,
+when you were in this state where you had this kernel only CR3. Um, so it, and if apologies if that,
+if that explanation, that explanation is, that's great. Well, you know, it's actually funny because
+at some point, uh, Adam, you asked Keith to give a two minute explanation for how the RAM disk is
+loaded. And Keith gives an extraordinary two minute explanation and then apologizes for how poor it
+is. It's like, I'm really sorry. That was like, that was like a discombobulated mess. I'm like, that
+was, that was just like a, it was scripted, but I, and so my explanation is nowhere near as good,
+but the, the, the, the, the document goes into a lot of details there. I will say that this is like
+major deja vu for me because now I'm like, wow, this is really reminding me of something way, way,
+way back in the day. So in the late nineties, I had a really pathological bug. I did one of these
+psychotic bugs is both, uh, psychotic. It was not reproducible, got it to the point with enough
+reproducibility. I was able to determine what was going on. And what was going on was that the, the
+chip was not honoring a TLB shoot down. And in particular, the way we would do a TLB shoot down in
+the operating system, which is to say like, okay, I should, I probably should, I probably should
+mention what the TLB is. Um, yeah, sorry. The, the, exactly. Sorry about that. So the, the, the TLB
+is the translation look aside buffer. So when you have a virtual address and you're going to turn it
+into a physical address, you need to do that. Those page tables are going to be stored in memory. So
+you need to do multiple memory operations to get, to determine what that physical address is. And
+you need to do that translation every time you have a memory operation. So it's really, really
+important that that translation is cached and the TLB, which is a very old construct and surely
+dates. It's got to be like an IBM model 85 thing or model. I don't know. I'm actually go look up the
+actual origins of TLB, but the translation look aside buffer dates back to the earliest machines
+with virtual memory, because if you don't catch, you have to catch this, like you can't not have a
+TLB. Um, so, but the TLB, because it is a cache, you know, wherever that we have caching, we must
+have, uh, you immediately have coherence questions. And so you have to be sure that when you are
+taking down a mapping that you're also making sure that, that you are taking down all of the cached
+associations between the virtual address and the physical address. And we call that a TLB shoot down
+in a, in a multiprocessor system. So we need to actually take, cause this thing could be sit, this
+translation could be in a bunch of different CPUs and we need to be like, yo, you need to actually,
+uh, get rid of this mapping. You need to invalidate this mapping and microprocessors have different
+ways of, but on x86, it's called the invul page. Um, and there's an instruction that you execute and
+you execute that instruction with it, with an address. And that would actually, uh, shoot the, shoot
+the mapping down. And what I realized is that invul page in some very rare circumstances was not
+actually shooting down the translation. And in particular, if on the next instruction, it would
+actually still be in the TLB, again, under rare conditions. And what I further realized was that
+this had to do with the fact that the mapping itself was still valid. And what was happening was
+the, so, cause it actually in the operating system, whether you, the mapping is valid or not
+shouldn't matter when you shoot it down until B, because I know I'm like, I'm not going to execute
+on any more CPUs. The mapping, no one is going to be loading through this mapping or they would die.
+So I, whether the mapping is valid when I shoot it down or I shoot it down and then rip down the
+mapping shouldn't actually matter. But as it turns out, it really did matter. And when, because if
+you, if you did the, the shoot down with the mapping still being valid, as it turns out, the
+microprocessor would speculatively execute and it would speculatively execute, it would
+speculatively load whatever was an EAX and whatever is an EAX is actually the address you're trying
+to shoot down. So it, you would literally do the info page instruction that would shoot it out of
+the TLB. And then it would speculatively execute and it would load through EAX and load it right
+back into the TLB. And that, that load through EAX, that speculative load through EAX was sort of
+just for funsies, just like, I don't know, I've got something that looks like a pointer. That's
+right. People love to do referencing pointers. Let's give it a shot. And this was one of these where
+in hindsight, I, I, I was, I was being given a small bite of the apple of the tree of knowledge of
+good and evil because I'm like, wow, that is like really aggressive speculation. And this isn't like
+1999 maybe. And this is just at, because the, the kind of the dark side of speculation is that like
+speculative execution is really required to get around the memory wall for these microprocessors and
+kind of like the memory wall being the disparity in speed between the memory. Yeah. It's like the,
+the, if you, if you don't actually hit at a cache, like we're just gonna spend all of our time
+blocked on memory. And one of the way we got around the memory wall, a couple of different ways, but
+one of them was very, very good at speculative way executing. And this is one of these like, oh my
+God, I had like, I don't think spark is doing that. And of course it's like, no, spark's not doing
+that pal. It's like, that's the problem. That's why spark sucks. Have you noticed how slow spark is,
+right? A hundred percent. I got at one point, John masters was like, I want to get a hold of some
+old spark machines. Cause I bet I can find a lot of speculative execution. I'm like, um, no,
+unfortunately, good luck. Unfortunately, I don't think we were, I wish maybe if we had speculatively
+executed a little bit better to the microprocessor, but a little more, more, uh, a little more
+competitive. Um, so, so we am like this and, and with Intel, I like, I get this bug totally. Like I
+present this to Intel and Intel's like, well, you really shouldn't be doing the shoot down with the
+mapping dollar. And by the way, you're the only operating system that does it that way. And I was
+super sad because I'm like, okay, well I spent a lot of time debugging this and being like basically
+victim blamed for it. And I'm like, okay, can we have, and then I'm like, all right, this is fine.
+Give me a note in the architecture manual. I just want like a paragraph. And then I had this plan.
+Do you remember the, the, the, the shirts that we had made that Roger had with the paragraph on it
+from the spark architecture? No, no. Okay. So this is like super deep lore. And actually this is,
+this predates me. We need to get somebody to get, so there was a slash proc bug that Roger could not
+find for years. And there was a footnote in the spark architecture manual that basically explained
+why did this data corruption issue that he was affecting? We have, I don't know if it was data
+corruption, but it was basically like a correctness issue and a, uh, an engineer, I'm trying to
+remember the name of the engineer at SMCC who ultimately found this, but Roger was so elated to find
+this and to find that it was present in the architecture manual that I either he made or someone
+made for him shirts that had that footnote on them. Uh, and Roger being yes, Roger Falconer, the
+late Roger Falconer, the inventor, along with Ron Gomes of slash proc. And so I am like, this is,
+and I had one of those shirts. I, and, uh, this is one of these shirts that I'd probably like catch
+the kids wearing every once in a while. I'll be like, you know, you're, you're wearing like, sorry,
+you're, you know, you're wearing like the shirt. Exactly. You just wrote someone's phone number on
+the back of the magnet card, by the way. Um, the, um, so, um, the, but I got that shirt. I think, I
+hope still somewhere. Um, but the, so I have the same idea. I'm like, I will, they will do the
+architecture note. And then yes, I will accept the fact that like our operating system was, I guess,
+incorrect. I don't know why, but we will correct it. And then I will have this teacher at least I'll
+have the t-shirt. And I'm like, so can we, I'm like, it seems reasonable to like clarify in the
+architecture manual that at the time that, that an info page happens in order for that info page to
+be correct, there must be no valid translation in the page tables. Like that feels like a very
+reasonable, right. Does that seem reasonable? I mean, another way I'm saying it is very reasonable.
+And they're like, no, I'm not going to say that. I'm like, how about, uh, uh, like, uh, an email or
+something like a, an erratum or like a, could you maybe send a clarifying bulletin? They're like,
+no, no, we don't feel like doing that. Like, okay. All right. Well, this has been fun. Um, so that
+was, I, that I'm like, wow, this bug is really, really similar. And so how did we ultimately
+determine that speculation was involved? Fortunately, we do, there are ways to disable, and these
+are like super deep in the innards of the CPU. It's not something that they really expose, but you
+actually have MSRs that you can use to disable certain speculative features, which is actually
+really valuable. And the, and I really appreciate our, a huge shout out to our folks, um, to Will
+Foreman, Paul Grimes, a bunch of other folks at AMD, who've been working really hard to get us the
+necessary documentation. So we actually had the ability, like we actually know what these bits mean.
+I'm like, we can go disable the, and I, first of all, I, I, I tried, I think I tried to disable
+like, uh, all speculative loads. Um, the, uh, or I, I, I did something that was like a big hammer. I
+think I did maybe I, I, I, I just, that's what you said on that demo day video. You disabled all
+speculation. Yes. Very big hammer. As it turns out, like machine slows to a crawl. Um, they're like,
+oh, okay. So let's not, okay, nevermind. Let's not do that. Um, but if I, um, it, um, so you, you,
+you've got to have a little bit more fine tune, but fortunately there's a way to disable, uh, you
+can disable speculative TLB loads and then read loads and then you can disable. So you can, in other
+words, the, the, the TLB being loaded speculatively, um, which interestingly, like dramatically
+reduced it, but didn't eliminate it, which is like, oh God. Okay. Interesting. But if you disabled
+both that and you can also do it on the instruction side. So if you actually, that completely
+eliminated it, um, and you're like, oh wow. Interesting. So it's like something is also interpreting
+it as, as on the eye side, on the instruction side or speculating on the eye side, right?
+Speculating on the side. Yeah. I was just like, wow, this is amazing. Uh, and we did manage to
+reproduce this on, we had this on, this is on Milan, which is what development on the time, but we
+are also able to reproduce it on, because once we knew exactly what this is like, okay, we can go
+reproduce this anywhere. We don't actually need to be on a Gimlet. We just need to, to create the
+stowaway mapping and then we can actually see this. And so we were able to reproduce it on a Gimlet
+and we were able to reproduce it on, on a Milan that is ethanol X on like kind of their, their
+reference system. And then we're also able to, to, to reproduce it on a Genoa, which is their, uh,
+newest CPU at the time. And our, the first concern was, uh, this is potentially very bad because if
+you are speculating, like we are speculating across this protection boundary, like, is there any way
+for a user? Cause one thing that's really important is that when we were copying out data, uh, and
+when we were using copy in and D trace, those two things, those copies are actually happening in the
+kernel. They're not actually happening at user land. So part of the reason we were observing this
+when it first came out of the wire is because it is the kernel that had copied it out to us. So if
+that user process attempted to load from that same VA, and this is why we saw the pattern we saw, if
+the user process would load from that same VA, it would, what it would see would actually be the
+correct data. So the, which is like, why you're like, okay, uh, the, the, but if it, if it, it was
+incorrect data was copied into it, the corrupted data was copied into it. So the, you're like, okay.
+Um, is there a way, and this is kind of our question, AMD, um, is there, are there a way for a, this
+to be seen and used to land? Um, and can you then, if, and our kind of assumption was no, um, but is
+there a way for this errant speculation to be abused in some way, um, to undermine KPTI was our
+other kind of concern. Um, and AMD's answer, uh, pretty similar to Intel's sensor from, from, uh,
+from a generation and a half ago, basically like, nah, it's fine. Nah. Nah. And then, no, I will say
+this about AMD and I'm like, okay, so what about like a note in the, cause as it turns out, we are
+the old, I mean, again, we get, we're used to this, but we're apparently the only operating system
+that has, cause the issue is that we're going from a, we're going between two CR3s in the kernel and
+it wouldn't, um, this wouldn't be an issue if we only actually had the more conventional thing of,
+um, sort of like, okay. Um, so what about a clarifying note, um, that if you do this, you should be
+aware that speculation can occur across us and actually to AMD's credit, they're like, yeah, sure.
+Send us the paragraph. And I just haven't done that yet. We should, I probably should have said, so
+like AMD is much more accepted to the paragraph and I really owe them the paragraph. So I think it's
+the other reason I've been reticent to do this as a podcast episode. I feel like I've got, so
+instead we're giving them this, we're giving them this, we're giving them the gift of a podcast
+episode. And, uh, you know, I don't know, I guess this is just what makes me like an older and wiser
+engineers that I'm no longer, you know, I've grown out of printing errata on a t-shirt and wearing
+it on my chest. Like that's a, that's a phase as it turns out. That's like a phase that you grow out
+of. So parents of kids who are printing out architecture manuals as t-shirts, like just, just be
+patient with the developing brain. It will, um, you know, that one of the things we were talking
+about the other day, Brian is like, what if we had not hit this in installinator? Like I, like what
+if this, you know, we had never used this virtual address range because, because there's no reason
+why we needed to have, uh, like what would have happened? Like what, this all just gets very close
+to what if the Confederacy wins the civil war? I feel like in terms of just like, like, it's like,
+it's just not good. A hundred percent. Short answer. Not good. Long answer. Long answer, a subject
+of much historical fiction. And, you know, you can, you know, um, the man in the high castle, but
+for data corruption, it's, um, yeah, I mean, it's, it's hard to know where we would have seen this.
+Um, I mean, we would have seen it. It feels like, I mean, the, the thing that I find chilling is
+that we would have seen it in a way that we wouldn't even known how to bifurcate it. You know what I
+mean? It's like, we could have seen it and it's also like corrupted. I don't know. I, and oh, here's
+another question. Like, had we seen it before? And, um, cause I think there were like, um, some,
+some tough to understand, um, issues with, uh, with cockroach. And I know we've talked about
+cockroach debugging a couple of times, but you know, not impossible that that thing had a big heap
+that could have wandered into this, into the, uh, the haunted VA range. Yeah. I mean, the good news
+is that you do have, you can eliminate this very quickly. That is like, if you don't have this VA
+mapped, not this problem, because if like, if you don't have the VA mapped, it means that you were
+in the business of just like fishing in addresses that you didn't have mapped. Then it's like, what
+do you have a six egg V ham? I mean, this is like, is this what you do for kicks? Like if you like,
+you know, I don't want to kink shame a process, but like, if this is kind of what you do for kicks,
+like that's, but so you have to have this thing mapped realistically for this to, to be. And now
+that said, I mean, you can, unfortunately the corruption happens at such a distance. It's like, if
+you had it mapped in the past, I mean, it's like, yeah, it gets, it gets ugly. Yeah. It gets very
+good that we caught it. Yeah. So I feel like, I mean, a bunch of lessons, I do feel like the, the,
+one of the most important ones to me is John, that the very important half measure that you took and
+cause the other thing that you did that I thought was really good that I, I can struggle to do is
+you did that pretty quickly. Do you know what I mean? Like you didn't like, well, let's like analyze
+this for six months. It's like, no, no, let's just like, this is scary enough that we just need to
+cause that was pretty quick as I recall. Yeah. Well, I mean, sort of like necessity is the mother
+invention kind of thing. I mentioned I was going on vacation, right? I actually merged that like
+Saturday morning before our flight, right. It was like, I'm going out of town. Like I screwed
+something up in writing the OS image. Let me at least put some stuff in here to save everybody else
+the time of like, it's corrupt and you don't find out until after sort of like rain said, right?
+Like it's much better to get an error during installinator than to find out like a solid won't boot
+after I'm like, I'm just going to save everybody some time and fail this thing. So at least they can
+like know to retry it faster. So it, I, if I hadn't been going out of town, would I have still done
+that? I don't know. Right. That was two years ago, but right. Lucky break. Well, it was, it was a
+lucky break. It was a very lucky break. And then I think as we began, and then I, so I think that to
+me is, is, is a, a big lesson. I think another big lesson, I just think we saw this a lot. It's like
+this really benefited from the parallelization and lots and lots of people contributed to the
+debugging of this. And, you know, and sometimes it's like, I just was listening to the recording.
+Like, you know, I really appreciated like Nils is trying to reproduce this on a non-oxide system as
+like our reproducer, like non-oxide being like X86 running Helios, but not a, and that's a really
+valuable endeavor, right? Even though it didn't, uh, cause it's like, if that yields something, it's
+really important. Um, other people are like, can I reproduce this in a different VA range? Cause
+that's, that's really important if we can do that. So I think that the, the, the, the, the
+parallelization you get with debugging, it's kind of surprising to me that debugging is so
+parallelizable, but it really is, especially when you have an existential bug. It's always, you
+know, that's. Yeah, no, but you're right. That like the, the way that we debug with the way we do
+these, these group debug sessions, it's very different. Not something we did before the pandemic,
+not something I hadn't done before the pandemic. Maybe you did a joint, uh, but it's a great way to
+do it. It's a great way to do it. I mean, I think it happened a little bit via chat and less over
+meet, but it, um, it's great. Yeah. I think it's, I also love that you get, uh, just watching the
+recordings of this and, you know, cause I think another lesson from this is I really appreciated the
+recordings. It was great to be able to kind of, uh, walk through all this. Oh, someone's asking
+like, where did we land on this? What was the solution? So, sorry. And I, I did kind of gloss over
+it. The, the solution is there was a bug in the operating system. And I realized, unfortunately, it
+got moved from Omicron to St. Louis, which meant that because there's that we end that, that is not
+publicly available, but I'll get this bug publicly out there so people can look at it. We'll get it
+in the show notes. Um, there was a bug in the operating system that kept this errant mapping. The
+mapping should have been flushed completely. So that mapping should not have, that, that was a
+stowaway mapping should not have existed. So the fact that there was a stowaway mapping, that is
+actually the bug. Um, and so CR3, the, the, the, the kernel only CR3 really should be very empty.
+Um, and it shouldn't actually be a problem that the chip can speculate across this. So that is the
+actual problem. Um, and then with this kind of like note of like, if you have something in your
+kernel only CR3 and you've got another CR3 that is also kernel accessible, uh, that you can actually
+get speculation across these two. So you have a mapping in the former, that's not in the ladder. You
+should be aware that you can load translations. Um, which again is now a non-issue for us because,
+um, but was a great issue for us. Uh, so that's the, that's the actual proper fix. And then John, I
+think we got rid of the balloon. I, I, I trust. Yeah. Yeah. It lasted 48 hours. Right. Yeah. Right.
+For me, I think, you know, it was really nice to be able to rule a lot of things out because again,
+like, you know, coming in, it's like, Oh, all of a sudden you're seeing this corrupt data. Like it
+could be so many things. Right. And, but being able to use D trace and like, you know, instrument
+Tokyo and just being able to narrow it down to that like little section where we've eliminated
+almost all of our user land stack. We are like literally receiving bytes from the buffer. Um, the, I
+think the other bit that was, I think is really helpful, just kind of looking back at the issue was,
+I mean, you know, this does use some unsafe code. This has, it uses uninitialized buffers and so on.
+Um, so we did try to add a little bit of like, you know, can we like force the buffer to be
+initialized and like, you know, that didn't help. But, uh, but it was really nice that because this
+is rust and like, you know, I think, you know, if this were in C, I feel like it would be so much
+harder to actually track what's going on, at least for me. Um, and I think, you know, rust is kind
+of really narrows down the scope of unsafe code in that sense. It's just really satisfying. Yeah.
+That's a very good point, Rainn, that I think that just in general, when the, the, the more robust
+one's foundation is like there, we don't expect odd behavior. So when we do have odd behavior, it's
+kind of like, we need to stop everything and really understand this. And I feel like, you know,
+we've had a bunch of these, you can Adam ring the chime as you see fit or not for the, the debugging
+odyssey episode, which is another one where, um, and I, you know, I feel like we've done enough of
+these that we don't have really second thoughts about it. Um, but if one did have any second
+thoughts about it, uh, you're like, Oh God, no, these are that we've so often you get this thing
+that has, and this was like, this was very clearly of serious consequence. So like there would be no
+even internal debate about whether this is the right thing, but sometimes you get something where
+it's like, well, no, this isn't, it doesn't feel to be a serious consequence. Like in, in Dave's
+case, it's like, we are actually, you know, yes. You know, I, when I run this, I'm going to get a
+random, random psych faults. We're not actually seeing it in production. It turns out it was random
+data corruption that could have bit us at any time. Um, and I think it is the, the, but Rainn, to
+your point, when you're, when your foundation is, is kind of Sandy and then, well, it's kind of like
+this thing kind of dies for a bunch of different reasons. And I don't know if we stopped and
+debugged all the data corruption, we wouldn't do anything else. Uh, and it, it just limits the scope
+of what you're looking at. And you've got just, so I think that was, that was also really, really
+important in this. I think, I think there's only a certain amount of budget that, you know, folks
+have like just a certain amount of patience folks have for like debugging these issues. Right. And,
+you know, I feel like, uh, in, uh, in many other environments that budget gets eaten up by, and I've
+been enrolled where like, yeah, you know, yeah, you know, we'll, we'll, yeah, we'll just restart it,
+whatever, you know, yeah, corruption happens, but no corruption does not just randomly happen. You
+know, it's, it's worth getting to the bottom of it. And like, yeah, I mean, you know, ever since we
+fixed this issue, we, I don't think we've, we've really seen any instances of corruption, right?
+Certainly not in Solnit, but in general, like, I don't think we've seen that. No, of course. I hope
+you're frantically knocking on wood because you're, you're just like summoning a tsunami of
+corruption. Um, but yeah, no, that's exactly right. Um, and I think it is just the, and the more
+solid your foundation, the more you know that this investment is something that's, that's important.
+Um, and so it's, it's going to pay off. So I think it's like when the, and this is why, like, I
+mean, this is where you have this kind of like exploding tech debt where, well, everything is like
+broken. So now we've got a lot of these kinds of mysterious behaviors and we can't stop and
+investigate them. It's like, well, okay, what if we built it the right way from the beginning? Um,
+and we, we, um, which, which is why it's really important to build it the right way from the
+beginning. Um, and this, yeah, it was, and then the conclusion from AMD is, and obviously this
+reason we're talking about, this is like not a security issue. So, which is great. Uh, and as
+someone saying in the chat, like, could you, cause these things both use PCID zero, um, to, uh, to,
+and if we use a different PCID, yes, uh, we could, um, the, the, the presumption is, I can't
+remember if we actually tested or not, but the presumption is that this would not speculate across
+that, the fact that these are PCID zero on both of these. So, um, but yeah, this was, uh, this is a
+fun one. This is, and I love the kind of like the spec, if it hadn't been for meltdown, ironically,
+we wouldn't have had this to be like, because if we, the, the stowaway mapping would have been in
+like, we would have hit that earlier. The stowaway mapping was able to stowa away because it was in
+the kernel CR3, the kernel only CR3. Um, so you, this needed a bunch of things to kind of come
+together. Uh, and the net effect was, uh, a little terrifying. Yeah. Well, uh, Brian, I'm so glad we
+did this one. I had a great time watching most of the video of it. I found it like a, the slowest
+paced episode of house I've ever watched, but, but still, uh, still gripping. Yeah. The video is
+funny. Also, I thought, yeah, it was very funny to watch the video. There were a couple of times
+because we would all just be on there in silence, wondering what the fuck is going on. I'd be like,
+did I pause this thing accidentally? Oh, I go. Nope. Nope. There we are. We're all just like staring
+at our screens, staring into the middle distance. Yeah. And then also, you also feel like you begin
+to, you know, obviously, you know, all these things because you have to deal with me, but me only
+dealing with me in the kind of like my past me, there's some things that are like very annoying.
+Like there were a couple of times I'm like, you know what silence, silence. I'm like, wait, wait,
+who would say something like that? What do we, what, like just after like something to be like, I
+don't know what, I mean, obviously like, do you want us like, this is a bit like, are we supposed
+to, it's like a call and response. How big was it? Right. I know. It's like, could you mute yourself
+if you just want to talk to yourself, please? But it was, it was great to get in the, you know,
+great, terrific work all around really did require a bunch of folks to, to work together on and a
+reminder of like, man, these systems are, they, they really do fabricate a kind of reality. These
+things that are bedrock, you know, ultimately they are all artificial at some level. So it was fun.
+Hopefully this, this met your expectations, Adam. Absolutely. Glad I'm only two years in coming, but
+it was awesome. Only two years ago. Oh, this is great. And I don't, I, I, and now we are, we are
+left with, with Morris Chang and Sarah when Williams, that's the next up. Next up. I was really, I
+was, I think that's another reason I was delaying on this one. It's like, I still, I wanted to, you
+know, buy myself a little more time for I could get Morris Chang on here, but yeah. Alrighty. Well,
+thank you everyone. Thank you, especially, thank you, John and Rain for both your hard work on this
+problem. And thanks for, for joining us again, reminiscing. It was fun. And thanks in absentia. Dave
+did a lot of work on this and obviously Keith and Adam, you were, I thought it was funny because I
+did think that you underestimated how much going back and rewatch that. I hope you appreciated that.
+Like, no, I did. I was actually right in there. Yeah. Yeah. I'm showing up to work almost every day.
+Yeah. Almost every day. Exactly. Yeah. Exactly. Uh, and I assure you, we're not about to go debug a
+company ending data corruption problem at the end of this podcast. Just like, not as far as, you
+know, I guess you have to stay tuned in two years to know if we are or not. That's right. Awesome.
+Thanks everyone. Talk to you next time.

@@ -1,0 +1,355 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/07/SED1946-AWS-DevOps.txt
+EPISODE: Agentic DevOps at AWS
+DATE: 2026-07-16
+SED: 1946
+HOSTS: Matt Merrill
+PAGE: https://softwareengineeringdaily.com/podcasts/agentic-devops-at-aws/
+----------------------------------------------------------------------
+
+EPISODE 1946
+
+
+[INTRODUCTION]
+
+
+[0:00:00] ANNOUNCER: AI agents have become capable of reasoning across large amounts of data, calling tools, and taking sequences of actions autonomously. These qualities make them well-suited to some of the most persistent pain points in DevOps, including the on-call engineer woken at 3am to diagnose an incident, the build failure that takes hours to trace back to a root cause, and the operational toil of modern software delivery.
+
+Agentic DevOps is the emerging paradigm that applies these capabilities to the full software life cycle with the goal of matching the velocity of modern software delivery with an equally capable operational layer.
+
+Neha Goswami leads Agentic DevOps at AWS and has been at Amazon for over 20 years. In this episode, she joins Matt Merrill to discuss the AWS approach to Agentic DevOps, how Amazon dog foods its own DevOps tooling, how their DevOps agent works from alarm to root cause, why determinism still matters in an agentic world, creative MCP integrations customers are building, and what the future holds for SRE engineers as agents take on more of the operational work.
+
+Matt Merrill is a software engineering leader with over 20 years of experience building and scaling software teams across enterprise and product-focused organizations. His background is in back-end development, cloud architecture, and distributed systems design. He currently architects and delivers software products and leads a team of engineers at DEPT(r) Agency. You can learn more about his work at code.theothermattm.com.
+
+[INTERVIEW]
+
+
+[0:01:52] MM: All right. Hey, everybody. I am Matt Merrill, and I'm here today with Neha Goswami from Amazon Web Services. And before we dive into our topic today, which is Agentic DevOps, Neha, can you tell us a little bit about yourself and what you do at Amazon?
+
+[0:02:07] NG: Yeah, absolutely. Glad to be here, Matt. Let me start with what I do here at Amazon. I lead Agentic DevOps in Agentic AI organization in AWS, where my team is building products which bring agents into DevOps and application security aspects of development. I've been in Amazon for almost 22 years at this point.
+
+And fun fact, I started my journey as an SDE straight out of college in a team called builder tools. I was building tools which was mainly focused on internal Amazon developers. And I was there in the team for 3 years and then moved around in different parts of the company, and came back to building developer tools four years ago. And that has been the most fascinating journey for me because I came back -
+
+[0:02:59] MM: That's awesome.
+
+
+[0:03:00] NG: Yep. Came back to build the same tools I was building but for external developers and in the world of AI. And it's just fascinating to see how this world has changed in all these years.
+
+[0:03:11] MM: Yeah. Honestly, I've been really looking forward to this. I can't wait to talk about it. And what a great prep for dealing with outside developers. How many developers and engineers does Amazon have roughly? Because, I mean, that's a heck of an audience to lead a set of tools for.
+
+[0:03:26] NG: Yeah, I don't know the latest numbers. They keep changing, but thousands is what I can say. Yes, we have thousands of them. And to date, I maintain this outlook that developers have been the hardest audience to please, whether internal or external.
+
+[0:03:42] MM: Very difficult. Yes. Yes. You have my utmost respect. Yes. And to the audience out there, we wouldn't have it any other way, right? That's what the engineers do. Okay, cool. Today we're going to talk about DevOps in general and Agentic DevOps. I can't wait to dive in to see what that progression has looked like especially at Amazon. And I would love to take a view on this conversation of you'll hear me ask some questions about is Amazon dogfooding these things, or drinking their own champagne as they say, and how you release these features. I can't wait to hear about this.
+
+
+
+Let's start. And I think agentic has become a really big blanket term for a lot of things. And I think like engineers have a very specific definition of agentic. But I think marketers have a much different one, right? And I'm curious from your perspective in the DevOps space, what are you excited about in the DevOps space with agentic, and what do you think it really means in the DevOps space?
+
+[0:04:43] NG: Yeah. Roughly speaking, my definitions of agentic is that you have a model in the mix which is doing the reasoning, but you're really using the model to drive a lot of reasoning decisions and deciding which tools are the right tools to use for the agent to achieve a goal that it's given.
+
+And we've now used agents a lot for coding. We've had so many coding tools available for many years now that are making it easy for people to generate a lot of code. Agent for DevOps for me is more about, "Okay, now your code is ready, and data is showing us that code is being produced at an unprecedented rate using these AI tools. What's the next step?"
+
+And, really, DevOps, the way I see it changing with agentic development coming in is it's both a catalyst for change and the cure for change. It's a catalyst because with all these code changes that are now lying around for code reviews, the challenge is how do you take them to production safely. And you match the velocity at which the code changes are being produced in the first place.
+
+I think that's the problem, and that's the catalyst of why DevOps has suddenly become much more important. And the cure, and this is the exciting part for me, is agents are pretty good at doing reasoning on why our builds are failing, why our pipelines are stuck, and what you should do to fix them. Agents will also help us solve some of these problems in the DevOps world, and that is really, really exciting to me.
+
+And we've had things like IaC. We've always known those are really important parts of the DevOps cycle, things like testing. I mean, it has existed for a long time, basic practices for good software development. But I think agents are going to make a really big change by taking these elements and making them easier for developers to inject them into their DevOps workflows.
+
+That's what I'm super excited about is we've seen agents do a lot of work for coding. But what can agents do to make your pipelines better, to make your build failures go down, to make your changes safer? I think that's the exciting part.
+
+[0:07:01] MM: And so I think that you have kind of a flagship product right now. It's called DevOps Agent. Pretty straightforward name, which is good. I like that. I like that about this AWS service because I don't have to have this like, "Oh, what's that name that I need to remember? Anyway. But that what I was really pleasantly surprised to read about is that the integration list is like a who's who of the DevOps realm. It's GitLab, Datadog, Splunk, ServiceNow.
+
+And I saw you say something in a previous interview is that AWS isn't building its own CI/CD platform or code repo. And so for someone like me who has a mental model of "once we're in AWS, we're going to stay within AWS, because they have a service for everything" feels like a pretty big shift. Is it? And how are you thinking about that? And is that a pivot? Or tell us more about the thought behind.
+
+[0:07:56] NG: Yeah, that's interesting that you say that. Because an insider view from AWS and Amazon in general for all these years, our mental model has not been about building a service just because we can. Our mental model has really been about what do customer needs are.
+And what do they really need to run their operations to build the systems that they need to build for their customers? And we work backwards from that.
+
+And in working with so many customers over the years, what we found was the environments for software development, the tools that they use, whether it's the CI/CD pipeline, or is it some policy related tools that they're using, or even the code repos, there are a lot of variety in these development environments. And the problem space was really on top of these environments.
+
+The problem space was how do you connect the data or the process, which is maintained in these disparate tools, and give solution at that level to the customer. That's why we have not been obsessed with building the next code repos to say, but it's really been about people are using these code repos to do their work today. Then they're using a pipeline system to do the next step of that work. How can we help them at a higher-level tie all these tools together to reduce their operational toil? I'd say it's a much higher-level goal that we are taking. And if it so
+
+happens that in order to achieve this higher-level goal of reducing the ops pain for our customers, we need to build a code repo, we need to build pipelines, sure, we'll do that. But it's really about solving that. Where is the customer problem?
+
+[0:09:37] MM: That's really nice. And by the way, just to clarify, that's my mental model. It doesn't make it right. Thank you for clarifying.
+
+[0:09:42] NG: Yeah. Quickly, I'll add one more thing to there, Matt. One of our tenants in AWS is also about choice. And you see that with things like Bedrock where we give people model choice. And it's like you have open source models, you have the models from the large AI labs. And the same principle applied to our developer tools as well. We want to give people choice.
+Okay, you're using these tools which are not AWS tools. Great. We will meet you where you are. That's another tenant that has sort of guided our mental models and what services we have built.
+
+[0:10:16] MM: Okay, great. I'm curious, this is morbid curiosity. Amazon Web Services at the scale it's at, how does Amazon Web Services do their own DevOps? And how has that evolved especially over the course of the past year or two?
+
+[0:10:31] NG: Yeah. Amazon and AWS in general, we have a very, very strong culture of end-to- end ownership for our developers. Our developers build services. They are also responsible for testing them. They're responsible for all the deployment processes and to actually run these services in production. We don't have a separate ops team. We don't have a separate DevOps team or even a QA team for most of our organizations within Amazon. And I think that has been a big guiding factor to how the products, the AWS DevOps agent and even the security agent came about.
+
+But our model is very much around centrally owning all parts of operations by development teams. We feel like by doing this and by having this mindset, our services are just designed better for sustainability. So developers have a vested interest and they have accountability to making sure that their services run well. And that has really benefited us as an organization and as a provider of these core services to other customers.
+
+Now we do have a central team which is responsible for doing a lot of centralized tooling, and they provide platforms and tools which are used by a large majority of the team. For example, our pipeline system is owned centrally. We have policy management systems which are also owned centrally. Our build and deployment systems are owned centrally. And we have ticketing systems.
+
+We do have a fair bit of machinery and tools which are owned centrally. But a lot of the ownership around how to configure these tools and run them, that is owned locally. That's the way we've run DevOps throughout the years, and I think it's really been a very strong culture within our organization.
+
+Now coming to the side of how has it changed over the last few years. I would say for the central team, I have seen some pretty remarkable changes. One example that comes to my mind is around how we run campaigns. Campaigns are large scale changes. They could be API upgrades. They could be migration from one framework to another that impact a large number of teams. It's not localized to a couple of teams here and there. At our scale, it's really makes sense to run these campaigns centrally.
+
+And one of the big changes I'm seeing in the last couple of years is how these campaigns are running and how far we are taking these campaigns to the left in terms of the dev cycle. You might have heard the stat around how we were doing Java version upgrades centrally and saving millions and millions of dollars.
+
+[0:13:17] MM: I haven't heard about this actually, but that sounds interesting.
+
+
+[0:13:20] NG: Yeah. This was the stat we published when it was many SD years of work that was saved in doing a Java upgrade. And this is almost like 2 years old that we had this stat. And that was done centrally. And that was using the technology that we now have in our product called AWS Transform.
+
+And what was interesting about that was not just the time savings. It was just how far left we were going. Now you have a central team that is able to update so many software packages in one go produce a PR for them to review. They still own the last mile of making the code change
+
+happen. But those changes were also verified in the sense we would do a build of those changes to make sure that the build doesn't break. And we could go that far. We could do some testing for those teams on behalf of those teams. I felt like that is the change that GenAI introduced in some of our central workflows.
+
+And it was not just a tool change, it was a mindset change too. It was a mindset change that we can actually go much further to make the life of developers and developers easy who now have to accept these campaigns and make some service changes. And they have many of these campaigns happening at the same time. I felt like that was an example of where it made a material change for individual development teams.
+
+Last two years have also been super interesting. A lot of teams are using Kiro to build bespoke agents that are doing things - they're basically putting together DevOps agent and some other agents that they have built into one consolidated workflow. That has been pretty remarkable to see. Many teams are of course using DevOps agent internally as well for managing their incident response, but they're also marrying it with their other custom homegrown agents that their teams have. And it's been pretty remarkable to see how they are doing that using tools like Kira.
+
+[0:15:18] MM: Very cool. This was a few minutes ago, but you use the word toil. And there was another interview I did on this podcast if somebody used that term as well. They called it the great toil shift. This grunt work now is being pushed more to the right of how do you verify things with this speed of change. But what I like about what you're saying is like no, this is actually pulling all that power and the change to the developers to be able to automate more of this with LLM, if I'm hearing you correctly.
+
+[0:15:45] NG: Yeah.
+
+
+[0:15:46] MM: That's awesome. I was tempted to ask the question, what does the DevOps agent and security agent do? But I'm going to approach it from a different perspective of what is the origin story of these? And what I'm particularly curious about is was AWS or Amazon dogfooding or drinking their own champagne of these tools themselves before they were
+
+released to the general public. Yeah, what's its origin story? And that might lead us into what it does.
+
+[0:16:13] NG: So I would say the motivation to build these agents definitely came from our internal development processes. We've had many years of focusing on what we call pager pain. How often are your SDEs getting paged? How often is it pages at night?
+
+[0:16:30] MM: That is definitely toil. Yes.
+
+
+[0:16:31] NG: Yep. The other one which we have obsessed over is deployment velocity and deployment safety. Those have been the other two pillars. And every year, we would have teams and orgs take goals on improving that compared to the prior year. And I would say they've been top of mind for us for many, many years. And that is where the overall motivation for these two agents came from. It's like how do we speed up the development cycle? And where do we see the most operational pain for our developers? The operational pain. Obviously, the pagers was the top of the list. That's why we said, "Okay, let's go attack that pain." And then it was how do you get changes out faster? Application security reviews take a long time. And I would say rightfully so, because we want to be obsessed about security. But the fact of the matter is that they do delay releases. They introduce yet another part in the process that it takes for you to get your code out there.
+
+The motivation came from looking at our workflows. And the one which got us most excited was definitely the incident response of what problem do we want to solve in ops is what we were looking at. And we're like, "Oh, look at the number of times. Our engineers are woken up at, you must have heard that in some story, 3am in the morning, and something has gone wrong in the system. Let's start with that." How can agents help there? That became sort of our hero use case to get the product out there.
+
+And before we launched this product, many of our internal teams were using DevOps agent. They were seeing success which was I'd say between 85% to 95% depending on what the team was doing and how they had configured the agent. And that gave us confidence. We have something that we can take now to the public because we had testimonials. We had enough evidence that this is something that can work for our customers as well.
+
+
+
+For security agent, our internal security team started to use that as well. And we got a lot of feedback from them around where the tool is doing well or how can we improve it. In a way, dogfooding is, for me, essential. That's the way for me to get active feedback. And we have some of the most complex systems in the world. What's a better way to get feedback than to have your own?
+
+[0:18:54] MM: And that is exactly why I was curious to talk about - yeah, that's awesome.
+
+
+[0:18:59] NG: Yeah. That's about how we build these agents. The other thing that the reason why we wanted to dogfood these was the more we learn internally, the better flywheel we have. We found so many defects just because internal teams were testing our product as we developed it.
+
+And with every iteration of a release, internal release, we would make a lot of improvements. We'll find things that we were not great at in terms of quality. We'll go and systematically address those things and build that into our product. I feel like it's a beautiful flywheel that we were able to create as a result of just being part of Amazon.
+
+[0:19:37] MM: That's awesome. This is something I actually ran into specifically today is just thinking about how to evaluate LLM-based systems. How did that flywheel work? How are you evaluating that stuff? Was it humans voting? I'm just curious.
+
+[0:19:53] NG: We do a few things. We have created an internal benchmark I think on both sides for both our agents. And in general, I would say methodology that we've followed for some of our AI functionality is we create internal benchmarks. They're not just internal representations.
+You'll have an internal benchmark which is for our internal system. We would test on that.
+
+
+Then there is a parallel benchmark which is more representative of our current workflows internally plus externally. What do we learn from our customers that we can incorporate in our benchmark? And anywhere where you have public benchmarks, we would use that too.
+
+And I would say to start with, a lot of the evaluation was human. We would have people actually verifying the output. We have cases where we also automated a large portion of that using LLMs. But I don't think we saw a case where we could entirely delegate that to LLM.
+
+I would say that at least in my experience, you have to marry these benchmarks with what I call online data. Online data is essentially things that are happening in production. When we integrate these agents into our internal workflows, let's say the DevOps agent is integrated with our ticketing system for a lot of teams, we actually get to see their feedback. They provide us that feedback.
+
+And we do have a person who's looking at that feedback, but we also have an automated system that's scanning through that feedback and it's identifying the things that we don't get right. Our accuracy is not 100%. And very systematically, we go and then figure out which ones of those are improvements that are broad-brush improvements that we need to get back into the product. Which ones are just misconfigurations. So that's a different kind of improvement which we need in our product so that people don't misconfigure the product. That flywheel. Again, you asked the question of how do we evaluate. It's a combination. It's a combination of automated evaluation with humans.
+
+[0:21:50] MM: And that feedback capture mechanism, is that thumbs up thumbs down, just plain text from people? Is it something else?
+
+[0:21:57] NG: It could be thumbs up, thumbs down. It could be like a dropdown things that we are giving them. Sometimes we ask them much more specific questions. And if we have access to those teams directly, we just actually sit down and interview them. That's very - yeah.
+
+[0:22:12] MM: Can't beat it.
+
+
+[0:22:13] NG: Yes.
+
+
+[0:22:14] MM: That, you can't beat. Yeah. Okay, cool. That's nice. One of my questions was are you using it in production? It sounds like you absolutely are. Do you have any particularly
+
+interesting wins and the interesting losses that you may have hit along the way? Any particularly juicy things that caught or missed?
+
+[0:22:33] NG: I would say the interesting things that we are catching, some examples have been we found issues with lambda functions. There was a particular case when we were able to detect port exhaustion on a particular host. We had a singleton running and just basically creating a bunch of connections, and then we ran out of them. That was detected by our agent. That's an example that comes to mind with a few teams. They actually benchmarked against their homegrown agents and found that what they did with DevOps agent was they would get a base level accuracy of 85%, but then they customized it. Added their own runbooks as an example. And they were getting into like high 90s with that. That was pretty remarkable to see just in terms of accuracy.
+
+I would say that is sort of a larger theme of things we have learned internally. If you're asking me for the challenges, I would say that we have seen as we have scaled internally are mostly around this customization bit which teams have had to do some last mile configuration. But I call it like it is very easy to do that. It's not very heavyweight. But I feel like if you want to really ratchet up the accuracy as a team, you add your runbooks, you add some of these basic things which are very bespoke to your teams, and the agent does much better. That was one thing.
+
+The other thing which we learned, and honestly it was a challenge that we knew about but I wish we had a better solution, was we have so many bespoke systems in Amazon for even logging or metrics. We have teams that are using different version than Vanilla CloudWatch. And the learning was, obviously, the more information the agent has, the better it will be at giving you the root cause of what went wrong.
+
+And access to the information was one of the bigger challenges that we ran into. Because we said we support MCP integrations, and we do support a lot of them. But internally, the number of MCP tools that teams have built and integrating with each one of them, that was a very insightful journey. We had to build a lot of what I call out-of-box integrations working with our central platform team, so that every team did not have to go through that pain of, "Oh, now I have to integrate with Midas system."
+
+We looked at what are the most popular MCP things that we should integrate with, and we did that centrally. And that took us time. But I feel like that is the way for big organizations to actually scale a DevOps agent is to build some of those things centrally. Don't leave that for your individual teams to configure. This is a much better way to scale.
+
+[0:25:19] MM: Yeah. The MCP sprawl has already begun. That's what I'm hearing. Yeah. There's a line from the GA announcement that says on-call engineers wake up to a root cause instead of active incidents. And so, I'm kind of curious what this product is like in experience. Somebody gets paged at 3am, and we have the DevOps agent enabled, what does that look like?
+
+[0:25:42] NG: The journey actually starts much before the human gets paged, the engineer gets paged. When a team configures DevOps agent - at least the internal way we are doing it is we have a system for ticketing. And we have a way such that we model our teams and which team owns what system. And for every system there is what we call a resolver group. That represents the team of people that owns that system. And anytime something goes wrong, those are the people that gets paged.
+
+And when you configure your resolver group and your resources for DevOps agent, it does some work upfront to create a subsystem topology. And that is the intelligence that it has inherently. When you do get paged, it will tap into that topology that it has already created for your system. And the interface for the user is really the ticket. There is a ticket, and it has different severity levels. For the higher severity levels, we page people. For the lower severity levels, we just cut a ticket and they can look at it during the regular working hours.
+
+So assume your system is already hooked up, your ticketing resolver group is configured to use DevOps agent. When you have an autocut today, your engineer wakes up with the pager going off. The agent is kicked off as soon as the autocut is triggered. Your alarm, basically.
+
+[0:27:09] MM: What was that term you used? Autocut?
+
+
+[0:27:11] NG: Autocut. As soon as an alarm breaches a certain threshold, you have an autocut ticket. And that autocut ticket, what it does is as soon as it breaches the threshold, it also pages
+
+the engineer. And that is the time when we start the agent to kick in the agent too. The agent will look at what happened. It'll look into the topology. It will give you a root cause of what it think went wrong.
+
+The engineer wakes up and looks at the ticket. And the ticket now has information from the agent on this is the time and the alarm went off. This is the system involved. Here is the root cause. And I think what is really helpful for the on-call engineer is that it gets to see the agent's work. Where all has it looked? How did it come to this conclusion? What was the hypothesis it had?
+
+A lot of work is done for that engineer when the engineer comes in. What they have to do after that is audit the work. The agent also suggests mitigation steps. Audit the mitigation steps as well. And then they take action on those.
+
+[0:28:15] MM: And so this interface plugs in with a customer's existing ticketing system? Is that kind of what -
+
+[0:28:20] NG: Yeah. Yes. Yes.
+
+
+[0:28:20] MM: Okay, I see. And there's like a link or something like that to the agent interface that shows this analysis, or does it integrate in with the ticket system as well?
+
+[0:28:29] NG: For us internally, we show a lot of information within the ticket itself as much as we can. But we do have a separate app interface for doing more digging into the data if people need to go there.
+
+[0:28:41] MM: Yeah. So if my organization uses service now, what would that integration look like and what would the experience be? Would you hobby-hopping between them? Would you be integrating them together?
+
+[0:28:51] NG: We provide all the details back to service now, sand they can then render all those details within the system itself for the most part. We still have our app available for those users. But I think the pattern we see is most users stay within the ticketing system.
+
+
+
+[0:29:06] MM: That makes a lot of sense. And so that setup step, I would imagine there's a lot it can introspect simply from the AWS setup of a customer, right? That's a lot. And you also have integrations with when I'm looking at these like Datadog and Splunk. So it can pull not only from something like CloudWatch, but also from other external logging systems as well. And that's, I would imagine, a one-time configuration of this stuff, and it can then pull it all together. That's awesome.
+
+[0:29:39] NG: Yeah. We'll take any logging systems that you have and create the topology map, as I said. And that's at the application level. We're trying to model the entire application for the agent. And as more of these incidents happen, the agent learns from that and gets better.
+
+[0:29:57] MM: What is the pricing model for this? How do you charge for this? Is it per incident or something else?
+
+[0:30:02] NG: No, we charge by what we call active agent tasks. We have pricing for task hours, and that's how we charge for it. And we don't charge for idle time. We only charge when the agent is doing its work.
+
+[0:30:16] MM: You really don't want a lot of potential incidents, because otherwise you're going to get charged a lot. Yeah. Which is the goal, right? No, just kidding.
+
+[0:30:22] NG: Yeah. In fact, we do have something that we call a triage agent which has been extremely useful for us. So, it will do a dedup of events for you. So, if I have five tickets cut for the same event, the idea is triage agent is going to tell you that there's only one root cause, although you're seeing five tickets for it. The reason why we built this was what you just said. You don't want to pay. Yes.
+
+[0:30:46] MM: Yes. I've hit it so many times where you get just get the same alarm over and over again, and you're like, "Yeah, that's the same thing." That's awesome. Cool. So, this is a philosophical question, I guess, but if the agent is good enough to wake up to a root cause, why is the engineer we need to wake up at all? What's the line between the agent investigates and
+
+presents to the agent investigates and acts? And how do you see that line moving in the near future?
+
+[0:31:13] NG: Today, I would say we need the engineer in the loop. The engineer is still the one getting paged.
+
+[0:31:19] MM: That's good to hear.
+
+
+[0:31:20] NG: Yes. And they do have the accountability to make sure that the system is up and running. And I think as the agents get more sophisticated, the audit work of this engineer would become easier. What they do right now is basically they are an auditor. They examine and audit the work that the agent has done and say, "Okay, this makes sense." Or they will spot errors and say, "This does not make sense."
+
+And for us in DevOps agent, our job is to make - as the agent becomes smarter, how do we make the life of this engineer easy by giving them the right things to order the work? For example, can we show them that not just that the agent has done this? This is how the agent arrived at this. We help them test those changes that the agent is suggesting to make. Those are the kind of problems we are looking to solve. And I feel like that is the line that will move is the engineers will be able to see not just how the agent arrived at this conclusion, but what the agent is suggesting how safe is it to even take that action.
+
+[0:32:23] MM: Yeah. Increasing the signal to noise ratio.
+
+
+[0:32:26] NG: Exactly. Exactly.
+
+
+[0:32:27] MM: Mm-hmm. And maybe this already exists, but do you see that line moving into making suggestions for bug fixes that may have caught actual application bug fixes?
+
+[0:32:36] NG: Yes, absolutely. I would say why not? Again, as I said, we picked the biggest pain point for our developers. The use case that we picked as our leading use case was this whole pager use case. But the same thing applies to even your lower severity things, which can
+
+include bugs. You can have DevOps agent also configured to look at your lower severity events, including your bugs too.
+
+[0:33:02] MM: I saw you reported that 94% root cause accuracy in the preview. And so that leftover 6%, what does that failure look like? I don't know what's going on. A wrong recommendation. And who's accountable if that thing is misdiagnosed or there's some sort of worse incident as a result?
+
+[0:33:22] NG: It is still the engineer who's responsible. As I said -
+
+
+[0:33:25] MM: Oh, man.
+
+
+[0:33:27] NG: That hasn't changed. But the way it really shows up is the engineer sees the work of the agent, and it'll see the agent came to this conclusion but he correlated this data incorrectly. So that's how the engineer would find out that this doesn't look right. And that's why I keep saying it's the work that we will focus on the next months and even years is just to make that audit easier so that the engineer can trust the work of the agent more and more. I feel like that the trust boundary will start to shift. But yeah, the way it looks like today is you'll see the hypothesis, and you will have to then say, "Okay, here is where I think the agent is going wrong."
+
+[0:34:12] MM: 94% right out of the gate is pretty good. You know, you can aim for 100%. You'll probably never get there, but that's pretty good. Let's move on to determinism. DevOps is built on determinism. You want to run it twice, get the same results. But agents are probabilistic. So they might investigate the same incident in two different ways and provide two different hypotheses. And so how do you manage that in this system? And is that determinism going to go away, or do you think it moves somewhere else in this whole problem space?
+
+[0:34:43] NG: I don't think determinism goes away at all. Actually, I think what is going to be fun and challenging is how do you inject determinism in the right way into an agent. Where do you inject it? What form does it take? Those are some of the more interesting problems that we are focused on.
+
+Today, the way we inject determinism is I would say it's focused a lot around safety and security boundaries. We give this agent really trim down permissions. You have read only permission boundaries by default. You can't just arbitrarily expand them. It's a very intentional move if a user is giving the agent more permission than what it comes packaged with. I feel like that's one way we have introduced determinism. But more ways I can think of introducing determinism is doing some actual testing of your changes. That is very deterministic. You spin up a test environment, run your tests, something like that. I feel like the industry will start to move in that direction, even for DevOps.
+
+And the third thing. Again, future-looking for us is also automated reasoning, which it's a different technique. It's not the same as the LLM science that we have, but it's still a scientific technique that allows you to model your system. And you can do some pretty remarkable stuff with that. I think you were talking to Byron also here, and he should have mentioned something more around how neurosymbolic AI is a different approach that's coming into the mix. We are also looking at taking some of those techniques and putting them in DevOps agent.
+
+[0:36:23] MM: Can you briefly explain - I'm not familiar with automated reasoning. I could guess at it, but what is that and how is it different from what an LLM does?
+
+[0:36:31] NG: Automated reasoning takes a more mathematical approach. It will model your system in some sort of a mathematical representation. And you can do the before and after of a system. Let's say you're modeling a change. You can see what it is that it was before and what it is that it is after, and then use that to see have you created a drift that was not intended. It's super helpful for things like policy.
+
+[0:36:54] MM: Oh, very cool. And so that is built into the DevOps agent now, or is that down the road?
+
+[0:37:00] NG: Some of it is built-in. And you'll see us doing more than that.
+
+
+[0:37:03] MM: Okay. In Amazon, when something goes wrong and the agent analyzes it and you fix it, how do you do a post-mortem? Can you actually replay the decision tree? Is some of it opaque? And so for the agent itself, what does the observability look like?
+
+
+
+[0:37:20] NG: That's a really good question and something that comes up from our users quite a bit. And we obsess over transparency actually quite a lot. For us, as long as we can show more of the agents work, I think we help the auditor or the engineer in this case really figure out where the agent took a wrong turn.
+
+And we do give the engineer the ability to give us that feedback, so that as in the product, they can give us that feedback and we get that signal. And when I said that the agent gets better over time and learns from its mistakes, this is one of the ways in which it learns. We take that negative feedback and then we record that in the agent's history, and the agent actually learns that this was not the right conclusion. And oftentimes, we also see that we know what the right conclusion was. Because, ultimately, when the ticket gets resolved at least internally, we write down this was the root cause. The agent will take that also into account and improve its performance over time.
+
+[0:38:23] MM: So I am morbidly curious about the architecture of this thing. And I'm not going to ask you to go into a dissertation about how it works. But I am very curious just at a high level how this thing is operating. If you don't mind kind of indulging me there.
+
+[0:38:36] NG: Yeah. It's a combination of the model and the tools that we have provided, the way we've constructed the agent. It's all about that. And we use state-of-the-art models today in DevOps agent. But we also use the models which are best suited for the job we're doing.
+Depending on the complexity of the job, depending on the latency requirements, we would pick the right model to solve the problem that the agent has.
+
+And really, a lot of our architecture has been about what are the right tools that we want to give this agent. How do we structure those? Problems have been even around those tools. What is the underlying data? How do we build the topology? That has been a very interesting problem that we have solved. And what data is useful and relevant, because as you were saying in the beginning, versus what is noise?
+
+A lot of our architecture is about the right tool calls and picking the right set of data to actually take action. And we have modeled this agent in a lot of ways as our on calls actually work. The
+
+way we have built this agent is modeling that pattern. When you do get paged, how do you go and investigate an event? That has been the model for - yeah.
+
+[0:39:53] MM: How is that amount of data injected as context in the model? How is that managed?
+
+[0:40:00] NG: We do have a pretty large context windows for a lot of models today. I would say that that takes care of a good amount of context. Then with the topology that we build that's our intelligence too, we can compress it in ways that makes it more efficient for the context window for it to fit in there. And that has been of, of course, one of the techniques that we focus on as well.
+
+[0:40:24] MM: I see. Very cool. Nice. One thing that was really exciting for me to read about was that you can extend the DevOps agent by bringing MCP servers. You mentioned you had to manage and wrangle a lot of the MCP servers internally. What's the most surprising or creative MCP integration you've seen one of your customers build?
+
+[0:40:42] NG: I think some of the more interesting ones for that come to mind are related to actually making changes. Now, these are not system changes, but they have integrated MCP servers which go and update tickets as an example. Or they have an internal system where they're keeping track of what incident has happened and what is the next step. Go and update that. It's sort of a write operation. It's not a system write. It's just still very much logging the work. But I thought that was an interesting thing in how they're bringing in some of the MCP server. It's not just an input. It's actually like, "Okay, based on this agent's result, I'm going to update this other system."
+
+[0:41:19] MM: That is really cool. I know that one of the pain points I always used to have was just providing updates. Just let me fix the problem. I don't want to make an update. If an agent can do that for me, that's wonderful. Great.
+
+I'm going to shift the conversation a little bit away from DevOps agent. Let's just talk about the future of SRE or in a dev team supporting something on-call. And so a lot of engineers, especially SREs, got senior by doing incident response. And developers feel that pain of I want
+
+to make a solid system so I don't get woken up in the middle of the night. But if the agent is doing that work first, how is the next generation of SREs or on-call engineers going to get trained?
+
+[0:42:06] NG: That's a pretty deep question. I can share what I see happening. What I see happening is that I don't think developers or SREs completely go away. I don't see that happening. The question is more about how will they train. In my view, the previous SREs were trained when something would go wrong with the system. And they would see a problem over and over again, and there was a lot of pattern matching that starts to happen, "Oh, I've seen this problem before."
+
+And with AI, what is happening is some of this pattern matching is being done by the agent itself. Fewer of these events will come to SREs, but they'll come. I anticipate that SREs will have to get much better at doing this pattern matching when the number of incidents that they're doing pattern matching over is fewer.
+
+The other thing I feel like will change for SREs or developers in general is they will deal with more complex scenarios where the agent just fails. And so the agent does half the work. Maybe it's incomplete. Those are the places where the SREs and developers will get engaged. And I think that's actually a good thing, because some of those trivial cases, no SRE engineer enjoyed working on those. But the real hard ones, I think that is how they will train. And I think that is how they will learn.
+
+[0:43:28] MM: And also something you said earlier just came to mind too, which is you got to get this thing off the ground. If it's a new system, there's going to be new problems, and you're going to get trained along with the agent too. The humans still have hope.
+
+[0:43:41] NG: Yes.
+
+
+[0:43:42] MM: Good. So you lead Agentic DevOps at AWS. So are you guys hiring more or fewer of the people, like SRE types that you hired, say, 3 years ago for this work?
+
+[0:43:56] NG: I can't share very super specific numbers or even a yes or no for this question. What I can say is we do need a lot of developers and people with the SRE experience on our team you know as we build these products. And we are going to be building more of them. I would say the need for developers and the right folks with the SRE experience is still very much there. I don't see that going away.
+
+[0:44:23] MM: That is good to hear from Amazon. And so pivoting a little bit into the types of role, is there a particular role that's on your team that didn't exist a couple of years ago because of all these shifts?
+
+[0:44:33] NG: I think I would change the question a little bit. I wouldn't say that there's a role that didn't exist. But what I expect from the roles that do exist now and then that have existed for all these years is I think we are expecting a lot more and maybe different things from them now. For example, a product manager is now able to create prototypes using one of these coding agents themselves. They don't always have to rely on an engineering team for that. That's a change in an existing role that I see.
+
+I also see more managers are coding than what I've seen in the past. It's just become really easy to do that. And then on the flip side, we have a lot of engineers who are much closer to the product. They have a lot of good product ideas that they can now put into implementation without involving the product manager. It's the same roles, but the expectation from each of those roles has changed because we are seeing them do a lot more beyond their traditional specialization.
+
+[0:45:37] MM: The lines are blurring. That's what I'm seeing in my role too. Yeah. A lot of engineers listening, if they're like me, we're worried about our jobs. Not in a doomer way, but more of a like, "Okay, this is coming. What do I do on Monday morning?" If you're talking to like a mid-career DevOps or SRE engineer, what's your advice for them? What do the next 5 years look like? How can they best prepare themselves?
+
+[0:46:02] NG: My first point is if you haven't tried using any of these agentic tools and models yourself, start there. You have to, you absolutely need to know how powerful these tools are. And I would say use them to make your grunt work go away. That's precisely what we're doing
+
+with DevOps Agent. We're making the toil go away. And the more you see these trivial cases handled by the agents and as the agents get more sophisticated, these cases may not be trivial. They will start to get more complex.
+
+But the wonderful thing that comes out of using these agents is you will find places where you are still needed to do more complex problem solving and the agent doesn't do it themselves. And what I have found is people who are continuously playing with these tools and using them for their daily workflows are getting way more creative about getting to the next level of complexity, "Oh, now I can do this because this other thing is taken care for me by the agent." So that's my hope and wish for all the SREs and the DevOps folks is just move up the stack to hire more complex problems.
+
+[0:47:15] MM: Yeah, I couldn't agree more. And I mostly come from a software engineering background, and that's what I tell people, "Just start playing and you'll be shocked at how useful this thing can be." And I tell them that the only way that you should be afraid is if you're afraid of the tools. Just embrace them. It's going to be part of our lives for better or worse, hopefully for better.
+
+Let's end it on a positive note. What's the thing that you're most excited about in this whole space? Doesn't need to be DevOps, anything like that. What doesn't get enough airtime? Something that you just want to tell the audience that you're excited about? I think if I were to pick what I am personally most excited about, it is the agents are doing what I call a lot of information synthesis work today. And I am really excited about what actions they can take as they become more powerful.
+
+And, of course, it'll come with challenges as safety, their security and all of that. But I still remain very positively hopeful that these agents will be taking a lot of actions on our behalf. And some of those would be actions that are completely boring things that I don't want to invest my time in. So, I'm excited about those. And others would be things for which I don't have to wake up at 2am. I would be excited about those, too. But I would truly be excited about, as I was just saying, because the agents are taking so many actions, I have more time to think of other complex, other creative things that I may not have had the time to do.
+
+[0:48:51] MM: Yeah. There's always going to be grunt work, too, but hopefully less of it, right?
+
+
+[0:48:55] NG: Hopefully less. Yes.
+
+
+[0:48:56] MM: Yeah. Well, thank you so much for being here. This was super interesting. I finally got to ask somebody at AWS about some of the inner workings of what goes on there. So, I'm very, very happy. And thank you so much for being here. I really appreciate it.
+
+[0:49:10] NG: Thank you, Matt. Happy to be here.
+
+
+[END]
+
+
+
+

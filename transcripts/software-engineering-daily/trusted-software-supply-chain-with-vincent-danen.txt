@@ -1,0 +1,202 @@
+
+[0:00:00] JMC: Vincent, welcome to Software Engineering Daily.
+
+[0:00:02] VD: Thank you for having me.
+
+[0:00:03] JMC: You are VP of Product Security at Red Hat, correct?
+
+[0:00:06] VD: That’s right. Yup.
+
+[0:00:07] JMC: What brings you to Open Source Summit in North America in beautiful, gorgeous Vancouver with this – well, listeners won't be able to see this, but the weather is absolutely glorious.
+
+[0:00:20] VD: It is wonderful. The honest answer, it’s the shortest flight I can ever take to a conference. Just across the mountains, hour and a half. It's great. Secondly, I love open source. I’m here to support what we're doing for Red Hat. I gave a keynote this morning. I talked with a few people, some customers. I'm just here to support Red Hat and support open source.
+
+[0:00:45] JMC: Nice. Well done. You work in a specific area of security. I think, I read from one of the articles in openurce.com that there's a difference between the traditional infosec people. I think, you might call them computational security. I can't remember.
+
+[0:01:05] VD: Operational.
+
+[0:01:06] JMC: Operational security. You yourself and your type, professional type, which are product security people. Could you explain what you mean by those two areas and what's the difference between them?
+
+[0:01:17] VD: Yeah. I mean, infosec, or operational security, I'd look at it as people that are security operators, monitoring environments, monitoring systems, responding to incidents. They're the ones who basically, make sure they're new in your environment, in your company, or safe and secure, the information that you're using. The product security side are the folks who are actually building the software. Or at least, not necessarily building this software. I mean, we have engineers for that. They're making sure that the security considerations take it into account as you're building the software.
+
+You think about secure by designs, secure by default, maybe some compliance, regulatory considerations you might have, making sure that your build systems are safe and sound, that sort of thing.
+
+[0:02:05] JMC: You've so far avoided it. Maybe it has been intentional or not. If it has been intentional, you probably maybe feel uncomfortable by describing your work as DevSecOps.
+
+[0:02:19] VD: Well, I wouldn't call it DevSecOps.
+
+[0:02:21] JMC: Okay. What would be the difference then?
+
+[0:02:24] VD: DevSecOps are the folks who are actually doing development. Doing the operational work. They're also doing the security monitoring and automation. One of the things I actually forgot to mention earlier, which is interesting, because it's the biggest part of what we do is remediating security vulnerabilities.
+
+[0:02:40] JMC: Did you do that in purpose?
+
+[0:02:41] VD: I did not do that in purpose. Effectively, we, for all of the portfolio products at Red Hat, we look at anything new, vulnerabilities are out there. We figure out how to apply a patch to it. We rate it. We determine whether or not it affects our products. We do all of that response work.
+
+[0:03:01] JMC: My God. I just interviewed a few moments ago, Eric Brewer. He mentioned a data point that is relevant to this. At the beginning, Kubernetes had 12,000 dependencies. One of the things he was most proud of was that the whole project, the community behind it, has reduced it today to something around 7,000. Still, there's a big dependency graph, right?  RHEL, or the whole Red Hat portfolio, do you have a rough estimate of how many dependencies it has?
+
+[0:03:39] VD: Off the top, I should know it. I don't expect this, but there is something around –
+
+[0:03:43] JMC: But it's a magnitude.
+
+[0:03:44] VD: It's upwards of 40,000 components across the portfolio. Distinct components. Yes. Then when you look at the number of versions of components across all the different versions of software that we also support, we can have a pick on OpenSSL for an item. We might have four or five different versions of OpenSSL across the portfolio. RHEL 8 to 9, to 7. I think, there's some stuff in JBloss, because it's also not just Linux-based. We have a version of OpenSSL there for Windows, things like that. There's a lot of different versions of the same component, and we have to pay attention to it all.
+
+[0:04:22] JMC: My goodness. You're all –
+
+[0:04:24] VD: We're busy.
+
+[0:04:26] JMC: The scope of your domain, oh, my God. I guess, yeah. I'm thinking of stress and being woken up in the middle of the night. I guess, the worst nightmare of a professional IQ is the SolarWinds compromise, right? That type of it. Could you describe how a supply chain attack like that and specifically, how the build system, I mean, as far as it's public and you know went about?
+
+[0:04:59] VD: Yeah. I mean, for SolarWinds specifically, the problematic part was the access to the build system, where an attacker could inject code, or change code that then gets delivered to the end users. The problem was not being able to detect those changes as they were being introduced, or having access that prevented those changes from being introduced. Then that code was built with the unauthorized changes. Signed, so the customer's trusted it as coming from SolarWinds and then deployed for whoever decided to do an upgrade to the latest version.
+
+SolarWinds had this backdoor in it. There it was for a compromise as a result. The compromise initially was SolarWinds, which in and of itself, not unique because, I mean, companies are breached all the time, unfortunately. What was unique was the fact that they could target the build system and actually make changes to it. They then propagated further to other companies.
+
+[0:05:59] JMC: That's exactly. That was surprised me. It's obviously a part of the whole software world and the system and it's obviously built vulnerable, just like any other bits. One would presume that internal tooling is well isolated and well kept, but it is vulnerable still, and so forth. Before we actually move on to how vendors, like SolarWinds and others are releasing this information and how they should do it, also, let's move on to what are the tools that currently exist to prevent this? Not necessarily SolarWinds, but in general, what are the checks and balances that a build system can introduce to detect these things?
+
+[0:06:45] VD: Yeah. I mean, the biggest thing is monitoring, right? Logging everything, looking for anomalies, anomaly detection. There's plenty of log analysis tools out there that are useful. That's number one. If you can't detect it, you don't know what's there. On a preventative side, doing things like proper authentication, authorization, identity management, those sorts of things, really crucial to reduce the amount of access to those build systems to – in the security world of color, principle of least privilege. If you need to do it, you should have access to it. If you don't want to do it, you should have no access to it.
+
+Enforcing that, doing the logging and then just making sure that as your – because your build systems bring it up with software as well. Make sure that that software, if there are patches available for it, apply the patches, right? Those are probably the three key things that you like. There isn't a specific software you can say, “If you do this,” or use a software, where everything's magical and it's going to work. Those simple practices of logging and monitoring, applying patches for that software, and then just good hygiene around authentication and authorization.
+
+[0:07:58] JMC: What about within the build process of an application, what kind of analysis scanners, and so forth, do you recommend all the basic ones and can you describe them?
+
+[0:08:10] VD: I mean, you have your SAST, or your static application security testing, and your dynamic application security testing.
+
+[0:08:17] JMC: How do those two work, for example? Would you able to describe them?
+
+[0:08:20] VD: Yeah. Dynamic testing is actually putting the software within paces. Maybe it's some fuzzing, for example, like feeding it to bad data and seeing how it responds, making sure that it operates the way that it's supposed to. For static application, you're looking at how the code is structured. Can we find any buffer overruns, or other coding issues within the code? We'll scan the code for that. When we're looking at composition analysis, whether the dependencies, we're looking for, do we include any dependencies that are vulnerable and we're actually including that in our build. There’s a number of different tooling that can be used for that.
+
+Then beyond that, you're just basically looking at what's the mechanism for ensuring that the code is committed someplace? They've purported of get, get logs, get history. You can look at all of that and it's got a good authentication for that. A good place to store that code so you can actually see what changes are being made to it and who made those changes.
+
+[0:09:23] JMC: We've touched upon two of the three things that I wanted to touch upon, that are mechanisms, not all of them, but mechanisms that register, log information, so that you can detect anomalies, weird patterns, weird behaviors, and so forth, or buffer overflows, all these things. The third one is actually at a different level are S-bombs. Because in my view of the world, they are incredibly powerful tools that map, in a way, packages and the relationship between them, right? I presume you're a strong proponent of them, but you've said that they are not a silver bullet. As the SPDX marketing manager here, I feel extremely offended and directly attacked. No, but truly. Do you see them also as a way to surface information and therefore, catalyze the reaction in the response to those?
+
+[0:10:27] VD: Well, a 100%. I mean, if you look at something like the log for shelf vulnerability, for example, one of the hardest parts for people to deal with in that situation was where was it, right? It was hidden in a number of different places, because it was so ubiquitous, it was being used by so many other applications in so many different places. Without an S-bomb, you don't know where those places are. When you're looking at, there's this vulnerability, I know I have it somewhere, I need to remediate it. How do I find it? That's the part that the S-bomb really plays to truly help the operations people and the developers figure out where's this thing I need to upgrade?
+
+I've heard on the news, this thing is really scary. I need to find it. My bosses are yelling at me. Now I'm hunting manually through all this stuff, looking for it. An S-bomb really helps you respond to it quickly, because you have that information.
+
+[0:11:22] JMC: The hotel I’m staying at, just across the street here has a diagram of the building itself in the lobby. I presume this is for firefighters that when an emergency occurs, they can immediately dash into the lobby, have a really quick description of how the building is structured and how to access the different floors. Therefore, if they know where this thing is, they know how to access it. In a way, I like that metaphor to describe what an S-bomb is.
+
+[0:11:52] VD: Actually, I haven’t heard that one before. I like that one.
+
+[0:11:54] JMC: Okay.
+
+[0:11:56] VD: No, that's good.
+
+[0:11:56] JMC: You're good and I’m good. Copy. Yes, you can use it.
+
+[0:11:58] VD: Awesome.
+
+[0:12:00] JMC: Yes, but let's face the reality of it, right? It's not a silver bullet, as you said. What in your mind, and you've described this in a few articles. What are the expectedly overall optimistic expectations that public institutions, but many others that have on S-bombs, that you find that are maybe not so realistic?
+
+[0:12:25] VD: I think the biggest one is this notion of an S-bomb should also have vulnerability information. You can't, right? For me, if I look at it, most software doesn't change often. There's schedules, there's releases, there's patches. Producing a new S-bomb every time you do an update, which is the right thing to do, happens when you've got a weekly, bi-weekly, monthly, quarterly, wherever basis. Vulnerabilities pop up anytime. As we look at the landscape today, compared to 20 odd years ago when I started, there's vulnerabilities every hour, versus every month, which I’m a little used to.
+
+No one wants to build an S-bomb every other hour, right? It's hard to consume. It's hard to produce. It gets really expensive. If you have something like your list of ingredients, your S-bomb, the way that I describe it is an S-bomb is a list of ingredients. Then you have the information where some ingredient is bad for you. This thing that I bought from the grocery store has a list of ingredients, but I can't tell if it's actually good for me, or bad for me. I trust that it's good for me, because the grocery store is solid.
+
+The grocery store, or the creator of that pizza, or piece of food, or whatever it is, doesn't go to the grocery store and give them little labels to go and stick on which package to say, there's a recall. The sausage is bad or whatever, right? Would you have a separate recall list? You as a consumer have to be aware of Canada here, there's a list, these foods are being recalled for these reasons, these lot numbers, etc. It's your job to look at that list and look at that food and go, “Oh, yeah. I can't eat that. I have to throw it away.” Or I'm at the store and like, “Oh, I thought about that. I'm not going to buy it.” That's what I see as a distinction.
+
+S-bomb is an ingredient list and then you have oval data, or CVRF, or CSAF, or Vax or all of these other types of vulnerability data sources that is that recall list. When you marry the two together, that's when you have this really potent, I know exactly what I have from my S-bomb and I have the up-to-the-minute information provided by my vendor that says, these things are vulnerable. If I can correlate the two, then I have a really good picture of, I have that thing that this list is saying is vulnerable and I know where to find it.
+
+[0:14:47] JMC: Before we move on to describe this relationship of communicating vulnerabilities, who should do it and so forth, and the approach you should take to that, right? I've got a question for you, because you mentioned it. The explosion in the number of vulnerabilities is patterned, right? You just said it, I think back in the day was one a month. Now it's every minute. Is that a function of software eating the world and software being pervasive everywhere? Therefore, it has always been vulnerable. It's now present everywhere. Therefore, every piece of hardware in which it’s running has a vulnerability? Or is there anything, a new modern software development that makes it specifically prone to introducing vulnerability?
+
+Because one would say, one would argue, well, we don't program in C++ anymore. Not so much. Well, I've got controversial opinion about that, but anyway, and we've programmed in memory to save languages. What is your informed opinion about the explosion in the number of vulnerabilities?
+
+[0:16:00] VD: I think it's just the amount of software list. Back in the day when I started, there were like, the new novel vulnerabilities were coming up because, oh, wow, we never thought about this, or this type of vulnerability. Then you play catch up. You have all the software, you find a certain class of vulnerability, you're like, “Wow, this is interesting.” Now we're going to go look everywhere. Oh, my God. There's all this stuff that we have to fix, right? Now when it comes to today, I think it's just the complexity of software, because we're asking software to do a lot, that we never asked it to do before. There's also a lot more software. 
+
+I mean, if you think about it, back in the day there was, and I'll discount open source for a second. There were software companies that build software, the Adobe's, the Microsoft's, the IBM's, all of those people, right? Then you have open source and it comes along. Now, a whole bunch of people are creating software. If you look at it today, everybody is creating software. Then even software coms. You look at banks, they have engineering teams that rival the size of what we would consider regular software developers. You have people writing apps to buy pizza on your phone.
+
+Good chain here, Pizza 73 in Canada, right? They're not a software development company, but they develop software. Everybody's doing it. We're seeing it everywhere. I think that that increase is what is causing a lot of like the hey, there's more vulnerabilities, because there's more soft. I don't think open-source maintainers, or developers of any stripe are making poor decisions and just writing bad software. Unless, maybe they're using early betas of some AI type to win, maybe. I don't know. Who knows? Just a speculation. I mean, I don't think we're doing anything worse necessarily. I think there's just more software. We’re adding more of it and it's more complicated.
+
+[0:17:53] JMC: Then the reality is that vulnerabilities are everywhere. I mean, I don't want to convey an apocalyptic vision of the software world, but it's true. You have to expect them. Just, again, I was interviewing Eric. If you manage a distributed system, you have to expect faults in the network, pods going down, etc. It is a given. In this way, in the security side of things, more abilities will show up. What is in your opinion the correct approach for this? If you could also portray the more traditional ways, or other ways of approaching this?
+
+[0:18:33] VD: I mean, I think the biggest part, and some people think it's a little controversial, but I think it's actually necessary, it’s education. How do you actually write secure code? I don't think that that's necessarily taught in school. Maybe it's started to change, I don't know. Usually, it's just about, this is how you write code. This is what code is used for, etc., etc. These are the things you should be thinking about as you're writing code, so that it fail-closed, rather than fail open, those sorts of design mechanics.
+
+[0:19:04] JMC: Can I interject there for a minute? Because yesterday in the OpenSSF Summit that was introduced by two members of the White House, if I remember properly.
+
+[0:19:16] VD: CISA.
+
+[0:19:16] JMC: CISA. One member of CISA, but there was a member from a newly created, I think a month ago, cybersecurity agency within the White House. Regardless, the representative of the American government. They have this, what is becoming this main – and it's related to what you were elaborating on, what is becoming a mainstream opinion about what I just mentioned a minute ago, C++, just meant to be completely clear, and programming languages that allow you to go so low level that you can miss about with memory, allocation pointers, and stuff like that. Were you referring to that?
+
+I mean, or were you standing that debate of, because I thought that her approach, and again, what's becoming mainstream is that C++ should be deprecated completely, and only memory save languages, namely Rust, but I'm sure there are others, should be used for this. Yet, I think that that A, is not realistic. If I'm not wrong, around 20% of the code in the world, and especially for critical infrastructure is made in C++. That's not going anywhere. Substituting that is very difficult. You won't get, well, experienced, rushed engineers with 20 years of experience, just like you get in C++ and so forth. Anyway, connecting with what you were saying, and I know you're not a C++ programmer yourself, or Rust, or maybe you are, but –
+
+[0:20:42] VD: Nope.
+
+[0:20:42] JMC: What was your opinion? Can you connect this idea that you were describing about education and how to foster good security practice at the educational level, and maybe connect it with this idea of, well, should we use memory and save in powerful languages like C++?
+
+[0:21:01] VD: I think there's a place for C and C++. Certainly, isn't going anywhere. I've heard the memory safe argument a lot. I don't necessarily disagree with it, but that's from a creating new software perspective. If I'm going to create something new, I should be considering Rust, or Python, or something else, right? Not necessarily going to C, or C++. In school, yeah, I mean, it's been forever, since I've been there. I don't know exactly what they're teaching, but presumably if they're teaching C and C++ foundations as programming languages, they could alternatively turn to things like Rust, which is becoming increasingly popular. Does with things like memory safety. Or things like Python, because it's still really high on the favorite programs, or if it was a Java, or what have they, right?
+
+The problem that I see with this push for memory safe languages is, who's going to rewrite everything that already exist? I'm going to pick up politicians here. If some politician decides five years down the road, “We're not going to award any contracts to any companies that haven't delivered everything to us in Rust.” They're going to have a really hard time finding the software that they're looking for, right? We have to take that pragmatic approach. Maybe we can build new things in Rust in similar languages and not sit there and disparage the old stuff, which some of it, yeah, it's written in C and C++, but I would say, quite trustworthy, right? Not a ton of vulnerabilities.
+
+The other thing that we have to consider in all of this has evolved, and this is from 20 years in doing response. These companies, project maintainers, whatever, who actually respond well, and they apply a patch to the software that's found to be vulnerable, we don't necessarily give them high fives, or kudos for doing it. I would much rather take a software that was from memory unsafe language, but had a really good, was found by the community and later around it to say, “I can trust that, because they know what they're doing and they're on top of it.”
+
+Humans make mistakes all the time. But if they went up to those and really respond to each of them, then that is going to garner my trust models than just like, “Oh, it's a memory safe language. Therefore, it's –” I mean, again, going to the silver bullet thing with the S-bombs. Rust is not a silver bullet.
+
+[0:23:33] JMC: Exactly. Yeah.
+
+[0:23:34] VD: Doesn't solve every problem. It just solves one type of MO.
+
+[0:23:40] JMC: I don't mean to be promoting the episode that I just recorded with Eric Brewer from Google, but he mentioned, he's now a strong advocate of curation. What he describes as a – the role of a security institution, whether it's a person, maybe the maintainer of open-source project, or an independent that is funded, properly funded and supported to maintain – well, to patch popular open-source packages. Again, it doesn't have to be the maintainer. It's usually a burden for that, person or group of people, but it has to be properly funded and supported and work hard in hand with the maintainer.
+
+When I asked him for a good example of curation that is taking place today, he mentioned Red Hat. He said, “Well, you know what? Red Hat delivers products that may, or may not contain vulnerabilities. What you get from Red Hat is the comp – not the compromise. The commitment from them to patch it. You pay for that and you get that guarantee.” Yes, this curation role is fundamental. I really appreciate that Red Hat does that for the huge level that they cover with all the portfolio.
+
+Yeah, let's go and move back to vulnerabilities. You've got this. You propose the risk-based approach to vulnerabilities. Could you describe more traditional, and in your opinion, less effective ways of managing vulnerabilities and then go on to describe risk-based?
+
+[0:25:21] VD: Yeah. I think the, call it traditional. Yeah, I call it annoying. The way that people tend to look at vulnerabilities right now is they just look at a list of CVs and go fix them. They're present and I want them going. It's like this auditor-type approach, where it's saying like, there's a whole bunch of CVs, there's little empty boxes behind them. I want you to take care of every box for me.
+
+Oftentimes, when we're – I call them CV shopping lists. If I'm giving a CV shopping list, I'm like, okay, a lot of these things are low impact, moderate impact, things that I would consider don't matter. Tell me why it matters to you. More often than not, the answer is, “It's on my list and I want it to go away.” I'm like, well, do you even use that? Is this even impactful for you anyway? “Well, I don't know. I don't even know where it is. It's on my list that has to come off.” That is the, I'll call it the accountant style checkbox auditor-based way of doing security response, which I think is completely ineffective and very expensive.
+
+The approach that we take is, again, like you said, the risk-based approach. We look at every vulnerability, we assess it as it attracts our products. How we built it, how it's used within the particular product. Then what we do is based on that assessment, we, as part of our lifecycle policy, we say, we fix all criticals, we fix all importance. We opportunistically fix moderate vulnerabilities. If one of the engineering teams is updating one piece of software to fix them around and bond, they look and see, oh, there's one or two CVs that are still outstanding for it that are moderate, or low, we're going to go fix it at the same time. That's the opportunistic approach.
+
+When we're looking at exploitation rates, which we started doing the last couple of years, the exploitation rates for critical and high are a little higher, as we would expect, because if I can actually exploit that vulnerability, I guess, you get some tangible value out of it. It's worth trying. If I'm trying to exploit a low, or a moderate vulnerability, I might not get very far, or very much. Most attackers are going to be like, “Hey, probably doesn't matter,” right? Now, of course, you can use these to get a certain type of access, chain with another vulnerability to get more access, so there's chaining vulnerabilities and stuff.
+
+Stepping outside of that complexity part, by and large, critical and important vulnerabilities are the ones that are going to be exploited and the ones that actually have impact. Those are the ones that we're going to fix first, right? If we have, like everybody, we have finite resources, we're fixing the things that have the most impact and the most likely to be exploited. What we started doing as we were observing this is we realized about 10% of critical vulnerabilities were known to be actively exploited. You mentioned CISA earlier, so we use their known exploited vulnerabilities list. We map to that and go, oh, okay. That thing is critical and has an exploit, we've already fixed it. We don't have to worry about it.
+
+If something pops up that's a moderate, or low that is being actively exploited, we treat it like a critical vulnerability. We fix it. But if we had an opportunistic [inaudible 0:28:40]. What we're really doing is we're going, okay, we're judging these things based on the risk posed to our customers, or end users. If something is actually risky, or has a high probability of being exploited, we're going to fix those things.
+
+The last year we had, it was around 1,100 moderate CVs. Two of them had known active exploitation. Whenever 1,100, I think it was 1086. 1084 moderate vulnerabilities that we would have engineering teams derive patches, build, test, deploy, and a customer has to also do their own testing and deployment and all of these things. That's analogous to how I describe it to my wife. She said, “What does that actually look like?” I said, “Imagine updating your iPhone three times a day.” She's like, “Yeah, I don't want to do that.” I'm like, “No, you don't. Nobody does.” But everyone who's asking for that based on the checklist is saying, “I'm willing to upgrade and [inaudible 0:29:43] my thousands, or tens of thousands of iPhones every day, three times a day, because I don't like seeing something with a CV in front of it on this list,” which to me is truly expensive.
+
+The other point that I add there, too, is one of the things about open source that makes it so attractive is the speed of innovation, speed of development. I can basically build something very, very easily and cheaply based on open source. That's a one of value for me. You also get all the advances of everybody who's contributing to those communities, mint features, your value, I can easily and cheaply obtain that. You're basically cutting all of that off. If you want to fix every single vulnerability, you cut off that type of innovation, which is one of the wonderful things that we've [inaudible 0:30:32].
+
+All the focus and attention, and now we're seeing more regulation and burden as being put on containers that stifles that innovation. That speed of innovation we've enjoyed for the last 20 years drops dramatically, because now there's a ton of overhead. Quite frankly, there's going to be people who say, “I don't want to do it. I'm just not. I'm not getting paid to do this. It’s my day job. I enjoy doing this work. Now you've really, really, really been full and expensive for me to do it, and I don't want to do it.”
+
+[0:31:02] JMC: Unless, we have this role of curator, I think would be great. Again, properly funded, supported, then – Yeah, yeah. It's definitely a burden, especially in some geographies and with some regulations that are pretty unaware of how this innovation, the whole ecosystem works. It's a shame.
+
+[0:31:22] VD: It is.
+
+[0:31:22] JMC: The last thing that you've touched upon, one of the known, exploited vulnerability databases that you guys tapped from, the CISO 1, the last thing I want to touch upon is that, precisely, well, that topic of who should be, when and how communicating our vulnerabilities? I, before we joined this conversation, I was a strong proponent of having a centralized, canonical one source of truth for this, namely NVD, for example, but I thought it was a myth. Yet, you have a very different opinion. Let us know what is it in your – obviously, you're the professional in this case. Not me.
+
+[0:32:02] VD: No, no, I definitely have a different opinion. I mean, the NVD has its place. It's a good centralized piece of our database of information. It's great for some applications. The problem with NVD, as I see it, is it's very broad. When you're looking at every single vulnerability, and they assign one single score to it, you have a piece of open source that is used across multiple ecosystems in multiple ways, and multiple platforms, and it can be built in different – It's not like, I'm getting this wide area from Microsoft to run on Windows, and only Microsoft has built it one particular way for that particular operating system. We're talking about something like Apache, or OpenSSL. Everybody can compile it their own way. They can take pieces in and out of it as they wish. It's open source. Then they deliver it on whichever platform, whether it's Mac, Windows, or Linux.
+
+You can't assign open source like that, a single score for everything. NVD does, and they do it based on the worst possible outcome. Now, if I'm looking at the way that Red Hat builds software, right? A, we have Linux. B, we have a lot of hardening technologies in our compilers. We turn these flags on that prevent stacks mashing, buffer overflows, things like that. Those things don't get accounted for and would resolve it. While I think that universal database is interesting, and is potentially useful for a research perspective, well, Red Hat is done for the last number of years, is really, try to provide as much information as possible for every CV that affects our products. We display it proudly for everybody to see, right? We even contrast our CVSs scores with NVDs directly on the page, so that any customer, or any person can look at it and go, “Okay, I see Red Hat's rated it this, NVD has rated at that.” We try to describe the differences as we can.
+
+The primary reason being, even for us, you have a particular component. If you have it, for example, in RHEL, which is a general-purpose operating system. You can do whatever you want with it. We have no idea what you do. That same component perhaps, in OpenShift, where it's not a free for all, it's tightly constructed, right? Every component has a particular purpose. A number of those are not user, or attacker accessible. Maybe only one small part of what this overall package is capable of is actually being used. That part that's being used might not be impacted by a particular vulnerability. That code is actually legitimately never touched.
+
+On RHEL, we can't say the same thing, because we don't know how they’re using it. We might rate something higher for RHEL and lower for OpenShift based on how it's intended to be used in those products. NVD, or central database like that is never going to show that fidelity of information only as a vendor to beat, right? I take the approach to being a vendor. We know our products better than anybody else. If you trust us enough to use this in the first place, you should trust us enough to say when we're describing something a certain way. We know what we're talking about. That's what we're doing, right? Because we're very transparent with all the information we provide, and we're not here to hide anything.
+
+We'd say, we're not going to fix it. It's out of support scope. We are going to fix it. We're affected. We're very transparent about the state of that in our software, but we also don't guarantee that we're going to fix everything. [Inaudible 0:35:43].
+
+[0:35:45] JMC: Well, I think that's the building blocks of a relationship, a vendor-client relationship, a partnership, and even in real life. It's like, we all have defects, and we all have – as long as we're transparent in the real world between people who would apologize, but in the case of corporations, or commercial entities, we patch things and provide solutions for. I think it's a good approach.
+
+[0:36:10] VD: It's about building and maintaining trust.
+
+[0:36:12] JMC: Yeah, correct.
+
+[0:36:13] VD: You can only do that with transparency. With proprietary software is one example. You don't know if there's moderate, or low vulnerabilities that are being fixed. I ponder this sometimes as to why people are going, “Oh, yeah. Look at all these moderates and low vulnerabilities and all this opens for stuff.” Then you look at all these vulnerability list for proprietary software. They all seem to be critical and high. It's like, well, apples being apples, there's a whole bunch of low and moderate things on this side that aren't being called as such.
+
+The reason why they can, I'll say, get away with it is because it's very opaque. It's not transparent at all. I can't see that. They can fix a security issue as a regular bug. They can fix it and just not tell you like, this – I love the way that Apple puts their updates out for iPhones. This update fixed some, security and bug fix things. You should update it. Then you have to go somewhere else to get maybe a more detailed last a couple days, or weeks later, right? The proprietary vendors can do that. Open-source vendors can't. I think that's actually one of the really great trust-inspiring benefits of [inaudible 0:37:20].
+
+[0:37:21] JMC: I agree. Well, on that note, since it's a very positive description of one of the main benefits, if not the main benefit of open-source, and since we are in Open Source Summit in Vancouver, I think we can conclude this conversation. Unless, you tell me that we have missed something you wanted to touch upon?
+
+[0:37:41] VD: No. I think you asked some pretty good questions there. You actually mentioned SPD-X and how you're involved there. We actually just, I think, two weeks ago started publishing our SPDX S-Bombs as a tech preview beta thing, so that people can start consuming them and figuring out how to use them. Because my concern right now with S-bombs is we talk a lot about how to create them and how to make them properly. We're not talking enough about how we actually start utilizing it.
+
+[0:38:11] JMC: Correct.
+
+[0:38:12] VD: I think there's huge potential there, but we haven't even tapped what that looks like, because we're too busy trying to build something. Going back to that, the checkbox-based security thing idea, I'm concerned that people will be like, “Well, I have my S-bomb, so now – I've ticked the box.” They're missing all of this wonderful potential that could come from it. We just have to build some tools and some understanding around how to use these things.
+
+[0:38:37] JMC: Well, since you brought it up, I wasn’t planning, but what Jim Zemlin announced at the beginning of this, among other things, at the beginning of this conference is that SPDX has released a 3.0 release candidate. One of the new features that comes with this a better user experience, in the sense that it is designed and is a breaking change, because there's a new version of semantic upgrade from 2.3 that brings in profiles, which is a superset of the basic SPDX, the one that is, well, the basic checkbox, or design per use case.
+
+If you're thinking of building an S-bomb for your build process, then you've got a built profile to include more information relevant to that use case, so that the person interested in consuming that S-bomb, apologies, has the relevant information. Maybe that person is not someone interested in the build process, but rather in licensing, which is the original use case that SPDX used to solve. Then you can select, or use the licensing profile and generate an S-bomb that eventually will be consumed by lawyer, a compliance manager, with the effective information that this person needs, right? Because otherwise, they can be very consuming, time consuming, confusing, collecting a lot of information that is irrelevant to their end user.
+
+To your concern, I think profiles is a – and this has been a concern. I mean, you're not on your own on that. Yes, hopefully, this new feature offer at SPDX.3 tackles that problem, because the release candidate has pulled profiles, but more on coming down the line for AI, for security purposes, and the myriad of use cases there. Nice. I look forward to checking it out further. I think that's a good start. Thanks so much for being with us, Vincent.
+
+[0:40:37] VD: Well, thank you for having me.
+
+[END]

@@ -1,0 +1,234 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/05/SED1925-Reactive-Native-at-Coinbase.txt
+EPISODE: React Native at Scale
+DATE: 2026-05-21
+SED: 1925
+HOSTS: Josh Goldberg
+PAGE: https://softwareengineeringdaily.com/podcasts/react-native-at-scale/
+----------------------------------------------------------------------
+
+EPISODE 1925
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: React Native is an open-source framework developed by Meta that allows engineers to build mobile applications for both iOS and Android using a single JavaScript codebase. The framework bridges the gap between web development and native mobile, which lets teams ship to both platforms simultaneously, without sacrificing the look and feel of a truly native app. Manjiri Moghe is a Staff Software Engineer at Coinbase, where she has spent five years building and scaling one of the world's most demanding React Native applications. Her work spans performance optimization, reliability engineering, and the developer tooling that keeps large engineering teams moving quickly without sacrificing quality.
+
+In this episode, Manjiri joins Josh Goldberg to discuss why React Native has become the framework of choice for high-velocity mobile teams, how Coinbase measures app help, how to handle data fetching and loading in production, how AI coding agents are changing the day-to-day workflow for mobile engineers, and more.
+
+This episode is hosted by Josh Goldberg, an independent full-time open-source developer. Josh works on projects in the TypeScript ecosystem, most notably TypeScript eslint, a powerful static analysis toolset for JavaScript and TypeScript. He is also the author of the O'Reilly Learning TypeScript book, a Microsoft MVP for developer technologies, and a co-founder of SquiggleConf, a conference for excellent web developer tooling. Find Josh on BlueSky, Fostodon, and dotcom as Joshua K. Goldberg.
+
+[INTERVIEW]
+
+[0:01:51] JG: Hello, everyone. With me today is Manjiri Moghe, Staff Software Engineer at Coinbase. Manjiri, welcome to Software Engineering Daily.
+
+[0:01:58] MM: Thank you. I'm excited. I've been an avid listener and, yeah, excited to talk to you today.
+
+[0:02:04] JG: Great. Well, we're excited to have you here. Let's start off with you. How did you get into coding?
+
+[0:02:09] MM: Yeah. I got into coding pretty late. At least, I like to think that I got into coding pretty late. I'm an electronics and telecommunication major, and we did have coding subjects in engineering, CEC++ Java, but I never really liked them. It's probably because my mom was actually into software. She started coding in 1983 in COBOL, and I grew up around programming books, like ERP, SAP, Java, and I made up my mind, this is not something I want to do. I definitely registered it. But it wasn't until my final year hardware project where we designed the PCB, wrote hardware code in, it was called VHDL, Hardware Descriptive Language, and I saw it working on the circuit. That's when I was like, okay, I built this, I can do this, and I realized the power of coding and software engineering in general.
+
+Right out of college, I got my first job at a consulting company. I learned iOS and Android. It was the AI back then, 2011, 2012, everyone wanted to learn mobile development, and I was very happy I was working on cutting-edge technology. Love native development back then. Then moved towards hybrid mobile development, which was this phase when everyone wanted the apps on iOS and Android to be built at the same time, but we didn't have React Native. We used to have these wrappers using phone gap, although it was just wrapped around a web view. Did not feel native at all. But you built only once. Actually, web mobile built together and then deployed on iOS and Android.
+
+Then React Native came out in 2015 and everyone was so excited. We didn't have to wrap web views around anymore. We could write code that felt native. Write it only once, and deploy it on iOS and Android. Yeah, I've never looked back since 2016. Did multiple rewrites from hybrid on native mobile to React Native. At my previous company, came time where I worked, we did the rewrites, and I joined Coinbase. Because Coinbase was a big proponent of React Native. They had just done the native to React Native rewrite when I joined Coinbase in 2021, and it's been five years, and I haven't looked back.
+
+[0:04:36] JG: It sounds like a wonderful journey. Let's dive into some of the high-level attributes of React Native you mentioned. A lot of developers may have heard of React as this front-end web space thing. Why and how is React suddenly on mobile? What does that mean for a developer?
+
+[0:04:52] MM: I think the biggest thing here is React Native gives you the native feel, but the underlying technology of writing, like JavaScript and CSS, which is the same as web remains the same. Many web engineers were able to adapt to React Native fairly quickly, I want to say. React Native does in need native understanding, and some native skills, but not too much. That is why I think it was a brilliant homerun from meta to build React Native, because it attracted web engineers, it attracted native engineers, and it created this community that now builds mobile apps.
+
+That's what I even love about React Native. It's been around for 10 years and only getting stronger, because of the community and the contribution it gets from all these amazing native engineers and web engineers together.
+
+[0:05:44] JG: Kind of the best of both worlds situation, it sounds like.
+
+[0:05:45] MM: Yeah. Yeah.
+
+[0:05:47] JG: When you say that they're built at the same time, what was the difference between writing native apps versus a React Native app?
+
+[0:05:53] MM: Yeah. I think the biggest difference from a company perspective is obviously, the speed, right? The velocity that you build products with. iOS and Android, you have to build code on them separately, unfortunately. In my experience in the past, I have realized that you are always playing catch up. You always have that business priority of a product, what that needs to be launched on X date, and then it comes down to, okay, 80% of my users are on iOS. I'm going to first build it on iOS and then Android follows. You are never able to maintain that feature parity between iOS and Android.
+
+Whereas, on React Native, you write that code once and then it goes out on both. Yes, there are differences, because iOS and Android are just different architectures. But rarely, if you are writing pure JavaScript code, you have to make distinctions for iOS and Android. It depends on the space you are in. If you are working on animation, sorry, if you're building a game, I would not recommend React Native, because it's not there when it comes to animations and the performance that's needed. But if you are building a financial app, like we do, like Coinbase, and where velocity matters because the world is changing so much, the crypto industry is evolving so much, we are launching products at such a scale that if we were building two apps, iOS and Android, we would just not be able to keep the feature parity.
+
+[0:07:23] JG: That's a very appealing value proposition of reducing velocity. Let's say that a company is just now getting started switching to React Native and/or making a new app in our end. What advice would you give them?
+
+[0:07:33] MM: Yeah, I think I have three pieces of advice. First is observability. Many teams, or many companies building mobile apps consider observability as their P1, or a non-functional requirement. I feel like observability is so important. If you don't measure it, you don't know how to improve it. I think observability needs to be the first thing, because people go to React Native and then say it's slow, but what is slow? If you don't measure it, you will never be able to improve it. You need to have observability in place.
+
+Second is guardrails. There are so many good patterns, bad patterns that are already defined in React Native, that if you're using TypeScript and you have ESLint rules, you know about ESLint, Josh. I love ESLint and I feel like it's the unspoken forced rule that you can have developers follow. You can write multiple documents. You can have so many presentations, or learning sessions and whatnot. Nothing is more impactful than something that blocks the developer while writing code and gives them information as to why this is a bad pattern. I think that's very, very important when you are building in React Native, especially it may apply to other technologies, too. Especially in React Native, we have been exhaustive dependencies. It's such a simple ESLint rule, goes such a long way and can catch so many performance regressions. Yeah, that's the second thing.
+
+Third thing is I think just discipline built into platform. Defining performance budgets is how long should this screen load take? Should it be under two seconds? Should it be under three seconds? How do we want the navigation to work? Because React navigation is such a critical part of React and also sometimes the biggest [inaudible 0:09:31]. Lists, again, in React Native, because we have the virtualized DOM, I think defining what you want to do in that area, creating shared components for it in the beginning, not after a fact, playing offense for building that shared repository is the third thing I would advise teams, or companies that want to move to React Native.
+
+[0:09:53] JG: It's a lot of great info. The last tip there, you ended with what almost sounds like a design system. I know front-end folks and websites are very often these days, building design systems. Does that also hold true for React Native apps?
+
+[0:10:04] MM: Yeah, I think so. Shared design system, especially for a React app, or a React Native app is very critical. We do have a Coinbase design system, which actually now open source. If you're writing web code, or React Native code, sometimes you won't even realize that you are in a different repo, because it's the same design system. You are using the same elements that you would use on a web app, on a mobile app. That's great, actually. If your code looks like my code, it's a win. If two developers at the same company are writing the same pattern, of course, that's actually a great thing.
+
+Yeah, definitely. I think design systems are a way to go. We have so many abstracted components in design system, like lists, models, trays, so you don't have to do the same performance optimizations again and again when you are building new features. They are just given to you out of the box.
+
+[0:10:58] JG: That sounds like another example of improved developer velocity.
+
+[0:11:02] MM: Yeah, exactly. It's also easy to onboard to a design system, because there's just a lot of examples, so much documentation. You don't need to reinvent the wheel. If new engineers are joining your team, they are ready to go super quickly.
+
+[0:11:18] JG: Well, let's dive into some of the more deep and rich end-user facing metrics you mentioned, performance. How do you optimize for performance, or design, or architect for performance in a React Native world?
+
+[0:11:29] MM: Yeah. I think there are many ways to look at performance. My simple definition of performance is how does the app feel when you open the app and try to do something that you intended to do? For example, we all open our apps, especially our stocks and crypto apps to check the balance. How is my portfolio doing today? I consider that as a critical operation that needs to happen under certain seconds. Also, am I being shown many suspense, or loading states? That's a big turn off.
+
+I try to divide performance into four buckets. One is the cold start metrics. Cold start is when your app is totally killed, you open the app, how long does it take for you to land on the main screen of the app? Second is how does the app feel when I navigate between screens? Are there too many loading indicators? Is it slow? Is it getting stuck? Third thing is how many errors am I experiencing, or is the app user friendly? Am I getting full screen errors and something that's putting me off, or not letting me do the job that I came to do, which is check my balance.
+
+The fourth metric that I want to talk about is the end-to-end journey. By that, I mean is I open my app, I see the landing screen, I check my balance. Now I want to buy crypto. How long does it take me to get to buying crypto and finishing my trade? That's the other metric that we look at. Before I get into too much detail, I want to pause and say that metrics are great, but having too many metrics adds confusion. There needs to be a limit to what you measure and what you improve. If you try to improve every single metric, it's like boiling the ocean. You cannot achieve what you want to, so the focus needs to be extremely narrow when you're trying to improve performance.
+
+[0:13:31] JG: How do you choose which metrics to focus on then if you've got a big app with a lot of them?
+
+[0:13:35] MM: Yeah, great question. It depends on what's the need of the hour. What should we focus on today? You improve a certain metric and then I think it takes two years in my experience for that metric to regress. Then two years later, again talking about it. It's also because the trends change over two years, you just have shipped so much code. New team members have joined, so they don't know the metrics that you talked about. That is why I think automation and guardrails is just so important. You fix one problem and it never happens again.
+
+Unfortunately, in performance world, it does not happen. I feel performance is recognizing certain bad patterns and then optimizing it is just it does. It's not something heroi,c because you keep running into the same problems again and again.
+
+[0:14:27] JG: Performance is a flat circle.
+
+[0:14:29] MM: Yes.
+
+[0:14:31] JG: Let's say that you have an app and you've noticed that cold start used to be wonderful. Now is terrible. Let's dive into the tech details of it. What would you do to debug this performance issue?
+
+[0:14:40] MM: Yeah. We do something called as a React profiling. We profile the app. We use React dev tools to profile the app. See exactly what is happening. Which API calls are taking too much time. Is any JS thread operation that is long running on a JS thread that we can move, or defer to a later time. Do we have bad rendering patterns? Are we re-rendering our code too many times? That's something that we look at. I think the approach is multifold. Bad fetching patterns, we audit the data that we are requesting for cold start. We look at any JS long running tasks that we can defer, or move away from the main thread. Yeah, profiling gives us all of that data if not most. That's something that we look at.
+
+Also, sometimes updating react native versions, or moving to the new architecture that is out helps with cold start metrics. It's not always your code. It's also sometimes your dependencies and your infrastructure. Yeah.
+
+[0:15:50] JG: Interesting that you mentioned threads. In what land, it's all just one thread and then maybe you use a service worker. Here it sounds like we've got a lot more intricate stuff to work on. How does that work in React Native?
+
+[0:15:59] MM: Yeah. For React Native, you can fall back to the native thread. I call it the native escape, or a hatch. You can defer some of the heavy programming, or heavy computation, or long running tasks to the native thread. You can also do something like run after interactions that used to be a hook. It's actually being deprecated, but there are some similar things that React Native has been launching. But run after interactions are completed, which means once your screen is loaded, you can run those computations. For example, if you have any analytic events that you are sending back to your service, now those can run after all the interactions on the screen are complete. Yeah, I think that's the best part of React Native, where it lets you hand off certain operations to the native thread and not take away from the JavaScript thread.
+
+[0:16:53] JG: It's a powerful feature. I want to switch gears a little bit and talk about reliability. You mentioned analytics. Let's say that I have an app and it's in production. What should I do to figure out even whether it's reliable at all?
+
+[0:17:04] MM: Yeah, so reliability, I want to say, there is a single user using your app and the app works great. Now there are 100 users and they are using your app. Does your app scale? Do your APIs respond in a way that they should be? Does it handle traffic? There are many ways to look at reliability. One is obviously, am I able to get the data from back in, or do I just see a bunch of errors? The way we do it is we have certain reliability metrics. The biggest one being error rates. Error rate is we categorize them into a few buckets. Error that blocks the user, error that does not block the user, and a blocking error is not just a full screen error, or something. But if a user is not able to perform a journey that they intended to do, that's considered as something that's blocking the user.
+
+We monitor them literally every minute of the day. Our eyes are glued. If you are on call, that's your biggest responsibility, because we have high traffic and also being in an industry which is influenced by even tiny price moments in major crypto assets, we have to be on top of it. If we start seeing these errors spike up a little, we immediately start investigating, okay, is there a price movement? Is our traffic spiking? What's going wrong? What do we need to do to figure out? We start that root cause analysis.
+
+This is very established framework at Coinbase on how to figure out if something's happening. Error rates is our biggest metric. Also, traffic usages. If we see some of our critical services seeing very high requests per minute, that is also another indication that, okay, something's happening, or why is this happening? Do we need to investigate it further? Yeah, those are some of the metrics that we look at.
+
+[0:19:08] JG: It's interesting that you talk so much about end user behaviors, like price surges. Do those in your experience have a significant impact on stability of the app, or areas that you have to focus on?
+
+[0:19:19] MM: Yes, they do. That's something that also drives most of our optimizations, honestly, because we experience new scale. Four years ago, Coinbase had X million of users and now we have even more. Once the users scale, we have to scale for it. The user behaviors definitely drive what we do, because that opens a new can of worms, or presents new challenges to us, because I think user behavior is driven by the UI that we ship. If we change certain aspects of the UI, we need to measure, or we need to see if that's actually scaling well. That is done by experimentation. We do a lot of experiments. If we are shipping an ambitious change, be it infrastructure, or be a beta product change, we do it behind experiments. We analyze the behavior in control and treatment and see if the treatment is actually one that is going to be permanently shipped, and if we are ready from the infrastructure side to scale that behavior.
+
+[0:20:28] JG: Must be devastating as a developer to work on a feature to launch an experiment and then decide not to ship it. Is there anything you can do to make that feel less stingy?
+
+[0:20:37] MM: No, honestly. I have been there. I have had not too many, I want to say. Just maybe one that was a result to control, because it just didn't move the user engagement metrics. It's very disheartening to delete that code that you have written. It's very disheartening. But it is what it is.
+
+[0:20:57] JG: Better that than shipping something worse for users.
+
+[0:20:58] MM: Exactly. Exactly. Yeah. Customer is the ultimate power.
+
+[0:21:06] JG: Speaking of customers, as you grow as a company, the way for example Coinbase has, you pick on different kinds of customers. A lot of companies start North America, or United States, perhaps even California focused. Next thing they know, they're shipping to Europe and Africa and Asia. Has that changed significantly the areas of the app you look at, or the way that you deal with users, or outages?
+
+[0:21:25] MM: Yeah. Coinbase is obviously global, as you know. From my view, when it comes to just performance and reliability, we do not have the same devices across the world, right? When I look at performance and reliability metrics, I see so many devices. If you look at P75 metrics and P95 metrics for these devices outside of United States, they look terrible. You have to improve those metrics, because those users are also key users of the app. Even though our user base is very North America focused, we want to grow in those areas and make Coinbase the crypto app that everyone uses globally. It's critical that you optimize those user experiences.
+
+I think time is money. If it's taking me six, seven seconds to do something extremely simple in an app, I'm going to just move to another app, because there is no shortage of apps today that let you do the same thing. If you want to build user trust, you need to make efforts to build that trust by making sure your app is actually letting the users do what they want to do and quickly.
+
+[0:22:46] JG: Let's say that you receive a bug that a user on a particular device, very common in, let's say, India is experiencing slowness. You don't reproduce on your device, but you see the recording on their device, it is very slow. What do you do to investigate, or debug this?
+
+[0:23:01] MM: Yeah. At least on iOS, thanks to network link conditioner, you can simulate the network that the user is on and try to reproduce that bug. We also have various devices. We use a third-party tool that lets you run your end-to-end tests on certain devices that you pick and choose. We also have an external QA team that has a device farm. Yeah, those are the things that I would typically do to investigate a certain bug. Yup.
+
+[0:23:35] JG: Let's move on a little bit from performance to reliability. You mentioned user trust. Having things break, or be very slow erodes that trust. How do you make sure that your app stays reliable, especially as you scale?
+
+[0:23:45] MM: Yeah. There are a few things to look at. One is the upload that you are putting on your infrastructure is the number one thing. There are just so many obvious problems that you can find if you start digging deep. One is just over-fetching data. The patterns that I have realized don't work well with React Native, especially are over-fetching data, because React has this re-renders and you fetch data that's not necessary, your app keeps re-rendering that causes lowness. When you are designing your API layer, or data layer, it's important to fetch just the necessary data. For example, if you are in the US and there are some UK, or Europe specific compliance things that need to be fetched, or shown to the user, I don't need to fetch those for a US user if you are running experiments. I am not part of the experiment group, but the data is still being fetched for me, that's putting load on my backend services and that's totally unnecessary.
+
+It's not always just one request. We are in this microservices architecture, where one service calls 10 other service that calls 10 other services. It becomes a giant fan out. One request from client leads into 100 downstream requests to your APIs, right? Over-fetching data is one of the biggest things. The second thing is polling. I think polling is one of my biggest pet peeves in software engineering. I think it's when used incorrectly, it can cause so many issues, honestly, especially in React Native stacks. Say, you have polling on screen one, now you go to screen two, the polling is still active, unless it's handled properly. That's how the navigation state works in React Native. Until you go back completely on the navigation stack and you don't discontinue polling, it's going to continue hitting your services all the time, which is again, added API load.
+
+Third thing is, I think, having good guardrails. Keeping a tab on, we spoke about cold start in the beginning. We have a very close tab on how many requests we make on cold start. If they regress, we make sure, okay, what is the need to fetch this data? Can this be deferred to a later time? There is always this battle between showing experiences quickly and then regressing another metric, because you want to show certain experiences quickly. I'm specifically talking about preloading. A lot of people like to preload data, but they don't understand that there is a cost to it. You preload the data, but what if the user never goes to that screen? Now you have wasted the preloaded data, right?
+
+You need to have strong metrics to support that. Okay, preloading is really necessary, because 99% of the users are going to go to that screen. Only load data when you are sure about it. Otherwise, you should just stick to fetching data when the user goes to that screen.
+
+[0:27:02] JG: We've now stumbled onto the blog post section of the Q&A. How do you make sure that you design for the correct amount of fetching? That you don't over fetch data, as you said, or even under fetch and not have data available that you need?
+
+[0:27:16] MM: I have tried to automate it a lot, because I was working on this topic in 2024. I wasn't really successful in finding a way to give that feedback to the developer when they are actually writing code. When they are trying to fetch certain data, can I give the feedback that, hey, adding this field right now, or fetching this data is going to add say, 10 requests to your API calls. That 10 requests are going to add, say, 40 millisecond latency to your screen. Is that acceptable? I'm still trying to find a solution for it and how we can do that. But if the feedback is not given at development time, I think the best part is once the feature is live, that's where experiments come in.
+
+You start with a slow rollout, or 1% ramp up, 2% ramp up, observe how it's performing, how it's impacting your infrastructure. What are the number of requests? How can we optimize it? Then continue the rollout of that feature. I think that's what I have been doing.
+
+The one other thing is now with AI, we actually have some AI conventions. When a dev opens a pull request, we find these patterns that are footkins. For example, I mentioned pooling is a footkin network cache. If I see a query asking for data with every time and not using the cache, we ask the developer, the author of the PR that, hey, why are you fetching this data every time? Can this be cached? That's also a way to educate the dev that, oh, this is not something that I intended to do. Maybe let me change it back to the cache policy, which is use cache data if available. If not, go and fetch the data. These are some of the things that we could do to avoid making sure the app is reliable.
+
+[0:29:13] JG: Do you recommend using something like, say, relaying GraphQL the way Coinbase does to automate some of that?
+
+[0:29:19] MM: Yeah. I think it definitely depends on what app you are building. We use GraphQL as heavily as our data layer. It definitely has pros and cons, like every data layer. Yeah, so it actually just depends on the use case of the app.
+
+[0:29:38] JG: What does GraphQL actually do for, or give to your app?
+
+[0:29:43] MM: As you know, GraphQL lets you request only the necessary data that you need. Over the years, GraphQL has evolved so much. For example, it now lets you defer certain fields that you don't need right away to render your critical UI. The way GraphQL is structured is you have one query on a screen which fetches all the data. Then you have fragments on that query, which are then passed down to your child components. In an app like Coinbase, where we have so many screens, you can end up having a lot of child components. All that data is fetched on the main screen. But having something like defer lets you defer the load of the data that's needed for your child components and focus on the critical data that you need to render the screen that you are on right now, so the user sees the data that they should. Then all the rest of the data is loading behind the scenes and is being suspended.
+
+[0:30:48] JG: This brings up a lot of the recent developments in React. Suspense and being able to tie data loading to as things come in, that seems like a very streamlined, easier to use system that manually setting this all up yourself.
+
+[0:31:01] MM: Yes, exactly. In addition to having that being set up seamlessly, I think it's one of my favorite loading states, honestly. It just looks good on the app. There are no giant spinners anymore. The suspense is so contextual. It looks great. It keeps the user engaged that, yes, this is where the data is going to load. This is what's going to happen. It also gives you so much out of the box for measuring metrics for how long did this component take? How long did this suspend for? Yeah, suspense instrumentation is something that we use at Coinbase to calculate how much time it took for a certain component to render, or even a certain screen to render. We do calculate the total rendering time of screen using suspense instrumentation, so that's been a huge win.
+
+[0:31:53] JG: Let's segue a little bit into more of the architectural features, since we're already talking about them. What are some of the other cool things that you're recently excited about with React Native?
+
+[0:32:01] MM: Yeah, so we just enabled new architecture and I am very excited. I think there are so many cool things happening in the new architecture. One is definitely the JSI. If you have been doing React Native for a long time, you remember how painful it was to bridge data between native and React Native. When we first started building React Native, many of the payment modules, or integration with banks, they were just not available on React Native. You had to bridge data to native, connect from the native side, get the response and bridge it back to React Native. This communication took such a long time. I am so excited that JSI JavaScript interface is finally getting rid of that bridge, already gotten rid of that bridge, actually. New architecture is going to make things so fast.
+
+Yeah, the next thing is turbo modules. Very excited, because we don't use too many native features, but we do like cameras, then secrets and then storage on the native side. That's going to be speeding up very quickly on the new architecture.
+
+[0:33:13] JG: It sounds like React Native's new architecture is they're rolling out a whole bunch of new features and ways to integrate with native. What are turbo modules within that?
+
+[0:33:20] MM: Yeah, so turbo modules, I say, you are interacting with camera, or you are interacting with the keychain, which is very native specific. It's time consuming and it adds a lot of load on the whole infrastructure. Turbo modules is just something, it's a way of making these native interactions faster for React Native.
+
+[0:33:41] JG: How does that come into play with apps? Is it not straightforward to just open up the camera in a React Native app?
+
+[0:33:48] MM: It is, but it does go through native layers. That's not something that React Native does out of the box. We would use some dependencies, like React Native Camera, or having turbo modules on React Native just makes it super-fast.
+
+[0:34:01] JG: Let's talk about AI. AI is everywhere. What have you been up to with AI in the context of React Native?
+
+[0:34:08] MM: Yeah. I mean, Coinbase is RCO brand. Just tweeting about this two days ago is we are writing more than 50% of code is AI generated. I like it. Honestly, it's been hard to keep up with everything that's been happening with AI outside. Coinbase is building tools that we can use, internal tools that we can use. We are heavily using Claude at Coinbase. We have so many internal commands that have been built. We have agents, internal agents that have so much context of Coinbase that our day-to-day tasks are becoming easier and easier, and we are able to ship so much code.
+
+For example, in the past, I would probably be able to open one PR a day, but now I have all these agents. I just give them a prompt, make a nice plan, tell them exactly what needs to be done. Then I have five PRs open and it's just massive velocity. I do think that it's important for you to give the right context to be successful with getting the output from AI. I think that's very important.
+
+[0:35:17] JG: Talking about React Native, how do you set that up so that the AIs know how to deal with your same scaled React Native application?
+
+[0:35:25] MM: Yeah. We have a lot of agents, like conventions, agents.md files in contextual agents.md files. If, say, I'm working on A, a UI component, there are some things that we want the UI component to do out of the box. We want, say, a screen name, so that we can measure some rendering metrics. We want something called as page information, which tells me, okay, this is the page that the user error on. I think that's some of the context that we provide out of the box. When I tell AI that, "Hey, build this component for me," it knows exactly what it needs to add in my UI component, that is contextual to the code base and we'll reduce the back and forth between a human and an agent.
+
+[0:36:10] JG: Have you found that agents tend to write idiomatic React Native code, rather than non-idiomatic, or idiomatic for something else, like React Web?
+
+[0:36:18] MM: Not really, especially because we have so many abstractions. We spoke about design system before and the code may look similar on mobile and web. I have not experienced it writing React Web code, because, honestly, it may not look that different, because we are using design system, because we are using React, obviously, in both places. Similar lint rules, too. Yeah.
+
+[0:36:44] JG: Have you found that the lint rules are particularly helpful with AI agents? I ask because a lot of developers have reported that AI agents write code with a million squigglies and then with the lint rules, they can sometimes clean it up for them.
+
+[0:36:55] MM: Yeah, I think so. I have been using them a lot. I use AI to just say, okay, give me violations for this lint rule, because people like to disable lint rules and then I say, okay, go fix these lint rules. You do have to check the work. I still see that, especially when it comes to fixing lint rule violations. But some of them are super obvious. But for some, you need to check.
+
+[0:37:19] JG: Before we start to wrap up, I want to circle back on something we were talking about earlier. You mentioned that oftentimes, metrics fall over, let's say, the course of two years. How do you set teams up for success to not create, succeed, and then gradually fail at their metrics?
+
+[0:37:34] JG: Yeah. Operational excellence is something that we take very seriously at Coinbase. Yeah, there is definitely that two-year cycle. We try our best to put these guardrails in place that will not regress. I don't want to say regress, but that will not be forgotten two years later. They will regress for sure. That's how the nature of these metrics are, but at least someone's looking at them. We have so much automation for operational excellence. Almost every single team at Coinbase runs their own operational excellence, where they review these metrics. They review error rates. They look at performance budgets. They look at the number of incidents that happened in the past week and try to summarize what happened and how we can prevent it. I think these learnings are so important.
+
+We also have these operational metrics bubble up to the leadership. At org level, we look at them, and everyone takes it very seriously. It's not something that you just bucket for 20% of your time and 80% goes to feature development. This is very top of mind for every engineer at Coinbase. Even in operational excellence, we are trying to use AI as much as possible to do the heavy lifting. Do all these queries, get me all the data, find the common themes, and we find avenues to share these lessons amongst each other. Because more often than not, there are incidents that happen, because of the same root cause. That is something that we want to avoid from happening. We don't want repetitive mistakes.
+
+I think new issues is something that is unavoidable. I think we categorize wins when the same incidents don't happen two weeks later, because of the same root cause. Yeah, operational excellence is something that is very, very critical and again, a very important aspect of reliability at Coinbase and how we have been able to stay reliable in the industry.
+
+[0:39:43] JG: Let's cover a horrifying hypothetical. Let's say that you're in a team that traditionally has been very stable. Not that many users have used that area of the product and all of a sudden, a whole bunch of users are using it. You're getting these new bugs, you're getting slow loading times, your servers are overloaded, and leadership needs a whole bunch of new features from you. What do you do in that situation?
+
+[0:40:01] MM: Yeah, this is the classic panic moment, right? As an engineer, do you focus on the new things, or do you focus on something that's broken? I think my thought process is priority. How bad is something? I'm getting all these bugs. I'm getting all these alerts, but what's the scale of it, right? Is it impacting one user? Is it impacting 10 users? If it's impacting a lot of users, we have something called as in severity metrics at Coinbase, where we use that to assess how severe it is. I think I would just add priorities to all of this and attack it from that angle.
+
+It's very important that if one user is facing this problem, yes, it is important. Also, it depends on who the user is. That's also something. If that user is some high-net-worth individual, yeah, it needs to be addressed today. I think it comes down to prioritization in the end.
+
+[0:40:59] JG: That makes sense. Manjiri, I've got one last set of questions for you. I'd like to end every interview with something non-technical just to cleanse the palette. What does it look like, or what is the best part of having a photographic memory for you?
+
+[0:41:13] MM: I think the best part of having photographic memory is if you are somewhere where you shouldn't be and I spot your car, I know that's you. I remember number plates of all my friends. Well, not all, but close friends, also neighbors. Yeah, it's also a fun thing. If I spot you there and I'm like, okay, this person's here, but you told me you are not here. Now, I don't care as much, but back in the day, it used to be fun.
+
+[0:41:36] JG: Do you find that having this incredible memory gift is useful at all at programming, or your day-to-day job?
+
+[0:41:42] MM: It used to be. Now with AI, you don't need it as much. But sometimes, yes. I tell my team, we'd have seen this somewhere on Slack and I try to quickly go find that, because I just know where it was, what channel, who said it. It helps in remembering names of people to go back to, because I remember their picture, I remember their name and it's like a photo in my mind. Yeah, it helps to find people. Back in the day, it used to help me, because I used to remember all the database connections, and port numbers and whatnot, but now we don't do that kind of thing. Maybe I'm too old now, but yeah, that's just - but it does help in many ways. Yeah.
+
+[0:42:27] JG: That's so cool. Well, great. Thank you so much, Manjiri, for coming out. We talked about React Native, the trade-offs, when to use, the performance, reliability, scaling, architecture solutions, team practices around it. Last few questions on that. If you wanted to get started anew as a React Native developer, where do you go?
+
+[0:42:43] MM: Honestly, now that we have so much AI stuff, other than React Native websites, yeah, just take help from AI. Have them build that greenfield app for you and ask the questions, write in your prompts. I think it's the best way, I think. If you're starting as a new React Native engineer, I think AI is a great friend to have. I wish I had it back then, because I could ask the AI dumb questions and not get judged. But unfortunately, I didn't have AI back then.
+
+[0:43:13] JG: It is nice to be able to ask dumb questions and not get judged.
+
+[0:43:16] MM: Yes. Yes.
+
+[0:43:17] JG: Not everyone can support that on either side.
+
+[0:43:19] MM: Exactly. Yeah.
+
+[0:43:21] JG: Well, great. There's AI. There's ReactNative.dev. A lot of great resources out there for this technology. About you, let's say, someone wanted to find out more about you with the work you've done at Coinbase, where would you direct them on the Internet?
+
+[0:43:31] MM: Yeah, LinkedIn is the best way to get hold of me.
+
+[0:43:35] JG: This has all been a lot of fantastic info. Manjiri, thank you so much for talking to us through React Native. This has been really wonderful. For Software Engineering Daily, this has been Josh and Manjiri. Thanks for listening, everyone. Cheers.
+
+[0:43:47] MM: Thank you for having me.
+
+[END]
+SED 1925		Transcript
+
+	(c) 2026 Software Engineering Daily	1
+

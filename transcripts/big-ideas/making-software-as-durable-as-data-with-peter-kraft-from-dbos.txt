@@ -1,0 +1,488 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Making Software as Durable as Data with Peter Kraft from DBOS
+DATE: 2026-04-15
+SHOW: Big Ideas in App Architecture
+LINK: https://www.spreaker.com/episode/making-software-as-durable-as-data-with-peter-kraft-from-dbos--71328358
+AUDIO: https://cohst.app/pdcst/3T5O6U/api.spreaker.com/download/episode/71328358/cockroach_labs_ep4_audio_v2.mp3
+DURATION_SECONDS: 2609
+TRANSCRIBED_AT: 2026-09-17T04:46:40Z
+----------------------------------------------------------------------
+What is up everyone and welcome to the Big Ideas in App Architecture podcast. Today I sit down with
+Peter Kraft. He is a co-founder of Dboss. Peter did his CS PhD at Stanford and Dboss came out of a
+three-year joint MIT research project that he did alongside Turing Award winner Mike Stonebreaker.
+So we get into what database-backed workflow engines actually mean in this episode and why the
+hardest part of running AI at scale isn't the AI, it's the reliability of the infrastructure
+underneath it. So we're going to talk about all of that in this episode and really get to know the
+cool project and the company that Peter Kraft and his team are building. So let's get into this
+episode and have some fun talking to Peter. All right, Peter, how are you doing today? Hey, great to
+see you again, David. Yeah, it's been great. I know we had to move this recording a few times, but
+I'm glad we made it to this particular conversation. For everyone listening in, today I'm speaking
+with Peter Kraft. He's a co-founder of this amazing, exciting company called Dboss. And in
+preparation for this, I've been trying around the product and obviously we are also working with
+Dboss as partners. So there's some exciting stuff that we wanted to talk to you about. But before we
+get into all of that, Peter, tell us a little bit about yourself and where you're based out of and
+what made you do what you do today. This all got started with back when me and my co-founder, Chen,
+were in grad school together at Stanford. And we were working on the idea that turned into Dboss as
+a research project for basically the last half of our time in grad school. And the idea that we
+developed in grad school eventually turned into the company was what happens if you take all the
+state of your application and store it in the database, right? Can you make your application as
+durable and reliable as the data you already store in the database is? So we took that idea. We
+played with it in the research side. And then we realized it was a really powerful idea. And if you
+did it this way, you could build really, really reliable software very easily. So the two of us took
+this idea and built a company from it. And we've been working on that for the past couple of years.
+And that's awesome. And you're too humble in your introduction. I mean, you were at Stanford working
+on this for a bit. And you were also working alongside Michael Stonebraker, the legendary Michael
+Stonebraker, who's behind Ingress, behind Postgres. And then obviously, Matei Zahiria, who from the
+Apache Spark fame that turned into Databricks. So you're working around and being around some really
+good heavy hitters. So that's also exciting. Yeah. Matei was my advisor in grad school. And then
+Mike at MIT was like the lead on the overall research project. So he was the one who originally, you
+know, he'd been looking at varianceless idea for maybe 20, 30 years. And then we finally came
+together, him and Matei, and decided to actually go build with it. And that's what turned into Dbos.
+Yeah. I mean, it's super exciting. So for everyone listening in, I mean, obviously, there is so much
+we wanted to talk about. And especially in the context of, you know, why you're building, you know,
+I would say the right way to put it, reliable workflows backed by database infrastructure. Like
+that's like a sweet spot. And the world of AI agents is it's going to become so much more relevant.
+So we want to cover all of that. But for our listeners who probably are people who are like probably
+regular developers, architects who are from the try catch exceptions era of coding, you know, which
+is what we typically do to help people understand what makes Dbos different. Like what is Dbos?
+Yeah. So at the core of it, Dbos is a really lightweight database backed library for durable
+workflows. So that's a lot of words. I want to break it down. What Dbos does is that as you run a
+program, and that program can be an AI agent, or it can just be a normal program, Dbos regularly
+checkpoints your program's progress in your database. That's kind of like save points in a video
+game where, you know, in a game, you play it and every so often you save your progress. And if you
+die, you can reload from your last save. And, you know, Dbos, every so often it checkpoints your
+program's progress in the database so that if your program fails in some way, if it crashes, if
+something goes wrong, and it cuts out, you can go back and reload from the last checkpoint save in
+your database and resume your program as if the error didn't happen. That's the core of it. Well put
+together. You know, I mean, this concept that you're talking is well understood in the database
+world, right? Like we know transactions. We want to make sure transactions are durable, acid,
+consistent. But what you're doing with Dbos is bringing that to the application level, right? And
+making sure that if it's AI agents or if it's like actual application code, you're giving users the
+ability to have durability. And one of the best ways in which I started thinking about Dbos, so
+here's a true story. I've been working with a partner recently. They have a 30-year-old application,
+okay? Insanely complex application, really good application, great team, smart people. But the level
+at which they have written retries and scenarios where things can go wrong is excessively put into
+the application code. So I was just joking with one of my teammates, man, they need Dbos. Because if
+you can write just simple code and that code can have checkpoints, you don't have to write that
+application logic to like, you know, save the progress. Remember, did the processing fail? Can we
+try that transaction again? All these things you can have in the application code itself. So that's
+super exciting. So I'm really excited about a future where people can start coding, you know, with
+Dbos from the perspective of, you know, thinking about just code and not to worry about workflows.
+Yeah, exactly. Like it lets you write normal code that you annotate workflows and steps, and then it
+just works. And if there's a failure, it just recovers. You don't have to consider every single
+possible point and wish things would go wrong and write special casing forever. All of it. Right.
+It's pretty cool. So tell me a little bit about when you were at Stanford. Was this part of your
+actual project and this is what turned into Dbos? At Stanford, we were looking at a more high, at a
+more researchy level of what happens if you store application state in a database in general. And we
+looked at it from several languages. We looked at application state. We also looked at operating
+system state. That's where the original Dbos name came from. And, you know, that led to some
+research papers. And the core idea that I think excited us the most was that you could build this
+really lightweight interface that stores specifically application state in a database. An interface
+looked like we're durable workflows. And then that's the idea that kind of, that wasn't really what
+was written in our papers. That's the big idea we took away from our papers. When the two of us
+graduated and went off to found the company, that was the idea that we started building. This really
+lightweight, totally database-backed workflows, a workflow system that you could put into any
+library. You could just build this library and put into any application. It would just work. I've
+worked on other workflow orchestration systems. And I think you can, if you can highlight how Dbos
+is different from workflow execution systems, because there are existing workflow execution
+orchestration systems. They also kind of do something similar. Or I would say they're trying to
+solve a similar problem. But what comes with that is the complexity of learning that workflow
+orchestration system. Right? So you're not thinking about code. You're thinking about how can I fit
+my code to work with this orchestration system. What I started to appreciate more, and this I'm
+talking from just the last two months of my team working with your team and me trying to do some
+personal experiments is, I actually think about the code and not about the orchestration, because I
+know that Dbos can kind of handle that. So there is a big difference in the way the workflow
+orchestration system is trying to provide the same, you know, kind of feature or capability and the
+way how you guys are trying to solve it. Can you elaborate on that a little bit? Yeah, exactly. What
+we're trying to do is make it as simple and lightweight as possible. I think the classical model was
+an external orchestrator. That's the way workflow systems used to work, where you have, you know,
+you write your workflow, maybe as code, but more likely as an explicit DAG. And then you load it
+into a big orchestrator like Airflow or AWS top functions, this explicit DAG. And this thing goes
+out and this orchestrator calls out to whatever workers are running in your cluster and tells them
+to execute steps. And that's tricky because you have to write everything in terms of like steps in
+an explicit DAG running on a cluster that this orchestrator manages. That works, that's hard. And
+that requires you to rewrite your program. What we're trying to do in DBOS is kind of like strip
+workflows down to the bare essentials. So it doesn't require all this infrastructure. All it needs
+is a library that runs in your process and checkpoints your workflow's progress. Right. So here's
+all you really need for it. A workflow system doesn't need an orchestrator. It doesn't actually need
+to manage your progress execution. It just needs the checkpoint, the progress of your program, to a
+database. And DBOS does exactly that. And that's a really powerful idea that gives you all the
+benefits of workflows. It gives you durability. It gives you cues. It gives you distribution. It
+gives you observability. It gives you workflow management. The ability to query everything your
+program has been doing. But it does that all without the footprint of a giant external orchestrator
+or a big new cluster you have to manage. Yeah. No, I agree. I mean, and that's the piece that I
+would love if you are a listener who is trying to think about what should I do. Go check out DBOS. I
+mean, I'm plugging a kind of shilling DBOS here, but I truly believe it's something different and
+exciting. And I like the simplicity of the code, right? Because I had an example where I had like
+this long code and I completely replaced that in like eight lines. And I was like, oh, look at this
+word. I like the way this looks, you know? And it's code. I'm not thinking about an external system.
+It's all part of the process. So it's cool. So let's take a quick turn towards, you know, the world
+that we are in today. I'm pretty sure every person you walk out, including my daughter yesterday,
+said, Daddy, are you using AI to me, right? So pretty much it's like my daughter is seven years old.
+But the reality is pretty much everyone is aware of AI and the impact of AI and what it's doing. And
+you have spent a considerable amount of years, you know, researching, working on distributed
+systems, databases, cloud infrastructure orchestration systems, workflows. Why do you believe the
+next reliability crisis will be driven by AI agents? Well, are you using AI agents? Everybody uses
+it, right? And you know exactly why the next reliability crisis will be driven by agents. Because if
+you use one for 10 minutes, it'll do something unreliable. For sure. For sure. Yeah. But in the
+context of what you're doing with DBOS, how do you think DBOS fits in the story and can help our
+users out? Yeah. So DBOS helps build, add reliability to agents on two levels. So one of them is the
+more basic infrastructural level, where if your agents are really long running, and increasingly
+agents are, you know, DBOS lets that agent, you know, DBOS lets the agent run reliably and resume
+from failures. And if your agent is running for hours or days, failures are inevitable. You know,
+servers have to be upgraded, processes crash, internet cuts out, or the anathropic APIs fail every
+10 minutes. Like, this sort of thing. So if you're running long running agents, you need this
+infrastructural, this infrastructural resilience and DBOS provides that. Then the other level at
+which DBOS provides reliability agents is reproducibility. This is, I think, the more interesting
+and higher level. And this is that DBOS is checkpointing your agent's progress. And you can use that
+not only to recover an agent from a failure, but also to reproduce agent behavior, to restart your
+agent from any point in its execution history. And this means that if your agent does something,
+it's not really a failure, but is unexpected, then on a particular step, then if you're building it
+with DBOS, you can debug it. You can reproduce that behavior. You can take that agent and replay it
+from exactly the state where it was when it did the unexpected behavior. And keep iterating on that.
+Maybe changing the underlying prompt until you've reproduced the behavior, until you've root-caused
+it, and until you've fixed it. This is really powerful because it lets you take, it lets you go and
+find all the weird things for agents it doesn't do in production and then easily reproduce them
+exactly in dev, reproduce the conditions that led to them in dev. And over time, fix these
+unexpected behaviors. Right. And for managing all of this state right now, it seems like DBOS is
+also heavily coupled with the database, right? Do you think that is by design and you found that
+that is how it should be? This is what databases were built for. This sort of complex state
+management, often where you want to do elaborate queries over the state. You're trying to find how
+many times does this particular failure occur? That's a complex query. That's exactly what SQL
+databases were built for. So this is storing the state and querying the state. That's what databases
+are great at that. And that's why there's exactly the right attraction to use here. Makes sense.
+Yeah. And I don't, right now, DBOS supports Postgres, and then we are also, we have some, we have
+support with CockroachDB as well. Two different databases, kind of similar ideas, but the completely
+different scale and resilience offered between these two databases. Obviously, you are working on
+durability. You also have to provide resilience. So what are the decisions and the choices you have
+to make to make sure that this can work at agent scale? I think what it comes down to is that the
+main thing is, is you have to checkpoint every single step the agent takes. And what's nice about
+agents is that their steps tend to be fairly large and complex. Like an agent's step is something
+like call out into an LLM or execute a tool call. Those are big, bulky, expensive steps. By
+contrast, a single write to a CockroachDB cluster or to a Postgres database is not that big. So that
+means that like the overwrite you're adding is actually minuscule because your agents are so
+expensive and so big that adding one database write or database write is nothing compared to an LLM
+call. Right. So you just, it just works. Yeah. You're Cockroach, you know, this is, compared to what
+else you do, you're probably already doing with your CockroachDB cluster. This is nothing. Right.
+Yeah, I agree. And I think what people are not anticipating is, and this is like, it's a thing that
+when you just mentioned like, have you used agents? I'm like, yeah, have you used agents? I have
+like 10 agents running and working for me. So somebody like me who is like running 10 different
+workflows, like even agents are sort of like basically playing out workflows for me, right? Like it
+would be a little bit high level use cases. What I'm coming to notice is that the world or the
+industry is still not understood at the scale at which a normal human being will start using agents.
+Right. So if one human starts to run 10, 15 different agents, they might be scheduled working at
+different times. The impact on the infrastructure and the perspective that you have to start
+considering durability, reliability is going to become very critical. Like you don't want to come
+back after two hours and know that your agent failed. You know? And so we at Cockroach Labs are also
+thinking about how can we make sure that the world that is going to look like agents running all the
+time, how can we make it reliable and durable from our perspective as well? So that's the focus that
+I see from our side. What do you see that people are not recognizing in this early stage as they
+start applying these agentic systems and where should they start considering it along with DBUS?
+First, agents are getting longer running and that means it's just the raw infrastructural concerns.
+Like what happens if an agent runs for two hours and during that two hours I have to do a server
+upgrade? That's not a hypothetical. That is going to happen. If your agent runs for two hours you're
+going to do a server upgrade at some point when you have thousands of agents running. And that means
+agents have to be resilient to server upgrades. That means that they're resilient to that means
+basically to make an agent resilient to a server upgrade you have to do exactly what DBUS does. You
+have to take the agent checkpoint its state store it into something persistent like a database and
+then after you've refreshed your servers go resume the agent on a new server. So just if your agents
+are long running it's the basic infrastructural stuff requires a workflow engine like DBUS. Makes
+sense. Yeah. Shifting gears a little bit if somebody wants to get started with DBUS is it great to
+use DBUS for a new application or do you think it's easy to start thinking about it in the context
+of say a traditional app and they're trying to modernize that and make sure they're adding these new
+paradigms to their system? Both. Absolutely both. Like one thing we designed DBUS to do. Of course
+you can use it to build Sling from scratch. It's always easy to build Sling from scratch. What we've
+really really really focused on is making it easy to add to an existing system and that's why being
+lightweight and simple is so key to us. That's why we built it as a library that you can install in
+any application because in particular the most importantly DBUS is incrementally adoptable. You can
+take this library install it into a big application and then maybe only take one key workflow that
+really needs to succeed and annotate that with DBUS. Registrusting is a workflow and annotated
+steps. And then you can leave the entire rest of your application alone but just this one workflow
+is now running on DBUS and is reliable and will be automatically recovered if your program fails.
+And if that works well maybe you can take a second workflow and a third workflow. And then over a
+few months maybe you've modernized your entire application. But the key is that you can add DBUS
+non-intrusively and you can add it incrementally. So you can slowly over time add resilience to a
+large application that already exists. And you can do it using a fixture ready exists. Like if
+you're on CockroachDB you just connect to existing Cockroach. You don't need to spin up anything
+new. Right. It completely makes sense because all you're doing is bringing DBUS into the application
+layer. The database layer should work as it is. Based on that you know we've been talking about AI
+agents, agent scale, all these different things. Do you think there is a need for human in the loop
+with the way things are still going with agents? Yes absolutely. I mean that is over time maybe
+we'll see less of it but actually that could go in a direction. We might see less because agents are
+getting smarter. We also might see more because agents are being asked to do more important things
+and those more important things need a human in the loop. And when you have a human in the loop that
+makes agents longer running. Because now agents are going to have to spend human time and you know
+the human might human isn't always at their computer so that human time might be hours or days to
+wait for people to wait to get permissions or approvals. And when you have these long running agents
+you know when you have maybe tens of thousands of agents most of which are currently blocked waiting
+for human approval then you now you really need infrastructure to support agents that can run for a
+long time can be suspended can wait for hours or days for human approval and then the stuff like
+workflows and checkpoints just becomes critical. Right. And this is important because you know when
+you build systems like this one of the common occurrences like so what I do sometimes is I'll have a
+bunch of agents running and this agent is waiting for me to approve a slack message and then I get
+on a call I'm not available for an hour he's still stuck there. Sometimes I've noticed that the
+connection will fail like it's basically waited for an hour and then I have to ask the agent to do
+the same thing again and this is a pretty real use case and I'm sure what you just explained is what
+people are going to start observing is that when they run long-running agents they have to make sure
+that they do some sort of state management that they need to build into it. We talk to our customers
+the ones who are running agents that run for hours or days the biggest reason the agents run for a
+long time is because the agents have to wait for human approvals and as soon as you introduce a
+human to the loop like you said the humans in meetings the human has to use the bathroom humans not
+always at their computer. As soon as you're assuming the loop you have to budget like at least a
+couple hours and if it's not or maybe a couple days to get the human response the agent has to be
+resilient to that. Right. No absolutely it's a great point. What are the customers that you're
+seeing start to adopt Dboss and really understand the power of what you guys are offering? I'd say
+probably about half of our users are building agents. We're seeing Dboss used for a lot of different
+parts of those agents. agents. Some of the users are like I mentioned earlier using Dboss to make
+really long-running agents resilient. So you know building agents that can wait for human approvals
+that can wait for hours or days and keep going. Some users are using Dboss to build the data
+pipelines that power agents like some using Dboss for document processing where you have these data
+pipelines that are processing millions of documents and those are big distributed jobs that have to
+run across dozens of machines and run for hours and are going to inevitably deal with a lot of
+failures. You use Dboss to make sure that you can process these hundred thousand or million
+documents durably and make sure they all actually process no matter what failures happen. Some
+people are using Dboss for agents that have really complex distributed tool calls like one of our
+biggest customers is doing deep research agents and those agents have really expensive web scrapers
+as tool calls that are resource intensive. So an individual agent has to run distributed over
+several servers and then Dboss coordinates that and make sure that even when the agent fans out to a
+hundred of these parallel web searches that each consume a lot of memory that those all complete and
+maybe if a process ooms that process eventually gets recovered and the web search is all completed
+and the agent can go back to what it was doing. Right. Makes sense. Yeah. Is there an effect of
+using Dboss with your existing code in terms of the application performance or do you think it's
+going to get improved because the application doesn't have to do a ton of things now? If your
+application was already doing something for reliability, if it was already resilient to failures,
+then Dboss is heavily optimized. It's probably faster than what you were doing already. And if
+you're adding Dboss and overall, especially for a agentic application where an individual step is
+something like an LLM call is going to take a few seconds or a tool call that might also take a few
+seconds, all Dboss needs to make its checkpoint is a single database write, which is a couple
+milliseconds. And that's really nothing for most of these applications. So performance overall is
+totally fine. Most people are focused on the performance of their agent and not the performance of
+anything else because it's just a thousand times slower than anything else in their system. Yeah,
+and I think agentic systems have to kind of, there's a trade-off also, right? If you've noticed it,
+that an agent has, when it has to do something, it has to probably pull in a certain number of
+tokens, input, outputs, and it's trying to process them out. It's going through results. And then at
+some point, it also has to save these actions somewhere and then also has to manage the state. So
+there's a ton of things happening. So if an agent stops after it's pulled in, say, half a million
+tokens, then you ask, you go back and do the same thing again. If you could take one long-running
+agent execution and resume it from the middle instead of resuming it from the beginning, it has
+saved you more time than every database checkpoint you've ever done. Exactly. Yeah, and I think what
+you said is one of the best analogies, and I'm going back to it. you introduce D-Boss as how you're
+playing a game, and when you play a game, you want to checkpoint the game or save the game at
+different intervals. Because how much is it that we who gamed hated it that you made certain
+progress, and then you're like, shit, I haven't saved the game. I need to replay the whole thing
+again. That's the easiest way to explain what D-Boss can help with with respect to agents. Because
+from my vantage point, yeah, go ahead. Yeah, you're spending three seconds on a save screen to make
+up for an hour of actual gameplay that you don't want to redo. Exactly, yeah. And I think one of the
+implications of this agentic stuff, and I think we could dig into this as well, is the cost effect,
+right? The token cost is, you know, it's a considerable amount of money that is going to get used,
+and if you run agents that are failing to maintain state and are not saving where they need to start
+off from, then you basically replay those tokens again, and that can be considerable cost at scale,
+which is something that I don't think people are talking a lot about. How do you feel about that?
+Yeah, absolutely. Like, this is especially for, actually, the document processing use case won't
+receive that a lot because in a document processing use case, that's where the cost can really
+balloon, like, because a single job can actually then be hundreds of thousands of documents, tens of
+millions of tokens. That's something where the cost of a single job is so high that just durability
+on that one job is not having to restart it from scratch is a meaningful time and money saver.
+Right. Makes sense, yeah. And, you know, I think one of the things I've discovered while I was using
+Dboss is that it's fun, it's pretty easy to start off with, like, you already are providing like,
+Python code. What else do you have for other users? Like, can you elaborate on what programming
+languages that you support right now? I was using Python, but can you elaborate on that? Because
+Python was really easy to get started with. Languages right now are Python, TypeScript, JavaScript,
+Go, and Java. So those languages are all at parity. So Go and Java are a bit newer, released late
+last year, Python and TypeScript are original languages. Those languages are all at parity, so
+features built in one all get ported to the others, and they all share a common system database
+implementation, a common database schema. They're all interoperable, so you can actually, you know,
+enqueue a workflow from TypeScript into Python or Java, which is actually something people want to
+do because you have a TypeScript web server back in that you don't want exiting complex jobs, so you
+have it in QO workflow and your Python or Java worker actually goes and executes those jobs. So
+they're all at the future parity, they're all interoperable, and you can get started in any of them.
+Yeah, that's cool. So if you are somebody who's listening, who's thinking about building agents,
+then you've learned a few arguments from Peter and I as to why you should be doing state management,
+just obviously cost. And as you heard from Peter, you can start off by using it with Python or
+whatever programming language you're familiar with, they kind of support everything. I feel like I'm
+plugging DBOS here for everyone, but go try it out, it's pretty cool. Peter, let's shift a little
+bit, talking about, so if somebody wants to get started with DBOS, right, are you offering this as
+an open source project right now? Do you have a managed solution? How do they get started with that?
+Yeah, so the core DBOS libraries are fully open source. You just go to docs.debus.dev, open the
+quick start, it'll tell you how to get started with the open source libraries in your favorite
+language. And the only thing you need to get started with the open source libraries is a database,
+so a CockroachDB database or a Postgres database. For getting started, you can also use SQLite, but
+for production, you use a real database. That's our core feed as open source. And then for
+production use, we also commercially offer a set of observability, a set of tooling. So
+observability, dashboards, automated recovery, we call that Conductor. So that's our commercial
+product that provides a tool that helps you run DBOS workflows in production. And that can be
+totally self-hosted by you, or that can be managed by us. And that's an intrinsically privacy-
+preserving architecture, so Conductor stores absolutely no data about your application. So you can,
+so you can, because all of your data remains resident in your database, and your CockroachDB and
+your Postgres, and Conductor's only there to provide tooling, to provide dashboards, and to help
+coordinate things like recovery and workflow retention that are useful in production. Yeah, very
+cool. So the Conductor capability basically comes with, you know, oversight, monitoring, everything
+that they need to run it at enterprise scale. Yeah, yeah, yeah. It's tooling. It's like, here are
+your dashboards. Here is your automated alerting. Here is your managed recovery. Here's your
+configurable retention policies. The 20 that you want to operate things. But the core workflows
+library, like the thing of the stuff that actually, the core stuff that goes in your application,
+that all is included in the open source library, and all the data from that is stored only in your
+database. So nothing, not every data is ever sent to us. Makes sense, yeah. And so, and going back
+to what you mentioned with databases, you basically bring your own database, BYOD, right? Bring
+CloseQuest, bring CockroachDB. With respect to CockroachDB, and you know, what have you, like, tell
+us a little bit about, obviously you know Postgres, you've worked with Michael. Tell me, after using
+Cockroach, trying that with DBOS, what do you like about the product, and how do you feel it's going
+to add value to the customers who are going to use Cockroach with DBOS kind of option? So
+CockroachDB is an incredibly cool system. And I mean, this is something, I mean, I read the original
+papers back in grad school, right? Like, this is something that's been around for a while that I was
+researching back in the day, and now it's that I were actually working with you guys. The thing
+CockroachDB brings to the table, more than anything, there's a lot, but the most important thing is
+scale. CockroachDB is, Postgres is a single node system. You have your one Postgres, and if you want
+a bigger Postgres, you get a bigger machine. And if you want to scale past 96 cores, then you get
+two separate Postgreses and figure out how to charge your data across those. You can do that. It
+works well, but what's better than that, especially at massive scale, is like an actual distributed
+system. Like a system where you can have any number of nodes. And they all work together and give
+you the abstraction of a single database that's distributed across many nodes, potentially
+distributed across many regions internationally. That's when you're really, really, really trying to
+run applications at massive at global scale. Then this is invaluable. So I think the two things that
+CockroachDB, where CockroachDB is, the CockroachDB can do that no other Postgres can do in a Dboss
+context, is first run applications at truly massive scale. If you're processing tens or hundreds of
+thousands of workflows per second, and you need something like Cockroach to keep up with that level
+of transaction volume. And also, if you're dealing with data sovereignty issues, CockroachDB, I
+believe, has also recently added a lot of support for, where you can specify that some of these
+workflows run in Europe or in Germany. And they handle, and they keep all the data resident in
+Europe or in Germany. And the workloads to that data also, you know, the data lives in Germany, and
+the workloads to touch that data only live in Germany. And that way, your global database can remain
+compliant with data sovereignty regulation in each individual country in which you operate. So scale
+in terms of transaction volume and scale in terms of, like, global distribution and the ability to
+comply with, like, increasingly complex regulation. Our place for Cockroach really excels. No,
+that's awesome. Yeah. And for everyone listening in, we're working with D-Bus, you know, as
+partners, we are going to have more stuff come out for you if you're trying to use Cockroach with
+D-Bus, and it'll help you get started as well. In this same context, Peter, I want to ask you, like,
+we were talking about domains and use cases. What domains do you think, I mean, obviously, this is,
+you know, workflow execution and durability kind of applies in pretty much every tech use case. But
+where have you seen the sweet spot in terms of, you know, domains that can take benefit of D-Bus
+immediately? Yeah, so we definitely see the fastest growth in agents. And I think that's because
+mostly because the largest number of developers right now are building agents. So anything that's
+even remotely adjacent to agents is going to see a huge amount of growth. And D-Bus is really, I
+think this is core workflow extraction, specifically D-Bus is like a really lightweight
+implementation of it is, I think, perfect for building really reliable production-ready agents.
+Yeah, we also see D-Bus used for just a lot of more core business use cases. Actually, one
+interesting thing we're seeing is using D-Bus for, like, biotech lab automation use cases where
+infrastructure has to run on-prem. And what's nice about D-Bus is that because it just needs your
+database, you can run it fully on-prem, maybe even in an air-gap lab environment. So you can add
+workflow reliability to this on-prem system that can't really support a cloud-hosted orchestrator or
+a complex cluster. And as you're probably not running Kubernetes on your lab, you can run Postgres.
+Got it. That's pretty cool, actually. And I'm sure there are so many more use cases out there that
+people have not tried, but it's going to continue to grow. So that's exciting. Yeah, like all sorts
+of business use cases, just data synchronization, big one. Like just keeping two databases in sync
+is really hard and workflows are great for that. Something like a log under registration flow is
+something that often some of our customers start with is it's often the first thing the customer
+builds on DBOS because it's fundamentally a workflow and it's really important that it gets
+everything right, that when you're onboarding a new customer, onboarding a new employee, you
+actually register them in each of your systems. And that's the thing that needs to be reliable.
+That's a core business workflow that we've often seen as the first thing a new customer builds in
+DBOS if the customer is a more traditional enterprise. Yeah, yeah. Makes sense. I mean, that's
+awesome. Yeah. I wanted to ask this question in the beginning, but, you know, we started talking
+about tech and geeking out about it. So I kind of lost trail of it. You've been doing DBOS for a few
+years now. What makes you personally passionate about solving this problem for the world? Like, tell
+me a little bit about that. Acadically, intellectually, I love databases and I love this idea of
+reliability, this question of how do we build something that no matter what kind of weird failure
+happens, it's going to be robust to that. And that's a really engaging problem. It's a really hard
+problem that most people don't want to solve themselves because the space of potential failures is
+too high and it's a really important problem. Like, we need software to work. And, especially with
+agents. Like, especially with agents that take on more and more higher responsibilities, we need
+that software to work. And if software doesn't work, that can be costly. And if the software is
+important, that can be costly in material ways to real people. And so, making it to that software
+actually does what it's supposed to do and it's easy to build software it's supposed to do. That's a
+really cool thing. That's cool. I think one of the things I was thinking about, is there like a DBOS
+skill available that an agent can use to like, look at my existing code and then... Yes, we actually
+recently released agent skills for DBOS. So, we have also a DBOS MCPU server. SkillFH is a really
+cool tool if you're not familiar with it. It lets you just, with a single npm command, install a
+skill into your computer so that... The reason why I as a tweeter is because it'll be so cool for me
+to go look at my existing project. So, say I have a NestJS backend or a NextJS backend or whatever,
+it's just JavaScript, right? I would basically get an agent, download the skill and I'll say, look
+at my project and tell me where am I going to have my system break and add a DBOS level skill and
+help me understand that. Right? So, that'll be cool for me to run some sort of compliance check and
+then apply that. Do you think that's a good use case to start off with? Absolutely. I think with
+these skills, they work. With them, your favorite code engagement in a cloud or codex or whatever
+can actually make DBOS work in an entrepreneurial program. And these skills regularly update them so
+they understand all DBOS' latest features and APIs. There's also an MCP server, which is cool. And
+that lets your agent engage with your active workflows. So, if you're running a bunch of tough stuff
+in dev and some workflows fail, the MCP server lets your agent query those workflow traces and maybe
+dig through them to figure out what went wrong and then fix the underlying issue in your source
+code. That's cool. Yeah. I mean, I'm just excited to go try it out. Thanks for telling me. It's
+exciting. I wanted to ask you a question related to, you know, are you also a gamer? Because I see
+that headset and I feel like you're a gamer. I don't know if it's true, but it looks like a gamer's
+headset. Yeah, yeah, yeah. What do you play? I play, I don't know if this is Kostas gamer, but I
+play a lot of magic. Magic together. I guess it's a gamer, but I like it. Yeah, that's cool. That's
+cool. Yeah. So, tell us what's exciting. What's coming? What should we be looking at with DBOS?
+Like, what are you guys doing this year that's exciting? Yeah. Something for us to look up to, yeah.
+Lots of big priorities. So, one thing I think I mentioned earlier that we recently released is
+interoperability. The ability to take an application written in DBOS in any language and have an
+interface with a DBOS written in the other language. Like, for example, enqueue work to Python from
+a TypeScript backend. That's one of the big exciting features that we just released. Some other
+things coming soon. One thing we're adding is the ability to enqueue work directly from a from
+Postgres or for CockroachDB. So, if you have, say, triggers on your Cockroach database, you can now
+take those and use those to start workflows or to send messages to workflows. So, that, like,
+further integrates DBOS into the Cockroach or Postgres ecosystem. So, you can do work directly from
+your database and have interact with a DBOS system. We're also, like, really focused on
+observability. One set of things that's going to come out is just a bunch of new tooling to make it
+easier for you to, like, view and manage your workflows in production. Like, so you can quickly
+triage workload failures and then you can open up your dashboard and immediately, if there's an
+issue, immediately see the workload failures and dive in, see exactly where they came from and do
+more sophisticated, like, triage and root cause analysis directly from the dashboard. So,
+observability is another big focus for us going forward. Because one of the big benefits of
+workflows is that because they're checkpointing all your program's progress, you can observe those
+checkpoints to see exactly what your program's doing and see why it fails. So, it gives you a ton of
+observability for free and we want to make our visualizations that much better. That's cool. Yeah,
+man, that's exciting. I mean, it's very exciting. So, what is your own go-to programming AI
+assistant at this point? Are you a co-pilot guy, a cloud guy, or are you codex? Cloud code. Cloud
+code. Cloud code? There you go. Okay, I'm going to ask you an opinionated question. Why cloud code
+and not cursor with Opus? I tried cursor back in the day. I think I bounced off of autocomplete. I
+really don't like cursors autocomplete. My understanding, I haven't tried cursor in a while, in a
+couple months. My understanding is that cursor's moved away from autocomplete and more towards a
+fully agentic system. Maybe if I tried that, I would like it more. I really hate the NIDE
+autocomplete. One thing I really like about cloud is that you can, because I use it a lot, you can
+separate what your agent's doing from what's in your IDE. So, what I usually have is on one monitor,
+I have cloud actively working away. And then the other monitor, I have the IDE where I'm watching
+cloud. And having those two be separate makes it much easier to understand what the agent's doing.
+If the agent's doing something funny, I can correct it. That makes sense. That makes sense. Yeah.
+Also, cloud code is heavily subsidized. So, you know, get it in one. Yeah. That's a good point.
+Yeah. I'm also a big cloud coder. I don't use cloud code, though. I mean, I use Opus. That's my go-
+to model. 4.6. With the way these models are improving, and Opus 4.6 is, I'm sure you saw a massive
+jump in the quality in the last two, three months. 4.5. 4.5 was a big jump. 4.5 was a big jump. Yes.
+4.5 was big. Do you anticipate we would probably just not have to even look at a code at some point
+and just trust what the agent is producing? We'll see. Do you think that's going to be the case?
+It's not close. 4.5 was a big jump for sure. I think before 4.5, I had to be really, really, really
+picky and tell the agent to do things in small five or six line chunks at a time. Now, I can tell
+the agent to do larger refactors and let it work autonomously for the order of minutes. When I come
+back, there's always something broken. Now, part of this is what we're working on is complex, highly
+concurrent, complex for intricate reliability code, where a small mistake can completely break a
+program. I told, just to give you an example, yesterday I was telling Claude to refactor. I was
+telling Claude to refactor our messaging system. And Claude got it mostly right, but then it just
+kind of forgot to release a lock because it just probably doesn't fully understand what these things
+are doing. And of course, that means everything's stuck forever. So that code would be very, very,
+very broken. But that's like, for basic stuff, for greenfield stuff, it works well. But for anything
+intricate or complex, you have to really know what your code is doing or you're going to be stuck
+forever debugging what turned out to be an AI forgetting it's supposed to release locks. Yeah, yeah.
+No, I agree with you. I've also experienced something similar. What I've seen is my human-in-the-
+loop effort has reduced. Yeah. Probably about 20, 30%. Absolutely. 4.4, I would say 4.5, 4.6, that's
+what I saw. I also feel like one of the issues I'm having with Cursor, and the reason I'm probably
+going to try our cloud code more, is once you start doing complex, big agent-ic stuff, as we were
+talking about, at some point, Cursor starts to slow down heavily. Like, the whole laptops, I have
+like 32 gigs of RAM, but my system starts to like jam as if it's breaking. So I don't think it's
+doing great. Separation is really nice. Yeah, yeah. Having it, having the agent in your terminal,
+and then the ID is just an ID with nothing fancy in it, that makes it much easier to figure out
+what's happening, and it also avoids like performance issues. Definitely. I mean, that's awesome.
+That's great to know. So, Peter, once again, I mean, thank you so much for coming. For all the
+listeners, do you have anything that you want to leave them with, a place where they should go get
+started? I know you already mentioned a few things before, but something that you want to plug?
+Yeah, absolutely. So I think, try it out, take a look at our docs, docs.dboss.dev slash quickstart.
+That'll get you started in just a couple minutes on any language. Just install the library, connect
+it to your database, and go. Also, definitely check us out on GitHub, github.com slash dbossinc.
+That's where all of our open source code is. Take a look at it, start the repositories. Everything's
+open source, everything there is really cool. Very cool. So, yeah, go check out all these things. We
+are going to link them on the description on our LinkedIn. As well as when the episode comes out,
+you can see it in the description as well. Peter, it's been an absolute pleasure having you here.
+Always glad meeting more gamers who are building cool companies. And I'm glad we matched our
+t-shirts today. It kind of worked out. But it's been an absolute pleasure. And also from our
+partnership point, I'm excited about what we're going to do together from our go-to market. So it's
+going to be exciting. Thank you so much for your time. I appreciate it. Thanks a lot, Dave. I'm
+excited to work together. This is really cool. Awesome. All right. Catch you later. Thank you,
+everyone. Thank you, everyone.                                you

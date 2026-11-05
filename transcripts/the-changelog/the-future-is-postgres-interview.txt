@@ -1,0 +1,1072 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: The future is Postgres (Interview)
+DATE: 2026-10-28
+SHOW: The Changelog
+LINK: https://changelog.com/podcast/688
+AUDIO: https://op3.dev/e/https://pscrb.fm/rss/p/https://cdn.changelog.com/uploads/podcast/688/the-changelog-688.mp3
+DURATION_SECONDS: 6375
+TRANSCRIBED_AT: 2026-11-04T02:25:44Z
+----------------------------------------------------------------------
+What's up, friends? Welcome back this week on The Change. I'm talking to my good friend, Craig
+Kirsteins. Craig leads the Postgres efforts at Snowflake, and he previously helped build data
+platforms at Heroku, Citrus Data, Microsoft, and Crunchy Data. Of course, we're back for the year of
+Postgres and why it might finally be true. Craig bet on Postgres back at Heroku when nobody else
+would, and he's been geeking out at it ever since. We discuss PG Lake, the open source extension
+that puts an iceberg catalog and embedded DuckDB inside Postgres, so you can create parquet files in
+S3. So cool. We get into why Postgres 19 might be the coolest release in a decade with repack
+concurrently, query plan pinning, and group by all. And we also talk about the small group of
+roughly 50 committers who keep it all running and how a ton of agent-generated PRs are landing on
+their doorstep. A massive thank you to my friends and partners at Fly.io. Computers for agents,
+sandboxes, y'all, are not enough. Give your agent a real computer and get back to building. Learn
+more at Fly.io. Okay, let's do this. This episode is brought to you by our friends at Coder.com. You
+know what? Your developers, they have guardrails. The humans, guardrails, right? That makes sense.
+But your AI does not. How often are you running your AI dash dash dangerously? I think that most
+people are living a little dangerous. Some are sandboxed. Some are not. Most are not. And I'm here
+with Nicky Pike, field CTO for Coder. So Nicky, what is the focus right now for Coder? I mean,
+really our focus and what we're doing at Coder is on the governance around AI. So, you know,
+everyone right now, they're talking about, you know, AI agents like they're magic, but nobody's
+really asking where they run and what they have access to or what happens when one gets compromised.
+I mean, kind of give an analogy. You're not going to invite a contractor into your home and then
+leave and have them have full access to your safe and everything else on day one. You know, this is
+what people are doing with agents. We are wanting to, we are the infrastructure that helps you put
+guardrails and restrictions and governance around agents and what they're doing to you today. That's
+where Coder succeeds because, you know, we started out as a CDE company. There's no secret. We were
+a CDE company. We created remote dev environments, standardized workspaces. But what we realized is
+that we accidentally built the exact foundation for the AI age before the AI age even really
+arrived. So, isolated, governed, audible compute environments, that's what we build. And that's
+exactly what enterprises need when their workforce starts, including agents alongside their humans.
+So, you know, for us, this wasn't a pivot. This was really, we finally found the problem that
+perfectly fit with what we'd already built. So, if you're living dangerously, dash, dash,
+dangerously, non-sandboxed, you name it. Coder has AI governance for you, a centralized gateway to
+observe and to control LLM tool usage across your environments, authenticate model requests, audit
+every prompt, and contain agents behind a default deny allow list. The smart way. Learn more at
+Coder.com. Request a demo. Once more, Coder.com. Well, friends, we are back with an old friend and a
+good friend. And I've missed you, Craig. So, it's just been way too long. I think Postgres is more,
+is it always just a little more at the epicenter of what we're all thinking about? I feel like it's
+always the boring but provocative topic for us. What do you think? Yeah. Yeah. No, I think that's
+like spot on. It's, there's one reporter I talk to that every year comes back to me. He's like,
+Craig, I'm sorry. I'm doing it again. And he writes this article that it's like, this is the year of
+Postgres. And it's been like the year of Postgres for like five years in a row. Right? It's like,
+all right. The same for Linux though, right? And I feel like it's finally, they're sort of both
+incrementally becoming the year of. But it's funny for me having like been here for so long of like,
+you know, we picked Postgres back at Heroku long before it was cool. In fact, like no one else
+wanted to bet on Postgres and everyone was like, why on earth are you doing this? Right? And it
+wasn't cool then. And it's like, you know, I have no misconceptions of what I do for work. I'm a
+nerd. Right? Like I run databases for a living. And so like, you know, when my kids take me to
+school, I'm not going to win the like coolest, like, you know, hey, let's talk about your parents'
+jobs. Like I'm not. You know, I don't know about that these days though. You know, I think now the
+nerd dads are the cool dads. Maybe when we get to high school. I mean, for elementary school, I
+don't know that you're winning, you're beating out the, but it's, it's like Postgres became sexy.
+Like, can I say a database is sexy? Like. I mean, you can if you want. It is America. But it's like
+right here now. I mean, it's been fun to see this because like investing in it 15 years ago, like
+who else was there? Right. And actually to have like a small hand in it getting to where it is, like
+is, is exciting and fulfilling in that journey. And I think like Postgres itself deserves in a way
+even more credit. I think now that it's gotten so popular, so many people are latching onto it.
+Yeah. And like, I want some of that Postgres coolness and yet Postgres itself is just so freaking
+solid and good. And like, we, like, you know, to be fair though, as devs, I was at a conference a
+few years ago and we were at the speaker dinner and like, as engineers, we try to pretend we're so
+principled. And they were like, you know, as a Python developer, like, obviously I'm going to pick
+Python. I would never use Ruby. Who on earth would use Ruby? And yet they're basically the same
+language. Like, I know, I'm going to have pitchforks coming for me. Basically. Yes, there are
+differences. I'm with you on that because I'm just immediately that person. So don't, don't, don't
+feel bad. I'm sure, I'm sure there's going to be some pitchforks. I'm like, I am stopping this
+episode right now. He said Python and Ruby were the same. This guy knows nothing about technology.
+Matt's listening and just yelling in Japanese right now. And yet, like, you know, and it was funny
+because they went on and they're like, for example, Postgres for my sequel, first my sequel. And
+this is 10 years ago. They're like, because I'm a good Django developer, of course I pick Postgres.
+Well, I mean, I'm a real engineer. I have, I make good decisions. Why would I ever pick my sequel?
+And yet they're like. I care about my future. In reality, they were like, you know what? I actually
+don't know why I'd pick one versus the other. And it was really funny because the table got quiet
+because half the table knew me. And like, oh, because of, you know, concurrent index creation,
+transactional, GDL, listen, notify, you know, JSONB. Like, they're like, oh, that's really cool. I
+should go learn about some of this stuff. And I think like, you know, it's awesome to see that now
+the world is kind of embracing everything that is in there. And we're learning. But also I think
+there's still a little bit of sometimes that, you know, again, I'm probably going to get
+pitchforked. So like, you know, we're bandwagon fans. We pick Postgres because it's the age of
+Postgres. And we don't always peel back the onion of what's so great about it. Well, sometimes story
+plays a role in that. Is that critical to you at all? Like Oracle, MySQL, you know, Oracle Database,
+MariaDB, the whole division there to sort of like, I guess, set the ground at unease back in the
+day? Like, did that, I mean, you've been in the game for a while. So was that a role for you? I'm
+sure. I mean, there's no way it didn't help, right? I think part of it was like, it kind of became
+the default for Ruby developers on Heroku, right? Like that was a time, you know. Very influential.
+Like rest in peace. Distribution of ideas, man. Yeah, definitely rest in peace, Heroku. And like,
+cool, great. And then it started to become cool with those features, right? And back at Heroku, we
+invested and wrote some checks for core development features, right? And hired those folks way, way
+back. And I continued to do it at Citus and Microsoft and as part of Crunchy Data and now Snowflake.
+That it's like, cool. Like want to contribute and make the core better. But definitely, you know,
+Oracle with MySQL and MariaDB definitely helped. But I'm often asked, like, okay, well, if I wanted
+to create a company and recreate what Postgres is, like, how do I do that? Like, how is Postgres
+what it is? I'm like, I wish I knew, right? Like. You don't, right? There's not an issue tracker for
+it. Like, there's no, like, things don't get pushed up to GitHub with PRs. They mail patches to a
+mailing list. Like, do you know how to generate a patch to send to a mailing list? I'm not sure I
+do. Right? Like. I don't think I do know how to do that. Honestly. And yet, it just continues on.
+Like, eventually, they, like, they mirrored the repo to GitHub so people could see it. Right? So
+they didn't have to go, like, pull it up. But it just works and it's the test of time. I wish I
+could say how you could repeat this. Because by all accounts, this should not work. Like, and yet,
+it really just keeps getting better. And there's huge kudos to, like, you know, all of the core
+developers that believe in, they believe in Postgres more than they believe in most things. Right?
+And want to see kind of the, see Postgres continue to live on. And it's over 30 years old. What's 30
+years old besides Linux that we're talking about? Well, I think even when I've read your stuff over
+the years, the one thing that I keep hearing you say is extensions. Keeping the core boring. Keeping
+it predictable. Keeping a core contract in place. Secure. Fast. Things like that. Things that really
+make it, like you said, sexy. The unsexy side of it. Which I think is actually sexy to me. Those are
+features, right? Those are curves. And so I think about software like that. So you have this core.
+And then they call that user land. It's extensions. And then anyone can kind of make Postgres their
+own version of Postgres. Maybe even Postgres compatible. Okay. But whatever, right? So, like, what
+do you, do you not believe, or maybe you do believe, since you said it a few times, that extensions
+is really where it is allowed to thrive. Because it doesn't force the core function. Similar to the
+Go language. To keep it simple. Right? To keep the language simple and let things happen in user
+land that need to happen in user land. And let core be core and boring, in a way. Yeah. I mean,
+yeah. I love extensions. I think they're the next. I mean, what we should come back to in a few
+minutes, probably, is Postgres 19 itself. For sure. Because I don't want to diminish the core. And,
+like, man, if there was ever a release that is just, like, wow to me, it is, it's, Postgres 19, I
+think, is the coolest release that we've had in maybe 10 years. But, to your point, yeah, extensions
+are absolutely amazing. And I think you look at people that, you know, there's now multiple
+different text search extensions, right? So that, you know, BM25 kind of text search can be in
+Postgres, right? This is kind of the core of what Elasticsearch does and makes it so great. You
+know, ParadeDB was the first one there. There's PG Tech Search, which is, you know, fully open
+source from Timescale, which adds that capability, right? There is, you know, PostGIS. There's a
+stream match on Accent. I mean, the list goes on, right? Yeah. I mean, PostGIS is massive. It turns
+it into this whole other, like, PostGIS is a fascinating one. Yeah. Because, like, everyone's like,
+oh, that core team has to talk to the other core team. And it's like, they do, but they're also
+running on this parallel path. Because, like, what you do for geospatial is so different than the
+rest of core Postgres. And it's this massive extension. I mean, we open sourced PG Lake back in
+November, which, oh, man, to me, it's like a work of art. Of, like, it's actually, like, 12
+extensions in one. So PG Lake is, like, the overarching extension. But, like, we started with
+putting an iceberg catalog inside Postgres. And they're like, hang on. And that's, like, an open
+file format parquet files. Like, that's column-based. What's that? And it's talking to S3. What's
+that got to do with Postgres? And it's like, well, it's just a catalog. But once we have the catalog
+there, okay, great. Well, we need something to query this. So we embedded DuckDB inside Postgres.
+Get out of here. Yeah, it's turtles all the way down, right? And so, but hang on. DuckDB has a
+different SQL syntax. So we have an extension that converts from Postgres SQL syntax to DuckDB. But
+hang on. DuckDB has different functions. So we have an extension that does that. Well, what about
+the geoparquet files, right? How do we convert from geoparquet to, like, geodatotypes in Postgres?
+So we have an extension for that. And so... You're getting me all hot and bothered over here. Now,
+we've got 10 extensions that run with different versions. And what happens when you bump one version
+that doesn't work with another? So we have an extension... A cascade of change. We have an extension
+that manages the versions of extensions, right? Now, you're like, oh, great. I'm glad you love to
+create all this complexity. But the result is, like, I can literally now just go and query a parquet
+file and load it from, like, S3 into Postgres. So I don't need the traditional, like, great. I don't
+have this Python script running on a box below. So it's literally just running with pgcron inside my
+database. And for, like, data engineering, they've had these sort of tools for a while. But, like,
+inside your transactional Postgres database, no. Like, it's always this, like, duct tape and glue.
+And, like, I don't even have to load it. I can actually just... There's, like, elegant pipelines
+that people are setting up now that, like, great, just drop off this stuff in my data lake in this
+S3 bucket, and I just want to query the new files as they are there. Just shows up. Which is like,
+huh, I'd never thought about doing this before. And it's like... What happens when you bring, like,
+DuckDB and Parquet into the world of Postgres? Like, what changes there? And can you maybe, just for
+the uninitiated, kind of give a version of what DuckDB and Parquet do? Like, why those are querible
+fast? Yeah, yeah. Let me back up, right? So, like, we live in this world... Give us the juice on
+this. Like, this 30-year-old divide of, like, OLTP versus OLAP, right? Like, and that's, like,
+database academic stuff, like online transactional processing, online analytical processing. The
+reality is, like, you know, OLTP, operational databases, are row-based stores, right? They store a
+whole row together. Whereas analytical systems are typically column-based. And so what you do is you
+store a whole column so that you can summarize that column as the entire... You're not getting the
+whole row most of the time. It's like, how many, you know, how many sales did I have in this book
+from Amazon yesterday, right? Well, I don't need to know across all books. I just need to know, you
+know, some, all of this book, right? That's very different than I need all the order details for all
+the books, right? For sure, yeah. So, you know, OLTP, row-based, often single-row inserts and
+updates and lookups, right? Like, I log into Amazon and place my order. That's the order going into
+Amazon, right? And, you know, really fast kind of inserts. Heavy indexing on them, right? Like, good
+old B-tree indexes in there or GIM indexes, like advanced indexing. But you want the query plan to
+be incredibly fast and, like, leverage indexes and then get your data back in, you know, single
+millisecond, right? Like, this is just what Postgres does. Yeah. Completely different from the OLAP
+world, right? Which is, I don't need anything in one millisecond. I want to know this report of, if
+I'm Amazon.com, how many orders were placed yesterday, right? Like, I'm okay with taking that a few
+minutes. It's a lot of, you know, how you organize the data. Data gets batch ingested. It gets split
+into partitions. Like, this is the world that Snowflake lives in and all these data warehouses,
+right? And they've lived in this world for a long time. These worlds are like Mars and Venus. Like,
+I've seen these teams, like, I've almost never seen these two different teams in the same meeting. I
+think they hate each other, right? Because one's running, like, the production operational system.
+Now, the other one's just trying to do their job and get the analytics insights and drive the
+business and make decisions. But, man, they're kind of at, one of my colleagues joked that he's
+pretty sure that E in ETL stands for evil. Oh, gosh. Which I loved it because it's a necessary evil.
+We haven't gotten away from that. Help me unpack that one. Why evil? Give me more details on that.
+It's a source of, so when you go and scan all the data from a row-based store, right, you're
+exacting load on it. And, like, you're doing this batch pool, which is not ideal for it. And so
+you're often, like, creating unnecessary load and oftentimes outages, right? So while you're doing
+that, your wall's backing up on Postgres. You've got latency in getting the data into your analytics
+system. It's costly. Like, it's a, moving data from one system to the other is a huge source of
+pain. I usually start talking to people about this, and they almost start crying. Like, yeah, I've
+been dealing with this for so long. But you can't be like, nope, I'm not going to move my data
+between these two systems because it's painful. You can't just be like, I protest. Can't you just
+throw more machines at it or more of more to it and sort of crush some of that or more compute? I
+guess it's more cost, right? More cost. Especially in this world, right? I mean, compute is so
+expensive these days, man. Well, compute, not so much, but disks and RAM. RAM is climbing. I mean,
+all of it's climbing. So RAM is three times the price that it was a year ago. I mean, that's just
+consumer level that I've got. I'm not purchase powering, you know, a data center. So I'm purchase
+powering a dev lab. So even in my mileage, the costs have risen three times. I mean, if you want to
+buy four terabytes of NVMe storage this moment, one single one, you're going to bust out $1,000 at
+least, maybe more. For a decent NVMe drive, it's worth the IOPS and worth the speed. And yeah, you
+can throw more at it. You can keep throwing more at it and keep throwing more. But it's like, you
+know, this is a pain we've lived with for a while. And so kind of getting back to the like, okay,
+hang on. What's DuckDB, right? The most simple parallel I can give, right, is DuckDB is like SQLite,
+but for analytics, right? So you've got SQLite as your lightweight embedded transactional database,
+right? It's great for local stuff, right? I want to ship a small database around. I want to embed
+something. But SQLite, most people aren't saying like, that's my production Postgres replacement,
+right? Postgres is a server process. You got hundreds of your web servers connecting to it, high
+concurrency, massive scale, right? And so you've got DuckDB, which is closer to SQLite, which is
+great for my desktop analytics. Like, I'm just me. I want to do some stuff, right? More powerful
+than Excel. I like SQL. It's really good as an embedded analytical database. So that's what it's
+good at. So it knows how to speak all of these columnar formats, right? And so Parquet is an open
+standard, just, you know, Parquet file. Iceberg is metadata on like, you know, think of if I copied
+out, you know, a million records of purchases from my database to a flat file, right? Like, think of
+Parquet as a CSV file, but it's designed for columnar analytics. Great. But what happens when I've
+canceled my Amazon order? Well, uh-oh. I've got to go write a new file now, right? And so where
+Iceberg comes in, which is kind of the new cool hot thing in the data, you know, analytics space,
+open file format, right? So it says, oh, well, here's this Parquet file, but here's this like update
+set. And here's this deletion set, right? So you can stack these together. So now I've got like, if
+this were, you know, the Postgres analogy, it's like, and this is a poor analogy, but it's like, oh,
+well, if I've got like CSV and then change sets of CSVs and change sets of CSVs, well, sort of now
+I've got a database that's live, right? Yeah. You got like a, some version of history, right? It's a
+version of change, as you just said there. But yeah, that's interesting. Okay. So I hadn't heard of
+Iceberg yet. Oh man. So I got someone you should talk to next, right after me for like deep dive on
+Iceberg and what it means for this whole world, right? And there's just flat files then? These
+Iceberg, they're just essentially change files into a Parquet file? So Iceberg is a catalog with
+metadata about the Iceberg, about the Parquet files, right? Okay. That basically turns it into like,
+great, now someone can just go and connect to a Iceberg catalog and know how to query it. All these
+data warehouse engines. Interesting. Wow. So open source file format that in the data warehousing
+world and data analytics world, you can go and query. So, okay, what's Postgres got to do with this?
+Why do we have DuckDB? Well, now Postgres can go and create these Iceberg files. So now I can go
+inside Postgres and go create table, orders, and all I have to say is using Iceberg. And now it's
+automatically going to store the data in these Parquet files in S3. You know, I can insert into it
+like normal. I can query it like normal. When I query it like normal for PG Lake, it's going to use
+DuckDB to query it, which is going to be fast analytics, right? Now I can also go and connect this
+to things like, you know, Spark and query it directly from there, from Snowflake, from whatever
+things that can speak Iceberg, which most analytics products can. So now I just like blurred this
+line to wait. Postgres understands analytics, can write out analytics. And I have this gap, right? I
+have this like bridge now over this gap of like, well, these are disconnected systems. Well, now
+they can be shared, right? And now I have this, for me, PG Lake is just like, you know, the next
+question is like, okay, that's really cool engineering, but when do I use this, right? And just like
+scratching my head, like, I've never thought about this stuff before. What are my options now? And
+this is just like one extension, but like, for me, PG Lake is just like Swiss Army knife. I'm like,
+like, yeah, I've used the pocket knife in my Swiss Army knife. I'm kind of used the screwdriver.
+Like, I'm curious, have you ever used the corkscrew to open, like when you're out camping, are you
+just packing like two bottles of wine and like now I need my Swiss Army knife to open? Almost never.
+The corkscrew and the toothpick are the two things in the Swiss Army knife that I'm like, who's
+reusing that toothpick? I would be reusing that toothpick. It's metal. It's fine. Yeah, it's metal.
+I thought it was plastic. Oh, it's a plastic? Well, I would assume it's metal. The little tweezers
+there are metal. Okay. I don't even have that particular knife. I was just following you assuming it
+was metal because most knives or most Swiss Army knives are made of metal. Well, I mean, everyone
+I've ever had. I mean, all the other parts are, yeah. Right. So, I mean, there's a lot in there. So,
+you can see there's disparate weird parts that you're just not sure of and how you'd ever use them,
+but then you kind of find a useful. But then there's also the obvious ones, right? Right. Like the
+knife. Like, you never know when you're out camping and there is someone with a bottle of wine. And
+if you have the Swiss Army, like, you're not carrying a corkscrew, right? But I've got it in there.
+One second. I have got a Swiss Army knife. You've got wine. We prepare ourselves. This is a camping
+trip success right here. Man, I'm looking forward to our camp out this holiday weekend. Right. So,
+like, that's just one extension, right? Which to me is awesome. And, like, you're like, hang on.
+What is Postgres? Postgres has no business doing this. That's a whole ecosystem world on a database
+is what you're saying. You can explore PGLake for a while. You can specialize for the next year.
+Yeah. Maybe even the next several parts of your years as part of your career. Especially as, like,
+data becomes more and more centerpiece for everyone, really. And you didn't have to really go learn
+a new database or system. Like, it's still just Postgres. It's actually a Postgres extension post-
+GIS, like geospatial or time series or text search. Like, take, like, you know, what about vector
+storage, right? Like, man, that world of extensions. And I think for me it's also interesting
+because it is open source. You're not locked in, right? When someone's like, oh, I'm Postgres. And,
+like, prove it to me, right? Like, show me that you're an extension or you're actually contributing
+to Postgres versus, like, I, you know, I speak the wire protocol. Okay, that's great. And so I need
+logical replication. Well, but do you really? Like, yeah, I do, right? Like, this is Postgres. And I
+think it's, for me, from a philosophy perspective, like, one, it's an exciting frontier. But I think
+it's also, from a philosophy perspective, it's making the community better. Like, it's giving back.
+It's better together how we win. It's almost like with extensions, Postgres is its own version of an
+OS, like a runtime. Not quite an OS. And not quite not a runtime either. Like, you can almost do, if
+you can build an extension for it, you can do it on Postgres. And because it's open source and
+because of the way it's ran, that is a very interesting superpower because you can sort of, like,
+center your entire fleet, your entire team on one database versus many databases. And bring those
+databases, like Parquet files or DuckDB, or these unique formats that have very specialized places,
+but not necessarily, you wouldn't think of them as a Postgres substrate, so to speak. You know, but
+now you can because you have extensions and you can do those things. It's a really interesting power
+that it has. I think it's a, I've never quite, I've often said it's like a data platform, right?
+Postgres is not just a boring relational database. It's a platform. I think thinking about it as,
+you know, almost like an OS, like you're saying, like a runtime. I think that's actually a beautiful
+way of articulating it. Well, I mean, because just in that case there alone with PG Lake, you can
+expose yourself to something that you'd have to build a sidecar to, not an extension or like
+something that was like a siloed database, which is the worst scenario to be in in any scenario
+where you're a developer. You're like, no, no, no, I kind of want all my data, mostly on one place.
+Obviously, I want, you know, I want backups and different stuff like that. But operationally, I
+don't want to have to think about seven APIs or seven credentials that get rolled or who has that
+blessing or that grant. And you just get to, you know, you get all sorts of issues in that scenario
+where if you can roll in through PG Lake, having DuckDB and Parquet is that. And then S3, I mean, if
+you can, that's just amazing. Like that, I'm going to have to play with that. Yeah, like if you can
+do like 80 or 90% as good as this separate special purpose thing, but you don't have to operate it
+and run it and maintain it. Like it's reduction of costs. But I think more importantly, it's a
+reduction of pain, right? Like monitoring, you know, one system, one backup, you know, one run book,
+one fail time. I mean, one of a lot, but I'm sure you have an N plus in there somewhere, but not
+having to learn five things or three things or two things to get a job done. You're just doing one.
+Yeah, I mean, I've seen some, it was funny. I was talking with one person when I showed them PG Lake
+when we announced it. And they're like, we were about to go live on this whole kind of pipeline
+using, I think it was Athena and some other things. They've been working on it for three months.
+They tested it. It was working well enough. They were planning to go to production in the next few
+weeks. Like, man, I'm going to throw all of that out and use PG Lake. This is so much simpler. This
+is great. I just felt so bad because they've been this massive project of three months of
+engineering. I'm like, I'm sorry we didn't talk to you sooner, that like we could have planned for
+this. And they're like, don't feel bad at all. I was so worried about that thing going to production
+and how I would operate it that like I'm happy to delete code. They didn't care at all that they
+spent three months that are just like going to throw this out. Like, I think there's a beauty in the
+simplicity of it, right? There's a lot of advanced engineering on it that's really, really cool. But
+how you work with it, it's just standard old SQL. It's pretty straightforward. It's pretty, like, my
+favorite type of engineering is when you take all that advanced stuff, you do the hard stuff. But
+the end user experience, I mean, this was back to the Heroku days, right? Get Push Heroku Master was
+beautiful. And I still haven't, I don't think people have recreated that sense, that simplicity,
+right? And so when you take that advanced stuff and make it so simple, right? Which is my entire
+goal of what we're doing with Postgres. Yeah, something magical happened there. I mean, it was a
+different world too. No one could run in the cloud anything. I mean, even to launch a Ruby app, to
+deploy something was the, well, I can run that here. And that was also in the day when we began to
+do less of FTPing and copying to actually, you know, true CI, true CD, which is a whole different
+kind of thing there. Well, I know you're on the tip and you mentioned Postgres 19, which you
+recently penned a post on the Snowflake blog about. You can probably go there if you want to. I'm
+really interested in this extensions world just because there's so much you can do there. But I feel
+like we've obviously mined that quite a bit with PG Lake and whatnot. But certainly lots of cool
+stuff happening in the extensions world. I think the point there was really just like this is what
+makes Postgres be so attractive to folks because you can build something like PG Lake or use
+something like PG Lake on top of Postgres. And it's a whole entire ecosystem within an ecosystem and
+then a runtime idea. Like that to me is what's always been attractive with Postgres for me. And it
+seems like we haven't destroyed Postgres along the way. You know, it's still thriving. Yeah. It runs
+well. You know, there's lots of scenarios where production is challenging. And I'm sure you know
+that quite well with your background. You can allude to that. But what's a good next space? PG,
+Postgres 19 or something else? What are you thinking? Yeah. Postgres 19. I mean, we kind of
+transition easily from extensions to that. Like, you know, I read this post. I'd love for people to
+check it out. But it was funny because I thought it was too long as I was talking about all the
+features. And as soon as I published it, there were several folks that were like, you missed my
+favorite thing in the release. I'm like, guys, this is like a, this is a small research paper right
+here. Like, this is, you know, this was long. And they're like, oh, but you missed this one. Like,
+normally every Postgres release is like, all right, performance got better. And we added this little
+kind of nicety and that sort of thing. And I'd have to go back to probably Postgres 12 when we added
+JSON support and we cheated. And everyone's like, oh, like, die no sequel. But like Postgres 12, we
+validated the text on JSON. No, no, sorry, not 12. 9.4. 9.2. No, now I'm going back. Too far almost.
+9.4 was JSON B. 9.2 was JSON. Okay. So that was, that was almost 14 years ago. 2010. Yeah. 14 years
+ago, we got JSON in Postgres. I have a secret. We cheated. Okay. Finally, it's out. We validated, it
+was valid JSON and threw it into a text field. And every headline that came out that year is like,
+Postgres is now a document database. And I'm like, well, I like the headline, but it's like, no,
+this is not like actual JSON compressed. There's no indexing for it. But like, man, the headlines
+are great, right? Like, hey, long-lived Postgres, it's now a document database. Right. Two years
+later, we got JSON B. I love, my colleague Will describes it as like the B stands for better. It's,
+you know, a binary representation of JSON on disk. You can have like gen indexes. So like, man, this
+is probably the biggest release in 10 years since JSON B. And one of the, to me, the flagship things
+is Repack. And so Postgres under the covers is a giant, like a pen-only log, right? And so you
+delete a record. It doesn't delete the record and free up the space. It just marks it as dirty. And
+it comes back in and, you know, hey, you write a new record, it can overwrite that, right? But
+that's where you have bloat. Like, you delete 100 records and new things are coming in. Well, I've
+got this 100 records of unused space, which is bloat, that's not going to get reclaimed immediately,
+right? Until you hold a lock and run a vacuum on your database. And so there were a couple of
+extensions for years, PG Repack and PG Squeeze, that would go in like under the covers, rewrite
+these tables, free up the vacuum. It's an online operation, but you need extra disk because it's
+doing all this magic. They're like somewhat risky to run. Like, this is definitely expert mode,
+right? Of like, all right, I need to run Repack because I have high bloat, but I don't want to take
+a lock and pause writes and run vacuum. And so like, this is hardcore production databases,
+advanced, you know, management of them. But like, Repack just is like, all right, we're adding it to
+core and we're adding Repack concurrently. So I can not hold a lock on that and it can run in the
+background. And now this is just like going from advanced power user to, I wouldn't say the like,
+you know, 101 level stuff, but much more like 201, 301. Now I don't even need this extension that
+like was out here in the ecosystem, right? So we've taken that from broader ecosystem to in the
+core. You don't have to go grab the extension. It's just there. Which, man, if you've ever used PG
+Repack or PG Squeeze or dealt with kind of high bloat and tweaking vacuum, like, boom, your life is
+just bad. And this is one of those things that's like when you're having a bad day, you're having a
+really bad, like, this is back to, yeah, I know what's going on with my day. We're not into, you
+know, cattle. We're back to pets, right? Like when we named our servers, like, yeah, I know what's
+going on with that database. Like, it's not some random UUID. Like, I know those first few
+characters with that UUID of that database to say, oh, this is the problem one. This is production.
+This is what we care about. If you're dealing with that, like, you're in a good territory because
+you got some good data and you got a good business going on underneath it, right? But, like, Repack
+coming into Core and Repack concurrently, like, huge. Like, that's like one of five things, right?
+Like, the thing I got called out for so much was, like, missing hints in Postgres. And so, like,
+Oracle is well known for this. Like, you can say, like, I want you to use this query plan. Postgres
+for the longest time has been like, no, the planner is probably better than you. Trust the planner.
+Trust the planner. It's not dumb. Now, what's fascinating is, like, usually that's correct. Except
+for in this weird case where, like, some new data distribution changed, right? So Postgres under the
+cover is just doing so much magical stuff. Like, it records, like, the number of records in the
+table. And it has, like, heuristic on the distribution of that. So should it use an index or should
+it, like, scan the entire table, right? Like, you've got, like, five types of indexes from, like,
+Btree to Gen to Gist to Space Partition Gist to Brin indexes. And it knows when to use this one,
+when to use that one, right? And so when you issue a query, it's creating this plan of here's how I
+go and access all the data. And it's usually really good at that. Now, as your data distribution
+changes, it may be like, uh-oh, I need to take a new plan now. Well, if you've got a really mature
+production database, you may say, like, you know what? I want you to keep using this plan forever.
+Don't change. Don't surprise me, right? Because there was a slight change in the stats or some new,
+like, spike of things. And you think all the data's changed and it hasn't, right? So now you can
+basically not go around the planner and manually say, no, no, no. I want to tell you what plan to
+use. But, like, no, I want to pan this plan to this query. Don't change in the future and surprise
+me. And on a large-scale production system, like, often when that plan changes out from under you,
+you're surprised. You're firefighting. You've had a bad day. Like, one of those things that, you
+know, just keeps getting better. As an operator of databases, like, it took me a long time to come
+to terms with, like, running products. Usually if you go ask customers if they have questions or
+feedback, like, they're like, I don't like the color blue you used. The roundedness on this button
+is terrible. Why on earth would you use that font? I was like, hang on, hang on. I just wanted to
+know, could you, like, click the checkout button and did it work? Like, I wouldn't ask them for it.
+Like, usually you ask for product feedback and you're overwhelmed, right? For probably the first 10
+to 12 years of my career, which makes me feel old, I'd go ask customers that I was running their
+database if they had feedback. And they're like, nope, I'm good. Now, in my head, I'm like, okay,
+the only time I've ever done that was, like, I was so pissed at Hilton for screwing up my
+reservation that I'm like, I'm swapping to Marriott, right? Like, the only time I'm like, no, I
+don't have feedback is, like, I'm out the door, right? I'm like, I'm going to sleep at night and,
+like, cold sweat, like, man, I bet they're leaving tomorrow. Like, I can't, like, if they
+deprovision, like, I knew it. I saw it coming. But, no, you don't want to think about your database.
+Like, it's like my bank. Like, I want it to just run and work. Like, when's the last time you went
+into the bank and you're like, tell her, thank you for being in my bank today? Mm-mm, never. Yeah.
+The thankless job of being good, I suppose. Being good and being boring, you know? No surprises, no
+drama, no extras. And so, Repack, hence, like, the improvements to AutoVacuum are huge. Logical
+replication, when you're replicating from Postgres elsewhere, like, just gets better and better and
+better. And, like, Postgres 19 is pretty magical there. And, like, I mean, kudos to all of the
+Postgres, you know, core developers that just kind of keep doing this, right? Like, they're not the
+masses of the world that we talk about. Like, they're kind of there hidden, you know. One person on
+my team, Tom Lane, I mean, he, I love Tom. He just works on Postgres. And that's just what he wants
+to do. And just make it better. And Tom, Tom helped work on, like, TIFF, the image format. And then
+JPEG and PNG, and when I say worked on, like, co-authored the spec for Lib PNG. For PNG, and then
+co-wrote Lib PNG. And he's like, hmm, I'm getting kind of tired of this image thing. Let me take a
+look at this Postgres thing. I wonder if I can work on that for a little while. And now he's, like,
+a significant, like, percentage of every Postgres release. And just happy doing it, right? Like, the
+thankless work of open source that, man, Postgres is continuing to power the world. And that's
+awesome. And it just keeps getting better and better and better. At the same time, like, I think
+it's actually, like, we're getting cool stuff, too. Like, now there's, like, graph properties coming
+to Postgres. You're like, wait, hang on. How does that, like, it's a SQL database. It's not a graph,
+like, nope. Like, that's gotten approved as part of, like, the SQL standard is, like, graph
+properties. And now we have, like, SQL, like, graph stuff directly in Postgres as a Postgres 19.
+Wow. Which, it's just, like, wait, hang on. Now I don't need a graph database. And I have text
+search extensions. Do I need Elastic? And Time Series, do I need a Time Series database? And Vector,
+it's really, like, deep dive on group by all. Like, hey, if you don't want to group by every column,
+one of my personal pet peeves in writing SQL, so you can do, like, you know, select from where, and
+you can go group by, and you can number the columns. You just say group by one, two, three, four,
+and it'll be, like, the columns from the select. Terrible. Never do that. It's one of my bad habits,
+because it's, like, it's easier than retyping the column name. But for, like, readability for
+someone else, and if they go and move one of those, now it's completely changed, like, the results,
+right? Because you've reordered it. It's such a bad habit. I think I wrote a post on, like, my SQL
+bad habits. Not, like, my SQL, but, like, my personal SQL bad habits. I had too much fun with that
+name. But, like, group by all, now you don't have to, like, even put the columns, right? Like, oh,
+man, that's really nice when writing SQL now. Yeah. Like, up cert, right? Insert and on conflict,
+like, update. Like, now you can actually get the return. Like, if you want to say, like, insert on
+conflict, like, don't do anything. Like, insert this, but it's already there. Don't do anything. It
+would just return. But, like, as a developer, I probably wanted that row. Well, insert this or do
+nothing. Well, like, but tell me the row that's there so I can do something with it, right? Right.
+Because it's, like, create or get. Well, now, like, your ORM doesn't have to then go to two things.
+It just, like, now that ties that down to better SQL efficiency. And it's, like, oh, this is
+actually all making my life better. At the same time, back to that, like, the best database is what
+I don't think about, right? Like, I want to build apps. Like, I want to build cool features. I'm not
+thinking about geeking out on my database. But, like, Postgres is that foundation that you can just,
+like, bet on. What's fascinating for me is also that enterprises are coming along for now. I think
+in the developer world, we've seen this for a while, right? Like, you have to develop. They're like,
+yeah, of course, Postgres. But now enterprises are like, why would I continue to bet on the high
+license of Oracle or SQL Server? Like, Postgres can do all this. Like, we can make this long-term
+bet. And a fresh out of school, like, grad doesn't want to be working on, like, a DB2 server. Mm-mm.
+But like, yeah, Postgres seems kind of cool. Yeah. Well, friends, I'm here to tell you that my
+friends, and maybe your friends, too, over at the CNCF gave me a very generous discount to give to
+you. Use the code CHANGELOGPOD when you register for this year's KubeCon Cloud NativeCon in Salt
+Lake City, Utah. It's happening November 9th through November 12th. And I want you to go. AI agents,
+they're changing everything. They're changing what we ask of Kubernetes. Take identity, for example.
+When an agent calls an API, they run some code, or it touches a database, who's actually
+authenticated for that action? Well, Abdel S., one of the chairs of the conference, tackles this
+very question in his keynote, the identity crisis. Who is the AI agent in your cluster? And Jeffrey
+Sika steps back with Cloud Native, built by humans, engineered to evolve, and he's looking at how
+the open source community adapts to AI. And Lynn Sun asks, Cloud Native, without limits, what can AI
+agents do for us? This includes agents that help debug and operate real systems. So, if you're
+planning to attend, as I mentioned before, Deep Discount, Generous Discount, I asked them to give
+you something special, and they agreed. So, the code to use is CHANGELOGPOD. Once again,
+CHANGELOGPOD, all lowercase, when you register. Head to kubecon.io. That's K-U-B-E-C-O-N dot I-O.
+Select the North America event, check out the schedule, and register. And use that code. It's a deep
+discount. I worked so hard to give you that. And they agreed. So, use it. Once again, kubecon.io.
+This is a new world we're in, too. I mean, I think with a database that can scale like this and be
+so usable by many, and a database you could bet on, as you said, in a world where people are
+composing more and more components that would not normally be together, together, meaning just maybe
+in this case here with PG Lake, not the perfect example, but somewhat of a good example. Like,
+you're willing to bring in a different database and Parquet files. The same thing with maybe a Go
+developer. It's like, no way would I ever be like TypeScript, okay? Like, nah, okay? But you see
+more and more teams, because of the speed and the ability of the models, letting you play in
+different lanes you would not normally play in, or commingle languages and runtimes where you would
+not normally let them run, and explore even. How is this changing maybe the development of Postgres?
+Do you know how much the code, like, what do you know behind the scenes at all, Fanny, like, is the
+contribution of the advent of models, you know, making developers 10xers, 100xers, you know, the
+super engineers becoming super, super, super engineers kind of thing. Like, how much of that is
+playing into this Postgres world? Yeah, I think it's a really challenging one for something like
+Postgres, right? I think, like, there's sort of an inflection point right now where I don't know how
+it's going to pan out. And part of that is, like, look, you look at the, you know, people
+contributing kind of AI slop, right? And now for a small team of Postgres of, you know, less than
+100 kind of people worldwide that are actually committing, contributing to Postgres itself, like, as
+committers, closer to actually 50 people of committers that have a commitment to Postgres, now
+they're overwhelmed with PRs they've got to kind of sort through, right? And, you know, yeah, it's
+easy for, like, hey, I don't, I don't, I'm not a great front-end developer and, you know, I don't
+know TypeScript, but now with a model, I can generate a pretty good UI, right? I don't think it's
+the same for C code, right? I don't think because the models are trained on so, the amount of code
+out there, right, that the more code they can learn from, the better. Like, there's not a lot of,
+like, open source public C code that exists is a great model, right? Like, so I think it's actually
+a challenging inflection point for the Postgres, like, core team and committers and community itself
+of, like, they're sort of overwhelmed with, like, new people showing up with sometimes slop. And,
+like, how do we validate correctness, right? How correct are the models? Because, you know, on a UI,
+on a button misplaced, it's one thing. Very different than, uh-oh, I corrupted my data. Right? I saw
+a little bit on Twitter. It'll always be Twitter for me that, like, a lot of folks operating, like,
+production pipelines haven't hardcore shifted to, like, yeah, I'm not going to look at the code and
+I'm not going to understand the code. And I'm, like, only AI. Like, hey, I'm just going to, you
+know, orchestrate it. And it's going to, um, I think there was a, you know, a tweet I saw about,
+like, hey, look how much Spotify, like, deploys. It's, like, 7,500 times per day. I saw that, too.
+And then I saw the Prima Jimi. And everyone's, like, and it still sucks. Yeah, and I'm, like, and
+it's been broken more. Yeah, right. I saw so many folks be, like, well, this explains so much. I'm,
+like, the app hasn't really changed. It's often more broken now than it was a year ago. Oh, my gosh,
+yes. Yes, and. Yeah, the amount of commits and the amount of throughput for a team is not synonymous
+with the quality of the software. Now, it can be, but it's not in that case. Okay, I'm not trying to
+be negative to Spotify engineers. If you're in a Spotify engineer, I'm not downplaying your hard
+work. What I'm saying is that that doesn't contribute to it being better software. I think you have
+different challenges that everyone knows about with Spotify that is probably above your pay grade or
+above your role that you control. So I'm not saying you in particular, whoever's listening. I'm
+curious on your take. Like, think of it like Postgres is your bank, right? Like, do you want your
+bank to go AI everything or, like, in reporting your balance and deposits? Or you want to, what's
+your take there? Like, in the R&D? Yeah, absolutely. Explore in the R&D, you know, like, literally
+in RD slash, wherever that's at for you. Like, whatever that computes to you for your organization,
+for sure. Innovate, explore, but don't do it in production. Don't do it with my bank data. Don't do
+it with my, well, do it with my loan because maybe the balance goes to zero. I mean, go either
+direction. It'd go up and down, right? Oh, yeah, it could go up. Like, oh, yeah, I accidentally
+charge you more interest. I think for, you know, certain things within the bank, like, you know,
+hey, show me deals and offers. Show me, like, use AI where you can find savings for me, right? Like,
+hey, cancel AT&T and swap to T-Mobile. And it's like, cool, great. Go, like, there's definitely an
+area there. But on my core database, I think I'm not there yet, right? And so I think there's, and
+again, it comes back to, like, these models are trained on the amount of code that exists. And
+Postgres is written in C. I haven't written C in a while. I did it back at university, but that's
+probably the last time. And a lot of people that have written C, like, hate writing C. And I've
+heard people are like, oh, but I really like Postgres C. Like, the standards for it are so good.
+It's almost unique that it's like, oh, I can understand this and follow it. It's managed to maintain
+that bar that I think, like, you know, but it's going to be an interesting journey, right? Because,
+you know, we weren't talking about AI like this a year ago. Really, we had this inflection point
+back in November, December timeframe of, like, man, these models really have gotten good. And it
+looks different. And, you know, it's week by week, month by month on how it evolves. I have sympathy
+for the maintainers, though, of the influx of, like, new PRs coming in that they've got to manage
+and diffuse. And how do you – Changing open source, that's for sure. I mean, like, the landscape of
+– I mean, I'm not sure what to think about the next few years of open source. Like, we will still
+have more open source. And it will still happen. It's going to keep happening. But I think you're
+going to see more and more overwhelm, more and more demand, I would say. Like, a PR is a demand for
+attention, right? You got a user out there somewhere who's got a problem. Whether it's a slot
+problem or not, it is a problem. And because of the groundswell, we have more users to have more
+problems. And so you have more PRs because you got more people who are motivated to get their
+problem solved. And, hey, it's open source, right? So let me share my thing. But it's also one of
+thousands in some cases, if not tens of thousands in other cases. I think it's going to happen.
+Yeah, I feel like especially on the data side because I think you look like – if you – we've been on
+this journey, and I had a realization a few years ago that, like, boot camps were a thing, right?
+And people learned to develop and could code an app and literally go get a job, right? Like, go to a
+boot camp for three months, come out, you're an engineer, you can get a job. And 15, 20 years ago,
+you wouldn't make a change to the database without it flowing through a DBA. Like, they controlled
+the database, how it worked, what queries ran. Like, it flowed through them. They held the keys to
+the castle to the database. And then we had more developers saying, great, I'm not going to go
+through the DBA. I'm just going to spin up a database. And then suddenly the DBA is supporting it,
+right? Because, oh, this is in production. Well, now the DBA is responsible for security, patching,
+reliability, all that. So they're now running all these databases that developers just spun up. They
+didn't get to control, like, was it a good schema design or what the database was. And, okay, that
+got worse for DBAs. But as we've had this growth of developers, which is awesome. I love it, right?
+Back to my early Heroku days. Like, we had this idea of citizen developers. And I think with AI,
+it's just everyone is one, right? Yeah. That's the point I was trying to make. You have a
+groundswell of developers with problems is where we're at right now. And yet we've never had boot
+camps for DBAs. With, like, that ratio of, like, developers but not experts on databases. If it was
+10 to 1 before, now it's 100 to 1. It's about to be 1,000 to 1 of all these apps running that need
+database expertise on top. Like, it's going to be an interesting time of what's this mean for the
+data ecosystem and how does it adapt. Yeah, I mean, I don't want to throw one more agent into the
+bucket. But, I mean, DBA could be database agent, right? I mean, we are in an era where we could
+literally put an agent of some version of intelligence. Maybe I'm going to get a pitchfork here. At
+the top of Postgres, you know, like the planner, for example. It doesn't have to be a good
+algorithm. It could be literally intelligence. Like a just-in-time review of the pros and cons of
+this plan versus B-treat, whatever. Yeah, yeah. You know? No, I think it's a hard and good question
+because to your point of, like, you said, well, do it on R&D but not on my prod, you know, bank
+account. For sure somebody out there should be doing this. R&D this. It is the future. It will
+happen. Yeah, I think it's when do we get there, right? How fast does the prod get there? How do we
+adapt to it? And how do you adapt this? You know, you can, from an organizational standpoint, you
+can do it in a lot of different ways. I won't speculate them all, but gosh, there's a lot of ways
+you can do that. And eventually it will get boring. Like, right now it's so provocative. Right now
+it's so not boring, right? Like, every day you look at Twitter slash X and it's something new. I
+mean, just yesterday, thank you very much, we got Fable 5 back, you know? Just so everyone's clear,
+it's, you know, yesterday was July 1st. Today's July 2nd. And the government shut down Fable 5
+access. I don't know if you've played with Fable 5 much, Craig, but I'm curious to hear what you
+think. But, you know, this model is so different than others and the way it thinks and the way it
+looks at things. And then, wow, it just drives me crazy when I'm so not a cybersecurity terrorist.
+And it shuts down on me because it's like, no, no, no. I just asked you to look at the software,
+okay? I didn't ask you to do anything bad. I can't help with it. Somewhere in the software I'm
+trying to do secure things, which is, you know, crypto or, you know, not like little crypto, but
+like cryptography on like a password or something like that or hashing things or moving data or
+creating a, you know, content address storage kind of thing. Whatever it might be. Like, no, no, no.
+Those are cryptography things and cybersecurity related, but I'm not trying to build a digital bomb
+here, okay? But anyways, I digress. No, I think it's, you know, all of that has real impact for,
+like we were saying, to open source, right? And how is it created? How is it maintained? Like, it's
+a fascinating time that I really feel for the, you know, I'm close to it, obviously, but like that
+Postgres ecosystem, you know, continuing to thrive. And how does it maintain that? Because it's such
+a small set of folks, right? And Postgres has such this fast footprint. So, I mean, you know, for
+me, a big kudos to all the committers on doing that generally thankless work, right? You know, you
+don't know who they are. Like, they're just out there doing the good work because they love Postgres
+and it stood the test of time. So, it's like, hey, it just kind of had its 30th, you know, birthday.
+Here's to the next 30 years for Postgres. I mean, if I was a strategic thinker, which I think I
+might be a little bit, if I wanted to get access to some C code that I've never had access to, or I
+guess in this case, since it's open source, we do. But I would be curious about how some of the labs
+like Anthropic or OpenAI are looking at a code base like Postgres and an ecosystem like Postgres to
+one-handed a model to secure it. Because that's the one challenge we're going to have extremely in
+open source is visibility. And so, it's secure by default because it's so visible, but it's also so
+insecure by default. Because you can see with state-of-the-art models now and scan and discern at
+record spaces we've just never been able to do before. So, I feel like open source is like a good
+thing and a bad thing when it comes to the visibility of these things and cybersecurity. But I'd be
+curious to know how many memory leaks or bugs are inside of Postgres because of the choice of – C is
+a great language, but a lot of folks are moving to Rust for safety and things like that. So, it's
+not easy. It would be basically impossible or an undertaking of major magnitude to move Postgres and
+the world of this from C to Rust, for example. It's a fun discussion that pops up on the mailing
+list every couple of years. Like, oh, I'm just going to re-platform it in Rust. Like, it's like –
+Good luck. Cool. Yeah. Have fun with that. See you never. I don't know. Maybe it happens. You know,
+never say never. I mean, the models are getting complicated. Maybe, you know, they're getting
+impressive. Maybe they can go – You give Fable 5 a good plan. It'll do some cool stuff for you, man,
+if it doesn't get stopped by the security stuff. I mean, it really can do some amazing things. I
+don't know that I even want to know the token cost of it, you know, to do a conversion like that.
+But, yeah, no, I think we've definitely seen as a community, like, legit bugs come up that have been
+there for 10 years, 15 years, 20 years. But I think, like, the – because Postgres is so pervasive,
+so many people have been looking at it, been running their scans. They are contributing back, right?
+And so it's – I trust it's out of a solid spot, right? And we're continuing to, you know, every new
+model comes out, focus on scanning, running, where we can contribute. Large enterprises are making
+big bets, right? So if it's just one of those, there's a lot, you know, Amazon, Microsoft, Google,
+across the board, folks making big bets on Postgres. And it's not like it's a – oh, this is a
+10-person kind of open source project that, you know, it's a library that I'm using that there's not
+– everyone's using Postgres, right? Like, every Fortune 500 has probably a Postgres footprint, you
+know. Governments are using it. It runs the TLD.org, like the .org TLD domain, like, runs on
+Postgres. So, like, yeah, it's going to have eyes on it. And I trust that it's, like, oh, we're not
+going to miss some obvious thing. It's battle-tested. It stood the test of time. But, yeah, it is
+fascinating. You know, Paul Ramsey, who's, like, the primary maintainer of PostGIS and author of it,
+is on my team. And he's like, yeah, I ran against, you know, I think it was Opus 4.6. And he's like
+– or no, I think it was submitted. He's like, yeah, someone found a bug in some code that's been
+there for 15 years. It's, like, not massive bug, but, like, small memory leak, 15 years there. Like,
+he's like, that's been there since I probably first committed it, like, way, way, way back. And,
+like, man, he's just – Especially with C, right? Like, you've got to manage all that memory
+yourself, right? You're doing all that, whereas Rust is doing it for you. Go is obviously garbage
+collected. You know, these are things you don't have to think about when you write Go or Rust. Now,
+you wouldn't write Postgres. Maybe you wouldn't go, but you'd probably be better off. If you were
+starting Postgres today from zero, literal zero, probably Rust, right? If it was a ground zero kind
+of a brand-new project, Greenfield, you wouldn't write it in Go. I mean, you could, but it would be
+smarter to write it in Rust for the long-term sake of it and the safety of it and just efficiency of
+it. But, yeah, I mean, you've got to manage a lot of that memory, all that memory yourself. And so
+if you've got many developers, what do you know since you've employed and had as employees or, you
+know, colleagues in organizations you've run? What do you know about – you said battle-tested, and
+this is stuff I don't have any clue about. And I imagine because the contribution to Postgres is so
+distributed, meaning it's not one consolidated place where Postgres work happens. It sort of happens
+everywhere and integrates through the beauty of – or like a beauty of Git. What is it like to battle
+test Postgres? Like what is the test suite like? Where does CI run? How do we know? Like are there
+certifications for part of it? These are things I just never thought about. I do think about like
+hardening particular parts of the code base or maybe even thinking about deterministic simulation
+testing because maybe you can't do that with physical compute. It's just a lot easier to simulate
+it. Is there anything like that that backs Postgres in ways? Has anyone contributed a large amount
+of compute to do deterministic simulation testing? Like a database is a prime place where you
+control time, network, et cetera. So I'm just curious about that kind of stuff. What do you know?
+Yeah, there's several pieces to it, right? And so like the Postgres – like nonprofit Postgres
+foundation has like its own build farm, right? That, you know, a commit goes, spins off, it runs,
+like comes back with a bunch. Postgres, you can download like the debug stuff and run the build to
+debug. You know, people run – like it's C, so running static code analysis against it is pretty
+nice, right? Like we – back as part of Crunchy Data before we, you know, joined Snowflake, we helped
+author like the STIG, which is like, oh, here's how to secure this, right? With like the – like CIS
+benchmark is another one of like here's how to securely deploy this and like test for all of these
+things, right? Which are like all those security checkboxes, like there's a whole process and kind
+of investment there. The other thing is like when a new release comes out, like if you want to
+contribute to Postgres and get your hands dirty, the biggest thing you can do is test stuff when it
+comes out. And so like there'll be like a beta tag of like new features and everyone's like we need
+testers more than anything else. Everyone's like, yeah, I want to contribute to Postgres. Let me go
+write some patches. I'm going to write this stuff. It's like actually need more people testing. And
+so you can go and like sign up to like test, review the code, evaluate the feature. And so there's
+basically like phases in a release process for Postgres where it's like, all right, this is the
+commit fest. All this is committed. I've reviewed it. I've tested it. I've validated. I've looked at
+the code. I've tested it. I've run other kind of regressions against it or benchmarks. And I'm
+thumbs up on it. And so usually at a commit fest, that's where things like make it in or don't. I
+forget the timing. I'll, you know, maybe try to dig it. We can dig it up and put it in like show
+notes. But like, yeah, like if you want to contribute to Postgres in a small way, like, hey, I don't
+know C, but I think I can read it and test some stuff. Like jumping into a commit fest is a pretty
+fun time to learn a lot. But yeah, Postgres community has its own build farm, own CICD that runs.
+And then a bunch of companies do additional testing, right? Like we do that. I'm sure Amazon does.
+I'm sure Microsoft does. What do you all do? Snowflake is huge. I mean, like what kind of
+battleground, battle tests, you know, war room. I don't know what, how, how, how extreme do you get
+when you name these things? What is that for Snowflake? How do you? It varies. There's a lot of us
+kind of on the performance side, right? Of like, what's this point release versus that one and major
+versions? Like where are regressions? Like for us, it's a lot of the performance side is a big
+piece, but then it kind of does vary based on, on what we're doing as well. Yeah. We've also done
+plenty of scanning on the, you know, the other sides. I don't know how deep I can go on like what
+scans we're running and where, but like we do have a lot of that and take a high pride on like that
+security side of like, how secure is it? Where are vulnerabilities in it? That sort of thing. Yeah.
+Yeah. And it's in, I mean, I'm not actually exposing any crown jewels or secrets or anything like
+that, but is it any of that reported back to the Postgres community is like a pulse, so to speak?
+Cause I mean, like the way I think of it is almost like, uh, information and universities where they
+do labs and tests. Like you're kind of like a university with labs and tests. Sure. You're a very
+fortunate for-profit company. I'm not saying you're a university nonprofit or not so much profit
+anyways. Um, what I'm trying to say is like, I feel like Postgres is obviously this open source
+thing and then you get the benefit of using it. So do you give that, how do you give that kind of
+awareness back to the community about how much you trust Postgres? Yeah. There's a few, few pieces
+to it, right? If we, you know, we're going to, you know, say we're adding a new extension, right?
+Well, we're going to, first we're going to do our own scan, right? With all of the models and
+otherwise in our own, you know, security assessment before that used to be manual security
+assessment, right? Now that's heavily automated with AI and tools of like, all right, what are the
+vulnerabilities, right? Are they critical, high, medium, low? Um, and we're going to actually,
+because usually I'm old, I've known these folks for a long time, right? It's a small community. I'm
+usually just going to call someone up and say, like, Hey, we found these vulnerabilities. How do you
+want us to report them? Right? Because sometimes it's like a well-established project like Postgres
+and there's a clear process. Sometimes it's an extension that's one person, right? And they don't
+have a, you know, security kind of reporting line. And so it's like, Hey, by the way, also we're
+going to show up with pull requests to fix this, right? It's not just like, Hey, I'm going to file
+the GitHub issue and wish you luck. Like we, we believe in being really good stewards of open
+source, right? Like that's to me pretty important. And I think core to us and we, we have a team
+that contributes to Postgres itself. And so we're going to show up with that patch. We're going to
+ask, how do you want us to disclose this? And sometimes they're like, great, just file the issue,
+show up with the patch and we'll, you know, if we need to make a CV out of it, we will. And
+sometimes it's like a, uh, Oh no, this is, you know, this bad. We don't want to advertise it before
+we've got their point release. That's a big one, right? It's like, you don't want to go advertising
+vulnerabilities before they're actually, someone can do something before the fix is out. Like, you
+know, Hey, by the way, here's your bank account number. You should change it. Um, I don't want to go
+publicizing that until you change your number. Right. And so that's that balancing act of working
+closely with the community, right. Of knowing these folks of, Hey, there's this vulnerability. How
+do we want to report it? When, um, good responsible CVE disclosure. Um, and then we've, you know,
+from the overall Postgres project itself, like we've got core developers just contributing back and
+just continuing to invest in those and have a set of folks on, on my staff that are, we're paying
+them to work on Postgres and to make it better and contribute to it. That's good. So you do have
+ways, you know, what you just said there with, uh, the public nature of open sources is really, I
+think the rub will hit on and I'm not trying to go back to that necessarily, but you were on that
+and made me think about that. So, you know, you said, can we share the issue? Well, that issue is
+public. The real challenge with open source today and the lens we, we take with it is that we think
+we, and maybe this is true when you read the licenses and the spirit of open source, and maybe I'm
+just not grounded enough, but you have open source. But does that mean that all the work that is
+open source has to happen in the public? And an example of security, the issues are public. So the
+discourse is public. And so the work is in the public. And so how do you have internal
+communications when everything is public? How do you have secure channels when all communications
+are in the public? And I feel like that's probably the tension and the change to come to open source
+is not so much will we keep doing it. It's how do we conduct ourselves to do it? Because if the
+issues are in the public and you can't disclose, you have to have back channels. Well, now you're
+kind of circumventing the whole entire system, the whole entire workflow. Right. I think Postgres,
+like the source code is open. Yeah. Right. And like, does the issue have to be, you know, like maybe
+you publish it later. Right. But it's like, you know, Postgres has had zero days in it. Not
+commonly, but in the last 15, 20 years, there's been about two zero days. Right. And that meant like
+databases were publicly accessible. There's like remote code exploits, like privilege escalation.
+That's terrible. It just means your data is open. Right. Like that is the worst thing that can
+happen to anything. Right. Like, great. You can go read all, you know, the bank accounts, the
+private data, your database being open to the world, just imagine that. Right. For anyone to come
+and grab. Bad day. Now, how do you resolve that? Right. Well, you've got to get a patch in. You've
+got to go like, go do point releases. Those point releases also have to be available on your
+provider. Right. So as a community, Postgres has now got to go, okay, well, who do we know at
+Amazon? Who do we know at Snowflake? Who do we know so that they can be ready on day one to go and
+roll their fleet? Not that, oh, the new Postgres is released. Well, I wasn't expecting this. It's,
+you know, about to be the 4th of July weekend. I'm headed to the lake. Hang on. Like, I don't want
+this. Like, when do we release this? Are they ready for it so they can immediately patch? What if
+they have, you know, a week of downstream work once this hits? Right. How do we keep our customers
+secure and work together? Right. With all you people delivering Postgres. And Postgres has done it
+really well. Right. Like, and I think larger open source projects do do this. Right. There's a way
+to do responsible disclosure. There's a way that they coordinate, you know, with, you know, key
+projects in upstream. Right. If there's some core Ruby feature that's a bug that needs to coordinate
+with Rails, they know how to do that from a Ruby to a Rails perspective. I think it's, you know,
+there's probably something for smaller projects to learn, but it's also like a point of scale.
+Right. How do you scale that? Because it is, you do need those back channels. You need that
+coordination. But it does happen in Postgres. And I don't think it's anti-open source. I don't
+think, you know, the moment of vulnerability happens, it needs to be like for the world to know, to
+be known. Right. It, yeah, we need to get it fixed and we need to do it in the best possible way.
+And there's a whole kind of aspect of like security, open source, and responsible disclosure that I
+think is, it's not that it wasn't important before. But man, AI has really amplified that
+importance. Right. Yeah. When anyone can find these vulnerabilities, right, or if they know about
+them, take advantage of them, just the risk there is higher than ever before. And so. You know, on
+that front, I'm not obviously an anthropic employee, clearly. Right. I'm not high on the executive
+board there. I don't know what's going on behind the scenes when it comes to how they run their
+models. But I got to imagine that the usage patterns of someone doing cybersecurity things or
+nefarious things might look similar to a developer protecting themselves. But I bet they look a heck
+of a lot different. And so I think the way that you prompt the model. And so maybe they're using
+open source models and maybe that's how they're getting around a lot of this. But I mean, there's a
+that's why Fable was so protected because of what you could do with it. But I got to imagine, like,
+from the model level perspective, there's got to be things that you could do to detect how it's
+being prompted. And maybe that means you're prompt sniffing, prompt sniffing everything. I don't
+know. I mean, I don't know how to solve that conundrum there even on its own. But the usage of the
+developer or the builder or the operator or whatever you want to call them, you know, prompting the
+model to get the results, whether it's in a orchestration system like Inductor or simply right in
+the CLI, whatever. Right. Like there's a pattern that the person is doing to get the result back or
+to dig into something. I can imagine that pattern is pretty clear for nefarious action. What do you
+think? Is that am I off on that? Maybe, except for like pulling that thread. And it's like, well, if
+that pattern is clear, can I try to imitate someone that is like just a developer that's just trying
+to do like good local crypto and, you know, convince the model that's my path. And then kind of keep
+pulling that thread to see if I can find something like, hey, is that a backdoor in? Right. So, I
+mean, I don't envy their position. Right. Like they want this to be available to people, but they've
+got a balance of like, you know, bad actors and what that means. And so I think at the surface,
+yeah, that makes sense. And then I start to pull that thread more and more. And well, OK, like where
+is the line? What's what's good? And as a as a bad actor, how can I make myself look like a good
+actor to then get as much as the model out of the model as I can for my my purposes? Right. You
+know, my and again, I'm not coming back to this necessarily, but like my. Fable's back for one day,
+you know, I can't seem to get past anything security because I get so good at the security stuff.
+I'm like, well, that's kind of what I want to ask you about. And I kind of want to ask you about,
+like, where is my application stack vulnerable? Fix it. Don't don't go and, you know, attack
+someone, but fix it. So I'm not attacked. I don't understand that scenario. But, you know, it's a
+different world we're in right now because they're trying to protect it so much. I guess it's just
+that powerful. Yeah. It's just the nature of the beast in the moment, I suppose. Yeah. And I think,
+you know, well, the pace, these things are moving. Right. Like in a week, we'll have a completely
+different conversation. We'll be like, you know what? It's wide open. Like it's, you know, the pace
+of change here. And I think at first it was exhausting. I think now it's getting back to being fun.
+It's like, man, OK, like I'm back to the early days of learning to develop. Right. And and building
+those first, you know, Ruby apps. And it's it's it's. It's starting to feel fun again. Like at first
+it was overwhelming. It's like, man, I don't have my creativity. I can't learn like what what I'm
+just prompting. Like what's the. But it's like, actually, no, like now the limit is like your
+creativity and how far you can push things, which it's flipped for me that it's went from
+overwhelming to it's a fun time. And but yeah, I hear you. It's like, man, I want to use this for
+the good. Why is it constricting me? I think we'll be, you know, it'll continue to evolve for us.
+Yeah, hopefully, because if not, we'll have to just what I think will probably happen is that
+they'll just make fable or things that do that kind of stuff. Like I'd even happily like give them,
+you know, more of my personal identification to prove I'm not a nefarious actor. Like name it back
+to a real person. Am I literally a real ID, real kind of person that has a driver's license that
+pays taxes that, you know, is, you know, I got a utility bill. You know what I mean? Like that's you
+got to do these certain things to get certain credentials or capabilities. Like, why not that? You
+know, maybe I'll do that sometime in the near future. I think it's not going to go back to like
+manually writing code. Right. I mean, how like knowing stuff. We can't go back. Come on, man. Like I
+want to just like wish it into existence. And it's just so much easier to to open the eyes credit. I
+was doing something with a login. I was building a you mentioned ETL earlier. I was building an ETL
+pipeline to move some data around. And I had to, let's just say, get access through just logging a
+password. I had to find my way in. Let's just say. And opening, I was like, hey, this this seems
+like you're doing things. You probably shouldn't be doing here. And it flagged me. And I was like,
+oh, my gosh, I've never been flagged before because I'm I'm just trying to like help my sales team
+get access to data here and pull the data here. Transform it, move over there and all that good
+stuff. I need to have a pipeline. And I'm like, hey, hang on a second here. I started defending
+myself. Like, I'm just helping the sales team move data. We have our data, our leads over here. We
+need to move them over there kind of thing. And. And to opening eyes credit, they let you submit a
+form to apply to get that level of not like a certification, but like you had to do something. I
+forget what it was, but it was enough to say I'm real. I'm advocating that I'm trying to do things
+that are not nefarious. You know, don't flag me so much or flag me at all. And there and ever since
+then, nothing. So I was kind of happy about that. Like, I wouldn't mind a little of me to get a
+benefit. It's like security clearance away. It's good to know. I did a similar like family went to
+like Disney World a little while back and like that, like making those like dining reservations.
+Yeah. It's like at like, like, man, those things go like that. And so I'm like, all right, this is
+just running for me locally. I want you to log in. Like there's no API for like what availability
+is. I'm like, all right, like I want to like screen scrape and like text me when there's this new
+reservation available for this restaurant. Like, cause you know, the kids want to eat Beauty and the
+Beast or whatever. Right. And it's sold out. Wow. And, and like, like, hey, it's not available. So
+like I didn't get prompted and like told like, hey, you're doing something weird. Like, so it was
+probably back before they had more control. So like good to know the next time I run into it, I can
+just fill out a form. And, and I'm pretty sure they even linked to it in the air. Cause I was like,
+really, I was concerned. This is maybe like two months ago. And I was like, oh my gosh. Like that's
+the first time I had this stark feeling in my brain. Like, what if they took your codex away from
+you, Adam? What would you do then? Would you like, I'm just kidding. You know, I can't have stopped
+now. I stopped now. Promise like that full panic of like, uh-oh. Are they going to? I didn't mean
+it, Sam. Don't take my codex away. Anyways, I really did have a panic. I'm like, well, hang on a
+second. I'm not a terrorist. I'm not doing bad. And they had a link to the form. I filled it out and
+it's all been good since then. This episode is brought to you by our friends at Fingerprint. There's
+an interesting problem happening today. Building products. You want to make sure things are as easy
+as possible for your users. But you also need to know who or what you can trust. That's getting more
+complicated today with AI. AI agents are browsing. They're shopping. They're transacting alongside
+humans. Some of that automation is legitimate. Obviously, I use AI. You use AI. But some of it is
+not legitimate. And fraudsters, the bad guys, are getting more sophisticated. That's where
+Fingerprint comes in. Fingerprint gives developers device intelligence to recognize returning
+visitors and make better trust decisions. It combines more than 100 signals across devices,
+networks, and behavior to identify visitors with precision. Even as fraud tactics evolve. And it
+goes beyond identification. Fingerprint helps you detect bots, AI agents, proxies, VPNs, and other
+indicators of suspicious activity. So now you can protect accounts, prevent fraud, and reduce
+unnecessary friction for the people who actually use your product. And the developer experience is
+straightforward. One API call, no fraud detection model to build or to maintain. And now, with AI
+install, you can add Fingerprint to your platform directly from your favorite AI tool. So if you're
+building products for a world where humans and agents share the same internet, Fingerprint is worth
+checking out. Head to Fingerprint.com to get started. Once again, that's Fingerprint.com. This
+episode is brought to you by WorkOS. Agents aren't just writing code anymore. They're accessing
+customer data. They're taking actions across the tools we use and depend on. So who decides what
+they're allowed to do? That's a big theme from WorkOS and Knit 2026, their conference for builders.
+They previewed three products that show where things are heading. First, Airlock. Intent-based
+access control for AI agents. In a live demo, an agent worked across Linear, Snowflake, Stripe, and
+Gmail. Airlock denied a large refund, sent a smaller one to a human for approval, and blocked an
+email containing financial data. And then there's Atlas. A secure home for internal apps built with
+AI. Think authentication, data connections, credentials, permissions, and deployment. The stuff a
+prototype needs before it's safe to use at work. And then they have Passport. WorkOS is pushed
+towards zero sign-in. Enroll your Mac once, then open work apps already signed in. All three were
+announced as previous, but the direction is clear. As AI makes software easier to build, we need to
+get more serious about who and what can access it. I'm linking up the Knit 2026 recap, so check it
+out at WorkOS.com. Link is in the show notes. Thanks again to our friends at WorkOS for sponsoring
+ChangeLog. Once again, WorkOS.com. But man, wow. Okay. So, Postgres 19. The future is Postgres.
+We've been Postgres for life. For life. What is the next big thing to come in, I don't know, what do
+you predict for the next year? So, by December. Give me some predictions. You got anything? I mean,
+I think a lot of what we're doing with Pg Lake is pretty, it's early and new. Like, I'll come back
+to it. That it's like, it sort of blows your mind at first. Like, Postgres shouldn't be doing this
+stuff. I think, you know, AI plugging into Postgres, everyone's like, what's Postgres got to do with
+AI? It's like, well, it's the database that everyone's going to use under the covers. Right? I think
+your point, like, how do we have kind of, like, database agents, like, optimizing our Postgres?
+Because most developers aren't great at it. Right? But I think, you know, we covered a lot of it.
+Like, extensions. You know, Postgres 19, it's final. It's going to be in there, but it's not here
+yet. So, I think, like, that's the big thing. And development's already happening for 20. Mm-hmm. I
+think, like, flexibility on data types, richness of text search, all those things just continue to
+get better. It's hard for me to say, like, oh, what's the big prediction? It's like, man, we're
+going to have some awesome new extensions come out that get released. And Postgres is going to keep
+getting better and more performant. And it's just going to, like, you know, what's the prediction
+for my bank? Well, I hope it just keeps my money safe. And, you know, Postgres is just going to,
+like, keep, you know, keep doing what it does. It's like a flywheel in a way, right? You know, you
+have the core nugget, which is good. And then you have the core nugget that has extensions and you
+can make things that make it better. And those things make it better. And then more things make the
+things make the things make it better. And next thing you know, you sort of have this multiplication
+happening and this flywheel happening as each layer matures. And like you had said, with PG Lake,
+you've got several components beneath it from table to engine to iceberg, you know, all the
+different components that make it up, all the different extensions that make up PG Lake. You know,
+that's really interesting. And getting better at that is probably what will happen for Postgres at
+large. What about PG Lake? What's a good way into PG Lake for someone? If someone's out there
+thinking, you know what, I've heard about this. That sounds really cool. Yeah, DuckDB and Parquet.
+Sure, that's awesome. Data analytics. Okay, cool. How does someone get involved with PG Lake? What
+can they do with it? How do they add it to Postgres? Yeah, search PG Lake and it'll come up to
+GitHub, right? You can install the extension yourself, right? You can pull it down locally, kick the
+tires. Like, it's available on Snowflake Postgres, right? You feel like, I don't want to build
+Postgres. I don't want to think about, like, how do I, like, it's on Snowflake Postgres. So you can
+just run, you know, create extension PG Lake and boom. You've got it all there, right? And you can
+kick the tires, see how that works. But yeah, you can also, you know, contribute to it as well. I
+mean, hop over to GitHub, throw a star on it. Everyone loves a GitHub star. See what's going on with
+it. Like, it continues to get active development. We released it back in November. But it was
+actually, like, two years of work of development from back in our crunchy David days. So a lot of
+advanced engineering that then was open source two years later. And we're continuing to invest in
+it. And, you know, shoot me a note. Craig Kirstein's on Twitter or I guess it's X now. It's still
+Twitter to me. Always will be. I guess it's X now. So, like, send your feedback on what you'd like
+to see or, you know, hey, have you thought about this? Like, you know, the crazy ideas that people
+are like, well, have you, you know, considered this or this seems weird or crazy? Like, I love it.
+Let's go build it. Mm-hmm. What about Snowflake? What's on the, is PG Lake the edge for Snowflake?
+You know, in what ways is Snowflake truly adopting? And I know you mentioned developers being paid
+to invest in Postgres. But, like, what is Snowflake's big bet on Postgres? Yeah. The, so everyone
+that I think, you know, uses Snowflake also probably uses Postgres somewhere. Right. And, like, we
+talked about this a while ago of, like, this divide of OLTP and OLAP and different kind of teams and
+systems and, like, bridging those two together. For us, PG Lake is sort of the foundation. But,
+like, the end perfect result is, is what we recently announced, like, database mirroring. Where I
+can just, like, run one command and mirror my Postgres database to Snowflake and vice versa. And,
+like, not have to think about CVC, not have to think about ETL. It's literally, like, click a few
+buttons in a UI and the tables are continuously replicated in real time. Mm-hmm. And you don't have
+to think about it. You don't have to worry about it. So, now you've got your transactional system.
+Your analytical system has the exact same data. Like, I've got one customer that's, I guess, a smart
+TV provider that ingests all this stuff real time into Postgres. So, like, you know, you're viewing
+Disney Junior at home. I see you're in San Francisco. We're sending all this data into Postgres.
+Postgres now feeds that into, in this case, it's PG Lake. It could be mirroring. That Snowflake
+picks up and does all this analysis. And it's like, okay, we see your viewing history. We see where
+you're located. Now we want to, because, like, you know, everything's an ad platform these days. So,
+it's a smart TV. So, we want to show some ads. We know, like, Disney on Ice is coming to Oakland
+next month, right? So, we want to show this ad. So, your kids are like, dad, please, can we go?
+Like, it's right here. Can we go? And, yeah, I'm so annoyed at the ads on my TV because they're
+usually pretty accurate and good. But, like, so, Snowflake, you know, they used in, like, Cortex,
+Snowflake's kind of AI layer on top to then say, what ad should we show? That goes from Snowflake
+back to Postgres to be that real-time single millisecond serving layer. And it's like, this is just
+this, like, common data pipeline now with, like, oh, yeah, I used Postgres before, but now I want to
+tie it to my Snowflake experience. And it's like, cool. There's a lot of beauty in the simplicity of
+these things I can build. For me, it's so, you know, I run databases. It's not cool. It's not the
+sexiest thing in the world. But, like, I live vicariously through all these cool things people get
+to build. Like, you know, oh, cool. This makes sense on this, like, TV pipeline for advertising.
+I've got one customer that he surveys snakes in Canada. Like, goes out, catches snakes, tracks the
+population of them. Like, so, like, two, three days of the week, he's out in the field catching
+snakes and tracking the population of them. And then he feeds this into a Postgres database using
+PostGIS. So, like, guy, part-time snake catcher, part-time, like, what's a collector? He's a censor.
+Yeah, it's like, I'm like, how do you eat? Like, what is this, like, job that you get? Like, this is
+cool. Like, I'd love to, like, go to the, you know, the job fair at the school and talk about, like,
+yeah, I catch snakes and I throw them in a database. And that's how I track all this and the
+population over time. Like, so for me, I get to live vicariously at all these, like, awesome apps
+and use cases people build. Right? And so at the core of it, like, Snowflake, absolutely amazing for
+analytics. And now we want to tie that together of, like, your perfect data platform for, like,
+analytics, AI, data, all together. Yeah, I mean, I'm a home labber. I've recently changed to saying
+dev lab versus home lab just because my lab is now just so developer. I mean, it always has been,
+but, like, it's so developer. And it's almost like when you talk to an agent about home lab, it's
+kind of a pejorative in a way to them. It's like, oh, there's no scale there. You're just doing toy
+stuff. It's like, no, no, no. You got to do raspberry pies. Shut your mouth, agent. This is a
+developer lab, man. We're doing some cool stuff in here, okay? We're breaking ground. We're
+innovating. Anyways, I'm just thinking, like, any given decent dev lab, sorry if you don't, should
+have, likely has a Proxmox box, which is a place you can, you know, it's a hypervisor. You can have
+stand-up virtual machines and LXCs and all that good stuff there. You know, I hadn't really paid
+much attention to PG Lake. It's about eight months old, right? This isn't a very old project. Maybe
+it's old in terms of development, but not old in terms of open source. It's relatively new in the
+last year. Like, it's basically a data warehouse in a box now. And so why not stand up a virtual
+machine with some disk that's hardened? Maybe you got TrueNASD. TrueNASD you can back it up to and
+actually create a centralized data warehouse in your dev lab just for fun. Collect your data there,
+you know? I'm looking forward to next time to hearing all the ways you analyze your data with PG
+Lake and, you know. I'm going to. So I do a lot of stuff. I actually, I moonlight for fun, really
+for fun. A few folks of mine, I've helped them create some data pipelines, like ETL pipelines and
+stuff like that. And so I've got kind of a framework I built that, you know, uses Postgres,
+obviously, in some cases. But by and large, it's DuckDB and Parquet, right? I mean, especially
+whenever I'm extracting. Extracting to a Parquet file with watermarking, like, that is the way. It's
+fast. You can analyze it pretty quickly. You can even use a Just file to kind of create a bespoke
+kind of like just-in-time API over the query. So rather than writing the queries all yourself, you
+just package them up in a Just file, for example. And it kind of makes it like this kind of fairly
+quickly an ability to sort of like iterate over data. At least that's where I've been playing at.
+But I don't really have a centralized place to kind of keep all my data at once it's gotten there.
+Like, that's the next big problem, actually, is like, oh, my gosh, I have all this data. How do I
+harden it? Okay, I got to actually centralize it. And it's not just one tenant. It's several. It's
+like two or three tenants. So, like, the tenant have to be isolated. Like, tenant one can't know
+about tenant two at all. It's just data. It's a warehouse to put it to. So this is my next problem,
+really. And so maybe I'll stand up a VM on my ProxBox box and become a DBA for PG Lake. There we go.
+We got one more DBA in the world. I love it. One more. Yeah, one more for sure. Well, Craig, thank
+you so much, man. What else can we, you know, I know we mentioned PG Lake, how to get there, et
+cetera. Anything coming from that that you can talk about that makes sense now? Or what else in
+closing can we talk about? Um, that's a good question. I mean, I think the biggest, you know, the
+other thing is like, hey, you know, there's a lot of people like, where do I go to learn a little
+more about Postgres, right? Like, cool, this is exciting. How do I, you know, a few things. One, the
+Postgres mailing list. Like, man, you want to geek out on Postgres, the PG SQL hackers mailing list.
+That's where the development for Postgres happens. Like, you want to go learn? All in the public?
+All of it? Yep. I mean, that's, that's, I mean, I'm sure there's back channels, right? This
+developer talks about that. But like, but, but no, the PG SQL hackers mailing list. You want to
+learn about databases and get a masterclass. It's a great spot. You want to contribute and help
+others? The PG SQL users mailing lists, right? Like, that's where users show up like, hey, I'm, I've
+got this query and it's not performing. Like, go help someone else out, right? Like, helping others
+is a great, man. If you really want to get involved, like, look at the commit fest. See if you can
+go review a patch and contribute in that way. And so I think it's, you know, it's a small set of
+people and, and a huge thank you to like, actually commit and contribute to Postgres. Like, this is
+open source in its truest, purest form. And as an open source fan, I love it. I want to see it kind
+of thrive. It's 30 years old and yet it's still going. And I can't think of any other things kind of
+like, man, what JavaScript framework has lasted, you know, more than two, right? Like, we have a new
+one every so long. React. Man, give me, give me back some jQuery. Is jQuery still around? It is
+still around. This version recently. Really? In the last year. Yeah. There's a new release. Man, I
+want to, I want to go give jQuery a good old ride. But, um, it's, it's been a minute. Um, but yeah,
+I think, you know, kudos to the Postgres committers. I'd love to see the community keep growing. And
+like, there's so many ways you can contribute, whether it's like local user groups or if you want to
+learn more, I think, cause like, you know, people here love learning, right? Like go check out the
+hackers mailing list and have some fun. Don't be afraid of it. Um, as soon as Postgres 19 is out in
+a couple of months, kick the tires, take a look at the new features. Like, don't be afraid of your
+database. I think most people are. They're like, oh no, that's like, that's scary. That's hard.
+That's complicated. Like we're developers. We're curious. Like dig in. Like Postgres doesn't have to
+be scary. That's my, my biggest kind of takeaway for folks is like dig in, have some fun with it,
+learn a little. And then if, you know, you find it exciting, contribute back in, in any small way
+that you can. Yeah. Yeah. The, uh, you know, remind me how to get involved on mailing lists. I mean,
+so it's PGSQL dash hackers at PostgresSQL.org. I'll tell you. Yes. And if you basically search for
+that, I think like you'll come up to a, here's how you subscribe. There's more than mailing lists.
+There's, there's multiple mailing lists. Right. And so, um, those are the two, I think, you know,
+the hackers one, which is where the actual development happens. And then the user wants for
+debugging, but there's, there's one for like the dub, dub, dub and announcements and all sorts. So
+like, go, go read the Postgres wiki on all the mailing lists. You know, if you're like, man, I don't
+want to know how the sausage is made, but I'd love to help. Like I'm good at this or that. Like
+there's, there's maybe one for you there. Hey, one more question for you before I let you go. You
+know, I'm a, a small angel investor in Superbase and I've met some folks that are, I mean, I guess
+they're the futures version of developer, but there's certainly not a version of the past version of
+the developer that are now using Postgres. I'm like, what are you using Postgres for? And I'm like,
+or no, sorry, they're not using Postgres. They are using Postgres, but they don't know they're using
+Postgres. Yeah. And I'm like, what are you using for your database? They're like Superbase. I'm
+like, no, that's not your database. That's where your database is. Yeah. And I know now because they
+said Superbase, they're using Postgres, but they don't know. What do you think about this? Like,
+especially Superbase, they've had a, a major hockey stick with the influx and inflection point that
+we're in right now with database usage and stuff like that. Like having big players like PlanetScale
+and Superbase and Neon and a few others like choosing Postgres, this is must have made like your
+career magnum opus. Like just the fact that like we're now here and when you choose a database,
+you're not actually, the developer of the future isn't choosing Postgres. They're choosing the thing
+that chose Postgres because they had good tastes. What do you think about that? Yeah. Yeah. No, I
+think it's, it's interesting to me because I see so many folks that are do like, you know, I love
+the Superbase folks. I love what PlanetScale is doing. Like, wait, DevCools are cool again, right?
+Like, man, we're back to Heroku and GitHub again. Finally, DevCools are cool again, right? Because
+for a while we went through this phase. We're like, man, as an angel investor, do you really want to
+invest in DevTools? Like that's, that's throwing some money out the window for a little while,
+right? And I think like- Superbase sounds like, shut up and take my money, man. Just take the money.
+Get it out of here. It's your money now, Superbase. Go do something with it. And, and like, you
+know, I think Superbase for me is the closest parallel is, is Firebase, right? Like that's what
+they, they are, right? It's, hey, it's this easy layer for kind of APIs and toolkits to build your
+app, right? More so than it is directly just a database provider. And so, I mean, it's great that
+they're building on it. And there's other people that are like, oh, great. I'm going to go build my
+startup on Postgres or around Postgres or extend Postgres. And, you know, it's exciting, I think, to
+see that. I'm also kind of amused a little bit that so many people are like, man, I know Postgres
+now and I'm the Postgres person and I've been in this space for two years. And it's like, man, I
+feel like the old gray beard, right? I'm like, well, I'm glad you've come around because some of us
+have been doing this for a long, long, long time. And we have to be welcoming to those folks though.
+You know, we do have to be welcoming. I'm excited. I mean, more people means more software. More
+software means more things that software does. That just means there's just more, right? It's going
+to be, I mean, I try to think about the negative, but it's mostly net positive that I just keep
+coming back to. Sure, there's negatives, but it's almost all net positives. Yeah, I'm with you. I
+think it's like, but it's also like, man, building these products is hard, right? And doing this
+good is hard. And so I think it's like, there's a lot of value into doing this well, right? I think
+there are folks, you know, doing this really well. Like you've got to be solid at the foundations,
+right? Like, I don't want the new kid out of college founding a bank and giving them my money,
+right? It's like, kind of want the institution that's been doing this for a few years. So like, but
+a lot of those I think are pulling in core Postgres people, right? Like they are really contributing
+back. And I think it's important when you look at all these like Postgres companies, you know,
+popping up, how much are they digging into the Postgres world, right? Are they becoming part of it
+or are they saying, hey, yeah, I'm throwing Postgres on my label because everyone loves Postgres. I
+think, you know, Supabase, PlanetScale or two that are really like good deep engineering and digging
+into Postgres. And I think there's, you know, you've just got to kind of, hey, are they really
+Postgres? Are they making Postgres better? Are they contributing back? Is an important evaluation
+for me because otherwise I think like that tide changes quickly and that foundation may not be
+there. Yeah. Good word there. Good word there. Well, Craig, it's been a pleasure to catch back up
+with you again. I always love talking about Postgres. Postgres for life, for life, for life, for
+life around here. We need that shirt. Yeah. We just need like endless for life. I don't know. I feel
+like especially where we're at now, it's not going to change for me. You know, I will say local dev.
+I'm always with SQLite. I've been dabbling with Tursle a little bit because why not? But once it's
+prod or production like Postgres, hardened, backed up, true, etc. You know, can't. Why? In other
+way. And I definitely have to pay with PG Lake. I'm going to have to play with this. Yeah. Yeah. No,
+I mean, it's I mean, anytime I'm happy to geek out on Postgres. It's been too long. We'll do it
+again soon. And yeah, it doesn't take much to wind me up to geek out on Postgres for a little while.
+Right on. It's been super fun. Thanks for. Yeah. Thanks for having me. It's good having you, Craig.
+Thank you. Well, friends, it's been the year of Postgres for many years now, but I think this year
+might actually be the year of Postgres. What do you think? Are you Postgres for life like I am?
+Maybe you're not. Who knows? But it's always good talking to Craig. He's always excited about
+Postgres. And I love that. Of course, a big thanks to our friends over at Fly.io, the home of
+changelog.com and maybe the home of your agents. Learn more at Fly.io. Of course, the beat freaking
+residents break massive cylinder, bringing those beats not in our head. And I love it. That's it.
+The show's done. We'll see you in the next one. Win it. Win it. It really whips the. King Kong.
+Yeah.

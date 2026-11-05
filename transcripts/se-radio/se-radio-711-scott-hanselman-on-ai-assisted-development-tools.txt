@@ -1,0 +1,695 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 711: Scott Hanselman on AI-Assisted Development Tools
+DATE: 2026-03-11
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/03/se-radio-711-scott-hanselman-on-ai-assisted-development-tools/
+AUDIO: https://traffic.libsyn.com/secure/seradio/711-scott-hanselman-ai-assisted-dev-tools.mp3?dest-id=23379
+DURATION_SECONDS: 3734
+TRANSCRIBED_AT: 2026-11-04T10:34:51Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Hey, this is Jeremy Jung for Software Engineering Radio. And
+today I'm talking to Scott Hanselman. He's the Vice President of Developer Community at Microsoft.
+And I last spoke to Scott back in 2021 where we discussed .NET. Scott, welcome back to Software
+Engineering Radio. Hey, man. How are you? Pretty good. Today we're going to talk about all these AI-
+assisted development tools that are out there. And I think it's super overwhelming for a lot of our
+listeners and for myself. So let's give an overview of maybe the types of tools you have experience
+with. I think maybe we could start with just the chatbots, the chat GPTs and the text box you go
+back and forth on. I would even go farther back, if I may. Yeah. And not to put too fine a point on
+it, but let's go back to like 1975. Because I was thinking about this yesterday. I was trying to
+explain this to my wife. And it's like, when I started coding in like 80, 84, I went from assembler
+to C. And people would be like, C? Come on, that's too high level, man. You got to get down to the
+middle, right? You're like, it's going to rot your brain. C is going to rot your brain. And then in
+the early 90s, we got color. And by that, I mean, we got syntax highlighting. And they're like, oh,
+it's going to rot your brain. And then we got stack overflow. And they were like, oh, you're going
+to rot your brain. And now we got this. When we started thinking about AI-augmented coding, it was
+next token prediction. You type a for loop, you hit space, and then it makes like ghost text and
+suggests. So that's the first thing. Then there was the chatbot. So just right before the chatbot,
+there was the ghost text. You know, it would like interrupt you. And they would have like next token
+prediction within the editor. And some people really like that because it's like, oh, I know what
+I'm doing. And then it's just going to autocomplete. So it's like autocomplete on steroids. Then
+people went into ChatGPT and started asking questions. And then they would copy paste, not from
+Stack Overflow, they'd copy paste from ChatGPT. Then the agentic loop started. And that's where
+things got interesting. And if you really want to sound smart in meetings, just say agentic as many
+times as possible. And agentic loop sounds even smarter. But the idea was that why am I copy pasting
+this code from ChatGPT when I could just let the agent, the LLM, run build, look at the text, see a
+warning, fix the warning, and then loop. And that's when we started getting into things like GitHub
+Copa.CLI and Gemini and AMP and OpenCode and Claude and all of those kind of things, where it's LLM
+sees some tokens, gets the result, makes a judgment. And I call it the ambiguity loop. Because this
+is the thing about programming versus LLM programming. Programming is not ambiguous. It runs exactly
+as you wrote it. And if there's a bug, it's your fault. And if you want a for loop, you write the
+for loop, you do it in Bash or PowerShell or whatever, and it does the thing. But an ambiguity loop
+is like, yeah, I don't really know. Like, things could happen. And we fool ourselves into thinking
+like regular expressions and stuff can handle ambiguity. But if you imagine this kind of slider bar
+of ambiguity between I'm parsing this binary and it's going to work this way. And here's the way
+that the bytes are packed versus the like, I don't know, man, it's unstructured data. What are you
+going to do? LLMs are really good at ambiguity. Turns out the toil part of programming is really
+ambiguous. Like I'm writing this bot on this other machine over here. I'm running what's called a
+Ralph loop that we'll talk about later. And it's bumping into all kinds of little weird problems.
+And those little weird problems are just crap that I would have to go and Google or look on Stack
+Overflow. It's just ambiguity. So I'm running not a Ralph loop, but an ambiguity loop that's like
+working that out because that's not the fun part of programming. The fun part of programming is like
+building stuff. So I think that these agents and why people are freaking out about them is because
+it's that same feeling that we got when Stack Overflow happened. We're like, oh, programming's over.
+Or when I got syntax highlighting and I was like, oh, I don't have to do anything now. All the text
+is in color. Does that make sense? That's how I contextualize it across a historical context. Yeah.
+I think that's good to bring it back to the syntax highlighting and the autocomplete because I think
+nowadays it's very uncontroversial, right? People, for the most part, will accept like, oh, the
+syntax highlighting is there. It helps me point out what I'm looking for. The autocomplete, I can
+quickly see, is the suggestion something I want? Yes or no? I think for the most part, people are on
+board. And I think this ambiguity loop you're talking about is maybe a little bit, I think people
+have more mixed feelings about, is because of that, what you're describing, where it's like this
+slot machine, right? Like maybe it'll give you a good answer, maybe it won't. Yes. And here's a
+really great, I had this internal conversation with this guy, like we're on teams and this is an
+internal guy. And he was so excited because he did a one shot. A one shot is when you type one
+prompt and then software pops out. He did a one shot and he cloned Minecraft. And there's this thing
+that I think it's called, there's a paper, I think it's like Project Unicorn or something like that,
+where like OpenAI cloned Minecraft. But forget about that result for a second and think about the
+simple semantics of typing a prompt, make me a clone of Minecraft that runs in the browser using
+3.js. Which word in that sentence is doing the heavy lifting, the heavy semantic lifting? There's
+Minecraft and there's 3.js because you're steering it and saying use 3.js versus using Babel versus
+using whatever. But in that sentence, make me a clone means a copy of Minecraft means a lot. The
+word Minecraft semantically is effectively a 50 page spec. So I was trying to tell the guy, dude,
+that word is doing literally all the lifting. Try explaining to it to give you a clone of Minecraft,
+except you don't get to use the word Minecraft, right? And now that would be effectively impossible.
+Now you go from, oh my gosh, I did a one shot of Minecraft to this is a hot mess and I really need
+to be specific. And you're going to get, like you said, a roll of the dice. So we need to ask
+ourselves when we are making these ambiguity loops, what is the job of the programmer? Well, it's to
+be specific because it's all about expressing your intent and making your intent understood. And I'm
+sure we would have loved in the 60s, 70s and 80s to like just talk to the thing, but it wasn't
+specific enough. So we needed to be so specific that I'm like, put that electron in that register
+and we're going to use assembly to do it. And now suddenly I can say, hey, computer, what's my blood
+sugar? And it knows to go into a REST API to get the tokens, to go up to my Mongo database, to bring
+all that kind of stuff down. Because suddenly the Lego pieces are high enough and the stack is deep
+enough that I can get what I want. And it might try it in Python one day, it might try it in
+JavaScript one day, but the result is I get to know what my blood sugar is because the REST API is
+called. But that ambiguity loop shouldn't be something that we should take for granted because it's
+not going to work every time. And that's why I think it's interesting to use the ambiguity loop to
+get me specific software that runs absolutely reliably. Because talking to ChatCPT or talking to
+Claude, that's not a scripting language, right? It's effectively a prose compiler. And that's
+different. So I'm using it to make grounded scripts that I then run rather than just yapping at the
+thing and pretending that it's bash files. In some ways, it's like that shift you were talking about
+earlier where you went from writing assembly or machine code to writing compiled languages compiled
+down to that. And then we got to higher level languages like JavaScript. And then now we're one
+level even before that. We have our English prose that's helping us compile or generate the high
+level language. So you know how people use like Lua or C Sharp and they build it into like Unity
+apps, right? And that's like, that's the scripting language for their game. That makes sense to me.
+To embed an LLM would be to embed ambiguity, which they think, oh, yeah, look, the NPCs are going to
+be able to do stuff. But now they could do anything. They could say dumb stuff. They could go off
+the rails and the game could completely do something that you don't want it to do. That's what we
+don't want to do. We don't want to push out slop because rolling the dice is not software
+engineering. And I think maybe another important point is with that example where you said somebody
+tried to one shot, let's write Minecraft, right? My guess is that the end result was not actually
+Minecraft. It was probably something that resembled it a little bit. But yeah, I wish I could show
+you. It's actually, to be clear, it's super impressive. It's a full voxel world. It generates the
+voxels. It runs in the browser. The textures are all there. There's no crafting in mine, but you've
+got an inventory. It's Minecraft if you woke up from a dream and you're just like, oh, I had a
+dream. I was in Minecraft. So it's maybe like 60% of Minecraft. And that's pretty cool. But again,
+the spec lives entirely in the word Minecraft. Because if you said, make me a clone of Fufu and Fufu
+isn't a thing, you're going to just roll the dice and it's going to go insane. That's why it's not a
+reasonable demo to say, make me a Space Invaders, make me a Pac-Man, make me a Donkey Kong. Because
+those words do all the heavy lifting. I feel like some of the higher levels, people who are running
+these businesses, CEOs and things like that, they have this vision that I'm going to be able to ask
+this rather ambiguous thing and get a complete product. But to me, it feels like we're not actually
+there. So an example that I really like to use, and then may I ask, do you have a car and do you
+drive? I do. Yeah. Okay. Do you drive stick or do you have automatic? Automatic. Do you know how to
+drive stick? I don't know it well enough to comfortably do it. Okay. Do you feel that it is a
+personal failing that you don't know how to drive stick? I do not. Okay. So take everything that we
+just talked about and now apply it to programming, right? Like I could do Assembler, but I couldn't
+do it without Googling anymore. Do I feel bad about that? No. Could I drive it in an emergency? Yes.
+Could you drive someone to the hospital and stick? Yes. You could probably make it happen if you
+were in a pinch. Here's the question though. What if you answered just now, I don't have a car. I
+only know how to Uber. Then your relationship to the vehicle fundamentally changes. And if the
+vehicle breaks, you're going to get out of that car. You're going to leave that poor gentleman
+there. He's going to have to fix that car. He's going to have to repair it. Oil change and tires.
+And you're just going to get in another Uber and fly away. But how deep is the stack for you to
+simply move your body from point A to point B? And you have no control over how the guy is going to
+get you there. So I think that there is value in driving stick occasionally. Trying to get somewhere
+without a GPS. Because then the ambiguity has to be, and the responsibility is on you. The honest is
+on you. While right now, the idea like, hey, send a stranger in a car with candy to pick me up. And
+I just like lean back. That's the same thing. Asking an Uber to send you somewhere and asking Cloud
+Code or GitHub Copilot to make something for you with no specificity. You're lucky. I hope you get
+to the airport. Good luck. You know what I mean? Well, I suppose in that example, the Uber or the
+Lyft, you're giving an address most likely. And it's sort of this well-defined problem of, I need to
+get this person to the airport. Or I need to get this person. You have a vision of the end. Right.
+And I feel like that's a little different than me saying, telling an LLM, please build me a web
+browser. Or build me Minecraft. Yeah. That's fair. I think an example would be, hey, Uber, take me
+to the airport. Without specifying which one. Without specifying. And there's no ask user question.
+I guess your point maybe is that it's somewhat unrealistic to say something so vague and not expect
+there to be a back and forth to be clarifying questions, that kind of thing. Exactly. And I'm sure
+you've been in an Uber and you've told them, hey, take the 405. Because you were steering them.
+You're not driving the car, but you steered. And that's why we're finding steering in these CLI
+coding agents so delightful, where it's like, you're 90% in the direction I need you to go. Just get
+off on this exit. Those little moments matter. Specificity matters. I'll give you another example.
+My son is 18 and he has a Depop. So he sells like vintage clothing on Depop, which is like a
+marketplace for people to sell clothing. But he ships on a website called Pirate Ship. He doesn't
+use the Depop built-in shipping. So I had this vision to make it so he didn't have to copy-paste
+stuff back and forth. And I thought I was going to do it with like Playwright. And I was going to
+automate browsers. And I was going to build a whole like dashboard for him to do shipping. And I was
+basically using the co-pilot as a rubber duck. I was talking back and forth to it. I was talking to
+myself in the mirror. I'm not actually talking to an entity. I'm talking to myself. And in the
+brainstorming, just as if I called you and brainstormed, we realized that, oh, I don't want to write
+a Playwright extension. I want a browser extension. So I wore a browser toolbar for him. And I
+wouldn't have come up with that. I would have gone all the way down Playwright automation and been
+wrong because of my own biases if I hadn't brainstormed. And a little bit of the ambiguity loop
+popped up and said, have you thought about a browser extension? And it clicked. And then I went
+immediately. It's like, hey, take me to JFK. You know, EWR has a direct flight. Have you thought
+about that? You're right. Let's do it. And that back and forth, as well as having a lot of
+experience and understanding the power of a browser extension, turned out to be a really great
+experience. And now he's got one-click shipping for his little business. Very cool. I have people
+ask me sometimes, is it still worth learning how to code? Is it still worth learning all the
+specificity of HTTP or how the browser works or databases? And I think what you're maybe implying is
+that having at least some background in these things will help guide you when you're asking these
+questions, when you're trying to come to a solution, if you don't have that background, you might
+not get there. I acknowledge my position in history, my age, where I grew up. I speak English. I'm a
+white guy on the West Coast. Like all those kind of things are the context in which I came up. I
+came up in a very interesting time in the 80s programming. So I don't want to sound like old man who
+shakes fist at cloud. Hey, bro, why are you gatekeeping stuff, right? But I see people saying, hey,
+man, I just vibed the world's greatest new SaaS. Check it out. And they tweet, localhost 3000. And
+it's just like, right? So like, do you buy your furniture at Ikea? I do. Could you cut a board? Did
+you take probably woodshop? Yeah. Would you build your own furniture? No. But you have an
+appreciation for building Ikea stuff. I think that's why Ikea makes you build it so that you don't
+feel like it just appeared in your house. It can't just like spawn up like billy shelves. So yes,
+while recognizing that it might sound like, hey, this old guy wants me to write everything in
+assembler. Yes, yes, yes. Appreciating that oil changes are a thing. DevOps is a thing. Build loops
+are a thing. And quality matters. So I would argue that it's not the death of software engineering.
+It's the death of toil. And the only thing that matters now is taste and judgment. So where do you
+think that that balance is? What do you think people should be learning where they can use these
+tools effectively and they can still be building quality? I think, and by the way, when I retire,
+I'm going to go and teach high school computer science. That's my plan. I've got it all lined up.
+And I was a professor before and I'll be a professor again. I don't think there's enough computer
+science history. And I don't think there's enough basics. I don't think anyone learned HTTP in
+college, right? They just kind of sat down. They did compilers. They learned Lex and Yak. And then
+suddenly you're learning OSs and then you're writing apps. But you pick up HTTP and DNS and stuff
+like that, maybe. Like I took a 400 level TCP IP class. But as a general rule, you're not spending a
+lot of time learning how to do Kubernetes in school. I think HTTP, DNS, NATs, like that's all bread
+and butter. That's sociology, right? Why do you learn about world history so you can go and be like
+a corporate drone? You learn because it makes you a whole full person. So there is someone right now
+via coding their bachelor's degree in software engineering. And I love that for them. But they're
+going to get nailed. Just as people who don't learn about sociology and history and psychology are
+going to get nailed. The Dunning-Kruger effect is a real thing. Hypothetically, when you're teaching
+your computer science class, what would you tell your students in terms of using these AI-assisted
+tools? I would say it is a funny two-faced thing because it is a senior engineer with infinite
+patience, but it is a junior engineer with infinite energy. And the role that the LLM chooses
+depends on how you're coming at it. If I come at it as a .NET engineer, and I'm competent in C
+Sharp, then it is a junior engineer with infinite energy. And I need to point it exactly. And I tell
+it what I want. And it does the thing. But if I come at it as a Python developer, of which I am a
+novice or a medium, then it's more senior than I am. So I would be less likely to disagree if it
+makes a recommendation, right? So if it does something in .NET, I'm like, no, don't use that. Use
+this. I will say, no, we're going to JFK. Trust me. This is how we're getting there. But if I've
+never been to that country, I've never been to that state, I don't know which airport's the better.
+I'm going to take the advice of the Uber driver. But it's the same LLM. It's the same model. And if
+you come at it with that sense of like, no, I know what I'm doing. Strong opinions weekly held.
+You're going to have a much better experience. Additionally, the opening prompts matter. And I think
+that there's room for learning prompts. So if I were teaching the class, I would include a markdown
+file and skills that would force the user to like, oh, you just tried to vibe your entire final.
+Here's some multiple choice questions. Here's an exercise for the reader. I'm not going to let them
+just one-shotting your computer science file. You're doing yourself a disservice, I think, if you do
+that. Yeah, that's an interesting point about how the way you interact with the LLM is so different
+when you know the domain or you know the language well. And I wonder if in your opinion, if it's,
+let's say you don't know it well, are you in a sense sort of fated to get a result that's maybe not
+as good? Like because you didn't have that background because you couldn't steer it? If you don't
+understand why it did a thing, then I would not feel comfortable shipping it. And that's where I
+think the limit is. Like I'm doing a bunch of Python stuff. And I think I'm maybe a four out of 10
+or five out of 10. But I know how their type system works versus TypeScript versus whatever. So I'm
+asking generic computer science questions like, what's the Python equivalent of a linter? Do I have
+enough guards for my exceptions? Like that's not Python questions. That's just quality. That's just
+taste. And I'll say, I'll challenge its assumptions. Like I built a blood sugar management system in
+Python a couple of days ago. And I've asked it, like, should this be TypeScript? And I said, make me
+a pros and cons table about moving this to TypeScript. And it was like, no, I think Python works
+great. And we kept it at Python. But then I had another thing that I was doing in C Sharp. And it
+was on .NET Framework. And I thought it would just be fine on .NET Framework. I said, no, no, we
+should move to .NET 10. Here's 10 reasons why. And it's a back and forth. I think too many people
+are trying to vibe code stuff in two or three shots while I'm doing stuff in 50 or 60 and having
+ongoing conversations. Like I'm gesturing right here. People can't see to my terminal, which has 13
+tabs open. And they're all doing something right now. And I use Copilot CLI, which is like Claude
+Code. It's an agent loop. And it has infinite sessions. So it has this idea of like the context of
+like how long it can think about stuff doesn't exist in Copilot CLI. So I can just go dash, dash,
+resume and pick up stuff I worked on a week ago. And it's like a hibernation. I just hibernated the
+agent. I brought it back. So it's remembering all the stuff and all the decisions I've been making
+on. And I'll say stuff like revisit our conversation from a week ago. Do you still think that's
+true? Go and look at this pull request. Go and look at this Stack Overflow. Go and look at this new
+tweet that someone, that Simon Willison said. And given that new context, what do you think? So I'm
+constantly challenging it. And it's almost like I've got 13 engineers that are either working full
+time or they're just asleep. And I wake them up and I ask them a question and then I go off and I do
+my thing. And it's really been like, I feel like an engineering manager with a lot of really cool
+little junior engineers with so much energy. And for someone who isn't super familiar with the
+domain or with the language they're working in, how do you verify the assertions that the LLM is
+making? I love that. I love that. So because I'm not an expert in Python, but I wrote my blood sugar
+management system in Python, however, I am an expert in type 1 diabetes. So I thought to myself, how
+can I verify that this is valid, but I don't know the language? And it's what I call fear-based
+development, right? It's FDD, fear-driven development. I don't want to screw this thing up. It's my
+blood sugar. And in the words of Brian Lyles, test all the fucking time, right? Always. So how many
+tests do I need before I don't feel scared? In this one here, it ended up being 270. That's just a
+number. But like I needed about 70% code coverage across almost 300 tests. And it's on real data and
+it works. So that's CICD and it runs in GitHub Actions and it runs locally. It does nothing until it
+tests. And I would again argue that that's about software engineering, not about Python. So as long
+as there's a test framework and a loop and that loop is verifiable, that's what's important. Because
+everyone's excited about like Ralph Loops, which we should talk about at some point. Ralph Loops are
+great. But like if you have a million monkeys and they're typing in a million typewriters and you're
+hoping that they're going to type Shakespeare, if you don't have a test that validates the
+Shakespeare, then you're just wasting monkeys and wasting typewriters. And these tests, are you
+generally writing them yourself or is this something that the LLM is also writing? So I will write
+four or five tests myself. Then I'll tell the LLM to write me other tests on the boring stuff like
+edge cases. And then because we know that in software engineering, the top three issues in software
+engineering is naming stuff and off by one errors. So that is the things I watch for. I know that
+it's edge cases. So I'll write a test. I'll have it make me 10 more. And then I'll look for all of
+the edge cases. And yes, it's true that I haven't deeply validated them. And it is true that
+depending on the model you use, it'll comment tests out. It'll hide stuff from you. It'll pretend.
+It'll gaslight you into thinking the tests work. And this is why it's so important that you
+understand, not you, but one, understand that you are shipping this code. Like I always think it's
+funny when someone puts something up in the cloud and the cloud goes down and then they're mad at
+the cloud provider. Like I get that you're mad at the cloud provider, but like whose responsibility
+is it for that app? It's your responsibility. If you felt that strongly, you should have had it in
+two cloud providers, right? So if this thing fails, it's me. It's 100% me. I'm not going to blame
+Copilot or Claude or whoever wrote that code. That's why when you check stuff in to GitHub, it says
+on behalf of. If I did something and my proxy did it for me, the buck stops here. So if this were
+production, production, production, I would go and double check it. And that's why, like, for
+example, the Copilot CLI team, it's like seven or eight engineers and they're doing like 200 PRs a
+week. It's crazy. They're spending more time now reviewing than they are writing code, but they will
+not ship slop. And if you look at another way, I'm sorry I'm talking so much, but another way to
+think about it is when open source started and the open source supply chain started having all this
+flood of open source software. How do we deal with this? Code came from somewhere into the machine.
+Doesn't matter whether Jeremy wrote it or whether some kid wrote it and it got in via PR or whether
+an LLM code. It has got to go through the same verification loops, the same security loops, the same
+testing loops, the same provenance loops, the same governance. That makes sense to me. I mean,
+something that you sometimes hear people say with all these tools, the agents, the ability to
+generate code. They're saying, well, I am generating so much, I just don't have time or I just don't
+need to verify the output. And it sounds like in your case, you're saying, no, ultimately, even
+though these tools are generating it, it still comes down to you need to review it because otherwise
+you don't know what's going on. If I don't have time, then what are you making? Right? The point is
+to make a thing and ship a thing that you're proud of. So then, we got to go, we got to go. Well,
+then you don't care. You don't care about your customers. You have to understand the semantics or
+what are you even doing? I just reject that. Now, that said, there is this rise of toy fun personal
+apps. Like using computer science history to put this in context, we're having a GeoCities moment,
+right? Where everyone's just making stuff. There's this wonderful friend of mine on TikTok named
+Rodney Norman. He's a comedian. He's got crazy white hair like Professor Brown and he's got a big
+long beard. And he pops up on my For You page and he says, you know, you can just make stuff. You
+can just do stuff now. That's what it feels like. I got a rocket ship strapped to my back and I'm
+just making stuff. That doesn't mean I'm going to go and plug Stripe into it and start taking money
+for it and like taking people's money and real blood sugar. Do you see the difference? If you're
+shipping this, you better care. If you're just playing, yeah, play. Yeah, I mean, colloquially,
+right, people are saying, I vibe coded this. I don't say that anymore. If I vibe coded it, I don't
+care. You either are a vibe coder or you're an AI augmented software engineer. AI augmented software
+engineer doesn't have good mouthfeel. But like, bro, it's just vibes. No, I'm not vibing into
+production. That's not happening. Yeah. And I think, too, what people may run into is whatever they
+build may look like it works initially, but there may be architectural problems that make it
+difficult to change. There could be more severe flaws that you just can't find because you don't
+know enough about what's happening. You don't know what you don't know. And the first database
+migration or like the first scale issue and you're like, oh, we made a decision. Well, actually, we
+didn't make a decision. The ambiguity loop punted on a decision. And now we're painted into a
+corner, an architectural corner. So I think one of the things you mentioned is when you work on a
+project, it sounds like you have this plan or you have a lot of context that you're providing to the
+model to start off. Can you kind of walk through what are the kinds of things that you're saying?
+Like, are you asking for specific architecture patterns, languages, ways to test, that kind of
+thing? I'm trying to think of an example. I'm looking at my tabs that are working right here. Okay,
+here's one. So there's an application that is 20 years old. It's called Windows Live Writer. It's a
+blogging tool that we Microsoft released in like 2006. And then we open sourced it later. And it's a
+mix of C++, C Sharp, the ribbon control from Office, the Internet Explorer, like the actual typing
+the blog post is actually a com object from Internet Explorer. And it works, but it's janky and it
+needs to be modernized. So it's like 20 year old software. That's an interesting technical problem
+because it's a brownfield pile of stuff. But I have a vision that we could get that running on .NET
+10, which didn't exist, with Chromium or WebView 2 instead of Trident, which is the Internet
+Explorer thing. We could update the ribbon control. I can see you're nodding. The spec is already in
+your head. So then the question is, how specific do you express that intent to something like this?
+And arguably, there's kind of two ways to do it. There's the persistent loop, the Ralph loop, which
+is just like, do this, make no mistakes, right? That's just monkeys slapping. But verifiable loops
+with persistence is really, really interesting. So how do you verify that it works? What's changed
+contextually since this thing came out? 4K monitors happened. That wasn't a thing 20 years ago.
+Multiple DPI across multiple monitors. So like, I know that that's a thing. So I put that in a spec.
+.NET is cross-platform, but this is a Windows app. So I'm not trying to get this thing to run cross-
+platform. So that goes in the spec. It's C++ and it uses com, but I don't really need com anymore
+for this because I'm going to be switching over to Chromium. So I'll make a com to JavaScript
+bridge. Those little moments make that loop, which I could have probably pointed a loop at it and it
+would fix it at some point. But it saves time. These are all these little architectural shortcuts
+where I'm anticipating that this is important or that's important. It found a reference to MySpace
+because it had like an insert MySpace link. So like I said, go through the thing. If there's plugins
+for dead services, mark them as to-do. Keep track in the to-do of all the things that you've stubbed
+out, et cetera, et cetera, et cetera. I think I ended up basically dictating to the thing about a
+two and a half page spec. And I think we looped, I want to say 20 times. And it's running. Like it
+freaking works. I'd say it's probably 70, 80% done. And then now people are doing PRs against it.
+And we've revitalized this 20-year-old application. The question is, could we have done it by just
+saying, get this running on Windows again? I think that the reinforcement that we would give an LLM
+to do that would be artificial because it doesn't know what success looks like. It might just say,
+oh, I got it running. But like, did you get it running? Did you post a blog post? Did the blog post
+work? Did you edit the blog post? So you got to think like a tester. Remember back in the day when
+like software testers were like, that was an actual job? It's a job again. So I feel like I'm
+talking to this engineer that's overseas or outsourced or insourced. And they're throwing code at me
+and I'm validating that code. So I make a plan that's about 80% of a plan. And I tell it, if you
+have questions, ask. If you're making an architectural decision, ask. And if there's a lack of
+clarity or the loop is unclear, then I will come up with a solution. Another example, actually,
+because it's a Windows app. How is it going to validate? Does it take a screenshot? Does it like do
+debug got here debugging? Does it do interactive debugging? Those are all interesting things that
+are happening right now as well, because it can't see unless it's multimodal, like something like a
+copilot CLI. I told it to take screenshots and compare it to the other one and see how close it was.
+So there's anything you can do to make the plan clearer and make the loop tighter will cause it to
+be more successful. And when you refer to these loops, I'm assuming a loop is the model attempting
+to write the code to accomplish what you asked for. Is it automatically looping on itself and it
+keeps trying? Or is it where it's prompting you and going like, okay, I gave my first try time for
+you to review? That's a great question. So with this particular application, which is trying to
+bring back an old Windows app, it would get it to compile and think that was success. So I'm like,
+no, running it is success. So then it gets it running. It looks at the process tree and says, look,
+it has a PID. Success. I'm like, no, it has to look good. Oh, okay. Well, then you can kind of start
+up leveling. And then I realized I was running this app called DebugView, which is effectively like
+the Windows Debug Spew kind of thing. And I was selecting the got here debugging, the
+debug.writelines and pasting it back in. And after the third or fourth time, I'm like, it can run
+it. And that asks me, what do you see? It literally would say, what do you see in the DebugView? And
+I would copy paste it. I'm like, this is stupid. So then we made DebugView an MCP server. Now I'm
+out of the loop. So I actually got myself out of the loop. So now it can compile, run, see the log,
+kill the PID, build, and then the inner loop becomes simpler. So then I said, let me know and stop
+the loop when you have questions or you think you're done. And that's what's so kind of exciting
+about these loops is if they're clear and success is clear and verifiable. You can do really amazing
+stuff. So it sounds like as a part of your instructions, you're also giving it the tools or telling
+it how it should verify whether it actually did the thing. So like I'm making a Windows CloudBot,
+now MoltBot, Windows tray application. And it declared success just right before we got on the call.
+And it's like, yeah, it's working. It's great. And I looked at the tray and it says connecting and
+it's not connecting at all. Right. It's completely. And I'm like, no, this isn't working. And it's
+like, no, no, it's working. I can see it's working. Look. And it shows me all the, it's very
+excited. It's like, oh, and it's giving me rocket ships and an emoji. It's super excited that
+everything is working great. And then I realized that the UI is done, but the underlying stuff is
+not done. So I need to separate the UI from the business logic, build the core, which is much easier
+with these loops. So then once I get it talking to the API, so it was my own mistake to tell it, you
+know, build this. And I went UI down. That was foolish of me. It was, it was my own enthusiasm that
+nailed me. So now I'm going to go and refactor it, pull out the core, build the Windows front end to
+the thing, get it connecting, and then layer that UI on top of that. Because that's way more
+verifiable. I think it's a common experience with people who use these tools that there are times
+when they're in a loop or they're trying to come to a solution. And each time they try, it's just
+not what you wanted, or it's, it's saying it fixed it, but it really didn't. And are there specific
+strategies you have for, I guess, one, recognizing you're caught in this loop, it's not going to get
+out. And how do you break it out of that, that cycle? For me, it's always been that it is confused
+about what success looks like. You have to remember that an intern or a enthusiastic early in career
+engineer, is very excited to be at the company. I'm so happy to be working with you, Jeremy. I'm
+going to do whatever it takes. Lie, cheat, steal, comment out tests in order to make sure that you
+don't fire me. These are reinforcement learned large language models that are very, very excited to
+be here. And as such, just like, you know, the Devil Wears Prada, the interactions that they're
+going to have with a salty old engineer like me are going to be very interesting. Like, I guess I'm
+Meryl Streep in this analogy. So I need to be very specific. Okay, Jeremy, I need you to do this. I
+need you to do it nicely. I want a half double decaffeinated half calf with a twist of lemon, not
+two twists. You know what I mean? So you need to be a little bit crisp with it. If you can give it
+test data, if you can give it verifiable test data, if you can say, build a harness. If it doesn't
+know what success is, it will make up success, declare success. And then if you're not whatever
+enough, senior enough, wake enough to declare success and agree with it, then you're going to get
+nailed. Yeah. And in the example you gave before, you had to tell it specifically to use this debug
+view tool and give it that tool through the MCP server. How would it know, right? You got to tell it
+that you have these tools available. It's going to take a regular screwdriver and keep poking it
+into a Phillips screwdriver thing. It's like, you got a Phillips right there, bro. Oh, you're
+absolutely right. I actually, I can't show you because we're on an audio podcast, but literally
+yesterday, I forgot that I had a whole test harness for my blood sugar thing. And I had like another
+hundred tests that I hadn't told it about. And it was frustrated about something. And I was like,
+oh, you know, go into this folder. I've got these tests. And it literally said, this is gold. Thank
+you so much. Now I see, you know. And then I was another totally unrelated thing. I was building a
+front end for Microsoft Loop because I wanted to like, Loop is like Notion. And I was building an
+API for it. And then I found API documentation. I just pasted it in. Here's the URL for the
+documentation. And I was like, oh, now I have a plan. So it's just like giving it like a little
+breath of fresh air. And it's like, oh, and now I'm re-energized. That's what these loops require.
+Ambiguity loops require specificity. That's what we are supposed to provide as software engineers.
+And as you have these longer loops or conversations, one of the things about these tools is they
+have a context. And that context is only so large. And I wonder if you ever run into the issue of, I
+believe they call it context compaction, where eventually the model has to kind of get rid of some
+of the context that you had before. And if you run into that and how you deal with that. Yeah. So I
+just put in context here, I'm 73% into a 200,000 token context window. That is often a thing in
+these loops where it's talking to you and it's talking and it kind of goes, huh, what? Oh, I don't
+remember, bro. What? And that's because it just compacted everything, summarized it, and it doesn't
+remember an hour ago. That happens a lot on these tools. It happens less so with the infinite
+sessions that GitHub Copilot CLI has because it does very, very active management of that window.
+But I've also, with any tool, found it to be very helpful to keep telling it to save stuff. And I
+don't like to anthropomorphize these things. They're not people. But I have a context window and I
+also have a remarkable e-ink thing and I sync to paper. Like, tell it to write stuff down as if it
+is a person. So this big loop that I'm running on the CloudBot over here, I said, every time you
+achieve something, write it down. And if you look at things like Steve Yeagy's Beads, which is
+basically like a Git-focused to-do list that's distributed across multiple agents that are working
+on a swarm of problems. If everyone can agree on a ledger of the things that we're working on, those
+context windows matter less. Because if it wakes up, it's going to go and say, what? What am I
+doing? What was I working on? Just like the movie Memento, when he forgets stuff, he tattoos it all
+over his body. He wakes up in the morning, he doesn't know who he is, and he gets caught up by
+looking in the mirror and seeing all the tattoos. So anytime anything interesting happens in his
+life, he tattoos it on himself to catch himself up. Do you ever find yourself doing that manually,
+where you yourself know what the context should be, and you just go, here you go. Like, this is,
+remember all this. Yeah. So context window management is not something I have been actively doing
+with the Copilot CLI because of the sessions feature. But I still think it has a huge amount of
+value because it's not about their context. It's about your context when you, Jeremy, inherit the
+code later. Like, for example, DPI, we were having a dots per inch issue with the OpenLiveWriter,
+and it was complicated. Like, I spent a day messing around with DPI because multi-DPI, multiple
+monitors is complicated. So I said, write down everything that we've learned so that no one has to
+ever deal with this again. And it made like a 2-meg, you know, markdown file. Like, it effectively
+wrote a chapter of a book about nuance. And I'm running the ClaudeBot, now MoltBot on Windows under
+WSL, and, you know, every once in a while, a Windowsism will come in. And I said, regularly check
+for Windowsisms and remember it so that you never hit it again. And that's not thinking about the
+larger context window. That's just like, put a Post-it note on your monitor to remind you of this.
+And with any project, I'll end up having 10 or 15 of those that are secondary to the main plan. The
+main plan could be in something like Beads, or it could be in GitHub Actions, or it could be a
+markdown file with checkboxes. And the main plan and these additional notes that you provide, is
+there a way that consistently works across, whether it's GitHub Copilot, or it's ClaudeCode, or
+Gemini CLI? Is there like a, hey, this is the markdown file you put it into, and all these things
+will understand it? They're all fighting right now about what the thing will be called, you know?
+Like, there's agents.md, and there's skills.md, and like, you know how there's like a robots.txt,
+which is like the thing that your website puts up in order to tell robots what to do? And then
+there's vllms.txt, which is literally a text file you put on your website in order to tell OpenAI or
+whoever's scraping your website what to do about it. If you have an agents.md, it's like a readme
+for agents. And then within that, I'll say there is a docs folder, and within that docs folder, here
+are the main subsystems, and you're effectively building architectural context. And then if it finds
+itself doing a thing, then it will go and refer to the documentation. So I taught the Claudebot
+about my blood sugar, which is unique to me. Anytime I mention anything blood sugar related, it
+doesn't have to hold it in context. It just has to know, oh, there's a post-it note with the details
+that I need to know. And then it pages it in, does the thing, and then it pages out. Something you
+mentioned earlier was you were referring to this Ralph loop. What is that? Yeah, yeah. So Ralph
+loops are funny. So Ralph Wiggums is a character on The Simpsons, and he is a extremely naive and
+extremely persistent, funny little man. What we admire about Ralph is that he is persistent and he
+will never give up. And it is designed for these continuous autonomous development cycles. And Ralph
+Wiggum, the concept came up with a gentleman named Jeffrey Huntley, and he's basically trying to do
+less. And this is a thing that I think we need to acknowledge as programmers, that we are ultimately
+very lazy. So if it can be automated, that's a good thing. So he's like, why am I doing this work?
+Let Ralph do it. So the Ralph loop kind of embodies the spirit of this little character on The
+Simpsons, which is I'm going to stubbornly iterate. I'm going to fail, but I'm never going to give
+up until it succeeds. So a really great example of a Ralph loop is not necessarily like the tech
+journalists will say, oh, you can just point it at some software and it'll clone it. And it will
+make like a Minecraft clone. It's not going to be real, right? But David Fowler, distinguished
+engineer in .NET, had a really interesting problem where he had 400 issues in his GitHub repo for an
+application, and it didn't have good reproductions of the bugs. And that's just one of those things.
+It's just technical debt. And we don't know if they're bugs. It could be good bugs. We don't know.
+So he made a Ralph loop that said, spin through all 400 of these issues and reproduce them. If you
+get a good reproduction, keep track of that reproduction, then add that context to the issue. That
+is the very definition of toil. And like, what better thing than a Ralph loop to do that? And I
+think it came up with something like 384 good solid repros, right? Now, the big problem with a Ralph
+loop is that it doesn't have like a task tracker. So that's where things get interesting. If you
+have a task list and Ralph can then keep track and understand what success looks like, then you're
+going to have a great experience with it. So I will do interactive work during the day. And then as
+I get towards the night, I'll be like, okay, what's a loop that it could work on overnight? Because
+I want to wake up in the morning and have something successful happen. It sounds wasteful, but it's
+like shockingly cheap. You know, I'm a bit of an AI vegan. I don't do images and I don't do video.
+But next token prediction is becoming extremely inexpensive. And you could run a loop all night long
+and it might cost you like two bucks. So if you have a problem that is Ralph loop shaped, it can be
+an extremely powerful tool. I think, though, that people sometimes think that it is the only thing
+or they'll take like vibe coding is fun to say. And now Ralph loop is fun to say. But it's just
+another technique. It's another tool like like CICD. And is this where people have built this? I
+don't know what you would call it. This harness that is going to manage and run the loop. Well, so
+Jeffrey Huntley calls it a while true bash loop. So it's just like while true, you know, and the
+concept is very simple. It re-prompts your agent a set number of times with the same prompt. And we
+mentioned before that it's an ambiguity loop. And if you ask it something 100 times, you're not
+going to get the same result 100 times. And then you refuse to let the agent say it's done. But you
+have to identify what the stop condition is. And if the stop condition is unclear and it's done
+anything at all to try to wiggle its way out, you say, no, do it again. Like, for example, all tests
+must pass. Endpoints must be working. And then if it comments a test out and you can't comment, you
+can't change the tests or whatever, right? So you'll say slash Ralph loop, refactor this to
+whatever, and it all has to pass. And you have to go and say step, step, step. And when it's
+complete, when it's complete, when it's complete. If it doesn't have the ability to see something,
+if it can't see a log file, if it can't run a test, then that doesn't work. So that's why test
+harnesses matter so much in that context. So you're basically building your own while loop with a
+known stop condition that's going to call out to your model of choice. Yeah. And then you can also
+mix and match models. So, like, I'm on Copilot. I'll hit slash model. I hit enter. I've got 14
+models. So I might, you know, plan on Opus. And if I want to save money, I might then do the work on
+Sonnet. And then I'll have GPT-5.2 Codex review it just to kind of, like, mix it up. You know,
+diverse teams are a good thing. So having only one model do it and then review it, sometimes you can
+get a little bit of sycophancy. It's nice to get fresh eyes. And a way to do fresh eyes is throw
+another model at it. So I can switch models mid-conversation. So for your own personal projects,
+what does that bill look like at the end of the month? Well, so far, I spend $200 on Claude. And
+then I pay whatever the Copilot Pro Plus is. And those are the two that, oh, and then I have a
+subscription to OpenAI. So that's basically it. I mean, here's the thing, right? What do you value
+your time at, right? If you just pick a number, like $100 an hour, and you say, my time's worth $100
+an hour, which is a big number. And one magical moment once a month saves you $100 an hour. You're
+like, oh, my God. Yes, I would do that. It has definitely brought me more joy than Netflix. And the
+Netflix is $11.99 or whatever it is. All it takes is one amazing moment. And you just go, oh, wow.
+That was, I just paid for the whole thing. You know what I mean? My son just got a climbing gym
+membership yesterday with his own money. He's 18. And it's $90 a month. And he's like, oh, man, this
+sucks. I climbed for two hours. It's $45 an hour. I'm like, no, dude. Climb four hours a week. It's
+$16 an hour. It's $5 an hour. And he's like, oh. My son, he's like, bro, you're right. I need to
+climb more. Like, yeah, the more you use it, like, the better, dude. So like, you know, what is it
+here? Copilot Pro Plus is like $40. And you get 1,500 premium requests. And I've used, how many have
+I used here? Session. I've used 63, right? I've upgraded Open Live Rider. It's not even close. It's
+so valuable that it is a delight. So I honestly am not thinking that much about it. Simply because,
+like I said before, I've got a rocket ship on my back. I'm busting out so much cool stuff. And
+people might say it's a toy. This thing's a toy. That thing's a toy. But like, there are toys that I
+was meaning to get to. Like, I've got a podcast as well, you know. It's been going on for 20 years,
+but it's never had a back-end admin site. I've just been editing text files and like manually
+editing databases. Because I was like, ah, who's got a weekend to make a pie? I don't know, make a
+pie. It took me 43 minutes to make a React website that does the back-end admin for my podcast.
+That's worth whatever my subscription is. So yeah, it did not take any time at all to make that
+decision. Yeah, I mean, I think as developers, for whatever reason, a lot of us, we undervalue
+paying for tools. Oh my God. Developers would just love, like, I'm $99? Never! I'll write my own.
+Take nine hours to do it. You know what I mean? So yeah, like, I mean, I'm sure that these AI
+companies are burning money. And the pricing will figure itself out. This is just like when Netflix
+and streaming started and they couldn't figure out what the pricing is. But they're all trying to
+figure it out. And it's also going to get faster. It's going to get more environmentally friendly.
+We'll have more hybrid models. We'll have more local models. I can plug in Olama. I've got a 4080. I
+could do work on work locally. There's lots and lots and lots of options. And it's only going to get
+easier and hopefully cheaper. And that's important as well. I want this to be available, like, for
+everyone. Yeah, one of the things you mentioned is that there are models you can run locally. What's
+the state of that? How do they compare to the ones that you pay for from cloud services? It is
+challenging to get really good, deep, thoughtful plans from those local models. But if you have a
+good plan that was made by a big cloud model, you can then execute on that plan with some of the
+smaller ones. I think, though, that people don't realize that these models in the cloud know more
+than just coding. They could go and translate Star Wars into Shakespeare. But I don't want that
+feature. Like, I don't need that. So when I download a model, I would like a Python-optimized model
+that doesn't know how to do anything but Python. It shouldn't have how tall is Brad Pitt embedded in
+the model. That's wasting space. So I think we're going to see local models that are very specific.
+And you can go on Hugging Face and find LAMA coding models, DeepSeq coding models that are specific
+programming languages or problems. That, I think, would be really interesting. Like, save money,
+time, and energy by solving it locally. Think of it as like a Redis cache for LLMs, but locally. I
+also wonder, because there's so many things in these models, how much of that knowledge actually
+helps it code? Because, you know, we have knowledge outside of coding. They all know how tall Brad
+Pitt is, and they insist on bringing it with me, you know, everywhere I go. But a really fun way to
+test this is to just go and download, like, LMStudio or LMStudio.ai. It's a delightful application,
+third-party app. Or, you know, Foundry Local or OLAMA. And then just throw a couple of problems at
+it. And if you like the answers, then maybe you can do some coding on an airplane. One thing we
+haven't really talked about is these agents or this RALF loop. So, I believe in a lot of cases it
+has full access to your computer. Is that correct? That is 100% up to you. So, for example, if I
+were to fire up Copilot CLI or Claude in a folder on my machine, if I just made, you know, C colon
+temp, Jeremy, Copilot, it'll say, do I have permission to open this folder? That's the same thing
+that you get when you open it in Visual Studio Code. And it's like, do I trust this? Are we cool?
+No. So, that's preventing it from accessing that data. So, there's basically three things that an
+agent can do. Can it access a URL? Can it access a tool? Or can it access a path? So, by default, it
+gets no tools, no paths, no URLs. And then every single time in a session, it will ask you, can I do
+that? And it can be very annoying. And you say, yeah, you know, I'm going to write a website for
+Jeremy. Go and do this. And it'll be like, oh, can I Google for stuff? Yeah, go ahead. Fine. Okay,
+now I have access to Google. Okay, cool. Can I write the HTML file to the disk? Is that cool? And
+it'll show you what it's about to write. And then you say yes. And then at some point, you'll say,
+well, yeah, you can just write to the disk for the rest of the session. We're good. Stop asking me.
+And then you build up this knowledge base of what it's allowed to do and what it's not allowed to
+do. What people are starting to do is they just go dash dash YOLO. You only live once. If you fire
+up an agent, dash dash YOLO or allow all tools, and it's running as admin, it's running as you. So
+then you bring in things like sandboxes. You could use Windows sandbox. You could use Docker
+sandbox. You could use WSL. A lot of people are really enjoying WSL on Windows. And then you can
+unmount the drive or you can use Docker and use volume mounting. But simply running it in a
+container isn't security. It's one layer of security. Like a true sandbox, if you're going to run
+this like a bank, you're going to have auditable, governable layers of what it's allowed to do, what
+functions, what syscalls it can make, et cetera. So I think we are in kind of YOLO mode. But no, by
+default, they do not have access to all of your stuff. But if you ran it in a loop in YOLO and went
+to sleep, like I've got a 3D printer. Do you have a 3D printer? Like as a general rule, 3D printer,
+people know not to leave the 3D printer on when they sleep because it could burn your house down.
+And there's always somebody that ends up doing that and they get spaghetti when they come home and
+it's just all over the place. And it could, you know, it could cause a problem. So I don't leave the
+house when the printer's going and I don't leave the house when I have a YOLO Ralph loop running.
+But in general, I suppose it sounds like when you are going to use these tools, you do put it in
+YOLO mode and maybe hope for the best? No. Well, if I'm standing in front of it and I'm actively
+doing it, usually I'll say like allow all tools because I know the tools that it has. I tend to lock
+them down by path. So for example, I'm in D GitHub Open Live Writer. It can go ham on anything from
+there down. It can talk to anything on the web and it can talk to anything from there on that path
+down and it can call any tool. I'm sure it could decide randomly to format my hard drive, but it's
+not running as admin, so that would fail. I suppose it could randomly have a reason to go out and,
+you know, hit the internet somehow and do something problematic. But again, it's working on one
+specific thing. The loop that it's doing is looking at a log file, running a compiler and doing it
+again. That's different than ClaudeBot or now called MoltBot, which is a basically Siri as a Ralph
+loop running on a, you know, a server somewhere or running in a background session. But yes, you
+don't know, but giving it access to like your source code and having it, you know, if it deletes it,
+then I'll just go and get reset and I'll get it, you know, I'll get it back. I've had it do dumb
+stuff. I've had it push when I didn't want it to push. I've had it commit stuff. And then I just
+undo and go back to running. I always run them in Git. I want to call that out though. Like I always
+have source control because if it makes a mistake, you back out. Yeah. Cause I was thinking of the
+example you gave earlier where I believe it was looking at processes and killing them and things
+like that. Oh yeah, that's a great example. So to me, it seems like it must have quite a bit of
+permissions if it's able to do that. Well, so when it runs as you, it has all the permissions that
+you have. So for example, the loop that I'm running over on this other machine, I told it that it
+can fire up the windows app, save the pid of the app that it just ran, and it can kill that pid. It
+can kill that process. That doesn't mean it couldn't accidentally kill all of the processes. And I
+have one time two weeks ago had a clawed code kill itself by doing a stop process. And it was a
+little bit too, you know, star dot star. And then it woke up and it's like, what happened? How long?
+It literally said, how long have I been out? Wow. Which I thought was crazy. It literally is like,
+how long have I been awake? You know, and I said, check the markdown file, see where you left off
+and keep going. And it, you know, it picked it up, but it basically bonked itself on the head with
+its own hammer. And that's not a guarantee. So then the question is, is it a sandbox to put in a
+markdown file? Hey man, don't do that. No, it's not. That's obviously not a sandbox. So that's why
+running it in a container or, you know, running it in WSL or whatever, you know, and that's
+nonspecific of any operating system. If you decide to double click on a batch file and it does
+something stupid, I don't see that as being any different than running an agent. The only difference
+is the ambiguity, which gets us back to the beginning of the conversation. Ambiguity loops are
+ambiguous. Yeah. Yeah. I mean, I could think of an example of if you're giving it access to the
+internet and maybe it downloads a utility, I think it's going to help. That's a great example.
+Downloads a utility that your company hasn't okayed and then suddenly you're in trouble. Right.
+Yeah. And I think that the difference between making a toy application that plays with your blood
+sugar in your spare time and working at a bank are different. So yeah, I would not go running
+anything like this, you know, in YOLO as admin in a bank. Makes sense. That said, if it's your
+machine and you know what you're doing and you have this folder and down, there's a lot of power in
+this. And the nice part about it is that it's a slider bar of good, better, best. You don't have to
+say, it's not between bother me all the time and YOLO. You can give it and you can do this as a
+team. Like the whole enterprise could roll out. Here are the five approved tools. Here are the six
+approved websites. Here's the skills.md that we're all going to use. We check it all in with the
+repo and everyone's on the same page. I had an interview with Brian Cantrell. He's the CTO of Oxide
+Computer. Yeah, yeah. I was on Oxide and Friends. Oh, nice. And one of the things he mentioned with
+working with large language models is he thought it was really advantageous to use strongly typed
+languages like, say, Rust, because the model is able to verify when things are not correct just
+through that compile step and through the design of the language. I wonder in your impression, like
+whether you found that true for yourself, like are there specific languages that work better when
+using these agents? That is a very good question. I think that is a good opinion by Brian and as a
+general rule, I agree with it. But I would argue that in lieu of strong typing, one overcompensates
+with tests. So correctness is what Brian is arguing for and that is valid. If I am using Python like
+I am for my blood sugar thing, having 200 tests make me worry less about how Python compiles or
+doesn't. With my .NET application, I have fewer tests, but I've got 419, I'm looking at this 419,000
+lines of code and it all compiles. But compilation doesn't equal correctness and strong typing
+doesn't guarantee correctness. So I would say I mostly agree with Brian. But if you go back to fear-
+driven development, if you're afraid of the code, you don't have enough tests. So I write tests
+until I'm no longer afraid, regardless of language. I would say I am picking the right language for
+the environment, not picking a language based on whether it's strongly typed or not. Probably a
+similar philosophy to when you're writing the code yourself, even before these tools. 100%. Although
+I am finding myself writing more code in languages that I don't know because it's the right
+language. Like, not everything has to be a .NET application that's like a complete self-contained
+cross-platform thing. Sometimes 100 lines of Python is fine. Yeah, I think that would be an
+interesting shift for people because I think there does tend to be people who they know, let's say
+they know JavaScript. So they go, okay, I'm going to write everything in JavaScript or Node or
+TypeScript. And maybe this removes some of the difficulty in getting started. Let's say Python as an
+example, if you're working on something in the machine learning space, even if you're not an expert
+in Python, these tools can help get you there. Well, like the blood sugar thing is meant to be a
+skill that is plugged into an agent. So you put it in C users Jeremy copilot skills or C users
+Jeremy clod skills. So I did it in Python because it's like one file, one markdown file and one
+Python file. And you have Python and I have Python and it works. I could have made it a .NET
+application. It would be larger. It would require a runtime. So that wasn't necessary. So I used
+Python for portability. Even though I don't know Python, I'm confident that it will work for you and
+it'll have a good experience. But, you know, like I might have, we're trying to think which one of
+these is a .NET application. Like my Live Rider application, I wouldn't do it in anything but .NET
+because that's what it's good at. So pick the car brand that is going to make your trip the most
+delightful. I'm definitely focused on delight right now. I think that's a pretty good place to end
+it on. But is there anything else that you think we should have talked about or you want to mention?
+I just think that it's a funny moment that we're in where people who are crafts people are worried
+that the craft will go away. And I hope that it is just that the toil will go away. But the craft
+remains. I am having a blast. I hope I will be having a blast this time next year. Maybe we'll chat
+and see how it turned out. All right. You mentioned you have a podcast. You actually have many
+podcasts. If people want to check out what you're up to, where should they head? Just go to
+Hanselman.com. Hanselman.com, my last name. If there is a tariff on podcasts, I'm afraid I will have
+to pay the tariff. I tend to yap and I apologize for that. But Hansel Minutes is my podcast. You can
+get to it at Hanselman.com. It's been around over a thousand episodes over the last 20 years. And
+then I have a new podcast with Mark Resinovich, the CTO of Azure, where we learn something new every
+week. It's called Mark and Scott Learn Too. So those are two that people can check out. Yeah. I
+highly recommend both of those. It's also amazing how long you've been doing Hansel Minutes. I think
+it's been, you said over 20 years, right? Yeah. It's been a minute. It's been a minute. Every
+Thursday for the last thousand plus episodes. It tries to showcase faces that you maybe not
+ordinarily see. There's like the same three or four people that do the shows and I'm guilty of that.
+But there's a lot of cool people doing a lot of amazing work. I recently had a lady who is the IT
+manager of the Philadelphia airport. And I learned all about how airports run. And like, you don't
+see folks like that on a podcast. That's amazing. So yeah, definitely showcasing people that are
+doing great work. Very cool. Well, Scott, thank you so much for coming on Software Engineering
+Radio. Yeah, it's good to see you. This has been Jeremy Jung for Software Engineering Radio. Thanks
+for listening. Thanks for listening to SE Radio, an educational program brought to you by IEEE
+Software Magazine. For more about the podcast, including other episodes, visit our website at se-
+radio.net. To provide feedback, you can comment on each episode on the website or reach us on
+LinkedIn, Facebook, Twitter, or through our Slack channel at se-radio.slack.com. You can also email
+us at team at se-radio.net. This and all other episodes of SE Radio is licensed under Creative
+Commons License 2.5. Thanks for listening. Seскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихскихски
+хскихскихскихскихскихских

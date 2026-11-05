@@ -1,0 +1,496 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: ⚡️ Ship AI recap: Agents, Workflows, and Python — w/ Vercel CTO Malte Ubl
+DATE: 2025-10-31
+SHOW: Latent Space
+LINK: https://www.latent.space/p/ship-ai-recap-agents-workflows-and
+AUDIO: https://api.substack.com/feed/podcast/186621804/eee921a9e6f09da380d9a6c756023e6d.mp3
+DURATION_SECONDS: 2522
+TRANSCRIBED_AT: 2026-08-04T20:43:40Z
+----------------------------------------------------------------------
+All right. We are here in the remote studio. Thanks again to F.Ink for learning us this space with
+Malta Ubo, who is CTO of Vercel. Welcome. Hey, how's it going? Glad to be here. Did I get it right,
+Ubo? I've actually never pronounced it out loud until just now. That was completely perfect. It
+rhymes with Google. Ah, okay. So perfect that you worked on search at Google and AMP and Wiz, which
+I think still people don't know enough about Wiz. It is like no longer a secret, but yeah, you can't
+use it. So like, unless you work at Google, in which case you probably know what it is. Otherwise,
+there's no reason to really know. Anyway, suffice to say that you are responsible for a lot of the
+web as it is today. So thank you for spending some time with us. You're also obviously now building
+the next web, as we say, with Vercel. And we can cover framework-defined infrastructure. I think you
+probably saw I have a lot of interest in self-provisioning runtimes. We can cover V0. But here,
+really, this part is recorded right after you did Ship AI, which we're trying to sort of recap,
+right, for the general Lanespace audience who may not be watching Vercel as closely as I do or you
+do. So basically, just generally, what I guess is your message to the broader AI engineer audience
+on what Vercel is doing with AI? Yeah, I think the super high-level view is that what we're really
+trying to do is we're like the biggest fan of the AI engineering movement. And we are also fans of,
+you know, we're not just like going super hard on hype and the big ideas and talking about things,
+but like being very concrete about like, you know, agents are very exciting and you can actually
+build them, right? And so I think our entire conference was about both making that easier, right,
+and discovering the right abstractions as we're kind of figuring out what people actually want to
+do, right, which is emerging as we speak. Then the way Vercel always does these things is by
+building things ourselves, right? And so that is both in terms of products, so agents that are
+products that you can purchase from Vercel and stuff that we do basically in our back office to make
+our own operations more efficient. And so this kind of building of apps lets us ground kind of what
+we do in that reality and then, you know, kind of extract the abstractions that we feel are really
+helpful to then put that on the road. And I think the probably most talked about thing that we
+shipped at the conference was our new workflow development kit, which really, really is just a way
+to make writing like workflows like very idiomatic as something that just becomes kind of first
+class and something you do every day. You think about it, you know, write 15 design docs just
+because you want to one of them. It's just something you do literally every day. I think like since
+your audience also more generally like in the thing, probably like listening to what people talk
+about, I think that's what I've talked about our workflow development kit, but also like more
+generally, like what are workflows? What are agents? How are they related? Do you use one or the
+other? I would actually love to talk about that as well. But like obviously, like in our conference,
+we basically introduced just like what we hope is by far the easiest way to make your, you know,
+make your agents something that is easily embeddable into complex workflows and to make those
+workflows durable, zoomable, and so forth. Yeah. I mean, as listeners might know, I have a long
+history of workflows at Temporal. And I think what's weird is a lot of people are discovering this
+for the first time. You don't really learn about this in CS classes. You don't really learn about
+this in like bootcamps or anything like that, because it's not really a unit of compute and storage
+that is taught. It's kind of like emergent from, you know, Uber and like Stripe and everyone else. I
+don't know if there's a version of this at Google. I mean, there is, there's a version of this at
+every single company that has been doing anything in computer since 1950. Yeah. Like, but what's not
+necessarily the case is that it has been abstracted in any way. Right. But like when I, when I run
+a, you know, bank transaction system in 1975, then I invent this. Right. Maybe I'm in pure batch
+processing world and I kind of avoided it. But, but the reality is that I built this. Right. And so
+I either, I use something very productized, which, which obviously Temporal innovated on that being
+a thing, or I use something that's ad hoc. Right. So I go and say, well, I need, I need some kind of
+queue that tracks the work and I mean, I need a database to store the state at any given point. And
+I, I don't know, maybe I write a con job that makes sure that the stuff on the queue doesn't get
+stuck. Right. And so I, like, I think what's extremely common in essentially every transaction
+processing system that has ever created is that there either is an explicit abstraction for
+workflows in it or someone made one ad hoc because otherwise the thing just doesn't work. Yeah.
+Yeah, totally. So the headline thing for people who maybe haven't dived into workflows enough is
+that you can sort of wait and resume code. So it's, it's as though the serverless function is kind
+of indefinitely long running. Like literally you can run an infinite loop inside of your serverless
+code. And that breaks a lot of people mental model if they don't really understand that the code
+pauses and resumes and you can wait multiple days and it doesn't matter. It doesn't cost anything.
+Actually, I don't know if it doesn't cost anything. Maybe I don't know if you charge. No, it
+literally does not cost anything. So yeah, you can, you can run compute for infinite amount of time.
+You can then also whenever like one of these steps fails, automatically retry them, stuff like that,
+that makes things more reliable. Yeah. And so like it, it has a lot of parallels to long running
+orchestration problems for agents. If you want to do human in the loop as well, it's a simple task
+of waiting for what's the API that you guys have. It's not, I want to say signals, but you have
+something like resolve webhook or something. Yeah. I think we, it's a little bit, it's similar to a
+signal, but like the idea is that you basically, you make a webhook, like an ephemeral one, which is
+just a URL that you can ping. And then, so the, the realistic flow would be you'll reach that step
+where you want human approval. You know, let's say you're, you write, you get the webhook URL and
+you write it to some database. And let's say the user now, they lock into their computer two hours
+later, they have a queue of things they need to approve. That's from the database. They click on
+one, they say approve. Now what just happens is that that system now calls that webhook. And then
+from the, from the perspective of the workflow that you originally implemented, you were now able to
+await that webhook and now it resolves and you can just proceed with the program. Yeah. It's, it's
+very elegant. I would say that it eliminates some complexity that we introduced at Temporal and
+that's probably for the better. Um, uh, and the other thing I think it just obviously as someone who
+is like in this space a lot and like, I've seen all the solutions you, you made, you made it open
+source, which is another above and beyond thing. You could have made it proprietary, but you didn't.
+Yeah. The, the way we think about Rosal, I think we, I mean, I don't want to go too deep into that
+tangent, but I think about open source as having essentially three business models. Okay. The first
+one is Red Hat where you just sell support. You think it's open source. The second one is open core
+where you are the only one that gets to monetize it, but everyone else gets to run it if they want.
+Right. Right. And, and Vercel maybe has not invented this, but certainly kind of is the most
+successful at a model where you say, okay, I have this software library and it's truly open source.
+Everyone can run it. It comes with like adapters for every place on the planet. And that makes it
+really popular. And then we get a piece of the pie. And so our strategy is to grow the pie. While
+what we actually see is that our pie piece is relatively constant size in proportion to the pie.
+Right. And so we can drive the open source project. And so that's why I like, you know, I don't want
+to say we're like, you know, we're, we're in it for the, for the business model, but like, I think
+it's a business model that has more winners than the, the alternatives. I think also something that
+if people are seriously evaluating for production workloads, they care about because, and I ran into
+this in temporal, like these are going to be extremely valuable workloads that you're going to put
+on workflows. And so you want to, you want to, you want to set, you want some ownership, you want
+some auditability in practice, like who's going to actually run it themselves? Probably not. But you
+want the option. You want to check, you want to check the checkbox. A hundred percent. Yeah. And I
+actually do think people will run it themselves and that's great. Awesome. So that's workflows. By
+the way, I think the most disgusting is the use of directives, you know, use cache, use no memo, use
+Nemo, use whatever. So fun. So fun. What's your, I don't know if you have a take on directives in
+general. I don't, I, to be honest, I don't feel super strongly. I do find in particular, inside of
+the workflow DevCube, I find the use pretty elegant. And I could imagine, I could imagine other,
+other ways of doing it. I think we, we did post a blog post about like all the alternatives we
+considered, because there are some that are like, that you would think about after five minutes and
+after two hours of thinking about it, you realize, yeah, maybe this isn't such a good way to do it,
+but there could be other ways of doing it. Like, I think we're working with CC39 to bring decorators
+into more places, which would kind of make this literally the same. The same thing would happen.
+Above the function instead of below the function. So it's not a big difference, but it would become,
+you know, for example, you, you could make it part, like TypeScript, be aware of it without a
+TypeScript plugin, which you already provide. Right. And so I literally, I was vibe coding this
+thing on Sunday and I said, okay, Claude, you have no idea what use workflow is because it came out
+on Thursday, but here's the docs. And by the way, you know, put it on my side and yeah, so I did it.
+It installed a TypeScript plugin for me. So I had like the perfect DX and it just worked from
+scratch. So that, yeah, it was great. Okay. Awesome. So we can come back to a workflow anytime you
+want, but I just want to keep moving on, on like all the stuff you announced. We should probably
+also just touch on the ISDK. I know you're not like as closely involved to that team, but obviously
+one of the most successful open source projects. I mean, obviously Versailles is very good at
+frameworks, but I think it was not a given that ISDK would be a winner because of Langchain, because
+of Mastra, because of, you know, everyone else trying to get that spot, except that you guys have
+the perfect package name. So, you know, I think that helps a lot. I actually don't, I'm not sure how
+well, how much that helps, but it's great. Like there's a, there's a fun background from what people
+thought AI was for 10 years ago. But yeah, I think, you know, we, we announced version six beta and
+I think the, the big, I mean, it's not really news because these things are open source and you can
+follow them very closely. Right. But what it does introduce as a stable feature, because it's
+already as kind of experimental in ISDK five is a direct agent abstraction, which so far wasn't
+there, right? People would build agents with the ISDK, but they would have to do it in a bit more
+Baybones fashion. What I do want to mention is actually, cause you mentioned it's very successful,
+which is true. And I think the, the, the reason why it's successful is because we could strain
+ourselves to be humble about what we know our users might want to do. The example I would like, I
+like to give, like if when you build like a new web framework in 2025, you know exactly what people
+are going to do. Like the, the, the, it's such a well explored, like explored space as the person
+doing it probably has done it three, four, five times in their life and failed and, and, learned
+from that and, and tried the other things, right? There's, it's so mature. Like it's the most mature
+thing. Even 10 years ago, that was also true. Right. That's why next year is so good because when,
+when Guillermo started building it, he knew exactly what to do. He knew exactly what the app would
+be. Almost nothing has changed. So the AI app space is the absolute opposite. Like we know
+absolutely nothing. And we still know absolutely nothing. Things are emerging, but like, but it's,
+but we're so early. And so if you put a very thick abstraction, then it's probably going to be the
+wrong abstraction. You have to, so you have to be humble and say, okay, I need to stay low level so
+that this can be flexibly used as trends emerge. Right. And so that's why we didn't have to rewrite
+AISDK when everyone went from writing chat bots to writing agents, because the, we stayed at a level
+where that, you know, almost looked the same. Right. Just stuff people wouldn't on top. And I think
+that's why, that's why it's successful because it doesn't, you know, we didn't say, okay, we know
+what the apps are going to look like. And we're going to do this like Hollywood principle. Don't
+call us. We call you style framework. We're like, you just have to fill in the blanks. It's super
+structured. You'll be happy. Right. Like we didn't do that, even though that was like, so in our
+DNA, like we did have to like really restrain ourselves, but like, that's why it's successful
+because it's so low level. Right. And so that's why, you know, on the other hand, you know, that's
+why we don't have an agent abstraction yet. Like every other competing library like leads with that.
+Right. Yeah. Like opening eyes SDK day one. Exactly. Master, et cetera. And, you know, I mean, I'm
+not saying it's bad, but obviously that's, that's more accessible right now. You know, you have to
+understand an agent's tool with a loop. What do I do? I use the stream text function and gives it,
+give it tools. Okay. We added all kinds of like control already in the SDK version five, where you
+can prepare the step. You can select the tools on every loop that you can, you can like do all the
+all these things in a pretty advanced fashion. Half of those other frameworks are built on top of a
+SDK anyway. Right. Like, so that it forms the basis. And so what we're doing now is we're bringing
+what is emerging as the patterns that people built over and over again into as abstraction into the,
+into the library as these, as the usages kind of are solidifying. Yeah. One, I have interviewed
+enough agent framework builders and model and big lab model people that I actually find that I can
+push back on you. Okay. Go ahead. It's, it's, it's really interesting because I think you are
+saying, basically you're saying we will be at the jQuery where they kind of at the jQuery era,
+right? Like we are, we're, we don't know what we want yet. We're building all these like tools to
+make our, the smallest possible things easier. And then it composes up and we're just starting to
+emerge of agents. I would say that the big lab people are obviously the opposite, but they're not,
+they're coming at it, not from like a DX point of view. They are, they're very big model pills. They
+want everything to go through the model. The reason they want the Hollywood principle of we'll call
+you is because they want the model to control the tool calls, the reasoning, what have you. And I
+feel like there is a, there's a mentality. Obviously you can have frameworks that do both, but
+there's a mentality in the big labs. If you work to big labs that you always want to give the wheel
+to the model. And then for you guys as framework developers and people who are software builders,
+it's more comfortable to build like the, the, the smallest possible thing instead of like the, the
+sort of AGI thing, if that makes sense. Yeah. I actually don't think about it in, in, in those
+dimensions. I think the, like, cause I a hundred percent agree that like people are, I think have to
+be willing to let go and let the tool, sorry, let the model kind of take control, right. And to, to
+get emergent behavior and certainly on coding agents that works incredibly well, but that, that I'm,
+I'm totally on, on, on, on point with, right. And that, that's AISDK does this very well today. Like
+all the agents that I've personally built work like this. That's not the same, but it's, but the
+other thing is like, how do I now embed this, this intern application, right? Like the model labs
+couldn't care less because they're not really building applications. And so that's, that's something
+that a company like Vercel thinks about a lot. Like, again, what, what do, what does the developer
+actually want to express and how do we let them do it? And so like, I think one of the key things
+that, that people want it and so want is they want streaming because these models are slow. And so
+suddenly this almost obscure sub genre of programming where people are like, you know, it's five
+milliseconds. I'm just going to not ship it. Right. Suddenly it's 30 seconds and you, and it becomes
+absolutely important. And so we give people the tools to get, to build streaming applications in a
+way that feels intuitive. Right. And I think that unlocked a lot of like value there because that
+was like genuinely hard and, and we made it easy. And so that, those are kind of the things that
+we're looking for, but that, you know, are not obvious when you're kind of mostly concerned about
+the AI part. Fair enough. And I think like the design space is, has more dimensions than what I
+tried to simplify it down to. Just, I'll just one more thing on AI SDK and then we can move on to
+like the other agent stuff. And obviously you guys announced so much. It's so hard to cover. Sure.
+So Vercel is a, like a house of frameworks, right? You have so many framework authors, all of them
+legends in their own right. What's one, I guess, philosophy that you're also applying from your, all
+your years and all your people who work on frameworks, right? That, that, that is, that is informing
+you. Um, I have one and feel free to counter propose, uh, which is what Sebastian, uh, Mark Boga,
+who's, uh, obviously the tech leader of react is used to say, which is have a small API surface
+area. I feel like that has maybe been like not as important or like there are other overwhelming
+priorities, but I just want to get a sense of like, you know, what governing principles really
+resonate with you. Yeah. I, I mean, seven, I, I talk about this a lot, but I think the, I'm often
+representing the, the kind of enterprise side where it's like, no, but I actually want to just
+control this. Give me one API for this. Just one more, bro. I, I want to be like, you know, in
+control and I want to be able to configure it. And I want to like define the, the control, the
+defaults the way I see it. So I think, I mean, but it's good to have like tension around these
+things. I think the, the thing that, that like coming down from Guillermo is just the absolute
+founding principle of ourself is that we never give you an abstraction that we haven't used
+ourselves. Like dog footing is ultimately the thing, right? Like that, like AISDK was extracted from
+V0 and then we build it and we kind of diverged a little bit. And then we took on the, the, the
+substantial work to bring back V0 actually fully hosted on AISDK. And then we learned back and we
+made sure that migration isn't too hard, which the users appreciate as well. And so, and so forth.
+Right. And so there's this, there's this constant feedback loop where if you don't have that, which
+is like, this sounds like so obvious, right? But the, the reality is that framework builders are
+usually not application builders. Yeah. And so they built ivory towers that when they're hyper
+geniuses or they get lucky, they happen to be good. But like, but, but if you want to do this in a
+reproducible fashion with a high hit rate, then the only thing you can do is you, you have to, you
+have to try that stuff out yourself. And like, that's what we do every day. I really like that
+principle. Obviously a good idea. It's just very hard to practice in real life, obviously, because
+when you're a maintainer of a framework, a lot of bugs come to you and you know, they pile up and
+you have to spend some time working on framework level issues. Happy to move on to Versailles agent
+and maybe the agent on every desk program, which, you know, I think you're, you're kind of also
+championing. So like, yeah, let's talk about the use cases that you guys use internal agents within
+Versailles and what emerged. Yeah. Let's, let's structure this two ways, because I do think there's
+a difference between kind of the agents that we're building internally versus the stuff that that's,
+you know, externally a Versailles product, right? Yeah. And which you can, we actually can use
+today. We, we think. I thought they were the same thing. No, they're not the same thing. That's
+actually, it's, I think that's quite, quite important. Right. Like we also, we're distinguishing
+between like agent as a service. Right. And so the Versailles agent, that's what it is. Right. It's
+ultimately an agent as a service product similar to, you know, codecs in the cloud or the cursor
+agent. Like not, not, not as in like, it's the same product. Right. But as in like, these are things
+where you go somewhere and you say, I would like to use this agent. And then, I don't know, maybe
+you give them a credit card and it works. Right. Which is different from the stuff that we run
+internally. But let's talk about the Versailles agent for a second. Like we, we've been, basically,
+I think our strategy overall is to have an agent that helps you build applications on Versailles.
+This is, you know, there is some overlap with coding agents, but like, I think the, the thing that's
+unique about the Versailles situation is that because we have, we have your runtime data, we have,
+we see your error logs. We know where the preview deployments are, that they always will exist. We
+know how to start the dev server. We already have the secrets. So there can be like a quite, quite
+integrated solution for something that otherwise can be quite hard. Right. If you have an onboarded,
+for example, I mean, you have onboarded Devon a few times, but you probably have, you know, been in
+that situation where it's like, feels like onboarding a junior employee. Right. And so some of these
+things, like if you're within the Versailles ecosystem, become much more simple. And so in that
+world, we are, we've, you know, we've, we've been shipping away on different things, right? Like a
+while ago shipped a code review agent, which I think is, is, is really good and well integrated. And
+the thing that we announced last week is our broadly DevOps agent, which is actually tied to our
+anomaly detection system. So whenever there's anomaly that we detect on your, on your production
+site, it kicks off the agent and the agent does an investigation of what's going on. From a
+technical point of view, what this agent has, it has several tools. It can, it can make any
+observability query against your project. So as a query builder, it can execute the queries. It has
+a way to read logs, obviously with another, with, with queries as well. So what's, what's really
+magical is that it's, it's just very good at this. Like it, like by the time you click on the
+anomaly, it will like almost all the time, just very precisely tell you what happened. It shows you
+all the graphs that I looked at. It just like, I don't know, man. It's just so much easier than
+doing it yourself. Like it takes away certainly minutes of work. But I think what I'm actually very
+excited about, and I think this is an overall pattern that, that, that we see with, with agents is
+that there in many situations is this, what we in search call, recall precision problem. And that
+also happened with anomaly detection. With anomaly detection, you have to tune it, right? And you
+either tune it to be very aggressive and then it fires on you. And the worst case, it pages you in
+the middle of the night and nothing was wrong, right? Just a team in Asia sent a newsletter. And,
+and so the traffic went up, right? Or you tune it not like aggressive enough. And so you miss
+events. And with an agent, you can just say, okay, I'm actually going to have this tuned very
+aggressively. And I'm not waking anyone up. I'm, I'm telling the agent and the agent can take two
+minutes to run. It's actually fine with that because no one would have reacted in that amount of
+time in a very reliable fashion. And now it can actually look at a time series, can look what
+happened. It can look at the IP addresses that, that are making the request. It can look at the type
+of error messages, right? And it can make it like a call, whether to escalate to on call and wake
+someone up or to say, okay, this is completely fine for someone maybe to take a look next day, which
+is, I think, the perfect decision for agents to make. And so that's, that's something I'm very
+excited about that you have this like essentially co-worker that has no sleeping problems in the
+loop and, and they get woken up instead of you. Yeah. I think the dream of AISRE has been a long
+time coming. And I'm actually on the record at the start of this year, I made a podcast saying like,
+oh, I don't think anyone's going to do AISRE. So I'm very excited. I haven't tried it out
+personally. I have seen you tweet about it. And I think, yes, obviously that is the goal. There's
+the dream. We should not, we should have make Brian Johnson happy and have good sleep. Yeah. You
+know, we're, we're not, we're not exactly there yet. And I think like the, the question is really
+fold, which is time series analysis is not exactly within a distribution for language models.
+There's been a lot of people doing like time series models. There's a lot, there's a deep field of
+anomaly detection, which is basically what you're doing. And, you know, there's a question about
+like, is this a solved problem or, you know, like how much can we trust it? And, and then I think
+the other one is like aligning the human preferences, right? Like sometimes like, I don't know until
+I've seen a few examples of like, oh yeah, this one, you should wake me up. The other one, you
+should not. And then pretty much like when I solve the problem, you know, it goes away. So like the
+next problem, you're always fighting the last war in SRE. So I give you, I give you a bunch of
+things. You can take whatever you want. I think that the, the, the, like you have to try the
+product. It works, it works really well. The, the, so we don't do the anomaly detection in the LLM,
+right? The anomaly detection is as, you know, it's a separate part for cell products. It's a
+completely separate part. It's our, it's a pipeline that works in our time series database, right?
+And, and launched independently of this. And so, but once you have this, the, so our experience is
+that, you know, if you give these agent a tool that does queries, it's really good actually at
+digging into individual parts of the time series. And the other thing it has access to is logs and
+logs are actually, they're just text, right? So if you say, if you see from the time series, like
+what, what happened, can I somehow figure out like what this is? And then you head over to, to logs
+and get, do a deeper dive. Now you're kind of more in the, in the world where the, where the model
+is comfortable. One thing that we don't do today, but we'll do in the future is that we also give
+the model X, that particular agent access to your source code so that it can, first of all, figure
+out like, what does the error message mean? Right. And every time you can actually make a PR to just
+fix it. But every so often that'll be possible. And so it would, would then also do that. Which is
+why I think like people like Datadog and Sentry are trying to do that, obviously because they're
+observability platforms, but they never own the code. And so like, they're always limited in what
+they can do, you know, like, and a hundred percent. But also like, I mean, I mean, what I want to
+qualify where I'm so happy about how well it works. It's like, you know, it's just a small part of
+the overall problem, right? Like we're actually not here to like build the AI SRE that replaces that
+job function. Like that's another part of what I feel pretty passionate about that it's at this
+moment, they're like agents are both extraordinarily effective and still very ineffective. And you
+have to find, you have to find the right problems. And then when you find the right problems, they
+are super magical. And if you wander beyond, then they don't work. And so like, that's the magic,
+right? And what we see is that getting triggered on like an increased error rate works well. And
+certainly making the decision what to change in the firewall. I would not let the agent do that yet,
+right? It's just too dangerous. Or do DNS migrations. Exactly. That would be AGI. Yeah, it's
+interesting on all that stuff. Yeah, I mean, I think that there's this growing consensus of like
+where agents are doing well and where agents are not. I think, you know, for me, like meeting notes
+are solved, you know, like simple, like UI changes are solved. I guess like what else, you know, in
+that list of like things that are solved that are reliable every day, what do you put in that
+bucket? Yeah, I think they, so I had a section in my keynote about this. And like, it boils down to
+this question, like basically where the idea is that you go around your company and you'd ask people
+like, what do you hate most about your job? And I really think it finds the sweet spot because it
+finds problems that are, they're boring because they're tedious and repetitive, but they're, you
+know, they would have already been automated if they were automatable without an agent. In many
+cases, they often like do require some kind of text, like mini judgment, et cetera. Right. So like
+people, people do these things. And so that, that's, I think that, that, that question that, that's
+yields a sweet spot where like this, the problems are probably easy enough for, for a current
+generation agent to handle. And they're also often very high business impact because this is
+actually pretty substantial part of people's jobs. Again, that's why they hate it because it's like,
+it takes so long. And so we, we ended up at our conference talking about three agents that we built
+internally, two of which we open sourced. Again, so people have a starting point because these are
+custom agents, like they're not, they're not software as a service things that you just install. So
+these are custom agents. But like the, the first one is one that handles processing of our incoming
+contact sales requests. Lead qualification. Yeah. And that we, there are obviously a lot of startups
+in that space, right? Like, so I think that's, that's very much in the, in the, in like the soft
+case where like you give it a tool for LinkedIn, you give it a more generic tool for Google, give a
+bit of an objective and like dequalify, like how, what do you, what do you care about? Right. You
+give it a, like a way to analyze, oh, this is really a support request. Okay. Hand it over to the
+support team. Right. Like there's, there's a few cases like that. It's not so complicated. So that
+one is, I think is, is perfect. And we open sourced that so people can make their own. The other one
+that we falls into a similar category is abuse analysis. So we get abuse like reports. And so in
+this case, it's really the agent essentially doing the pre-work. So we still have a human person,
+like look at the pre-work and then make the decision what's to happen, what happens in the end. But
+what were they going to do? They were going to go to the reported website, right? They were going to
+go look at the account and figure out how, what the age of the account is. And they were going to
+see if they paid their bills and, you know, whatever, right? Like that's a stuff, there's a list of
+things they will do. And so what you can do is you can just make it so that when they eventually
+look at the ticket, it already has all this information. And if the page looked like a Facebook
+login page, then a current day LM is also able to do that, like make that address from call. And
+then you just quickly check if it's okay and you move forward. Yeah. Amazing. And I think there's
+one more data analyst agent. Yeah. Yeah, exactly. I mean, this is also something we just wanted for
+ourselves, right? Is to do. We have one to do internally. Yeah. Yeah. Like, and I think it's, it's,
+that one, that one's also open source. I think the idea is that, yeah, you want to, you want to ask
+questions against your data warehouse. And we were very unsatisfied with the current solutions
+because they ultimately didn't have access to enough information about the data model. And like, we
+are not promising that we have the magical tool that you get, you give you your, your prompt and it
+spits out SQL, just access your schema. But we get, we essentially develop just a structured way to
+document the semantics of your data so that then the agent is good enough. Right. And so we've been
+using that internally quite successfully. Amazing. So yeah, for, for those who don't know, Rysel
+also has an agent on every desk program where you can sort of reach out. And it's, is it like a
+forward deployed engineering situation where like you have like a SWAT team that comes in and helps
+people? Yes, I think that's, but it's also not appropriate for every company. Right. So I think the,
+like my take is that it's, if I'm a large company, I have a lot of efficiency to gain, but it's also
+quite daunting to, to ship my first agent. And so something like a forward deployed engineers, which
+we are doing indeed, like does help quite a bit in that scenario. I think like as a startup, I don't
+want a forward deployed engineer in my office. I just want to see the open source project and, and
+feed it to cloud code and then give it my own problem and say, there'll be something like that. But
+like, here's what I want different. And, and that should also be successful. Right. So I think we,
+we are kind of with this particular program, really going for just unblocking people who feel that
+they just don't know what to do. They hear the hype, right? They don't know how to pick the right
+project. We talked about this. Like how do you actually find the project that's going to be both
+successful and high impact? And, and then secondarily, okay, now that I have the project identified,
+how do I, how do I do it? And I think that they're like forward deployment is effective. It's
+something that I, you know, as a framework engineer, I've thought about all my life where like you
+need to have someone kind of guide you the first time you do something. And then the second time,
+maybe, you know, you build an agent yourself. So we, we don't want to stay there, right? We want to,
+we basically sign contracts. The company is saying, okay, you have to commit to building three
+agents. And if you do, we're going to help you. Like we want to build the first one for you. And
+then the second one, we are going to be there essentially by your side, you know, maybe not
+literally, but like on a phone rotation. Right. And, and for the third one, the assumption is that
+you actually don't need any help anymore and you can still reach out obviously. But, but if
+everything went well, now this is a company that's empowered to build its own custom agents. Yeah.
+You know, you, you're going to be helping your biggest customers and obviously that's going to be
+leading to a lot of good products ideas, right? It's kind of dogfooding at scale with your, the
+people in the Resale ecosystem and not just Resale alone. A hundred percent. You just discover
+things that probably the 500 person startup would not have discovered. But I think, you know, one,
+one last thing, you know, just to, to leave off the whole topic and we can, we can add in anything
+on the, on the ShippeeI side. Actually, anything else on ShippeeI that you really want to cover and
+get us a box about? I don't know if we covered everything. I think like one, one point that we, we,
+we haven't talked about is that we, like Resale as a company just has been investing in Python quite
+a bit. I think maybe the audience of this podcast might be also be excited about this. AISDK
+obviously currently is, is a pure play type script system. We do find Python really interesting.
+What we have done over the last weeks is we have shipped like zero config support on Vercel for all
+the popular Python framework, like Flask and FastAPI. Zero config means that you kind of get the
+Vercel experience where you throw your stuff over the fence and we're going to run it for you. No
+questions asked. And then just as another thing, like we have, for example, also shipped a Python
+SDK for our API just to kind of, again, show that we are engaging with the, with that ecosystem.
+It's very obviously something that, that is in a way new for Vercel, but like we have been making
+hires and, and infrastructure investments to, to, to make Python really well supported on Vercel. It
+is also on our fluid compute program, which gets you, for example, active CPU pricing. So you get to
+run Python in production and you only pay when you have compute and otherwise it's, it's free, which
+is very nice. If your backend takes 30 seconds to respond because it's an AI model. I was also going
+to make the observation that workflows are very nicely meshed. Like it's almost like there's this
+fate that you're driving towards, you know, workflows that you needed fluid compute in order to do
+all these fancy things, or at least make it easy to ship this kind of stuff. Right. Like I think
+there's some overlap, right? Like I think the, the, um, fluid, like with workflows, literally
+nothing's running between steps, right? So it's literally free. That's also why it's free. Cause
+there's literally just nothing happening versus fluid compute, which, which does have the same
+property, except it's, it's more agile, right? Like usually in a workflow, I know you're doing the
+FFmpeg thing, then you're doing the AI model, right? Like you're not talking millisecond latency.
+There's some overhead on each step versus fluid compute being like the VM being literally on, which
+does operate on a different kind of level. Yeah. Excellent. And then on the Python thing, what
+happened to always build on JavaScript? You know, like, isn't that the Brendan Eich line? Basically,
+I think, I guess the, the broader, the non-cheeky question is, are we like 50, 50 Python JavaScript
+now? Is that the future? There's no particular language that will win or, you know, do we, do we not
+have an opinion? I don't think I have an opinion. I saw today that, that like TypeScript is now as
+of today is the biggest language on GitHub, right? Which last year you had to still cope that
+TypeScript and JavaScript is like drastically bigger than Python. Honestly, I, you know, obviously I
+don't really care. I think both communities are very relevant, very large, and we are investing in
+supporting them. Like the way for South infrastructure works, because we essentially just run VMs,
+it is not actually hard for us to support Python. We will eventually do PHP and Ruby, but we also, I
+think, care a lot about the details. And so the, essentially the reason why we haven't done it yet
+is because we do invest substantial amount of time to make the DX actually good and feel native to
+the ecosystem. And so that's why it's like technically easy, but like in practice, actually very,
+very difficult for us to support these, these things. So we're taking it carefully, but like we are,
+you know, there's no technical restriction on our system where we couldn't support all of these
+different ways of running code. Yeah, totally. I mean, that's a very fair response. And the fact is
+that I think when you're a serious AI cloud, you have to support Python. So there's no way around
+it. Okay. I wanted to zoom out. One other thing that we care about in AI engineering is AI
+leadership, which is leadership of AI engineers. And obviously your role as a CTO has changed a lot
+since you joined. What are some, I guess, leadership principles that you've had to, I guess, create
+from first principles? Obviously you're in a very unusual type CTO role where you're in an infra
+company, you have frameworks, you have apps. What comes to mind when I, when I say, how has the CTO
+role changed for you? Yeah. So I joined for sale like a little bit less than three, four years ago.
+And that was definitely, that was before chat GBT. I mean, I came directly from Google and I think I
+had some insights there of what was happening. And, but like, but for sale certainly wasn't living
+in this world. That was kind of the tail end of the last really big crypto wave and, and, and, you
+know, and everything else. Right. And so, so then suddenly the, the AI revolution happened. And the
+thing that I definitely had to walk, like work through is like, how do I transform the company into
+something quite different? And I think the, the solution that we have come to like feels really
+good. And I think there's a lesson there to be learned for companies that haven't done this
+transition yet is that you have to do something that feels native to your company. And so the, the
+two big bets that we made early on, one being V0 and one being AI SDK, I think they felt like native
+to our sale in the sense that V0 was especially originally designed as a, as a tool for, for making
+web pages. Like the full stack stuff came later when, with the sound of models. And originally it
+was very much a web development tool. And the SDK was a framework for building AI apps. And because
+we're a framework company, it felt really native. And I think you, you have to like make that, you
+know, you have to be honest with yourself, like what product, even if I do have to like change to
+building something else does kind of extend naturally from what I'm doing rather than being very
+kind of like being something is entirely different and no one believes me that I would be the right
+place to buy that from. That, that I think that's just generally timeless advice. Have manager to IC
+ratios gone up? Do you know what I mean? Like, oh, that's a really good question. I don't, I don't
+track that very closely. Okay. Think that. It's a thesis. I'm, I'm, I, yeah. I would be supportive
+of it going up. It's a lot, it's a big question. Like the role of the engineering manager. I have
+two reports. Nice. Nice. Right. So like that, that's the way we're organized. Are we, I mean, it's a
+privilege of the CTO that you don't, you know, VPE is usually the people, people managers. Yeah.
+Like, but, but that's actually not, not the point. The point is that it's like the basic, the
+really, the one thing that Google really got right is that it has very strong ICs. It has IC levels
+all the way up. Right. There's Sanjay at 11. And, and the, and so we're doing the same thing. And so
+we had to have someone as an IC at, at the, at the, at the top level. Right. And so that's why I
+think this is another thing that, that you have to be willing to, as a company to live in this world
+where you don't make your strongest engineers have the choice of like not making more money or
+becoming a potentially very bad manager. Right. Cause like there's little correlation from being the
+best engineer to being the right manager. Right. You could be, sometimes you have like these moments
+where, oh my God, like glad we made this change. But like, that's a, um, it's essentially a crap
+shoot whether that happens. Yeah. That's the other thing that I find, uh, obviously a Peter
+principle applies. It's just that, that, that principle of promoting people to the level of
+incompetence. I think the other interesting thing that people are finding is that PMs and designers
+are now starting to contribute more to code because they feel they can just vibe code something. And
+maybe that's good. Maybe that's bad. Uh, I don't know if there are standards around this that have
+been established instead of Vercel where there used to be clear code owners. And now because we feel
+that we're coding agents, we can just, we feel we can do a lot more and maybe that's caused some
+politics somewhere. A hundred percent. Like we want to be at the avant-garde of doing this, right?
+Like as makers of V0, like we, we highly encourage all our employees to like contribute code. I
+think one thing we haven't talked about and we might have time to go into, but like, we are very
+deeply working on a way to build apps that follows the threat model that assume that the developer
+doesn't know what they're doing. And also they're using AI that's also doesn't know what they're
+doing. And so I want to be able to build an app that is secure, even if the developer is
+incompetent. Right. But today that's not the case, right? Today, I assume a developer is competent.
+Full trust. Right. Like, and so, and so we have, I think, very strong progress there. And we're
+working with large, lots of large companies that have data, for example, where you have the idea
+that you say, well, auth, auth cannot be part of the app because they're, they're not going to get
+that right. Right. So auth has to be extracted from the app. In fact, which data you can see, they
+also cannot be under control of the app because again, you're going to get it wrong. Right. And so
+we're building these systems that, that try to have a minimum amount of security, fully independent
+of the quality of the app. And I think that is part of the future of how people will build stuff.
+Okay. So this is probably a good idea anyway. This is for cell level, not so much V0 or Next.js
+level. Like in a way, in an integrated fashion, right? Because I'm going to build the app in V0 and
+now I want to deploy it to my fellow coworkers. Only the right people should be able to access it.
+And when they access it, they only should see the right data. Yeah. I think this is very exciting. I
+think like the closest people have come to this is WorkOS basically. And yeah, I think there should
+be more like agent native, if we can call it that, infrastructure that, you know, lets people build
+and vibe code safely, which we all want to enable them. They just cannot be trusted. This is very
+insightful. Actually, I'm very excited to see that. Yeah. Pay me when it comes out. But otherwise,
+thank you for spending the time to recap ship, recap all of ourselves stuff. I cannot imagine a
+better person to talk to. You're so generous and friendly and engaged. No, I definitely don't feel
+like all CTOs are as engaged with like regular developers as you are. I'm trying my best and I'm
+spending too much time on Next. But yeah, this was super fun. Thanks so much for having me. Bye.
+Thank you.

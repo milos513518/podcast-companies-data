@@ -1,0 +1,253 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/03/SED1905-Marimo.txt
+EPISODE: Reinventing the Python Notebook with Akshay Agrawal
+DATE: 2026-03-10
+SED: 1905
+HOSTS: Kevin Ball
+PAGE: https://softwareengineeringdaily.com/podcasts/reinventing-the-python-notebook-with-akshay-agrawal/
+----------------------------------------------------------------------
+
+EPISODE 1905
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Interactive notebooks were popularized by the Jupyter Project and have since become a core tool for data science, research, and data exploration. However, traditional imperative notebooks often break down as projects grow more complex. Hidden state, non-reproducible execution, poor version control ergonomics, and difficulty reusing notebook code in real software systems make it hard to move from exploration to production. At the same time, sharing results often requires collaborators to recreate entire environments, limiting interactivity and slowing feedback. 
+
+Marimo is an open-source next-generation Python notebook designed to address these problems directly. Akshay Agrawal is the creator of Marimo, and he previously worked at Google Brain. He joins the show with Kevin Ball to discuss the limitations of traditional notebooks, the design of reactive notebooks in Python, how Marimo bridges research and production, and where notebooks fit in an increasingly agentic AI-assisted development world. 
+
+Kevin Ball, or KBall, is the Vice President of Engineering at Mento and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies, founded the San Diego JavaScript Meetup, and organizes the AI in Action Discussion Group through Latent Space. Check out the show notes to follow KBall on Twitter or LinkedIn, or visit his website, KBall.llc.
+
+[INTERVIEW]
+
+[0:01:40] KB: Akshay, welcome to the show. 
+
+[0:01:42] AA: Thanks, Kevin. It's great to be here. 
+
+[0:01:43] KB: Yeah, I'm excited to get to talk to you. Let's start out with a little bit about you. So, can you give a quick background of who you are and how you got to our topic today, where you got to with Marimo? 
+
+[0:01:54] AA: Sure, happy to. So, my name is Akshay. I've got a background in computer systems, but also machine learning research. I spent a little bit of time at Google Brain. This was a while ago, back when Google Brain existed before it was taken over by DeepMind. So, this was 2017 to '18. I worked on the TensorFlow team. And then after that, I went back to Stanford to do a PhD in machine learning research. And through that experience and my time at Google, I realized what I really enjoy doing is building open-source developer tools for people who work with data. 
+
+After my PhD in 2022, I started working on Marimo. And Marimo, it feels like a next-generation open-source Python notebook. And it is a notebook. But as we'll talk about in this episode, it's different than traditional notebooks in many ways. It's reproducible. It's stored as pure Python, so you can version it with a Git, execute as a Python script, and shared as an interactive web app, too, if you want to. 
+
+[0:02:53] KB: So let's maybe look into that, right? I feel like notebooks have been a part of the Python ecosystem for a while. And when they came out, there was this big breakthrough of like, "Oh, my gosh, I can do this kind of interactive exploration of data, and then share it, and do all these different pieces." What's wrong with the state of notebooks? Why Marimo? 
+
+[0:03:11] AA: Yeah, it's a great question. And traditional notebooks like Jupyter notebooks and things like them, I think, have been extremely useful in research and education. And I used Jupyter a lot during my own PhD. So my thesis was on vector embeddings. Now I would make a lot of low-dimensional plots of high-dimensional data after doing some dimensionality reduction, right? So lots of scatter charts and stuff like that. 
+
+And it was really, really useful to do that in a Jupyter notebook because I needed to run code and then see what the results of my algorithm were. And there was a back and forth between you as the algorithm developer and your data, right? And so that's great. There's nothing wrong with that. 
+
+The issues that I ran into and that others have run into with these traditional notebooks are a few. There's a few issues. And I think it comes down to maybe two or three. One, the one that sort of really trips up many people, myself included, is this idea of hidden state. So in a Jupyter notebook - and I'm using that as shorthand, but just the default experience of a Jupyter notebook using the IPython kernel. It's an imperative paradigm, right? You run a cell, it mutates memory. And then you run another cell, and then it mutates memory. 
+
+And what you're really doing, though, is often times once you get past the just exploratory phase, you're kind of writing a program even in a notebook, right? But because it's imperative and because Jupyter doesn't know how your cells are related, you may, one, run cell, then forget to run other cells that depended on that cell. And then all of a sudden, the code on your page doesn't match the variables in memory. And this can lead to a lot. 
+
+At least in myself, I would do things. I would delete a cell, and then it would delete some variable that I forgot was defined in that cell, and it was still in memory. And other code referred to that variable. And then 4 hours later, I would realize I just had a bunch of inconsistent state, and I had to restart my notebook, restart my analysis. And so this broad idea of hidden state is one thing that I think is really challenging that I wanted to solve with Marimo. 
+
+And then other things include the ergonomics of using notebooks as part of modern software projects. The default file format for Jupyter Notebooks is great for communication because it stores not just the code but also your plots and things like that in a single JSON file. But it makes it difficult for any kind of software engineering task, right? Because you don't want to version Base64 data with Git. It's just not going to work, right? 
+
+And then also, you might want to reuse some code you wrote in a notebook in another notebook or a Python module, right? But you can't really. Those aren't Python files. So then you have the issue where - and I've been guilty of this. You duplicate your Jupyter Notebook 40 times, and then it's just a total mess. That was another thing I wanted to solve. 
+
+And then finally, the third thing has to do with shareability and sort of interactivity. On the one hand, Jupyter Notebooks are really great because you have plots, you have code, you have visuals. This is document you can share out. But if you share out some analysis or some research investigation with a collaborator, they need to also have Python installed and Jupyter installed in order to interrogate your results, right? They might want to say, "If I change some parameters, how might this plot change?" And that feels kind of unfortunate. I mean, as a matter of practice, my PhD adviser couldn't do that, right? And he would have questions, and then I would have to go back and change things. 
+
+And so with Marimo, we wanted to make it so that any notebook could also really easily double as an interactive web app, where you can promote any variable or anything to this UI component, a slider or something, so that people could, for themselves, just interact with a document and see how results would change. 
+
+[0:06:54] KB: If I'm hearing you properly, I'm going to play back. So, two of these things sounded like essentially saying traditional notebooks, or Jupyter Notebooks, or whatever were in a lot of ways just kind of a fancy REPL. They're a REPL environment that has a UI baked in and is able to be a little bit more approachable, and interweave plots and interweave descriptive text and things like that. But they have all the drawbacks of a REPL in the sense that it's not really meant to be something that's packaged and duplicated. You're exploring. And as you said, having a dialogue with your data. 
+
+And what I'm hearing is you want to keep that vibe of dialogue with your data, but kind of bring this up into first-world software development, like, "Hey, this is reproducible. It's data-driven. It's state. It keeps track of all the things." It's not me hacking away in a REPL somewhere. 
+
+[0:07:45] AA: Yeah, that's exactly right. And I think one of my teammates on Marimo, Trevor, we were just talking about this the other day. And the model of just a REPL works well as long as it's just you sort of working on that note, or no one else. But as soon as you bring in a second person - or even the second person can be you a day from now, right? Yeah, you kind of want some guarantee, some reproducibility. Yeah, that's exactly right. 
+
+[0:08:10] KB: All right. So, let's maybe talk then about how you solve some of these problems. And I'm particularly interested in kind of understanding what is the execution model that you're adopting that is not just this sort of imperative REPL. 
+
+[0:08:23] AA: Definitely. So, in designing Marimo, we took inspiration from other projects as well. And the two biggest ones are these other really cool notebook systems for other languages. Pluto.jl for Julia, which in turn is inspired by Observable for the JavaScript ecosystem. 
+
+And what those two notebooks are and what Marimo is, at their core, they're what are called reactive notebooks. Reactivity is sort of the alternative to this imperative style of notebooks. And so what this means is, say in a Marimo notebook, if you run a cell, say that cell defines some variable x, when you run that cell, Marimo then by default will automatically run all other cells that read the variable x. And so it reacts to your code execution of one cell to keep the outputs of the rest of the notebook in sync with the action you just took. 
+
+The way that this works is that there's no runtime tracing involved. And instead, Marimo basically just statically reads the code of every cell that you have and determines what are the variables it defines, and what are the variables it references. And from there, it just builds this dependency graph. And it's kind of like Excel in some sense, right? It's not magic. And we have like configuration. Automatic execution may not be even desirable for all notebooks, especially if some downstream cells are going to take a long time to run. So you can make the executor. We call it lazy. So that you run a cell and then Marimo will just mark the affected cells as stale, but it won't run them automatically. But it'll give you one button that you can push to bring all your code and outputs back into sync. That's the core thing. And so that can minimize hidden state. And also, as you play with it, you also find that it actually enables you to do data exploration a lot faster because you just change a variable value, hit enter, and then you see everything change, and etc. 
+
+[0:10:18] KB: Well, and this is a paradigm that I think web user interface frameworks have very much gone towards, is this kind of reactive model. I think Vue did it first, and you see Svelte and React and all these folks like taking this very data-driven reactive model. And it does allow very fast and easy keeping things in state. 
+
+Looking at that dependency graph then, how much overhead does that end up creating? Or are there any things in Python that are hard to statically analyze? I'm not super deep on Python in particular. I know some languages, it can actually be hard to trace the dependencies. 
+
+[0:10:50] AA: On the question of overhead, it's like totally negligible. Python has a built-in AST module that you can use to do static and semantic analysis of code. And like most heavily used libraries in Python, that's implemented in C. So it's really fast. So the overhead is negligible, especially because it's static analysis. So it's like we parse and analyze once. And then every other execution, there's no overhead. Yeah, you don't notice that. 
+
+And in terms of what is - I guess the scope is the static analysis itself, is the semantic analysis, is that difficult? And I think what we chose to do is to - there's two approaches you could take to making - at least two approaches to making a reactive notebook in Python. Right? What we did is our data flow graph is based only on variable definitions and references, right? Like I mentioned, a cell defines a variable X. You run that cell. We run all other cells that read the variable X. That's easy to implement faithfully for the Python language. 
+
+You could take another approach, which would not be based on definition references but just on memory access. And for example, you could say, "If my cell mutates or touches some - if I'm at this cell, appends to some list, I'm going to run all their cells that read that list." That's extremely hard to do reliably. And so we explicitly don't try to do that at all because it's impossible to do just static analysis in Python. So then you're going to have to start tracing user code, and you are invariably going to miss. It's impossible to implement that 100% correctly. And then you get into an uncanny valley when a user runs a cell, and they won't know what else is going to run. 
+
+We're just really upfront. We're like, "Hey, we only track variables, definitions, and references." If you mutate things, go for it, but be aware that we are not - 
+
+[0:12:38] KB: Right. Yeah.
+
+[0:12:38] AA: That's an escape hatch, right? 
+
+[0:12:40] KB: Exactly. If you're mutating things, make sure you do an assignment afterwards, so we know. 
+
+[0:12:44] AA: Exactly. That's exactly right. And the benefit of this is that the rule sets are exceedingly clear to the user, right? They can understand it. It's like a sentence long. And then also it encourages the users to write like functional code, right? Which, especially for data-driven stuff, machine learning, it's kind of what you want to do anyway. That's good. I think one of our users described it as gentle parenting or something. We nudge data, data scientists, machine learning engineers, etc., to write just generally good code. 
+
+[0:13:15] KB: There's a lot of value in that. Actually, this is a slight aside, but I was hearing somebody describe. They said if LLMs generate no other value, they have dramatically upgraded the quality of code coming out of graduate schools. 
+
+[0:13:28] AA: That's fair, actually. Yeah, I like it. 
+
+[0:13:33] KB: Okay, so let's keep going down this road. So now, instead of a mutable ripple, you have a well-defined dependency graph. And you mentioned the next thing was around sort of reproducibility and not checking in these massive binaries or things like that. How does Marimo handle treating this stuff as code? 
+
+[0:13:52] AA: Yeah, that's a great question. The data flow graph gives you some amount of reproducibility in so far as that you can't run a cell and then forget to run some other cell. Marimo will just run it for you or mark it a still and really loud if you've done something sort of - I guess, yeah, it just won't let you step out of its reactive execution model. That handles like reproducibility and execution in some sense. 
+
+And then I'll get to the file format. I guess it is related, actually. But Marimo does have sort of an optional built-in package management system that's like powered by the UV package manager. If you opt into it, when you import a package, Marimo will detect that import, a module, resolve it to a package, prompt you if you want to install it. And if you do, it'll add it in a comment block at the top of the Python file. Python has a standard called Pep 723 for this. 
+
+Basically, it will document all the packages your notebook has used. And then the next time you run that notebook, we'll use the UV package manager to create an isolated virtual environment, install just those packages, and then you're off to the races in this sort of reproducible package environment. So we handle that as well.
+
+But the reason that was an easy feature for us to add is that we actually decided to store our notebooks as Python files instead of as these JSON files that sort of Jupyter has historically used. And the way that this works is each cell is represented as a function. There's some decorator to demarcate. This is a cell that's going to be going into the notebook. 
+
+And you can think of each cell as a function mapping the variable references it uses to the definitions it creates. And at the bottom of the notebook, there's a Python. You can do an if name equals main guard, which is like when you run the script, that's what's going to run. And so there's an if name equals main guard that will then say app dot. It will run the Marimo notebook in the cells in a topologically sorted order. Basically all that to say, you can go to the command line, say python my notebook.py, and it'll run it as a script. You can even put immaturiz CLIR.
+
+[0:15:56] KB: You're already, though, getting to a place where now this stuff is pluggable. Because it's just Python code. You can import the functions to wherever you can do what have you. Before we dive down that road, which I am interested to go down the implications there, what, if anything, is lost by storing it as Python rather than this sort of proprietary format? 
+
+[0:16:16] AA: Yeah. There's definitely something lost. So the main thing that's lost is, by default, when you're using Jupyter, not only is your code, but your plots, for example, are stored as Base64 encoded data in the file. So that you can just put it on GitHub, and you can immediately see a record of your analysis. 
+
+I actually think the IPython notebook file is a really valuable artifact. I just don't think it should be the artifact that your development is centered around. And so what we do to sort of bridge the gap is that there's a configuration setting that you can turn on, which will basically automatically snapshot your notebook as an IPython notebook alongside the Python file. There's a little __marimo directory, and you'll save like mynotebook.ipynb in there alongside your Python file, so that you can try and get the best of both worlds. 
+
+There's other things that we ended up having to sort of implement our own versions of because, for example, one thing that's nice about a Jupyter notebook file format or just something that stores the outputs is that when you load up the notebook, you can see the previous runs execution without running the whole thing, if that makes sense, right? 
+
+Whereas we start from just the Python file and that file doesn't have those outputs, so we implemented our own sort of session cache, which is stored in some sort directory that is hidden from the user to replicate some of these nice features that flat file format did provide. 
+
+[0:17:43] KB: That makes sense. Well, and since you have the dependency, you have all the variables already like labeled. You know what you need to save. 
+
+[0:17:50] AA: Exactly. Yeah. 
+
+[0:17:51] KB: Okay. So, I want to come back to the UI widgets because that was a thing you talked about as well, and I think that's interesting. But this has brought me into this question or discussion topic around how notebooks fit into the broader software development life cycle. Because I think one of the things I have seen in places where IPython notebooks were tended to be used before is they were heavily used by, for example, a data scientist or data science team. They were used for data exploration. And then if you wanted to then take something that was there and package it for reuse, or embed it in a product, or whatever, it was like a whole effort porting new code, all these different pieces. But to me, it sounds this Marimo file is literally just Python. Once you have something that works, you could use it. 
+
+[0:18:38] AA: Yeah. Yeah. That's correct. So you can. And we do many of our own sort of internal utilities that we write for our team, just like internal tools, they happen to be in Marimo notebooks that are reusable as Python files. You can even say from my notebook import my function, from my notebook import my class. That syntax kind of just works. there's like some details. The function needs to be pure so that it serializes correctly, which by the way you end up writing better code, right? 
+
+And so yeah, you totally can. And so it really does blur the boundaries of what you can use a notebook for, which I think is really exciting because we see all kinds of use cases from the traditional data science and research use cases, to backend engineers emailing us telling us, "Yeah, we're doing our data pipelines with Marimo notebooks just because we can." 
+
+[0:19:25] KB: I want to hear more about that because, yeah, my experience has all been notebooks sort of often research ML, data science communities. And then that's its own thing. How are you seeing the integration happening? When do you choose if you have one of these backend engineers? When are they using a notebook? Why would they choose to do that over something else? And what is the process there? 
+
+[0:19:47] AA: Yeah. I think there's at least two reasons. One that we'll touch on with the interactive components that you alluded to earlier, but even without that. I think often, when making simple data pipelines, not super complicated ones, but simple ones, it can be helpful to prototype a data pipeline in a notebook. Because similar to what I was mentioning of having a back and forth with your data, right? You write some code. You see if the data is put into the shape you want it to be in. Sometimes it's easier to do that with visual inspection. 
+
+Yeah, because it's easier to do with visual inspection, it can be nice to do it in a notebook. A notebook's also a good choice because, with data pipelines, the job runs. And it can be nice to just have a report alongside it to see what was the shape of the data that day, etc. Right? So it's nice to prototype as a notebook. But now with Marimo, not only is it nice to prototype as a notebook, it's also really easy to just run it as a cron job or as a script. You don't need to reach for sort of other tools that orchestrate ipynb files. You just say pythonmyjob.py. Whatever, right? It's just a Python script. That's one area where we do see sort of natural usage. 
+
+[0:21:00] KB: This already is getting me to a place that I'm curious, right? Often, if I'm doing a big data analysis job, I will want to do something interactive on a subset of my data. And then I'm going to want to run something async when I do the full data because it's going to be big, slow, expensive, what have you. But maybe I want that same visualization, right? I want that report right in there. Is there an easy way within Marimo? And maybe I'm just missing something obvious to be plug, "Okay. Right now, we're using this local subset of data. For this one, you're going to do a remote call, fetch it from here. You're going to do what have you." Can you plug into those? I want to run my big data off in the cloud somewhere async fast or slow, but get it back into my notebook? 
+
+[0:21:43] AA: Yeah, you totally can. It's not necessarily productized. But we have a number of primitives. And so one primitive you can use. Marimo is a notebook book, but it's also a library that you typically only use in the Marimo notebook. You can import Marimo ezmo into your Marimo notebook and you get some primitives. 
+
+One of those primitives is am I running inside in an interactive session, or am I running as a script? And so you can just use mo.running in notebook to parameterize where the data is being fetched from. And I think that would do what you're asking essentially. Or you could use that to do what you're asking. 
+
+[0:22:17] KB: I'm also wondering about, yeah, can I - well, maybe this comes back to the publishing side, publishing things as web. So maybe we'll come back to this. But I'm thinking like, "Okay, I've run this on my temporary thing. I still want my interactive view even though I'm running this asynchronously. Can I run it async and still publish the web version of Marimo so I can see the report at the end?" Or something like that. 
+
+[0:22:37] AA: Yes. Yeah, you can do that too. That is from the CLI. We have a Marimo export. And then choose your file format of choice, such as HTML. Marimo export HTML. That will run it as a script, but also generating an HTML report at the end. 
+
+[0:22:55] KB: Got it. Oh, that's super cool. What I'm hearing then, just thinking about life cycles here, is like, "Okay, I'm tinkering with it. I'm exploring it. I'm running it locally as a notebook subset of data." I say, "Okay, I think this is ready." Put in my flag. Saying, "When you run as a script, run against this source instead of that source." And then I run it, generating an HTML report that looks the same as my notebook. Lets me go and look at it, do what have you. 
+
+[0:23:19] AA: Yeah. Yeah. Yeah. That's correct. 
+
+[0:23:21] KB: That's really cool. Digging into that sharable web side of it. So, what is interactive? What does that web generation look like? Can I still go and tinker with cells or change things? What is the output starting to look like there? 
+
+[0:23:36] AA: Yeah. Interactivity in Marimo starts let's say in an interactive edit session. So, you're working on your notebook, you're in browser or VS Code, wherever you're using your notebook. We do have a VS Code extension as well. I guess just taking one step back, everyone thinks of a REPL as interactive, right? Because it is, right? You run a cell and then you see what happens. You run something else. 
+
+In notebooks traditionally, when you want to see what happens when you change a value of some variable, you have x=5, then you hit backspace, and you change the value of x to 6. Then you hit like shift enter. And then you hit shift enter a bunch more times, right? Then you see what the new thing looks like. And then you go back, then you hit backspace x=7. And then you do it again and again, and it's very tedious. And that's the kind of thing. Any normal person would be like, "There should be some UI element to control the value of that variable." 
+
+In Marimo, you can import Marimo ezmo into your notebook. And then the mo.ui module gives you access to a bunch of different UI elements, ranging from the very simple, to sliders, and text inputs, and dropdowns, to sort of more complicated ones like interactive scatter charts, selectable scatter charts, and things like this. And the way that it works in Marimo is that you can assign a UI element to a variable. And so x=mo.ui.slider. 
+
+Then when you output that variable in the notebook, you may X the last expression of the cell, Marimo will display the slider. Then if you scrub the slider, then what Marimo will then do is then automatically run all other cells that refer to the variable X. It hooks into the reactive execution system. And then every UI element has a value attribute that gives you the value that was assigned or associated with it on the front end, gives it back to you in Python. 
+
+And so just like that, with no callbacks required, now you have user interface interactivity in your notebook. And you can use that to say speed up data exploration. But as you can imagine, you can also use that to make really simple interactive data apps or web apps, whatever you want to call them, right? Like any kind of internal tool. And so that's another big use case of Marimo. 
+
+For different folks, different sort of, I guess, pathways. Some people will just use the UI elements to speed up exploration. But others will just like - I was just on the phone with - I guess I have to speak about them anonymously right now. They're a big Marimo user. They're a very well-known sports team, and they're using Marimo for a bunch of analytics and stuff. And they've made a bunch of Marimo apps that you type in a player's name, and you see a big table of a bunch of stats about that player, etc. And it's just fancy interactive web apps that they deploy on an internal site for the rest of their team to use. And the way that works in Marimo is that any notebook from our CLI, you can type at the CLI Marimorunmynotebook.py, and it'll serve it as a read-only web app. Code cells are hidden. And then now some non-technical stakeholder can interact with your data. 
+
+And so you were mentioning backend engineers. And surprisingly, to me, we talked to this one company. We have a case study published in our blog about them. Their name is Taxwire. They were like, "Yeah, all our backend engineers, we all use Marimo on a weekly basis. It's because we make all these internal web apps about this tax software we're building and its use cases. And then we embed it inside our internal Next.js app, sand it just makes our lives easier." I'm like, "Okay, cool. That that's awesome." And honestly, that's not something I anticipated as a use case when I first started making Marimo right after my PhD. But it was really cool to hear people being empowered by that. 
+
+[0:27:18] KB: That's awesome. I think what I'm hearing too with this is you could decide which variables you're exposing via UI, versus which are loaded from somewhere, versus how you're managing all of that. If you had this example of loading up a whole bunch of data, I mean, I guess your sports example, is that it's got a whole bunch of data in the backend. But lets you configure which player you're looking at, maybe which slice of data you want to analyze based on. 
+
+[0:27:44] AA: Exactly. Yeah. Yeah. That's exactly it. And I guess the value of the notebook here in this case, because it may not necessarily be obvious. It's like this progression from I just have some data here, and I don't really know what it is. And I'm just kind of playing with it. And then like, "Oh, actuall there's something useful here." And like, "Okay, now I want to expose this to other people." And you can just like stay in the same tool and just incrementally abstract it a little bit and promote things to UI elements, and then add some explanatory text. It's just like a really seamless path. 
+
+Whereas if you had never opened a notebook to look at your data in the first place, it might be hard to then think about, "Okay, what is it? React app?" I'm going to write to, I don't know, empower the rest of my team. Because I don't even know what's in the data. So I don't even know what to make. And so I think that's what the value in the notebook is. Just making it really easy for you to first get a feel for your data. And then from there, making it really easy to make like a tool that's good enough for you and your colleagues and yourself. 
+
+[0:28:43] KB: Yeah. No, that is super valuable. I mean, I have an example where I've just whipped up some internal scripts to analyze things for me, but it outputs in text because I think in text. If I had thought ahead and used a notebook, suddenly I could share it much more easily with different folks. 
+
+Another question that I have in this is I think one of the things that's going on in the software development world right now is things are changing incredibly rapidly, right? We've got LLMs, copilots, agentic tools, all these different things. Is there a similar transformation going on in the sort of data and data programming worlds? Or how are you seeing notebooks fitting in with this kind of new industrialized coding era we're getting into? 
+
+[0:29:26] AA: Yeah, I think there is a similar transformation. There's a few different ways. I'll give one example. One of our users is a very large sort of public company. And they told us they have hundreds of Marimo apps deployed internally. And they said what made it really easy for them to adopt Marimo and the reason they adopted it so quickly was because it turns out Claude is like really good at writing them, because it is a pure Python file format. It's like all these things you can get around. Well, I guess Jupyter Notebooks aren't interactive by default anyway. You can't make web apps with them. 
+
+But with, yeah, Marimo being a pure Python notebook, Claude can write it easily. You can also run the notebook as a script to check if it's doing the right thing. We also have like a linter CLI tool called Marimo Check, which will report any errors it finds with the syntax of how the notebook is stored. 
+
+And honestly, I use Claude also to make really quick internal - things where I would have made a Marimo notebook by hand, now I have Claude help me make a Marimo notebook of it. And it does a good job. Especially compared to earlier in the project's life cycle, Marimo mode is now I think popular enough that it's like in distribution. It works pretty well. I guess that is more similar to how Claude is just speeding up software development in general, right? 
+
+In terms of for data specifically or for ML research specifically, I think that people are still figuring out. I was just talking to someone on my team, and he told me that he's seen a bunch of VC things out early this year saying 2026 is going to be the year that AI and agents revolutionize how we work with data. I told him to send that to me because I haven't seen one of those yet. But I guess people are talking about it. I'm not too familiar. I think like Databricks says that 80% of something, something databases are created with agents. But I think that's Neon or something. 
+
+[0:31:25] KB: I mean, it's sexy right now to say, "Okay, we're going to use - this is going to be revolutionized with AI." I do feel software development is the one place I am actually seeing that play out. And so, yeah, kind of interesting to see how that happens. Go ahead. 
+
+[0:31:42] AA: I was just going to say, I think the basic things that I think many people have been trying, maybe just being quietly integrated in a bunch of products, but text to SQL type of things, it seems natural that some form of that will benefit from code generation and sort of agentic workflows. But I guess we'll see. Yeah, we'll see if these predictions end up being true. 
+
+[0:32:03] KB: On this sort of forward-looking prediction side, what do you see as sort of the frontier in terms of use of notebook books, data access, data exploration, that sort of world? And what kinds of stuff are you working on internally to address it? 
+
+[0:32:19] AA: The frontier. And that's a good question. The frontier is always hard to opine on because, well, it's the frontier. I can talk about what we're working on. And I'll see if I'll back out and see if any of that is going to be getting us to the frontier. Let's see. Some amount of work we have, a good amount of work is sort of we're close to par with the Jupyter and collab ecosystems, but we're not at full parity. We do honestly have a good amount of parity work that we're doing, getting Marimo working seamlessly inside of Jupyter hub, which is like a multi-user hosted sort of Jupyter deployment that many universities use. We also have a free-hosted notebook that's like similar to Google Collab called tongue and cheek, it's called Moab. Mo from Marimo. And so we're working on that quite a bit this year. 
+
+I guess one thing in terms of frontier. So we have a speculative project, which I don't exactly even know what exactly it is. And part of the project is to figure out what it is. But it's driving Marimo headlessly, potentially with agents. There was this paper that came out recently that someone on my team sent me that I've so far only skinned the headline and intro. But it something to do with instead of using - I think the claim of the paper was that Python REPLs, or REPLs in general, can be very valuable ways to dynamically create context for LLMs or agents. And in that paper, I think they use a Jupyter kernel as the thing that the LLM has access to. 
+
+And so one of our engineers did a lot of work to sort of modularize Marimo towards the end of last year. So we're getting close to a place where you can use the kernel headlessly without our UI. And one project that he's really interested in exploring is, "Well, what if you gave an agent access to that kernel? Could that somehow speed up whether it's data exploration workflows or research workflows?" We're not exactly sure. But it seems that could just be a really valuable primitive. Like a sandbox, in some sense, for agents to have. 
+
+I'll give you, I guess, one example. And this is not related to necessarily headless. But enabling agents to work more effectively with data. In Marimo, we have a built-in AI assistant sort of system. And one thing that you can do is, when you write a prompt for generating some code, you can tag a variable. Say a data frame. And when you do that, we inspect the data frame, see its schema, get like sample values, etc., and dynamically generate context to give the LLM. And now you have like code that's like specialized to the data at hand, which is more useful than, say, you're using Claude or Cursor. Yeah. They won't know what's in the data frame unless you explicitly tell them. That's just one way that you can, I guess, empower agents with runtime information. And I guess that's one thing that we want to explore more this quarter. 
+
+[0:35:17] KB: Yeah. No, it's super interesting to kind of think about that because there's a couple different pieces that stand out to me. One is the fact that you have kind of the dependency graph already mapped, becomes quite interesting in terms of showing just the relevant context to the agent. Right? You might say, "Hey, you're changing something down in this one cell, but you don't actually care about that." Instead of forcing the agent to absorb the context of all the different steps, you could say register which step in the graph you're interested in. We'll do all the computation. Here you go. Here's the output. 
+
+I do wonder, I feel like there is some sort of interesting opportunity here in terms of just like showing it the right things at the right time. Do you have a concept of lints or correctness checking on cells? You've got this dependency graph you're going through, and maybe a step three or four ways down, it's like, "Oh, this is outside the bounds of what could be valid. So something must be broken upstream." 
+
+[0:36:11] AA: Yeah. Yeah, we do. We do. We have a checker or a linter that will check your entire program for semantic correctness, as well as like syntactic correctness. There's a couple of rules that Marimo enforces to make sure that your graph remains like a DAG, basically. One of which is you can't have cycles across cells, which I think is sensible. Although I recently learned that Excel has a feature that you can turn on in settings to enable cyclic calculations. And then you choose the number of iterations you wanted to go until convergence. 
+
+I got a spreadsheet that was all ref errors. I'm like, "Why did you send me the spreadsheet with all reference?" No, no, no. You have to enable fix point iteration. Anyway, sorry. This is a digression. We don't allow that. 
+
+[0:36:55] KB: There's a lot of value in keeping it to a DAG, I'll say. 
+
+[0:36:57] AA: Yeah. Yeah. Marimo has to be a DAG, and we enforce that. That's one rule that we check. And the other is actually you can't redefine the same variable across multiple cells. And the reason is we actually allow you to reorder cells for presentation purposes. There's also column view and stuff. Those are the two main semantic things that we check for. 
+
+[0:37:16] KB: I was also wondering, though, in terms of data range validations, right? For example, you have a dependency of a set of different computations, and you might know something about the shape of the data, and say, "Okay, this data needs to actually be in this shape. If not, flag something and don't keep going," or what have you. 
+
+[0:37:33] AA: Oh, that's super interesting. Yeah we haven't explored that. 
+
+[0:37:35] KB: The reason I think about that is like with agentic coding, which we've been diving down in, the more you can programmatically deterministically limit the sort of scope of possibility and then give that feedback to the agent, the more it's able to independently iterate. 
+
+[0:37:49] AA: Yeah, that's very interesting. There's a lot of things we could play with, but that does sound interesting. 
+
+[0:37:55] KB: So you mentioned in Marimo, you have these things as functions with decorators around it. And you're already building in this kind of some amount of static analysis, some amount of linting, and things like that. What hooks do you expose to your end users in order to kind of plug into that? 
+
+[0:38:10] AA: Right now, to be honest, we don't have the biggest extension API surface area. In terms of extension points, not in the file format, but we have standardized on this protocol called anywidget for building third-party interactive widgets. The developer of anywidget, Trevor Manz, actually works at Marimo now. And so that's one way that you can plug into Marimo. 
+
+You can also hook into our display protocol for objects. We support the IPython display protocol. But we also have some additional hooks. And then in terms of the file format itself, you can actually write Marimo notebooks by hand in Vim or whatever your text choice editor is.
+
+[0:38:49] KB: How did you know I use Vim? 
+
+[0:38:52] AA: Well, if you're holding Software Engineering Daily, it's my guess. You can do that. That's not an extension point, but it is designed well so that you actually still - the file format will guarantee you still get like code completion, IntelliSense and all these things. But we haven't opened up an actual - put another way, Jupyter is famously, I think, well-designed in terms of like the internal protocol. There's the kernel protocol, and you have a wire protocol. They've got a bunch of things that third-party developers can hook into. 
+
+We haven't done that yet just because it was too early for us, too. I think things are just moving really quickly. That's starting to change. We now have our own still internal but semi-public APIs for ourselves because we're now consuming Marimo in many different ways. And I think eventually over time, this will evolve into. Some of these will be opened up to the public. But right now, I guess in terms of the DAG, it's like our file format specification is public and fixed. And so people can target that with code generation tools. But that's about the extent. 
+
+[0:39:56] KB: That makes sense. Cool. Let's look a little bit actually at anywidget. You mentioned that as one of the places that you plug in. It's an open source. You hired the developer, or whatever the sequence. I'm a big fan of that type of thing. What is it? How does it interact with the reactive data model that you have? And are there any constraints or things to know going into it? 
+
+[0:40:18] AA: Yeah. Okay, I'm going to caveat this by saying that Trevor is a far better spokesman for any widget than I am. And he was just on, I think, Talk Python with me, and had a great hour-long conversation about anywidget. But it is both a spec and a tool set for making reusable widgets. I think really focused on for using them in interactive notebook environments. 
+
+And so what anywidget was born from, my understanding is from talking to Trevor - Trevor also has a PhD and sort of in the biocomputation space was originally his focus. And he found himself having to make widgets for all kinds of sort of domain specific tasks in the Jupyter ecosystem. And they were kind of really difficult to build, and maintain, and test. Web programming has advanced a lot in recent years. And IPython widgets have not kept up. 
+
+And so I think sort of out of some of those difficulties and frustration, Trevor sort of built anywidget to make it a lot easier to implement and maintain these widgets, and also to make it a lot easier for different front ends to consume them. Before anywidget, if you made some kind of domain-specific widget that worked in Jupyter lab, then you would have to go and then customize it to work in collab, and then also make sure it worked in the VS Code extension. 
+
+And now by making the spec, you can make it anywidget, just make it once. And because people have agreed to support, it'll kind of work anywhere. And so that's been really valuable, and it was really valuable for us. My co-founder, Myles, discovered anywidget pretty early in its life cycle. And he was like, "Oh, we should use this." And I'm like, "I never heard of this." And he's like, "No, no, no. It's really good." And it was a really good bet because I think it has emerged as the standard for interactive notebooks. 
+
+And in terms of hooking into a reactivity model, it's actually quite nice. Basically, anywidget, you can wrap it in a mo.ui.anywidget wrapper, and then it basically binds it to our reactivity model and makes it into just like any other UI element that's first party in Marimo. Yeah. It hooks into the data flow graph in the same way. 
+
+And I think that the value of it is - I mean, people make all kinds of really, really cool widgets, and there's no way that us as like a team of seven would be able to satisfy everyone. But widgets that were originally developed for Jupyter, there's a scatter plot widget called Jupyter Scatter, which lets you see 10 million points on a scatter plot like really efficiently, and zoom in, zoom out, etc. That now works in Marimo today, and it's also reactive, which sort of gives it superpowers that you might not have had in traditional notebooking environment. 
+
+[0:43:05] KB: Got it. Yeah, it looks to me like it's essentially a vanilla JavaScript spec, that if you meet that, then you can wrap it up and it'll just plug in. You have a wrapper, Jupyter has a wrapper, other folks who support this have a wrapper, and it'll just kind of work anywhere. 
+
+[0:43:20] AA: Yeah. Yeah. And we're going to be focusing a lot on anywidget this quarter as well. One of our employees, Vincent, he runs our YouTube channel and does a bunch of things. He never ceases to amaze me how far he can get with vibe coding these really cool anywidgets. I don't know. He vibe coded this any widget like for robotic simulations with like this humanoid person. I don't know. It's really cool. It really allows you to like expand your imagination and get creative. 
+
+[0:43:48] KB: Nice. Well, we're getting kind of close to the end of our time here. Is there anything we haven't talked about yet that we should talk about before we wrap? 
+
+[0:43:58] AA: I think we've covered all the basics. I guess we didn't really talk about Marimo's origins. I could talk a little bit about its origins and a little bit about where we're going, at least in the next few months. I started Marimo after my PhD, like I mentioned, out of both appreciation for notebooks and frustration with them. And I actually originally got funding from a national lab at Stanford. It's a lab called SLAC, which is a particle accelerator lab. And there are a bunch of scientists who use Python and had basically the same gripes as I did. 
+
+And so they were really excited to sort of partner with us to bring a new open-source programming environment into the world. We have our roots in academia in that sense. And this quarter, one thing that we're really interested in doing is engaging a lot more with universities to help them try out Marimo for education, help support them incorporate it into their classes. Because I really do feel like that combination of reactivity and interactivity can really just make concepts just like a lot more intuitive. 
+
+Somehow, if you learn like some new numerical algorithm, it's just so much easier to just change a parameter and see what happens as opposed to just abstractly think through it. And in fact, Marimo's main inspiration, Pluto, for the Julia language, it was originally designed exclusively for education and still actually is advertised in that way. It was at MIT where it was designed for a computational thinking class. 
+
+And I don't know, it's just something I care a lot about and something that we really want to support. To the extent anyone in your audience is in the intersection of software engineering and education, and you find Marimo interesting, please try it out. Or better yet, reach out to me and my team, and we'll be happy to chat with you guys and support you. 
+
+[0:45:49] KB: All right. Let's call that a wrap.
+
+[END]
+

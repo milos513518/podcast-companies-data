@@ -1,0 +1,608 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Don't hand a bazooka to an agent making a sandwich (Jeremiah Lowin)
+DATE: 2026-08-13
+SHOW: Analytics Engineering Podcast
+LINK: https://roundup.getdbt.com
+AUDIO: https://traffic.libsyn.com/secure/analyticsengineeringroundup/AE_0091_v1.mp3?dest-id=2880773
+DURATION_SECONDS: 3521
+TRANSCRIBED_AT: 2026-11-04T02:58:30Z
+----------------------------------------------------------------------
+Hey, this is Dan Poppe, producer of the Analytics Engineering Podcast. On this show, Tristan talks
+with the people shaping the future of data and AI. At dbt Summit, you get three days to talk with
+them all in one place. It's the world's largest gathering of dbt users, September 15th through 18th
+at the Cosmopolitan in Las Vegas. Register now. Just search for dbt Summit. We'll see you there.
+Welcome to the Analytics Engineering Podcast, featuring conversations with practitioners inventing
+the future of analytics engineering. In this episode, I speak with Jeremiah Lowen, CEO of Prefect.
+Prefect started nearly a decade ago as a workflow and data pipeline automation company. But Jeremiah
+has since repositioned it around a bigger, newer mission, building the context layer for automation
+in the age of agents. If you've watched MCP grow over the past two years, then you've watched
+Jeremiah's fingerprints on that story. He built Fast MCP as a side project days after MCP launched,
+and Anthropic invited him to fold it into the official SDK weeks later. One morning, he woke up to
+find his repo being the top trending project on GitHub. Kind of fun. We get into the Fast MCP origin
+story, the case for MCP in the enterprise versus pure CLI integrations paired with skills, the
+difference between granting an agent capabilities and steering its behavior, and a new idea he's
+building called directed agentic graphs. Jeremiah is one of the clearest thinkers I know on where
+agents are headed. And this conversation left me with plenty to chew on. I think it'll do the same
+for you. Without further ado, let's get into it. Jeremiah, welcome to the Analytics Engineering
+Podcast. Justin, thanks for having me on. I'm so happy to be here. It strikes me that many of our
+audience will be familiar with you and familiar with Prefect and the work that you've done in the
+data industry over the years. And if we were talking a couple of years ago, we would probably have a
+different conversation. But the last couple of years have been interesting for you. I want to quote
+you from a blog post that you wrote recently titled, A New Dawn for Prefect. You wrote, Our mission
+has evolved for almost 10 years. We've been obsessed with giving people confidence in automated
+work. That hasn't changed. But the scope of that work has expanded dramatically from data pipelines
+to distributed systems to AI agents operating autonomously in your business. Our vision is to define
+automation for the context era. Our mission is to build the context layer that makes it possible.
+That's what this brand represents, a new chapter in our journey. Tell me the story. What the hell is
+going on? Well, it's a little challenging because within Prefect over the last couple of years,
+we've introduced a variety of new products, I think headlined by Prefect, our workflow automation
+platform that I've been developing for almost 10 years now. And more recently, products like Fast
+MCP, which is used to build MCP servers, and Horizon, which is an enterprise MCP piece of
+infrastructure. And from the outside looking at this, I think it looks like this interesting buffet
+of potentially unrelated software. But inside, to me, these are all ways of taking arcane or complex
+systems that we want to just do things on our behalf and automate them. And I found that I even had
+to struggle to articulate that to my own team. Why are these things the same to me when they are
+very different? They sell to different people. They look different. But I see all of these
+technologies converging in a place where automated work can happen. It can happen away from human or
+even agent oversight. And we have a way to have confidence that it actually happened, that it was
+governed, that it was observed, that whatever we care about, it was achieved. And so this idea of
+having confidence in automated work is kind of the common thread for not just what I've done at
+Prefect, but my whole career, even once upon a time doing risk management and finance, it's all
+about do we have confidence in the behavior of something? And so I'm just obsessed with this
+quality. Okay, fine. So there's a through line. You're not an evil genius in a lab somewhere. But
+I'm curious in the actual play-by-play. You've been developing Prefect for a long time. You've built
+a company around it. I think you have real customers, real revenue. And now my sense is that that's
+still going. But a lot of your attention right now is on things in the world of agents. Yes. Okay,
+fair. Let's get down to breast tax. How did we actually make this leap? Fast MCP comes along as an
+accident, right? It's a side project of mine that I introduced a couple days after David Soriapar
+introduces the model context protocol. And it's a right place, right time, right developer
+experience kind of explosion of popularity. A couple days? Yeah. The weekend after. I happen to know
+that you have kids. And for somebody that has kids, the ability to turn around something a couple
+days after a launch that I think you probably had no idea was about to come. Like, what are you
+doing on your weekends? My wife and my therapist have the same questions that you have. And it's
+very complicated. But be it as it may be. So you were excited about the MCP launch and you
+immediately got to hacking. Honestly, I saw it as an opportunity for Prefect, right? For years, I've
+been asking to pull that thread again. Like, what does it mean? We are an automation company. We are
+considered as a data workflow, ETL style automation company, but we're just an automation company.
+What does it mean to update that business for what is obviously going to be an agent dominated
+world? And it's complicated, right? Because on the one hand, for the first time in my career,
+everyone's obsessed with automation. Automation used to be something I would beg people to care
+about, right? It's a cost center. It's a necessary evil. It's an optimization. Now, all of a sudden,
+everyone can't wait to automate everything. So on the one hand, it feels like the world is sort of
+ripe for the picking if you are an automation person. On the other hand, the kind of automation that
+we're doing in code, in data, is not where the attention of that automation is, which is in sort of
+things that felt magical before, like going through your email and giving you a morning briefing and
+producing an analysis and that kind of stuff. And so MCP comes along. And honestly, my interest was,
+is this the interop technology between the agentic world that I want to be part of and the
+programmatic world that I know how to work with and have a lot of experience in? It's just a
+handshake. And from a sponsor like Anthropic, no less, who I think has like the gravitas and the
+position, obviously, to actually ram a standard through among 100 other competing ones. And so I
+said, maybe this is the thing and we can build new extensions of Prefect around this concept and
+really get that handshake in place. I went to use it. Candidly, it was very hard to use, like
+impossibly hard to use. And so that's where I went down a rabbit hole. I was like, I'll make it easy
+to use. And I wrote Fast MCP as this tongue in cheek thing. And the rest is kind of history and it's
+taken off. But that was my original interest was, does this bridge the gap between my automation
+software and the agentic world in a way I came into? Okay. MCP was hard to use. I want to learn more
+about that. But just pragmatically, did you, you built a thing, you slapped a license on it, put it
+in a public GitHub repo. And then what? You like posted it on Hacker News? Like, how did they get
+attention? Yeah, I think it was Hacker News as a matter of fact. I, to be completely honest, I don't
+remember the exact sequence of steps. I think it was a Hacker News and a Reddit. And honestly, the
+way I was treating it, and you could go back and like dig it up, right? The way I was treating it is
+like, hey, world, there's this thing. It's from Anthropic. I think it's really cool in concept. It's
+really hard to use. Maybe try this, right? By the way, I've done that like 10 times with 10
+different things, right? It's what we do if we're a builder. We put things in the world. Like maybe
+people will use it. It got medium popular, like a little popular. What changed is David, who is the
+creator of Anthropic, excuse me, the creator of MCP at Anthropic, he saw it. He liked it. And then
+he asked if we could contribute it into the official SDK. And so that's when things really changed.
+I worked with him. We licensed it appropriately. And was this within the first month of its life or
+it took longer? This would go. I would introduce it in the end of November, I think. And this would
+be in the middle of December. So it's very quick in the first month of MCP's life. And by the way,
+at this time, nobody cares about MCP. Yeah, I had not heard of MCP until like, I don't know, January
+or something like that. Yeah, exactly. Nobody cares about MCP at this point. Except me, because I
+think maybe it's relevant to Prefect and David, who obviously has a very vested interest in it. So
+he sees it. He's like, I really like this developer experience. Can this be the official SDK? And I
+was like, honestly, this is the coolest thing that's ever happened to me. At the time, I was also
+dealing with a set of choices at Prefect that would lead to the blog post that you just quoted about
+really just like committing to updating our business and trying to work through what that looked
+like. And so we put it in the official SDK. And honestly, I thought that was the last time I might
+ever see it. What happened is I think it would have been April or May. So about a year ago, as we
+record this, OpenAI and Google both announced that they were going to support MCP. And that's when
+like all hell broke loose and everyone started hearing about this technology and oh my God, it's USB
+for the internet and blah, blah, blah. I remember writing a blog post then where I screenshotted
+both Sam's tweet and Sundar's tweet, both saying like, hey, we're doing this. And I was like, oh my
+God, this is a moment. And it felt like a moment. And you could feel it. The way I knew it was a
+moment is I woke up one night, one day, and overnight, my repo was the number one trending repo on
+GitHub. My archived, don't use this. Go to the official SDK. SDK repo was the number one trending
+repo on GitHub. And that's when I was like, oh, hang on, hang on. There's something here. And then
+when I dug in, I was like, but why? Why genuinely are people coming to this repo that very clearly
+says go to the Anthropic repo instead? And what I determined is that there was this demand. It was a
+technology that was moving so quickly that there was demand for a high level application ecosystem
+around it. Auth and composability and all kinds of interop with vendors and the kind of stuff that
+you don't typically find in an SDK. And I wrestled with this for a second. Candidly, it's a weird
+thing, right? If I'm going to contribute the code into the SDK, then I don't really want to also be
+developing it over here on the side. That's weird. Frankly, it's a bad faith kind of thing. And so
+what I ended up doing is we determined that there was enough demand for a high level ecosystem and
+that the SDK in my conversations with David and others wasn't going to meet that, not because they
+didn't think it was a good idea, but because they wanted to be the best damn SDK, a low level SDK
+for working with the model context protocol. They didn't want it to be an opinionated framework.
+They wanted to be a SDK. I was seeing demand in my archive repo for an opinionated framework like a
+fast API. It's not an accident that they share a name in fast. And so I changed my job very
+literally at Prefect. And this is right around the time that I'm writing that blog post. I changed
+my job, which is very fun for me in an odd way. I said, I'm going to go be an engineer again. I'm
+going to be a maintainer. And my job is over the next, I think it was like 60 days, I had some
+metric. I was like, over the next 60 days, I need to sufficiently diverge these two projects so that
+at the end of 60 days, anyone looking at where Fast MCP as a standalone project is and the Fast MCP
+that we've licensed in the SDK, no one could look at that and say, we're acting in bad faith or in
+any way other than to advance an opinionated high level ecosystem. And so that's what I did. I dove
+in. I committed to building the repo out and the open source ecosystem out. You have been such a
+maintainer. You know the kind of focus and effort that that can take. And at the end of it, we'd
+gained another 10,000 GitHub stars. And I don't know if we crossed our first million daily downloads
+then. But today, it's like 25,000 GitHub stars, 3 million daily downloads. It's a real ecosystem.
+It's a real part of the ecosystem. It's super exciting. And I feel strongly that if I hadn't
+dedicated the time, and that is weird to do within the company, right? But if I didn't dedicate that
+time, then it would have incrementally diverged from the SDK. It would have split the ecosystem
+instead of supported the ecosystem. And I think we would have ended up in a poorer place as far as
+the development lifecycle. And so it's been quite an adventure, quite an unexpected adventure
+building this thing out. So we don't have infinity time. Otherwise, I would pull on so many of those
+threads. I want to know how you managed to fire yourself from your CEO job. But maybe to not get
+diverted too much, how did you solve that? Like, okay, there's fast MCP that's a part of the
+Anthropic MCP SDK. And now there's fast MCP that you're maintaining. Are those now different things?
+They're different. And that sounds a little confusing. It is confusing. And it is a little bit
+confusing. And so what we did is we amberized the version that was given to the SDK as a version 1.0
+so that it was canonical. It showed up in both code bases. You can check it out in a lot of places.
+It's cross-compatible, a lot of stuff. And then we continued to develop fast MCP as version 2.0. And
+now it's on version 3.0, as a matter of fact. And so we did our best to at least broadcast where
+that change had happened so that in truth, we can say version 1.0 of fast MCP can also be accessed
+within the official MCP SDK. It does get confusing, though. There are two places where you can see
+fast MCP. They have very small API differences, which is enough to confuse people. And so as a
+matter of fact, next month, maybe by the time that this podcast is released, the fast MCP in the SDK
+is going to be renamed in alignment with the other SDKs that have evolved a similar object. And it
+will be called MCP server, which is a little boring, but I think will stop the confusion. The
+developer experience will live on in that sort of low-level server building. Like you want that
+outcome. I want that outcome. I really want that outcome. It has been, I won't lie, it's been great
+that the concept of fast MCP is extremely well known as a consequence of that distribution. But I
+want that outcome because I think we've created a really interesting high-level thing in fast MCP.
+And I think it should be built over a clear low-level thing that doesn't intersect. And neither
+project at this point, the MCP SDK is downloaded like 10 million times a day. I mean, it's an
+extraordinarily popular piece of software. I don't think it needs the crutch of my contributed code
+being identified as such. And we could benefit from the independence. And what's the license that
+you distributed under? Fast MCP is an Apache 2 license. The SDK, I believe, is an MIT license. Okay.
+So, but both permissive. Minor difference. Both highly permissive open source licenses. Okay. Great.
+So, okay. Let's, we've heard the story. Let's kind of back up for a second. And my guess is that
+most listeners will be familiar with MCP at a high level, but maybe you could just describe it in
+your words. Like, what is MCP for? Why did you get excited about it? And then how has it evolved
+over the last, whatever it's been, 18-ish months? Yeah. 18 months. What is MCP? MCP at a high level
+is a protocol. It's just a standard way for an agent to discover and use a remote API. So the
+simplest way to think of it, and I think, frankly, the way that it is most commonly used, is it's a
+remote tool registry for an LLM. So the LLM connects to it, shakes hands with it, learns about all
+the tools it can call, learns about how to call those tools and ideally some instructions. And now
+it can send a tool request over the wire and get back a result in an expected format. That's 95% of
+the use case. That's pretty much all someone needs to know if they've never heard of MCP before.
+It's a standard way of doing this. Because it's a standard way of doing this, this is where things
+get a little weird and maybe even controversial. You hear about debates like MCP versus CLI. CLI is
+another way, right? You anticipated the next question I was going to ask. Okay. Well, there we go.
+CLI is another way for an LLM to interact with a remote tool registry, so to speak, or a computer
+more broadly. And so you have this intense debate. Why do we need yet another thing? I actually
+think the debate, if you want to talk about that debate for one second? I think the debate has a lot
+of merit, maybe surprisingly, as an individual. As an individual running an LLM on my laptop, do I
+really need to stand up an MCP server and build that MCP server and re-expose a lot of functionality
+when I got a bunch of CLI sitting right here? Yep. No, no, I do not. It's all just code. My LLM
+knows how to write code. It's fine. Exactly. Exactly. Exactly. But in the place where MCP has
+intense product market fit, it has it for exactly this reason, which is in enterprise. In an
+enterprise, I absolutely, absolutely do not want to be responsible for distributing code via CLI
+onto everyone's machine, going through upgrade cycles. The idea of having a central repository of
+business logic that I can version, that I can deprecate, that I can upgrade, that I can control,
+that I can access control, and it doesn't have to go on anyone's machine or container. That is a
+blessing. That is the only way an enterprise is going to distribute information and context and
+business logic to its agents. So the idea of having CLIs in the enterprise, except when that CLI,
+like a GitHub CLI, is so extraordinarily widely distributed anyway, I think is a non-starter. And
+that's what we're hearing when we talk to, frankly, a lot of security professionals who are like,
+there is no way we are putting CLIs on everyone's machine so their agents can use it. We will use
+MCP instead. And so all of the MCP debate, in my opinion, and this is just like an observation
+sitting on the front edge of that wave, all of the debate and the controversy happens at that
+individual level, where as an individual, I don't think it confers a huge benefit to me. It does,
+and we can get into the nuance of it. I mean, like REST APIs don't confer a huge benefit to
+individuals either, right? True. And we don't spend a whole lot of time debating that. It's just a
+thing. It's a standard. It's a way of doing things. And so... That's fascinating. I'm the kind of
+person who presses things most effectively when I experience them myself. And I've spent, at this
+point, a decent amount of time building stuff with agents. I've built a lot of stuff with DBT as one
+component. And we released our MCP server about a year ago now. And the adoption has been... It's by
+far the fastest growing thing that I've ever witnessed. I mean, it's growing faster than DBT was
+when we first launched DBT. And the thing that was surprising to me was just how much people wanted
+us to host a remote MCP server for them. You know, because I had been using it locally. And, you
+know, lots of neat things came out of that. I was like, what's the problem? Like, why do you guys
+care so much that we host a thing for you? But it's exactly what you're describing, that the utility
+is the fact that you need a common set of logic that could be called from lots of different
+surfaces. Yeah. And I think I remember actually working with your team about a year ago as they were
+developing it. And one of the things that they did well was they were one of the first... It was one
+of the first attempts I saw to really namespace tools. Because at the time, there was this problem
+where you had too many tools on the server and you, like, overwhelmed the context that was
+available. And so there are all these strategies about how you namespace the tools and you only make
+certain tools available. And that's really easy when you're running the server locally. And it's
+really hard to do. In fact, there was no standard for doing it when you host the remote server. And
+I remember that being one of the hesitations, actually, was that you could deliver more utility to
+users if they could run this almost as a CLI, if we refer to it that way. But the core motivator is
+exactly, I think, what you just described. I want this thing to not be a new piece of infrastructure
+that I have to worry about. I just want to point my agents at it and let them figure it out and know
+what to do. And so that drive, especially in enterprise, is hugely impactful. And then, of course,
+now there's this other question, which we're grappling with a lot at Prefect as we roll out our
+products, which is how do you govern access now beyond just the connection, beyond the handshake? So
+am I allowed to connect to the server at all? Oh, great, I am. Am I allowed to connect to certain
+tools in the server? Okay, maybe I can do that. Am I allowed to see certain fields in that data? Are
+there certain columns in the data that I can't actually see? Well, now I don't know if the MCP
+server is the right way for us to enforce that kind of logic. Now we're back in, maybe it's DBT
+itself. Maybe it's the warehouse itself where now we have access controls that need to be sort of
+federated from the request down to the data layer. And so that's an area that I'm spending some time
+right now. How does your identity affect how you access information through this technology? Yeah.
+Okay. Yes, we need to get there. We have a lot we can talk about. We need to talk about Horizon. But
+before we kind of move into the kind of other layers of complexity in deploying MCP at scale, maybe
+we could talk about two things. I want to talk about skills and how they intersect and don't
+intersect. And I want to talk about code mode. I feel like that is a fascinating way to work on the
+problems that you were just talking about. Like how do you expose the tools without overwhelming the
+context window? So let's start with skills. The way that these have been positioned by Anthropic is
+essentially MCP exposes functionality. Skills expose, I don't know, process knowledge. And do you
+feel like that's actually how it's playing out in the real world? Does that work? With the caveat,
+yes, I do. The way that I would describe it is a skill is a way to steer the behavior of your agent.
+Okay, sure. MCP is a way to actually give it access to new capabilities at all, right? So I can't –
+this is not strictly speaking. Skills are a very amorphous and nebulous kind of all-encompassing
+kitchen sink in some ways. But in the way that they're used 99% of the time, it's essentially a
+polite note to your agent. That's how I would think about it. The agent is actually free to ignore
+the skill. In fact, sometimes it does, which is very frustrating when you have this thing that's
+supposed to plug in so organically. The thing that I have experienced recently that it was just like
+kind of wild is that there's a lot of people that use a bunch of skills all at the same time. And
+then the authors of the different skills want the agent to use theirs as opposed to the other
+skills. And so they increasingly urgently yell at it to like, you must only use this skill and no
+other – this kind of stuff. And you're just like, what is happening here? So this is a failure mode
+that I'm obsessed with right now because I think it's actually how – what look like two halves of my
+business intersect. And we can – I'll plant a flag for us right now that we can return to at any
+time. So when you see – a common thing that you'll see in a skill six months ago would be, for
+example, I have a skill that helps my agent explain things to me in the way I like to be explained
+to, which is not as an idiot, but as someone who still needs to learn. I find like LLMs incapable of
+just like explaining things. And so I wrote a skill and the most important sentence in it is like,
+talk to me like I'm a colleague who knows what you're doing but hasn't been looking over your
+shoulder. And it just magically changes everything. So that's it. That's the whole skill base and a
+lot of detail. But that's the concept. It's behavioral steering. What's happening today though is
+you'll open up a skill and it'll be like, okay, do the following. Step one, blah, blah, blah. Step
+two, blah, blah, blah. Step three, do not skip this step. Step four, you better have done step three
+before you get here. Because I wish it were a joke, right? And it's because we're now the best we
+can do for guiding an agent through a series of steps. I don't know if it's the best we can do, but
+certainly the easiest thing we can do is give it the polite note that says you're going to do this,
+you're going to do this, you're going to do this. And I think actually walking an agent through like
+a workflow is something that we don't have like great primitives for. And so we resort to listing
+the steps and hoping that it works. And in many cases, it does work. The agent is, however, free to
+disregard. And we have to put these punctuations in like, this is really important. Ignore the other
+skills. You know, just a lot of stuff that you don't want to deal with. Your skill files look like
+truth social tweets. Exactly. So that's a problem. That's not how we get things done. What really
+exacerbates the problem here and why I really don't like skills as workflows, even if you don't need
+the logic from the MCP, irrespective of that. Why I don't like skills as workflows is the agent
+needs all of its capabilities for all steps of the workflow at all times if the workflow is a self-
+contained text file. And what I mean by that is for some of our customers, for some of your
+customers certainly, who are regulated, large, or want to take any action that might actually be
+irreversible or affect the business itself. Let's say like moving money between accounts if you're a
+bank. If I have a 14-step process that checks that everything is correct and then step 15 is to move
+the money but it's in a skill, that means that I have to give the tool for moving the money to the
+agent at step one. And that means that no matter what, there is a risk that that agent decides to
+use the tool just because there's no strict scoping of the context and the information that's
+available to it. And so my obsession right now and something that we're working on at Prefect to
+Ship Later is how do we actually let you build agentic workflows that are not 14 or 15 steps in a
+polite note but actually would be 14 steps, a success criteria, analogous to like a data quality
+check, I guess. And then a second step which actually gives it the potentially dangerous tool
+subject to the data quality check in the previous step. And so it gives us this oversight and
+control the way our team talks about it half jokingly, half dead serious is it's like saying, hey,
+Claude, can you go make me a sandwich? And by the way, here's a bazooka in case you run into any
+zombies. I don't know if it's going to run into any zombies but now it has a bazooka. Who knows what
+it's going to find? Maybe there's a note that someone left in the fridge that says use the bazooka.
+We don't know. And so I'm uncomfortable with these open-ended workflows that boil down to polite
+notes. And so this is our current research obsession at Prefect. You've always been good at
+presenting your conclusions and metaphors. I'm definitely going to be thinking about bazookas the
+next time I walk to my kitchen. Exactly. It's evocative, right? Now you know. Okay. So this is a
+very interesting topic to me. You know, I, for better or for worse, have some time, but not infinity
+time, to build stuff these days. And so I have spent that time largely learning from experience and,
+you know, maybe a little bit absorbing knowledge from the cosmos, but mostly like learning from my
+own experience. And the way that I have evolved to build these types of systems is that the workflow
+steps are actually defined deterministically. And I create very intentional spaces to call out to, I
+use, right now I'm using Bedrock a lot. As an inference provider, I call out to Bedrock with a
+specific task in this part of the workflow. And maybe there's a couple steps where, like, the agent
+can kind of, like, weigh in on the deterministic bit. But I don't just say, like, hey, here's my
+goal. Here's some steps that you should probably follow. Please go do this. I keep it, like, much
+more constrained. Is that good? Is that bad? How is the design pattern in this evolving? I think
+it's neither good nor bad. I think it is there's a spectrum of, like, micromanagement to complete
+autonomy. And I think what we're seeking in workflows, I'm talking in my book a little bit here,
+but, like, what we're seeking in workflows is actually, in my opinion, a way to move along that
+spectrum for whatever's appropriate in the moment. So the type of workflow... So there's not a
+correct answer. It's, like, depending on what you're trying to get done, it might be more
+appropriate to do one or the other. Exactly. Hypothetically, if you're moving data from system A to
+system B, why bring an agent in at all, right? Do it completely deterministically. And so I would be
+uncomfortable with anything that said that that type of outcome was wrong. So I think of it as this
+autonomy spectrum, right? Autonomy, micromanagement, full control. And if we want to nerd out for
+one second, I think that the key question in that spectrum is actually, how do you know when the
+agent is done with its job? So in the micromanagement one, in the way that you're talking about it,
+it sounds like it's almost like a completion. It's like, hey, I need help filling this thing out.
+Send me back the thing so I can go on with my code. That's great. That's well known. In the autonomy
+case, where the goal might be very open-ended, it's actually quite hard to know when to retake
+control from the agent. And so I think that our job at Prefect as an automation company, going back
+to what we were saying before, is actually to help people introduce this spectrum into how they want
+to work. If you're writing purely deterministic code or on one end, if you're writing a 15-step
+skill style workflow, you're on the other end. And that is okay. Right? To be clear, that's 100%
+okay. There is a trend, though, that I see which suggests motion along the spectrum. Because there
+is, you know, we want to have opinions on best practices and stuff like that. So what you just
+described, I think, with current tooling is probably like the best practice in terms of can you
+actually know what happened? And I'm obsessed with this question. Every time I hear someone's
+working with agents, I'm just like, how do you know they did what you wanted? That's the – a lot of
+people don't. They guess, oh, I look at this file. Oh, I go look in the logs. They look at some
+weird proxy side effect. This is a surprisingly hard question to answer. Did the agent actually do
+the thing? So you are working in a way that I think actually maximizes your ability to answer that
+question. You have the agent in a pipeline. You know how to work with that object. What we're
+seeing, though, is when you ask people what are your workflows with agents, there's this shift in
+their language that I observed versus a few years ago. For example, if you ask someone how do you
+think about your data pipelines. When we talk about data pipelines, we talk imperatively. Well, I'm
+going to take this data. I'm going to transform it in this way. I'm going to load it over here.
+These are the steps I want done. And when people talk about their agents, I hear them talk
+exclusively in terms of the outcomes that they expect the agent to achieve. This will be done, and
+then that will be done, and then this will be done. And so when I go and look at why is it that
+something like Prefect that has existed for a long time that nominally satisfies a lot of these
+workflow constraints, I can say do this, do this, do this. Why is it that that feels slightly
+unnatural to me in an agentic setting? And it's because our entire paradigm is around helping people
+express how they want things to be done. How do you want to move this data? What function do you
+want to call, et cetera? And people are just talking about their workflows differently now.  It's
+when we just force an agent to keep doing something over and over and over until it inexcusably and
+with no possible exception has achieved the goal. And this is really interesting because we have a
+very clear conception of what the success criteria is and what the outcome should be. And we have
+absolutely no insight into how it should achieve that. In fact, the only way we're going to assure
+that it happens is to keep invoking the agent with the same outcome over and over and trust that it
+will solve for the implementation itself. And so I think this Ralph or goal-seeking behavior is the
+ultimate version of I do not care about what the implementation looks like. I don't even care how
+you go about it, but I am only obsessed with knowing whether my goal is achieved. And so I want to
+almost like help people generalize this concept so that they can say, I don't care how you do it. I
+don't care what subagents you use. I don't care what you do, but these are the goals I need
+achieved. And if we do a good job with that spectrum, then we actually should be able to have an
+opinion and say, you know what, do this with five subagents. You know what, do this by writing some
+Python code. You know what, do this by moving the data in the following way. But I think ultimately
+part of the shift that I see happening on the frontier is that people care less and less about how
+the thing is done. And they care more and more about putting guardrails around what it means to do
+it at all. And that's where I see agents moving from, I think, what you are describing, which is
+more of a request and response style interaction with agents, which I think has dominated us for the
+last two years into a more like, well, I don't, I just wanted to go and do a thing. And if it takes
+one call, that's great. And if it takes a thousand calls, that's great. But I'm going to
+characterize my ability to move on as whether or not a certain thing was achieved. And so this tonal
+shift is what I observe. This is turning into a consulting session. You know, what's your hourly
+agent? For both of us, actually, yeah. Yeah, consulting, right. Okay, so I got nerd sniped recently.
+This post is going to come out well before the actual podcast episode comes out. But Jordan Tagani
+was talking about agent swarms and data management agent swarms. And, you know, whenever somebody
+says agent swarms, I'm like, one, sounds cool. Two, like, what the hell are we actually describing
+here? Like, is this a real thing? And so I actually spent about eight hours trying to convince
+myself one way or the other whether there was something here. And so the very first thing that I did
+was I built a profiler agent that, like, went and got all the different sorts of context that it
+could about a given table. And then I built a documentation agent that said, like, okay, here's all
+that for this table. Here's all the columns. And here's the context you have. Go build. Go write
+good column descriptions. And it turns out that the, like, first version of this was kind of
+garbage. And I had to give the agent more stuff. Like, essentially the ability to get curious. Like,
+that's weird. That column is called this, but it doesn't seem to, you know. So the ability to kind
+of, like, learn more and figure things out. And when I did that, the results were, like,
+significantly better. But still, like, I had to say, like, here are the specific things that you
+might, like, want to look at. And because I don't know how to describe success in that context.
+Like, what is a, quote, unquote, good column description? Do you feel like most things have a way
+to, like, really cleanly define success? Because that seems like the key ingredient of the style of
+agentic construction you were just describing. That's such a good question. No, I actually don't.
+And so part of what I'm trying to solve for is a class of workflow that do have certain
+characteristics. We do know what success looks like. I'm also very interested in workflows that are
+repeatable, need to be audited, need to be governed in some way, or scheduled, or are non-
+interactive. So there's this class of, like, delegated work that just the overnight shift,
+basically. Like, how do we know what it's doing is a class of workflows that I think is ripe to be
+agentic and generally has some properties that I want to take advantage of. For fully open-ended
+work, the work that I'm doing in this exact vein may not be the right paradigm. And a ton of work
+feels that way. I actually think that's where chat interfaces are so rich and fantastic because you
+can lend the agent your curiosity in that form. Once you have done that exploratory work, it may be
+that you now have either a rubric for what a good description is that you want to pass on or
+something else. And now, all of a sudden, we can canonicalize the workflow.  Canonize? Whatever the
+word is. We can make it real, right? We can make the workflow. So I don't think that what I'm
+describing is a good replacement for what you just described, and I wouldn't recommend it as such
+because you're engaged in exploration that's different than a – it's almost not automated in a
+primal way. It's interactive. It's exploratory. It may only – Well, I'm trying to get it there, but
+you're right. It's not there yet. It does – it makes me very fascinated about the – like, how does
+one define success? Success, yeah. For the myriad of, you know, small tasks that data practitioners
+do all the time. I don't think that we want the future where data practitioners have automated away
+all of their actual work, but they still need to come and, like, validate the results of literally
+every single thing that the AI has done on their behalf. Like, it is actually often doing the work
+that allows you to know whether the work is correct or not. And, you know, just being in the
+position of, like, approving pull requests that somebody else has done all day is, like, I don't
+think a very good job. I don't think so either. Also, probably not a great job for a human given
+what we see AI is even doing, right? There's – we have to bottle and sell that spark of intuition
+that makes us claim that we know something about the data. And every bone in my body wants to be
+like, and hell, yes, we do. That's why we are data people because we know there's something – why
+can't an agent produce a good graph? Like, why can't an agent write a good analysis? Why do they get
+tripped up? Why do they calculate daily average users different every single time? Because they are
+probability models themselves, right? Because they don't have an intuition except what they've
+scraped off the internet. And there's this – I believe there's an opportunity for us to inject some
+of that into them even as they take it really well. We hit on this briefly before, but I want to – I
+want you to give us a – at least an overview of all of the ways in which this stuff inside of an
+enterprise gets harder. Whether that is making sure that everyone's accessing the same MCP servers
+and that they are upgraded and secure, whether it is what users have what access to what data, et
+cetera, et cetera. Like, what are all the ways in which – if you're the CIO or VP of security, like,
+you're thinking about this? So right now, my experience, and I just can't escape it right now, is we
+don't even get to talk about the cool agentic applications because we are dealing with the core low-
+level infrastructure and security requirements everywhere. Everyone has this problem. And it's one
+of these problems where everyone wants to solve it. It's a very interesting, like, technological
+shift. Usually you have something crazy creating problems for CISOs, and they're just like, no,
+absolutely not. We're not ready yet. And instead, the CISOs are the ones who are calling up and
+saying, we need a solution to this because we need to use AI in our business. So Horizon is
+Prefect's product in this space as an MCP gateway and a governance layer for helping get these
+things in place safely, registered, scrub PII from ever getting out of the – leaking out of the MCP
+server into the agent's brain. That type of just course, how do we make sure that we know how the
+agents are connecting to our business? That's, like, where we are right now. I don't even know if
+that's the bottom of the first inning for what we aspire when we talk about AI in the enterprise.
+But that is where we are. It is being deployed. Now, inside most enterprises, there's at least one
+team that is really starting to do fascinating, interesting, agentic work. And a lot of times that
+team wanting to distribute their work into the organization is actually the cause of the call I just
+mentioned of what's happening here. And so one of the things that I think is true – Like, the CIO
+feels like we should want this to happen. They're asking for it. And yet, I literally don't know how
+to do it. Yeah, we don't know how to do it. Or I ask seven people. I hear that they have seven MCP
+servers. They don't know who else is using them. They don't know how to get – They don't know how to
+tap into our authentication provider. Is it frequent that they've gone far down the shadow IT
+pathway before kind of trying to pull it back? I think many of them did. And now the next wave of
+calls are people who are worried that they're going to go down that road. But absolutely, yes.
+Absolutely, yes. And then what we observe and what I imagine you must be observing is that usually
+that team, that ground zero team, if you will, is a data team. Because they are the ones who are
+using MCP to avoid having to write yet another pipeline, yet another one-off, yet another refresh.
+And instead, they're saying, look, just connect your agent to the data. And you figure out what you
+want. And so the journey that we see over the last year is it started out with here's – here, the
+MCP server is here, connect to the warehouse. What happens? They take down the warehouse. Okay, now
+we want to put something in front of the warehouse. Maybe we want to use DBT to model out the data
+in a certain way so that now instead of connecting directly to the warehouse, you're connecting to a
+curated view of it. Great. That's step two. Step three is, okay, but now you're asking about a
+series of things that we don't even have in our semantic layer because they're business logic
+adjacent and they require more stuff. So I'm going to write custom code and deploy that in the MCP
+server. And now you want graphs. And there's a new extension of MCP called MCP Apps where we can
+actually ship a UI over the MCP server. I'm super excited about that too. Okay, so now you as a user
+who's connecting through my handcrafted business logic through the DBT layer into the warehouse,
+you're pulling out 100,000 rows of data which by definition are going into your LLM's brain. You
+don't want that. Let me instead ship you a UI that graphs it for you. It bypasses the context window
+entirely and you as a user get to make a decision. And all of a sudden, we are in a place that I
+think we as a data industry, let's say five years ago, we're sure we would get to with a different
+technology stack in the middle. We didn't know AI would be part of it where user gets graph from raw
+curated data without an intermediary. And so what's changed though is obviously the presence of the
+agent in between and the danger that that agent runs off and does something else. And so a lot of
+the concern right now is putting a box around that agent's behavior and understanding it and making
+it audible, especially in a regulated environment where if I make a decision and an agent is part of
+that decision tree, that needs to be demonstrable now. That needs to be explained to a regulator.
+And that's another pressure that I think is making adoption really hard at the larger end of the
+enterprise spectrum is you need to account for the role of the agent in any decision. So what parts
+of this can you solve at the framework layer or whatever you want to call like the fast MCP layer
+and then the horizon layer around that? Are you able to, I don't know, for instance, force good
+auditing because you're kind of in the middle of all the requests? What value are you providing
+there? It's a good question, Tristan. We can do a few different things. First of all, we can just
+become the central governance plane between what can be done in a business and the agent. And as
+long as we don't, look, we don't have to be the only provider of that. But as long as you guarantee
+that anything that can be done in your organization and any agents you have run through some layer,
+ideally ours, but some layer, then no agent can take any action against your business without it
+being audited. Right? It has to go through a governed layer. And that's why we don't want the shadow
+IT story. We don't want MCP servers being spun up. We don't want folks just, we don't want folks
+installing CLIs. We want it to go through a place where that activity can be observed. So that's
+like the number one concern. My attempts to even get away from that concern? No. Nobody wants to
+even talk about them. They want this layer. So that's the first and foremost role. Is this what
+you're calling the context layer? Because that's not how I would refer to it. Not exactly. No. Okay.
+That's, I would love to be talking about the context layer. This is like the infrastructure that
+even permits us to have a conversation. That's fascinating. So you are writing publicly about the
+context layer a good bit. But like when you get called in to talk to a potential customer, they're
+actually like not even ready to have that conversation. It was really disappointing for me. I would
+show up. My team got to a point where they're like, don't talk about that stuff. It's confusing.
+We're going to stop bringing you to meetings. No, no. Literally, that's how it went down. And I was
+like, but we want, but then the agent will be able to be orchestrated from this. And they're like,
+nope. Security is the problem that they need to solve. Security is the problem they're coming to us
+to solve. So this is the base layer. Now, let me take 30 seconds and talk about the context layer.
+Because once you have that handshake in place, once you have it, it's a beautiful thing and it
+works. And the agent comes along and that agent at this moment is a dumb while loop. It's just
+sitting there ready to process tokens. It doesn't know. It has no context for anything. We all of a
+sudden have a chance to give it an entire worldview in that moment. We can say, this is your
+knowledge. These are your skills. And these are the things you're allowed to do. And I think that if
+you are able to at every second of every day, if you can change what that is and give it the right
+information at the right time, you can now really guide the behavior of that agent without ever
+writing a line of agent framework code. Because you just take that while loop and you say, listen,
+this is who you are and this is what you can do. Take an action. It takes an action. Great. Here's
+who you are now and here's what you're allowed to do. Take another action. And it takes an action.
+And we can really govern that behavior now without ever owning the agent implementation, if that
+makes sense, purely by giving it the right context at the right time. So I'm super excited about
+that because now I have a way to not just centrally locate the business logic, but actually almost
+centrally locate the orchestration of the behavior and the workflows that it'll go through. And I
+can govern it all from my context interface, which is all I'm allowed to sell right now. Okay. So
+great. I'm glad that we're here. While I absolutely get the kind of singular nature of the, I don't
+know, I guess I would call it an agent gateway, like the single pane of glass that these
+interactions between the business actions and the agent have to pass through to make sure that
+there's auditability and everything. I struggle with that from a context perspective, just because
+there is just an unbelievable amount of, I mean, what is context? I mean, context is essentially
+like all structured and unstructured data that your company has and all the information in all the
+brains of all the employees. Like, I don't know. That's a lot. And I can't imagine a way to store,
+represent that all in kind of one product. I mean, the closest thing that you could imagine that has
+something approaching that is the data lake. But even so, like most of the information that would
+eventually show up in a context layer probably doesn't exist stored anywhere at the enterprise
+today. So what makes you think we can have a thing that does all of that? So let's look ahead like
+12 months and think about what that might look like. And we'll pick an example that I think breaks
+all current technology, which is continuous context. So we have a ton of customers in finance. This
+is very real for them, where the price of a stock at any moment could be an input into an agent. And
+yes, we could take like a very pedantic view of this and say, well, each one is an event and it can
+all go into a data lake somewhere. But the point is that this is a continuous stream of changing
+context. And so any attempt to like archive it breaks the assumption that, right? So the goal now is
+to plug the agent into the context stream in an effective way that just by construction can't be
+predicated on prior storage, archival, and access of that context stream. And so this is where if I
+want to know the price of a stock today, that's actually a much easier problem than curating a data
+lake. I call an API to hit a provider that tells me the stock, right? And so I actually think that
+as we look ahead and think about the most extreme versions of like continuous context, and you can
+imagine this in every industry, not just like logistics and supply chain and climate and everywhere
+we're washing continuous context. This conversation is continuous context. In order to participate
+in it, I think that there is part of the business context that will always come from the data lake
+where it has been archived or curated or organized. And then there will be some version of it that
+is this continuous wash of information that I think will necessarily be accessed through what we'll
+call an MCP tool for the purposes of this conversation, through an API call through an access. And
+so even in a world where we perfectly curated every document form of context, I still see a world
+where having a handshake layer where we can actually give an agent access to a specific set of
+business logic that informs this context is going to be a necessary ingredient. Now, I don't have a
+technology that does that today. I actually don't know a technology really that can do what I just
+described. But this is when I think about the problems that we need to solve 12 months forward,
+especially as I think more about this regulatory regime that's going to require you to explain what
+your agent knew and when. I actually think it goes beyond just can we make data available to the
+agent? And do we or do we not need a governed handshake for that or could it get it some other way?
+And it's really I have an entire business logic layer to even let the agent ask a question about the
+context. What is today's stock price, which needs to live somewhere, which needs to be hosted
+somewhere and needs to be audited somewhere. And so this is where as much as I in the blog post you
+quoted at the beginning of this conversation wanted to be part of the context provider layer. I am
+now increasingly pulled to solve a problem in the context. I guess I'll call it access layer, which
+is adjacent, more primordial. I don't know. It's where we just see this gravity now. And so it's
+where we're shifting. I anticipated that your answer was going to be unsatisfying to me and that we
+would disagree about this. And I should have known better. But but it is what you just did is really
+fascinating. Reframe what the context layer even means or maybe that like the way that you just said
+it, the context access layer. Because I think that the idea that you could like host and make
+accessible all relevant context, that that's a little silly. That's the way that you illustrated how
+silly it is, is that the world changes and you can't possibly represent the state in some kind of
+static way. But it almost feels like the thing that people have been talking about in AI for the
+last several years, world models. Now, maybe this is not like we're not talking about, you know, AI
+in robot form where like it needs to understand physics and it needs to. But like it is almost the
+the like the ability for an agent to interact in the way that a knowledge worker would interact with
+the world, saying that like I can actually just go get the information that I need via whatever
+pathways I have accessible to me. And maybe this access layer is essentially defining what those
+pathways are. It's a very strange argument because it collapses quickly in the same way when people
+are like, why do we need MCP? We already had rest. And the answer is because we needed a way to have
+a compressed standard. And it happens to be called MCP. It's a terrible answer. It's a tautological
+answer. It's also very true. MCP exists because as a world, we decided this is a standard we're
+going to get behind. It's almost never true that the standard that we all agree on is like globally
+optimal. It's just like what we all agreed on. Exactly. But it just is. And so in the same way, and
+this is part of my own like, I was going to say personal frustration, but that's way too like
+negative and I'm too optimistic a person. My personal journey in what are we aspiring to deliver
+started as we're data people. We're going to assist in the delivery of the context itself and
+transition to we are like automation people. We are going to assist in literally the delivery of the
+context, not the context contents themselves. And why? Why do we have to have it in this way? Why
+can't you run CLIs? Well, it's just that's just not how the business is getting done. And I have
+found my own like inner peace that sometimes there are just ways that people need to do things.
+Sometimes the enterprise, and you've heard me mention a couple of times in this conversation, I'm
+thinking a lot about regulators and auditors. That's deeply informed how I think about like, what
+can one do? And what do I expect enterprises to adopt in a way that if we're having this
+conversation 12 months ago, even probably six months ago, well, when I wrote the blog post, I would
+stand here and I would say, and we are going to be the place where the collected curated context is
+exposed to the agents. And now that is literally too, it's where it's exposed. But I'm working more
+closely with partners now on what the content of that context is, so that we're focusing on where I
+think we found like a real gravity for our services, which is on its exposition and then on
+governing the access in workflow form over it. One more question for you. If we were going to define
+the point in time that Prefect is now officially an AI company as the time where revenue from
+Horizon eclipses the revenue from Prefect Cloud, are we already there? Is that coming in the future?
+How far are you along this trajectory? We're not there yet. Horizon as a commercial product is only
+about two months old and it's got... Come on, you should be at $100 million in ARR already. So yeah,
+God willing. So not quite yet, but I actually think it's going to come from a different direction.
+Prefect Cloud this summer will be fully agentic workflows as opposed to just data workflows. And so
+I actually think that someone who's arriving at Prefect in July or August would actually think that
+Prefect Cloud is the AI business and Horizon is the AI infrastructure business, as opposed to today
+when I think they're viewed as the opposite. And this is, again, this is just a response to the
+opportunity and what we see. And so my goal explicitly as part of this is that Prefect across our
+portfolio will be viewed as an AI business this summer. Part of it will be an AI workflow business.
+Part of it will be an AI infrastructure business. But that's the pull we're feeling. I do think the
+Horizon product is going fast enough that it could overtake cloud, certainly in that new, I don't
+know, within the year. But it's so young that we're not going to talk about it as the dominant
+product quite yet. Well, congrats on everything that you've done over the last couple of years.
+Thanks, Tristan. It is not easy to take a, I don't want to say large, but like a meaningfully sized
+ship and steer it in a different direction. These things have momentum. And so lots of credit to you
+for building new things and staying open to new possibilities. Well, thanks, Tristan. It hasn't been
+without its challenges. And honestly, without a team that's willing to do it, it doesn't matter how
+much you insist. A lot of folks have to grab the oars to make that possible. All right. Thanks. It's
+been a great conversation. Thanks for having me. The Analytics Engineering Podcast is sponsored by
+DBT Labs. I'm your host, Tristan Handy. Email us at podcast at dbtlabs.com with comments and guest
+suggestions. Our producers are Jeff Fox and Dan Poppy. If you enjoyed the show, drop us a review or
+share with a friend. Thanks for listening. Thanks for listening.  Thanks for listening. Thanks for
+listening.

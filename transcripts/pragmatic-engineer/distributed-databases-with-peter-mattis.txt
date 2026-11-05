@@ -1,0 +1,1308 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Distributed databases with Peter Mattis
+DATE: 2026-09-30
+SHOW: Pragmatic Engineer
+LINK: https://newsletter.pragmaticengineer.com/p/distributed-databases-with-peter
+AUDIO: https://api.substack.com/feed/podcast/217889431/e6c0522fd2ba52d0d7c1d42880a1a952.mp3
+DURATION_SECONDS: 6109
+TRANSCRIBED_AT: 2026-11-04T02:12:55Z
+----------------------------------------------------------------------
+He built a Gimp image editor while at college, designed the original storage system behind Gmail,
+and built many more large, complex, and widely used systems. This is Peter Mattis, co-founder and
+CTO of Cockroach Labs. Before we sat down to talk, Peter told me, for the last 30 years, I've always
+been a prolific coder, but my current output is a bit insane. And this isn't vibe-coded junk, but
+database-worthy, high-quality, high-performance code, thanks to working with strong coding models.
+Today, we cover why B-trees are so important when building databases, and why Peter kept reaching
+for the data structure over and over throughout his career. How he wrote 100,000 lines of production
+code per year pre-AI, stop coding between 2022 and 2024, and why he is back now. Why he thinks AI
+agents are lazy about testing, and how this is an easier fix than it looks. And many more. If you're
+interested in distributed databases, distributed storage systems, or knowing how Peter manages to
+use AI to produce unusually high-quality and production-ready code, this episode is for you. This
+episode is presented by TurboBuffer. A ridiculously scalable, fast and cheap hybrid search engine
+built on top of object storage by an engineering team I've really gone to like after spending time
+with them. The TurboBuffer engineering team is doing something really, really cool. They're
+completely redesigning their storage architecture from first principles to make storage faster,
+cheaper, and more reliable at scale. If you follow TurboBuffer, you know that their storage
+architecture was a massive part of their early success. Redesigning a winning architecture is a big
+deal. It's one thing for your query plans to pass unit tests. It's another to bring each query plan
+to performance parity, or better, while maintaining correctness and reliability in production.
+Here's the cool part. TurboBuffer is documenting the whole thing. Their new storage architecture,
+which they're calling Teepuff V3, demands some hardcore systems engineering, and they're building it
+in public, sharing design decisions and benchmark results as they ship. They're keeping a work log
+of their journey. And the first post just dropped today. Follow along at TurboBuffer.com slash V3.
+That is TurboBuffer.com slash V3. Peter, welcome to the podcast. Oh, I'm happy to be here. This is
+awesome. I wanted to get into how did you get into tech originally? When did you figure out
+computers are interesting? I figured that out in kind of elementary school, high school. Gaming was
+a little bit of a gateway drug for me as a software engineer, as many other people. I remember like
+early on, my mom did programming at IBM at some point. I'm never even quite sure what she did, but
+we had computers always around our house, like Apple 2 Plus, Apple 2GS. I'm from that era. On up
+and, you know, go to the bookstore, I'd find a book on BASIC or magazine, type in programs, no idea
+what it was doing. But, you know, just kind of like I was addicted to it. You can produce, put stuff
+into these computers and you get interesting stuff out. And then I got to college and I was like, I
+didn't think there was any money in computers. I didn't know anything about it. I started as a
+mechanical engineer, following the footsteps of my dad. Oh, you started mechanical engineering as
+your specialization? Yeah, as my major. Yeah. Major. And I got in there and I was like doing, like
+I'd done some computer stuff before. It was a real foolish move to do this. But first semester of
+doing these homework assignments in mechanical engineering, they were god awful, like six pages for
+a single problem. And I happened to take a CS course at the same time. And it was so easy. And then
+everybody almost was failing it. I'm like, I'm in the wrong, I'm in the wrong field. Let me switch.
+And then you switched. And then I switched. Yeah. What was the first software that you built either
+at college, it must've been a college, that you were like, all right, this is a piece of software
+that I'm kind of proud of. That's a complete piece of software. Well, I mean, the big thing that I
+did along with my roommate in college, we had this course, was it a compilers course? I'm not quite
+sure anymore. This is like 30 years ago. And we were kind of bored with it. So we wanted to do
+something like kind of fun on the side. And I'd done journalism high school in my senior, junior and
+senior year. And I knew stuff about kind of computer graphics and wanted to do something like Adobe
+Photoshop. So started just kicking the tires. And we built up this program that a lot of people know
+of called the GIMP. And along with the GIMP, I did a lot of the graphics library, GTK. This has
+since evolved just massively since then. It's kind of interesting because after college, I kind of
+stepped away from it. Didn't really stay involved much past my first year out of college, but
+definitely people still know me. And it led to other, some interesting events in my career. And it
+was like starting GIMP. It was literally just you saying, all right, I want to do something like
+Photoshop. How hard could it be? And then you just, this wasn't through what you learned in college,
+right? This was like you figuring out how to build, you know, like a graphical, I guess, engine,
+rendering, drawing, data structures, all of that stuff, right? All that stuff. Figured it all out. I
+remember trying to look at some papers back then. My roommate was looking at papers. We're just
+fingering it all out. And it's one of these things. You almost kind of need to be a little bit naive
+to start anything like that. Because if you know how hard it's going to be, you would never start
+it. So I think there's this, like, you have to have this level of, like, if you're really, truly
+wise about the effort, you, like, you never get into it. But then when you get going, it just keeps
+on snowballing. It gets far further and further along. And then at some point, you're like, wow,
+this is really awesome. But there's an interesting little tidbit associated with our work on the
+GIMP, which is kind of a little bit known. I think we've talked about this before, but it's just
+kind of fascinating where we were getting to the point where we're like, we should release this to
+the public. And back then there was Usenet news groups where people would post stuff. And there's
+one on graphics. And remember, like, just a couple weeks before we were going to release our first
+version of the GIMP, someone else came on. They were like, I've been working on this graphics
+program. And it did everything the GIMP did. Every last thing. And then some. And we're just like,
+oh, that sucks. I guess we'll just keep on working on it. It's been fun. And then we released the
+GIMP. Never heard from this other guy again. And I just took a little lesson from that. There's
+always going to be someone else working on your idea. You can't get dissuaded if they pre-announce
+it. Nothing ever comes of it. And a lot of the marketing behind some of that stuff that you might
+hear is like, I mean, I don't know if we, like, we stole his thunder. I'm not even sure what
+happened. Never traced down what happened, but there's a real lesson there. So there's a possible
+future where you read this announcement where someone's saying, I'm going to build all of this
+thing. And you go like, ah, you know, someone did it. And you kind of go back and just do something
+else. And the GIMP never happens. That's right. Wow. Yeah. I guess, especially with today with
+startups, you know, it sounds like just do your thing, put it out there at the very least. Right.
+The advice I give people is like, you might have a unique idea, but most likely there's like a dozen
+people out in the world who've had the same idea. And there might be a couple of them working on it,
+but a lot of people don't even work on it. There is like whatever they can't get going on their
+idea. So, you know, I wouldn't be concerned at all. It's like you hear someone else working on your
+same idea. That's probably the case. You know, we're working on some cool stuff now at my current
+company. I guarantee you there's other competitors out there working on the same thing. And just,
+you know, it's like, it's a competition. You got to enjoy that aspect of it, not be afraid of it.
+And what were some fun things that the GIMP led to? Well, you know, I got kind of tired with
+graphics and that's why I kind of moved away from it after college. I got into storage systems and I
+bounced around, you know, I worked at one of the early search engines, Inc. to me. And then I, I got
+over to another startup and I'd met through that time period in that first startup I was doing, um,
+met Larry and Sergey from Google. Because it turns out that Larry, I think it was maybe Sergey. I'm
+not quite sure. The very first version of the Google logo was done in the GIMP. So they knew of us.
+Somehow one of them, you know, looked me up, asked me to come interview at Google. I did back in
+2001. And, uh, This is when Google was three years old. Yeah. Three years old. And, uh, I said, no,
+You did not. I said, no. Yeah. No, here's the calculation in my mind. I was like, Google's down in
+Mountain View. I was living up in San Francisco and I didn't want to do the commute. So I, uh, went
+and worked at another startup for a year. And, uh, that one, after a year, I like, I saw it wasn't
+going anywhere. And, um, they called me back up and they said, Hey, do you want to interview again?
+I was like, sure. Like, we're not going to be able to offer you the same stock options you got
+before. I'm like, okay, I can't remember what it was. And I still can't remember what they offered
+me the first time. Um, but it probably would have made a lot more money if I had taken that first.
+But I did all right. I'm not like complaining, but it's one of these things like, yeah. Now I think
+back about that. I'm like, Oh, a lot of good stuff came out of it. Some point along the line, Red
+Hat was going public. They actually offered friends and family stock during their IPO to a lot of
+people. We got offered friends. I made a little bit of money off that not a lot, but it was like
+just after college, it was actually quite significant at the time, you know? So, I mean, there's a
+number of good things that kind of came out of that. And I also use the GIMP as a, you know, I was
+looking for like, Oh, I can't support Photoshop and here's the GIMP. And it did so many things. So
+like, I'm sure there's so many people, like you had a positive impact of being able to use this
+thing. And, and the nice thing that I, what I really liked about it, it is it was free, but I wasn't
+like stealing any software from anyone. You see what I mean? This was at a time where free software
+was not as common as today. Free and open source was not as mainstream as it is today. Yeah. So the
+other cool thing I've heard from a lot of people, because people still like, I mentioned this, like,
+Oh, I've used it. And then some people, you know, software engineers, like I learned how to program
+by looking at your code. And I'm just like, wow, that was a code I wrote 30 years ago. And I wasn't
+nearly as good as software engineers I am now. And then you got into Google second time around. You,
+you, you, you said yes. What did you start to work on? Yeah. Well, I got in there and they said
+like, Hey, you know, this was early day, 2002 is April 1st, auspicious date. Um, your start date.
+Yeah. April 1st, 2002. And I got in there and they're like, well, you know, we're going to actually
+build email, Google email. And it wasn't called Gmail at the time. There's a codename internally.
+It's called Caribou. Caribou. Yeah. Um, and got in there, started working on it. And I was kind of
+tasked with working on the, the backend threading and message storage and indexing system and worked
+on that, you know, pretty hardcore for the first year and a half. Actually, I was on to, I think it
+was three years, um, on it through the launch, which actually happened to be April 1st, 2004. Do you
+remember this? There was a, uh, it was like considering April's full joke. Yeah, I remember. So
+correct me if I'm wrong, but the, the launch said Gmail with one gigabyte of storage or something or
+infinite storage and like star one gigabyte, I'm not sure what it was. But back then most email
+providers would give you about 10 megabyte of storage, the free email providers, and then you could
+pay for maybe 50 megabytes or a hundred megabytes, but that was really expensive. This launch, it
+looked like an April fool's joke because who could possibly give you a free email service with 20 to
+50 times or a hundred times more storage. We were talking about this internally. It was like kind of
+a shock and awe campaign for the industry. I think it was actually four megabytes for like Hotmail
+or Yahoo mail. And then you had this and not only that we had, uh, so much more stores, but it was
+indexed really fast. So, you know, you could do a search and we'll come back almost instantaneously.
+But can you tell me, can you tell me internally, like when the project started, okay, we're going to
+do email for Google, how did you and the team arrived to the point of like, okay, we will offer all
+this storage and we'll do it fast? Because this was at a time, if you can take us back, but what I
+remember is hard drives were still expensive. They were relatively slow. We're talking HDD. We're
+not talking necessarily about SSD, if I remember, but if you can take us, can you take us back of
+what, what it was like, what the constraints were like, and then how you innovated, like to actually
+like do something that's never been done before? Yeah. So at the time, Google internally had this
+large distributed file system called GFS, Google file system. Yeah. And, uh, we were like basically
+looking at numbers and being like, yeah, we think we can build on top of this. They have a lot of
+knowledge about how to do, um, search and retrieval. It ended up being that like some of the
+existing systems, they had for search and retrieval, they started building the prototype on there.
+And then that was completely rewritten. That was actually what I got involved in because I got in
+there and there was already a prototype and then it was completely rewritten. So I was on that, you
+know, uh, threading side, we decided to have message threading right from the get go, which is also
+kind of innovative. That wasn't common in email systems. And, and spreading that to have the message
+thread, which I assume needed data structures on on the back and it needed like, you know, storage
+and, and figuring out the read intensity to those kinds of things. Yeah. You know, there's, uh, some
+B trees involved in that. I think that might have been the second time I implement B trees. And I
+think I've implemented them like a dozen times now. How do B trees relate to email threads? Uh, it's
+just like, you have to, you know, have some stores there where you have a thread ID, a message comes
+in, you have to look up. It was using the search index to match actually the subject of the message
+ID into the thread. And there were some other things taking place in the B trees as well, because we
+were keeping track of the unread counts of, of threads and whatnot. So, you know, I can't even
+remember all the details. Now this is ancient history. This is 2004. What are we in 2026, 22 years
+ago. So it's like left my memory, but there, there was definitely B trees. There was also this, you
+know, inverted index taking place there. All this code has since been completely rewritten. What
+were the economics like in the team, you must have done the economics of being able to offer free
+email, which of course, I'm sure you did some maths of like how it could be subsidized, but to like
+not make a terrible, terrible loss. Yeah. Yeah. Yeah. No, I mean, we were kind of, uh, kicking
+around ideas and, um, you know, one of the ideas that had come up at some point was, Hey, maybe we
+can put ads on this. And it was one of these crazy things. So I didn't, wasn't involved in this.
+This is Paul Buchheit went on to do some cool stuff at, uh, friend feed and Facebook and ended up, I
+think a partner white combinator at some point, but he just like one night, he's like, no, I think I
+can just take out some of our existing ad functionality and incorporate it in there. And it just
+went like gangbusters. And there's a huge business that, you know, kind of grew up from that, which
+is kind of incredible. So, I mean, I think there's a lot of things that it's just like, you kind of
+have a sense of what we learn, like, Oh, we think this is going to cost, you know, per user, a
+couple of dollars per year. How do we monetize that? And, you know, we didn't want to charge for it.
+We eventually they did charge for it. Cause you have the whole Google workspace stuff, but at the
+time it was more like, ah, can we do this for free? Oh, it looks like it can be economical. And, uh,
+it took a little bit of a leap of faith. And do you remember the launch? Uh, the reason I'm asking,
+because I remember that it was an invite based system, like not everyone could get in. And I assumed
+that must've been to control the expected demand. Cause again, you were, you're offering something
+for free that was paid before. And it was kind of pretty obvious that there would be massive demand.
+How did you think about it? Kind of monitor demand, decide how many people to onboard? Honestly,
+this is a team effort and that I wasn't involved in that. I mean, I do remember being worried about
+like the load that would happen. And then someone came up the idea of like, Hey, we should do an
+invite based system. And this also had like, it played dual roles. So it kind of constrained the
+growth, but it also kind of drummed up this excitement. Oh, you can get me a Gmail invite. I
+remember people asking me at the time was like, yeah, I can get you as many Gmail invites as you
+want. And then after, after, after you built the system, where did you move on to? What was your
+next project? What was, was it the build system? Well, there was the build system. I mean, that was
+kind of all muddled in my mind. Cause I was kind of doing that part-time when I was doing Gmail as
+well. At some point, you know, Google actually had this large monitor repo. I think they actually
+still have the monitor repo. They still have the monitor repo. And they started out with the Google
+one repo. That was before my time. Then they moved on to Google two. That was what was there when I
+got to Google. And at some point we saw the, the strains of Google two and Google two was just one
+single monolithic make file. I think it actually had some sub make files, but it was this like
+really large unwieldy make file. And someone came to me and was like, I think we could do something.
+I'd had some interest in the build systems. And I, you know, kind of put the foundation in for
+Google three. There was a bunch of people involved. I was kind of doing like kind of the initial
+work on Google three and Google three, uh, the initial insight was like, Hey, make files kind of
+sucked to write. We introduced this thing called build files and I decided to do it. It's just this
+stripped down kind of Python language, but it was still Python at that point. And what you can think
+spit out at the end was a monolithic make file, but when you didn't have to write over time, this
+evolved, um, it became a blaze internally. Um, there's some other systems that are associated with
+now. I don't even know how complicated it's gone. I haven't seen it for a long, long time. Um, then
+that became Bazel externally became buck. There's some other, you know, people went to Facebook and
+they like, that was awesome at Google. What was the reason that make, make files or make didn't
+really work? Was, was it, are we talking about build performance? Are we talking about
+maintainability or readability? Yeah. So like, I think make itself is like, it's okay in declaring
+dependencies, but it's a little bit like kind of assembly language and you didn't want to write, you
+know, all your dependencies in assembly language. And if you didn't know what you were doing, it was
+easy to make a mistake and miss dependencies and whatnot. And so the, the kind of my, the thought
+behind the build files is like, Hey, you need to express these dependencies, but at a higher level
+and just like kind of cleaner semantics associated with it. And from that you can compile down into
+the assembly language. And then eventually folks were like, Oh, you don't have to compile down to
+that. We can just kind of implement, you know, the dependency kind of update engine directly. And
+then that's where the performance improvements were able to come in. So like, cause I, I Google
+scale, like when you have a large repo in general, like my understanding is that the reason Bazel
+and Buck are so popular for large code bases is it can help you improve your build performance. It
+gives you a lot more lever levers to play around with from caching, from being smart about cache
+generation to obviously just raw performance. Yeah, that's exactly it. Yeah. So you kind of just
+dabbled and like, okay, I'll make this build file. Did that people took that over, but what was your
+next main focus? Oh, well, so I mentioned GFS earlier, Google file system. And at some point we
+realized that there were some limitations in GFS, scalability bottlenecks, because I've been working
+on the storage system for Gmail. I actually dabbled in another storage system, you know, kind of a
+research thing that never went anywhere. But because we're working on that, I'm going to participate
+in like the founding team of Colossus, which was the successor to GFS. And as far as I know,
+Colossus still exists. It's gone through multiple iterations at Google, but it's like the second
+generation, you know, distributed file system. So what is Colossus? Yeah. So when I say distributed
+file system, externally, you might think of something like S3 kind of blob storage. It had a flat
+namespace, kind of like S3, you give names and there's like a minor hierarchy there, but it's like
+very limited. But it's not like a POSIX file system. So you don't have the full directory hierarchy.
+You didn't even have the full kind of permission system. A lot of that stuff got it added later, but
+the files are not stored in your local machine. There is a kind of a service out there that has all
+the files. They're writing it down to their hard drives, there are no SSDs and your client can
+access that. And it's all replicated. So if there's any crashes and whatnot, you're not losing your
+data. I don't know when at some point S3 got erasure coding. We did erasure coding in Colossus. That
+was kind of a big breakthrough. Which coding? We used Reece Solomon. So for the audience who's not
+familiar with erasure coding, you might think of like, I want to have replicas. And there's this
+thing in hard disks called RAID, where it's like, I don't actually have to have full replicas. I can
+actually, you know, if you take a plus a and B, you can XORM together and then you can have this
+kind of third kind of version. And there's more and more complicated versions of that. Reed Solomon
+is kind of, you know, I think there's actually better codes now, but it's like one of the known ways
+to do this. One of the known ways, yeah. Yeah. And we had to, you know, kind of pioneer internally,
+like, oh, how are we going to actually make this work in distributed file system? Where you focused
+on latency, on being able to store data more efficiently. It's storing it more efficiently. So in
+GFS and there's varying costs where it's like, well, you're not storing two copies or one copy of
+data or two copies, you're storing three. Triplication. Three times as much storage you're having to
+use. And with Reed Solomon, you can get that down quite a bit lower. I can't remember offhand
+exactly what we used for Reed Solomon. I think it was like essentially 2x. But you get that with
+also the redundancy too. So it's like, it's smaller and the redundancy is higher. So, cause, cause I
+guess the, the Nate and the naive thing, if you're saying, all right, I, I want my ideas to be
+replicated at three places. You take three notes, three machines, physical machines, and you say
+like, copy one, copy one, copy one. I have it three places. Great. If one explodes, I still have
+two. Wonderful. And then you're, you're saying that the, you know, the algorithm here is you could
+take not three X the data, but two X the data, split it smartly across machines, or, or maybe you
+could take it and take it lower. And you still have the thing where like, oh, one of them explodes.
+I still have all my data because it's, it's split enough. Yeah. That's exactly right. And like kind
+of the mental model, you know, if you just want to understand at a high level, which is essentially
+you might want to say like, I want to have eight replicas of this data, or I think I can't remember
+offhand. I think S3 might use nine. They've actually talked about this publicly. You have kind of
+nine chunks of data, but any five of those chunks can be used to reconstruct it. And what this means
+is you can lose any four copies and you can still reconstruct your data. And oftentimes it's more
+like, you know, the, the first five chunks are exact replicas and the other four are kind of parody
+ones. I've kind of forgot some of the details that escape my mind, but it's along this line. Yeah.
+But, but, but when you come up with an algorithm, you can then prove that this algorithm will work,
+right? Like this is a little bit like, I know in software engineering, like maths and algorithms is
+a bit out of fashion, but in this case, this is really important because once you, once you can
+prove it, that this algorithm works, it will work. It will work. And, um, you know, it's like the
+math behind here is like go off fields over like GF two, something like that. I don't even know that
+I never actually understood the full, uh, mass behind it. I always regretted not doing more math in
+a college, but you didn't have to, you like Reed and Solomon proved how this work. I think it was
+like back in the 1970s, something associated with like communication networks. So you just take that
+and, uh, you know, kind of use that expertise, but leverage that and have to do all the engineering
+behind it to make it work in a storage system. And then when building a distributed storage system
+like Colossus, what were other things beyond, okay, you want to store data in a resilient, but
+efficient way. What were other things that problems that you needed to solve? I'm thinking things
+potentially like sharding and re sharding or, or, or, or, or metadata being important, those kinds
+of things. Uh, particularly for the scale that Google wanted to operate at, GFS kind of had this
+scalability limit. I believe it was like, you know, you could have a thousand machines in a GFS
+cluster and it kind of, which I guess sounds big until, until like today it's kind of ridiculously
+small, right? It sounds big for, for, for most people. And then Google was like, no, we needed to
+have this scale up to 10,000 machines. And there's some bottlenecks. There's this GFS master as a
+single node. It was a bit of a bottleneck for like, ah, we need to have a distributed master to
+store the metadata for all the objects. And Google at the time happened to have this system called
+big table. And so Colossus stored its metadata inside big table. And one of the things that I'm kind
+of proud and like, kind of like also, you know, a little bit embarrassed by, uh, one of the design
+choices I went down, but actually worked out is we want to use big table for the metadata for
+Colossus. And the metadata just for, for those of us not as into this reason, what is the metadata
+and the distributed file system? Yeah. It's like the, uh, the names of the files and for each of the
+files, the files are broken into chunks. What were they? 64 megabyte chunks. And then you have to
+have the list of chunks for each file. Yeah. And then you, you have to, um, periodically, you know,
+the master has to be scanning over this and doing repair, um, repair work and, you know, but there's
+more metadata than that, but that's it in a nutshell. So we wanted Colossus to have this, you know,
+kind of scalable, you know, service big table to store its metadata. The biggest user of GFS is big
+table. So we want big table to work on top of Colossus. So wrap your head around that. You have the
+circ look, the pen then see. Yeah. Well, uh, there's a bootstrapping thing, right? Bootstrapping.
+Yeah. Oh, um, oh yes. Yeah. Which one starts up like you need to mock something somewhere, right?
+Yeah. No, I mean, the way it actually worked at the time and they've since replaced this, you know,
+cause this is like the way to get started and leverage what you have. And eventually you kind of get
+rid of it, but there is the, uh, kind of a foundational big table that big table didn't use
+Colossus. There's the classes using the big table. And then there's normal big table sitting on top
+of Colossus. I'll talk about it. And it all worked for years. So I don't even know when they got rid
+of that. They got rid of it at some point, but, uh, that was, but I, I guess sounds like you can
+make hacks that go really long knowing that they're hacks and they get you off the ground, right?
+They get you off the ground. Right. Cause if we had to like, you know, implement that kind of big
+table layer from the get go, what would you just delay how long it took to get, you know, Colossus
+built? One of the things that strike me about a system like Colossus is it promises, or this was
+internal to Google, but, but even distributed file system that are external, they will promise high
+throughput, high availability and low latency. And to me, it's always a bit conflicting of like,
+well, it's pretty easy to, I guess, build a distributed file system with my limited knowledge. I
+could probably do something where I have either high throughput, but high latency, because whenever
+I write something, I read it out to all the replicas. You, you already like, like mentioned one, one
+technique of, of doing it, but how did you kind of reconcile? Like how did you get like low latency
+while you have high throughput, while you also have a replication going on the file system? Well, I
+mean, these distributed file systems, I mean, the latency isn't super low. I mean, particularly when
+they're, when they're running on hard disks, which Colossus was doing at the time, which S3 does,
+you actually notice the latency. So like S3 is a high performance system, Google, GCS, the
+competitor from Google, which is built on top of Colossus. It's high performance, has incredible
+throughput, but the latency is like 20 to 30 milliseconds for first read. And that is bounded by
+your hard disk latency. If you put it on SSD, it gets down to closer to SSD latencies, but not
+actually kind of the state of art SSD latencies, which is kind of this crazy thing that's been
+happening in our industry. It's just like how much faster the hardware has been getting. Reading
+from a hard drive, maybe five to 10 milliseconds nowadays. I never touch hard drives. Reading from
+an SSD over NVMe, 30 microseconds, 50 microseconds. So that's a microseconds. There's a thousand
+microseconds in one millisecond. So we're talking like a huge, huge difference. Well, there are now
+startups or infrastructure companies that are starting to take advantage of the fact that they can,
+they can have an NVMe layer and they, they, they, they pull things up either productively or not.
+But, but as you say, like when the physical reality changes, you can build systems on top of it that
+that should take advantage of it. Yeah, absolutely. And he knows the, the, the disks are so much
+faster with SSDs. The networks are so much faster. I mean, just kind of crazy how fast, like the
+intrazon latencies are to Google or Amazon center. And it wasn't like that, but when we were
+building Colossus, you know, I can't even remember what the numbers were, but milliseconds to do a
+network round trip. And now it's down in, you know, a hundred microseconds within a zone. I mean, I
+just look at these things and I'm like, holy crap, you know, the hardware guys have really done a
+good job. Yeah. Some, sometimes I feel that our software should be feel way more snappy and there
+are some snappy software, but sometimes I almost wonder if we're getting too complacent with all the
+abstractions or, or not even doing this like napkin mats, uh, Simon Erickson, a turbo buffer talks
+about this napkin math word light, like you was like, all right, here's the theoretical limitation
+of, of the hardware reach from SSD might be, I don't know, 30 microseconds. And then like, how can I
+build a system that is as close to this as possible, as opposed to the other way around saying,
+okay, like, you know, human will notice like 20 like a hundred milliseconds. Let's build around
+that. Yeah. Yeah. And sometimes like when you're architecting something, you need to think about the
+human kind of perceptible latencies. But oftentimes when you're dealing with the storage system
+layer, you know, I know Simon working on turbo puffer, they're doing great stuff over there. You
+have to think about the machine scale and the machine speed, which is a lot faster than human
+perception. Like a human can tolerate maybe a hundred milliseconds of delay, or if you're playing a
+game, maybe you need to have like, you know, frame rates of like every four milliseconds, but the
+machine wants much, much faster than that. Simon says napkin math. I call this speed of light
+numbers. And like, sometimes it's literally the speed of light bottlenecking you. The cross zone
+latencies between zones, cross region latencies, is speed of light and fiber. You want to hear a
+kind of crazy fact? I love hearing crazy facts. The fastest way to send, um, pack of data across the
+globe is to send it into space. Is it because the speed of light is faster in vacuum? Quite a bit
+faster. Or, well, it's not fuel vacuum. No way. Yeah. So, so you cover a higher distance. Yeah.
+Well, you actually, uh, I believe the, the way to do this, you send it straight up. And then with
+Starlink, you send it straight up and bounce around between Starlink, you send it down to the other
+side. So you want to get it out of the atmosphere as quickly as possible. But now if we're, if we're
+talking about speed of light, this will also go, there's like a digital transformation happening. So
+you would need to calculate how long it takes for that system to, to process and do it. And, and,
+but you're saying that even if, if you do this like really well, it will be faster than beaming it
+through an optical kit and an optical cable slows down the light, right? Yeah. Yeah. Yeah. Yeah. The
+speed of light is only the speed of light and vacuum. And every other medium, it's slower. I was
+talking, I did a deep dive on the hedge fund industry and they didn't tell me exactly. They said
+that they do use satellites and microwaves and some of these things that they will not tell you
+because you know, this is their thing. But I had a suspicion that they might have found a faster
+way. And I think this is like somewhat well-known, but the details there, they're not going to get
+into because again, that, but like, yeah. So, so they're probably balancing stuff in space. Yeah.
+Yeah. So, I mean, one of the things that they do in the high-frequency train is like between New
+York and Chicago, it's actually not far enough distance wise to make it worthwhile to send it in
+space. They were doing microwave beams there. Yeah. But I mean, if you really want to get faster,
+you need to build like a vacuum tube between them and it's like send a, and maybe they're doing
+that. I don't know. Maybe they're doing that. Yeah. But I mean, the thing that I think is like just
+kind of awesome about performance nowadays is, I mean, there's so many layers you have to be paying
+attention to in terms of performance that the rabbit hole just goes so deep there. You're almost
+certainly running on multi-threaded systems, right? And you're like, oh, I need to have a multi-
+thread program. I need to have synchronization in there. Well, you get the best performance if you
+just kind of avoid the synchronization. And part of this is lock-free programming, but part of it is
+arranging. So you don't need locks at all. You need to carry about your processor caches. And
+there's this whole like kind of a setup of caches above the CPU. Like you can think of registers as
+a cache and you have L1, L2, L3, even your memory and onto disk. And there's just, you have to pay
+attention to all those levels. And if you do, your performance gets way better. And if you ignore it
+and you're like, oh, I'm not worrying about kind of, kind of, you know, kind of the cache accesses,
+I'm just accessing data all over. Your program will just be way, way slower. And some folks pay a
+ton of attention to this. The high frequency trading, I mean, they do this all day long and in so
+many other places, like no one pays attention to it. And you get this kind of gradual degradation of
+the performance of the hardware or the software. I did want to talk a bit more about low level
+stuff, but not about the speed of light, but low level data structures and programming language
+features. You made some contributions to the standard library, right? Well, I've done a couple, not
+quite standard libraries. So, I mean, I just like have been always fascinated by data structures.
+It's kind of awesome. I mean, I think just the algorithms in general, and you're just like sorting
+algorithms, they're just kind of awesome. You could probably explain, you know, insertion sort and,
+you know, that kind of every... Could you explain quick sort as well? Quick sort's a little bit
+harder. Right, that's the thing. Yeah. No, but it's a smart one. Yeah. And then you get to these
+levels of like, you know, it's like, oh wait, someone really smart came up with this. So one of the
+things I worked on, just as a little bit of a side at Google at some point, was a colleague came to
+me and he was like, you know what, we're using the STL map structure all over the place. And the STL
+map structure is a balanced binary tree. I can't remember if it was red, black trees or one of these
+other balancing algorithms that many CS college students implement. And he came to me, he's like, I
+think we could do better because you know, there's actually a cache problem here. Every time you're
+every node you're traversing down, you're going to a different cache line. And he was thinking about
+using something else, a skip list to do this, which that's another awesome, awesome data structure
+everybody should kind of look at. But at some point I was like, actually, this feels more like a B
+tree. So I implemented B trees a couple of times before and figured out like how to implement a B
+tree that implemented almost all the semantics of the STL map. It couldn't quite do it perfectly.
+And the reason is when you insert into a B tree node, you have to shift stuff around so you don't
+get pointer stability. This is just kind of fundamental, but if you can, you know, you don't need
+that for your use case, you actually can pack more data in. So the thing about B tree, like the, the
+real easy way to describe this is like, you just have a small list of items, like eight items, the
+best way to store that, if you want to, you know, kind of fast access in sorted order is just to
+sort the items, right? Literally not to have a tree at all. Yeah. For like eight items. Just have it
+in the very simple list. Very, very, just an array, sort the array, and then you can either do a
+linear scan over it, you can do a binary search and oftentimes linear scan is faster. And then you
+think about that, I'm like, well, if I want to store more in eight items, I can just have one node
+that has eight items and then I have another node. And then you have a parent node that connects
+them together. And that is essentially like the, you know, you build it, you think about building it
+bottom up, you start with just one node of eight items. Oh, I need to insert the ninth thing. I'll
+split into two chunks and the two chunks, one will have four, the other will have five. And then you
+have a parent node that points to them. And then you just kind of recurse on that. That's the B tree
+algorithm in a nutshell. Everybody go implement it. Actually, nobody should implement this anymore
+because nowadays we have something else that will implement this in all the optimizations, because
+there's a crap ton of optimizations that you can do on a B tree. But, but I just want to go back to
+this, like there was already an existing implementation for maps. And then, so your, your colleague
+looked at the code and said, we, I think we can do better. I, what I want to figure out is like, in
+my mind, I can, someone sitting outside of, you know, I'm not involved in, in how some of the, these
+libraries are, or data structures are built. I always thought, I think, and this is, it might be
+naive, but really smart people sit down, they kind of look at the state of the art they implemented,
+and there's no way it can be faster. In fact, I've had arguments in the past saying like, oh, let's,
+let's write a faster sorting thing. Like it's surely it is the fastest, but if you could bring us a
+little bit of like how, like you, you've been inside, how it actually, how it happens and how other
+people like yourself and your colleague can say like, oh, what, what if we, what if we try something
+else? Yeah. Yeah. So I mean, my recollection here is he was working on this kind of the big,
+internal system. I think it was called Gaia that actually had the mapping from, you know, you log
+in, you have your user ID and you have to look this up and they were storing, you know, all like
+this, the map from user ID and email to whatnot, to the metadata about the user in STL maps. And you
+just know it's like, well, there's a lot of memory usage here and it shows up on profiles. And then
+we're like, well, what can we do to do better? And that was kind of the genesis of it. And, you
+know, he happened to be working on it and he happened to be working with me. And like, we just
+started kind of noodling on this problem. Like, oh, can we do something better? And it's not one of
+these things like, I think now with Google, they have a whole team working on their kind of internal
+libraries. At the time, it was more of like, you know, everybody working on their own systems and
+contributing to a shared base. But, but, but I guess it still goes back to what you were just saying
+of like, just go down the layers, try to understand. And if something just doesn't add up, like
+suddenly, like, oh, there's this big explosion of memory usage, like, you know, just ask the
+questions. What, why is this? And if you're able to, or you're happy to be like, oh, can we do
+something about it? Right. And one of the things that, you know, he observed early on, I think part
+of one of the things was, it was like a map from integer ID to something else. And like, if you look
+at red, black tree, every node, you have your kind of value that you're storing the map. And then
+you have two pointers. You might have an energy ID that's like four or eight pipes and then two.
+It's a waste. Yeah. And you look at that and you're like, oh, that seems like a lot of overhead. And
+you're like, you could use a bit. Well, the beach tree actually has a lot better. It has better
+spatial locality and that's what made it faster. But it was actually smaller as well at the same
+time because you had less pointers involved. You also contributed to go, right? Yeah. Well, that
+came later. Yeah. It came a lot later. But can we talk about that? Yeah. I just want these other
+things, you know, I pay attention to like, you know, when there's research papers coming out about
+new data structures and like hash tables, hash tables are like the, the, one of the earliest things
+you've learned about in college and data structures. Like how do I map keys to values where the
+ordering is unimportant? That's when hash tables come in. And there is like, you know, the, the very
+earliest ways to do this. I've implemented hash tables multiple times. It's like, you take your key
+and it might be a string and you, you put through a function and it spits out an integer and then
+you map that into an array of buckets. And if multiple things map to the same bucket, you have to
+have a link. You have a link list. Yeah. This is naive implementation. Right? Implementation used
+quite frequently. And over time people discovered like a lot better ways to do hash tables. There's
+very like, that's called a chaining of your hash. There's another technique called open addressing
+where instead of actually having a linked list, you just kind of hash it again and move on or kind
+of walk down to subsequent buckets to find out like, or subsequent slots to find out where you
+should be. And I remember reading about this new technique and came out of some folks at Google. I
+believe it came out of their Swiss office because it was called Swiss tables. I believe that's where
+the naming came from. I'm not a hundred percent sure about that, but I remember reading about it.
+And then I was working on Go for a long period of time and Go has this built-in map structure and
+it's a hash table. It's a very highly optimized hash table because the Go team is very competent.
+The Go runtime team and various folks have taken an attempt at like, you know, putting together a
+Swiss table implementation for Go. And I tested some of them and I was like, this is kind of
+fascinating what Swiss tables do. And I'll explain how it works in just a second. But I looked at
+it. It's like, well, it's really hard to beat the performance of the runtime. The runtime was really
+good. And I kept on a new lift on this for a little while. And eventually I ended up having to take
+this business trip to India, to Bangalore. And so I was on a long flight. No. Yeah. It always starts
+like this. Yeah. And I just like, I'm just going to try to pull on this. I pulled on it sufficiently
+that I could get some of the benchmarks to be faster. Wow. And then I'm like, you know, that like is
+kind of like catnip for an engineer, like, kind of make it all faster. Figure all the rest of it,
+you know, got some help from the runtime folks. There's a, an issue on the go issue tracker that,
+you know, where other people have been attempting this because people propose like, Hey, let's use
+Swiss tables. And like, like, well, you know, we don't quite know all the details. You're going to
+have to navigate this and that. And there were some ideas there that combined them together and got
+to the point where it had kind of a complete implementation that was faster on, on most benchmarks,
+not quite all of them, but most of them. And then the go folks eventually picked this up and pushed
+it over the finish line. And then, so you, you know, like you came with the idea, you, you got to
+the point where you were able to show an implementation that shows how some of the benchmarks were
+faster. And then you started to work with some folks on the go team too. Well, I didn't, I, it
+wasn't quite that I came up with an implementation that we ended up using at my company. It was good
+for our use case, but actually putting it into the runtime is a whole other, you know, kind of
+level. But then you just showed like, here's this implementation and then they, they, they kind of
+took the inspiration and the ideas. Yeah. They're like, well, this is great. We want to make all,
+they, they always are looking for ways to make it runtime faster. And there's like, you know. Oh
+wait. And then, so, so you did this in, in this contribution is, this was a lot of years after you
+left Google, right? Yeah. Yeah. This was from, from the outside. This is from the outside. That's
+awesome. Yeah. And other people contribute stuff to the outside as well. You know, we had another
+colleague, he contributed one of the CRC implementations, you know, adapting some stuff. CRC? Uh,
+cyclic redundancy checksum, you know, Intel published some papers about here's how to do the CRC and
+assembly very fast and contribute one of the implementations. You see a number of those things
+where, you know, people just like are contributing externally. It's not a lot, honestly. I mean, I
+actually don't know the full details, but you know, people are regularly contributing to these
+things. Peter just described how the Swiss table work came together using an issue tracker in the Go
+tracker with different people contributing to the work and then the Go team pushing all of this over
+the finish line. This is where I need to mention our seasons, sponsor linear, which is a place to
+coordinate work between humans as well as agents. One thing I've noticed about how most of us work
+with agents is how it's a pretty single player thing. You open a terminal UI, go back and forth with
+the agent, and it usually produces a PR. But the rest of your team has no idea what happened in that
+chat unless you tell them or copy the whole history. And when everyone in the team works like this,
+a lot of work happens that's invisible to the rest of the team. Linear's take is that agent work
+should be teamwork. Even today, teams already use linear to define the work to be done. Now, linear
+can already delegate an issue to a coding agent. This agent could be an AI agent that linear
+integrates with like Codex or Cursor, or linear's own agent, or a custom agent. Either way, the
+engineer delegating stays responsible for the outcome. What I really like about how linear works is
+how the work stays visible. Your teammates can follow the session of the agent, check out the PR it
+produces, and join the review. We've gone from single player work to multiply your engineering work
+with agents. Oh, and one more thing I like about linear, a focus on costs. Linear agents auto
+routing chooses a model that is the best suited for the task. Teams can also inspect usage and set
+limits, track usage, so you can use capable agents without having costs ballooned out of control.
+Hop on board at linear.app.pragmatic. Peter also previously mentioned Gaia, Google's internal system
+that mapped logins to users. It's not surprising that Google custom built all systems, including
+this one, but most of us won't build our internal Gaia. This brings us to our season sponsor,
+WorkOS. You can think of WorkOS as something like Gaia for the rest of us, identity infrastructure
+you've otherwise spent quarters building yourself. WorkOS includes single sign-on, skim directory
+sync, audit logs, role-based access control, basically everything a big customer security team asks
+for delivered as a handful of clean APIs. It's how companies go from, we have a login, to, we can
+sell to a fortune 500 without standing up their own internal identity platform. And WorkOS is
+already building for the next version of the agentic authorization problem. Their newest product is
+Airlock, the authorization layer for AI agents. Think about what happens when you hand an agent a
+task like clean up the sale opportunities in our pipeline. The last thing you want is for this thing
+to have standing permissions to delete whatever it likes. Airlock sits between your agent and the
+tools they call. It evaluates every request against the agent's intent and your rules and then it
+allows it, denies it, or routes it to human for approval. You write down the policies in plain
+language, the agent never sees your credentials, and every call and verdict gets logged. It works
+with coding agents like Cloud Code and Codex and with MCP gateways. So if you're working out how to
+let agents do real work in production without over-permissioning them, take a look at WorkOS Airlock
+at workos.com slash airlock. And with this, let's get back to Peter and why he left Google after
+building Colossus. You're at Google, you're building Colossus distributed file systems. You're at
+this point probably working on probably the largest system on the planet, honestly. Why did you even
+consider leaving? Yeah, yeah. Well, after Colossus, I kind of dabbled in this other project called
+Google Goggles for a little while. Remember the glass holes? Yeah. It keeps coming back, the idea,
+by the way. Yeah, yeah. Now it's still here and present. It seems like Google's early. Yeah, yeah.
+And you know, I think that was a technology before its time. I don't think it was ready to do at
+that point. It looks like the actually doing the glasses is quite a bit harder. You know, the
+Android phones we were trying to power it on were, you know, not powerful enough. And then, you
+know, I just kind of got wanderlust, you know, like, you know, am I just kind of stagnating here at
+Google, which is a strange thing to say, but you know, some other people feel it as well. And
+decided to go off and try my hand at another startup. That didn't work out. We got aqua hired by
+Square. So, yeah, I want to pause for a second. So, this company, what's the company name? Uh, the
+company that we founded is called Viewfinder. Viewfinder, yeah. Yeah. It was in the mobile photo
+sharing space, which sounds familiar. This is like Instagram. This is like Snapchat. This was in
+2012. Yeah. Right as Instagram and all the more we're taking off. Yeah, yeah. No, we were right
+there in the play and we just didn't have the right go to market, kind of like how to attract the
+users, how to get viral growth kind of thing. Because from the outside, like what I read when I
+checked, you know, the story, just like, oh, you know, like you, you, you co-founded a startup. It
+got acquired by Square. Hooray. Like, sounds like you had bigger ambitions and this was a decent
+outcome, but not the dream, right? Yeah. No, it wasn't dream at all. So, uh, the term I used was
+aqua hired. So sometimes a company will get acquired, get bought for, you know, their IP, for their
+product, for their business. And other times they get bought just for the talent. The people. The
+people. And we got bought just for the talent. They acquired the IP, but I don't think Square ever
+did anything with it. It wasn't kind of like where they were working, but we built up a kind of
+strong technical team and that's what we were hired for. And, you know, like, I can't remember the
+details. We'd raised a small amount of money. We were able to pay our investors back, make them
+whole. Maybe they got a little bit of a haircut, but maybe they actually got a little bit of a, but
+it was, it was not, they were okay. It's essentially they got their money back, which is like, like,
+you know, as a founder, you, uh, you know, investors are big boys. They're used to losing their
+money, but you kind of feel bad if you lose a lot of money for them. So, you know, getting them paid
+back kind of makes you feel a little bit better. Yeah. Yeah. And then you, you spent a little time
+at the company that acquired you were just Square. Yeah. And then you started itching a little bit
+again. Yeah. Yeah. Yeah. Cause you know, we've been working on these, you know, distributed file
+systems and storage systems, you know, Colossus, uh, one of the kind of, uh, sister projects to
+Colossus is Spanner. Um, and how, how, how is Spanner different to Colossus? Well, Spanner is a,
+essentially a distributed database. Colossus is a distributed storage system. And the way I think
+about the difference between a distributed storage system and distributed database, you might think,
+Oh, they're both storing data. I was about to ask because a distributed database will at some point
+be a storage system. Right. Right. So what's the difference? Yeah. So for Colossus, you know, it was
+targeting large files, large append only files. You can't update append only. Yeah. Yeah. Large
+append only files. So, you know, 64 megabytes, maybe up to gigabytes in size. But if your database,
+you want to be storing like kind of small, like, you know, kind of, you know, if you're using SQL or
+like the relational data, you might have table, you know, billions of billions of rows. Those rows
+are broken up into columns. The columns are typed that it just has a very different nature to the
+engineering challenge for database than it does for a distributed storage system. And usually
+distributed store databases are implemented on top of some kind of distributed storage system. And
+that was the relationship. So Spanner was implemented on top of Colossus. And some of the design
+decisions in Spanner kind of directly fell out of the append only nature of the files in Colossus.
+You can't update a file in place. So you have to, you know, make the files immutable in your
+database. And this is where like, you know, log structured merge trees, you know, come into play.
+And they weren't invented at Google, but Google really popularized them with LevelDB, which emerged
+out of the work on Bigtable and Spanner. That got popularized into RocksDB. I subsequently re-
+implemented one of these things. And this is what we use at Cockroach Labs. It's called Pebble. So
+I'm very familiar with the internals of that, but it's kind of all based on this idea that the data
+is kind of stored in the immutable files. So how did you decide to found Cockroach Labs? While we
+were working at Square, my co-founder and I, there was actually three of us. We were all at Square.
+And one of them is Spencer, I mentioned earlier, he was working on the GIMP. He's my college
+roommate. And he was also at Google. He was also at Google. The other guy, Ben Darnell, who was also
+at Google, he joined us at Viewfinder, ended up at Square. We, you know, like we're kind of just
+noodling on a project to do. And we'd actually had this design back in Viewfinder. We were like, ah,
+we didn't, we looked around for a data base to be using in order to build Viewfinder on top of. We
+didn't really like the things that were out there. The technologies inside Google looked better. We
+had the Bigtable, we had Spanner and whatnot. We were looking around, you know, like HBase existed,
+but I wasn't quite happy. And there's some other systems like React and others. And, you know, at
+one point we were just kind of like, you know, came up with the design for Cockroach to be an
+initial design. And I was like, no, no, guys, we're doing a mobile photo sharing site. We shouldn't
+build a distributed, you know, database. So we put it on the back burner, which I think was
+absolutely the right thing, maybe, or maybe we should just pivoted away from doing the mobile photo
+sharing site, given the way things worked out. And then we got to Square and we saw some of the same
+problems that they were experiencing with data storage systems. And Spencer is very convincing.
+Managers convinced some of the management that like, hey, you can just work on this part-time, you
+know, to see if it had life behind the design. And then kind of conscripted Ben and I into it. And
+eventually it started getting, you know, attention externally. And we're like, hey, can we go and
+spin this off into a company? And that's what ended up happening. And so you started a company, but
+I understand you didn't raise VC funding initially, right? That was the case at Viewfinder. We did
+it differently. At Viewfinder, we kind of eschewed the VC money. And, you know, in hindsight, I
+wouldn't recommend that. But you wouldn't recommend... Yeah, I would recommend taking the VC money.
+Because my experience, the VCs are very, very intelligent. They can help you navigate a lot of
+challenges. You know, I think sometimes there's this perception, you know, the VCs will push you
+into various areas and maybe there's some bad ones out there that do. The VCs I've had experience
+with, just like some of the Sherpas people, you know, I've ever met. And so you kind of have like an
+extra, like, like person helping you on the team. Pretty much mentoring you, giving you guidance,
+telling you what they're seeing. They give you advice, seeing what they're seeing in the market,
+where things are going. That is very hard for sometimes for a founder. Especially as a technical
+founder, right? Your focus on the engineering part. Yeah. Yeah. No, we actually took money right
+away for Cockroach Labs. It was almost like, as soon as we left, we got and did a little roadshow,
+you know, kind of in the Bay Area. We got some interest and, you know, got an investor right away. I
+have to ask about the name though. Yeah. How did the name of Cockroach come? Yeah. So, you know, we
+named the GIMP. Yes. That was, that was mine. Pulp Fiction come out in college and like, oh, what
+should we name this thing? Oh, the GNU Image Manipulation Program. I think we're thinking Image
+Manipulation Program initially. And I'm like, oh, GIMP, it's obvious. And it just stuck. And at some
+point, you know, we're newly on the, this new database and you kind of want to give things a name.
+You can't just say, oh, we're working on this distributed database. You kind of need something. And
+this master was like, oh, CockroachDB, like Cockroach is unkillable. I want these things, this
+database to be unkillable, you know, and Cockroach is going to survive the nuclear apocalypse. So
+that was where the genesis was and just stuck. Yeah. We're, we're, we're, whenever a bunch of our
+nodes goes down, this thing will still be up. Yeah. Yeah. And you know, this is where we're at today
+with CockroachDB. It's like one of the things that I point out, I'm like, holy crap, this is
+awesome. You kill a node. We did this whole campaign last year, which was really just to prove out
+something that had already been present. The campaign was performance under adversity, but just like
+you can run a workload against it. You can kill a node and sometimes kill a whole region and the
+system keeps on going. And it's like stories like that, you know, like what we did on the marketing
+side there, but also we hear this from our customers too. They've had fires in data centers and all
+the other data systems go down and CockroachDB keeps on going. I'm like, that's awesome. When you
+started out, who, who were companies, startups that who wanted to use CockroachDB and, and how has
+it changed since? Cause you know, like just making the case, like, okay, I'm starting a startup.
+It's a small startup. Like I will need a database and I'll, I don't know, I'll split up, I'll
+typically choose a Postgres, right? Just get this free. Everyone's using it. I'm running it on node.
+At what points did you see that typical, typically tech companies are like, okay, like this is not
+enough for me that it's running on a node either because it can go down or because I'm outgrowing
+it. What was it they are growing? Like I'm, I'm trying to get a sense of like, at what point did
+companies say, like, tell themselves, like we need something distributed in a database. Yeah. I
+mean, oftentimes we have companies calling us up after they've had a disaster. So, so like a node
+went up or a hard drive failed, that kind of stuff. Literally, you know, we, it's not quite like
+we're ambulance chasers, but if you see an outage, like a big outage from some, you know, company,
+you know, like we'll sometimes be trying to knock them up, but also they, they will call us, you
+know, and being like, there's a very big bank who's now a customer. Don't think I can name them, but
+you can go read. They had a very serious outage due to a weather event. And after that, which
+probably knocked down, I'm assuming a region or database or an networking cable or tree fell on
+something. I think it knocked down a whole region, you know, it was a region-wide power outage, it
+knocked down the region. And there's a mandate from the CEO. It's like, no, we just have to, you
+know, be able to survive these things. And that gets pushed down all the way. And you see this in
+other places where, you know, one of our early customers, they were running on AWS and they just got
+to the maximum size you can run in Aurora instance on. And then what would typically happen at that
+point is then you have to shard your database. You know, this is very standard practice. You, you
+take your single node database, you create 10 or 20 or a hundred shards. And this is what Google
+done for some period of time. And that's a heavy burden on the application developer. And the way we
+always phrase this is like, I mean, the application developer is becoming a database developer at
+that point, and they're doing it poorly. You know, they're trying to implement distributed
+transactions or indexes and whatnot. We felt the burden for that belongs on the database developer.
+Can we talk about automatic sharding? I think it's safe to some, most of us will know what, what
+sharding is when, when you're, but actually let's start from like manual sharding and then how you
+can implement automatic sharding. And if you can tell us like, you know, tactics that a database
+like CockroachDB can, can do to actually just take that load off of you. Yeah. Yeah. So I think the,
+the very basic form of sharding is a little bit like the hash table. Let's say, you know, you have a
+fixed number of shards, like let's say it's just a hundred shards, your data model is a user with a
+lot of data associated with the user. You just take the user and you say like, Oh, they map them to
+one of the shards. And you know, you kind of just rely on the hash function to get like fairly even
+distribution. The problem with this is at some point, you know, one of your shards will get full and
+you have to kind of reshard. And that's a very, very onerous process. And resharding, I guess,
+simple way to do is like, if it was just a hard drive, I don't know, per, per node where you write
+the user data, it gets, it gets full and you're like, okay, well, I now need to split it somehow. I
+need to move it. I need to remap it. I need to rejave my metadata, which knows where this data
+lives. That kind of stuff. Yeah. Yeah. And depends on exactly how you're doing that mapping from
+like, you know, the user ID or whatever your shard key is to the shard, you might have to remap them
+all, right? This is very typical. So, I mean, this happens in hash tables where, you know,
+oftentimes in order to grow the hash table, you just have to essentially create a new hash table,
+double the size and copy all the data over. Now that's kind of like the very basic straightforward
+way. And there's various levels of complexity you add on it. One of them is called consistent
+hashing. And there's various techniques to do this. It's kind of fascinating, like how they all
+work. But in consistent hashing, you can add an additional node and then it only moves a fraction of
+the data from each shard over there. And there's various systems to do that. And I believe this is
+like one of our lives, Cassandra, the way CockroachDB does it is more kind of big table, more kind
+of span or more kind of H base, where instead of actually hashing, we actually take, you know, you
+can imagine all your keys in a system. And this is always true in a system that you can imagine them
+just in one big contiguous key space. And then you kind of partition contiguous spans of that. And
+then you have to build up an index on top of those contiguous spans. And you, what I just described
+there actually sounds a lot like a B tree. So there's this index on top that is like that maps you
+from, you know, like, I need to have this range, which node is it on? And this is a little bit like
+a B tree, you know, you kind of squint, you know, it's like, I think you squint and everything's
+either B tree or it's a hash table. And you know, that index structure. But it's now starting to
+make sense because when I remember when I read, it might have been the Wikipedia article on B trees,
+it said, this is data structure that is frequently used in databases. It's now coming back to me
+because I didn't think too much of it. I'm not, I'm not, not someone who builds databases, but now
+that we're talking, we just like organically keep touching on B trees again and again. And the other
+place that it comes up in databases. So this is where it kind of comes up in distributed databases
+and no one ever really calls it a B tree. I just kind of squint sometimes and I see like actually
+kind of a B tree, but the other place that comes up in databases is for your indexes. So if you have
+a table and you have like an index on your email address, um, and you want to be able to scan over
+those email addresses in order, that's a B tree under the hood in a database. And you know, like any
+kind of index you have usually provides sorted order. There are hash indexes, but oftentimes it's
+the B tree index and they're ubiquitous in databases. There's actually a paper called the ubiquitous
+B tree. And you know, basically like just identify that. I think that paper was written back in the
+eighties and they're still ubiquitous today. They are the foundations of single node databases and
+pretty much every data system I've worked on has had B trees at some point in place in them. I want
+to ask about strong consistency. Uh, so CockroachDB offers strong consistency. Now for people who
+are a bit more newcomers to distributed systems, can we talk about the consistency models and then
+why strong consistency is important and why it's hard to implement it? So, I mean, there's multiple
+ways to kind of approach this, but I mean, if you've used a database, you probably heard that, uh,
+of transactions and transactions are a way to perform a whole bunch of mutations, uh, atomically. So
+databases talk about atomicity, consistency, isolation, durability. The durability is really easy.
+It's like when I write data to the database, it has to be durably written. So if anything crashes,
+it comes back. Um, the atomicity is just referring to the fact I want to do a whole bunch of
+changes. I want them all committed or all aborted at the same time. I don't want to have like some
+kind of partial operation. And why is this important? Why is the atomicity important? Well, the
+atomicity is what gets you to the point where it's like, as an application, I can do a bunch of
+operations. And if there's an error, an error occurs, it all kind of gets rolled back and it's a
+much simpler, um, development model to work within. And then there's the consistency and isolation,
+which kind of get, you know, kind of muddled. The isolation is referring to isolation between
+transactions. I don't just want to run one transaction at a time. That's easy to do, right? I want
+to run a lot in parallel and make it so that when they're running in parallel, they are running as
+concurrently as possible, but you want to have the appearance when they're running, um, as
+concurrently as possible, that there is kind of a serial order to them. So this is like kind of the
+whole trick, the kind of the gold standard for, um, isolation is called linearized ability. Don't
+worry about that. There's a step down from that is called serializability. And that literally refers
+to having a serial order of your transactions, but you're having to construct that in a way that
+you're doing everything as concurrently as possible. And the benefit of this, the serializability is
+again, it's a very simple model for the application program. They don't have to worry about weird
+kind of defects occurring in the program. And some of the ones that can occur, it's like the classic
+description is of a bank, right? Where I might want to, uh, read, you know, like have an operation
+that reads and says like, do I have a hundred dollars in my bank account to transfer somewhere else?
+And you could like arrange for lesser isolation levels that you might be able to subtract that a
+hundred dollars twice. And that's bad, right? You know, you want to keep accurate, you know, track
+of your bank account or, you know, what's in your shopping cart or, you know, it's kind of like the,
+the use cases are endless there and you do this wrong and you have very egregious bugs. But now
+going back to, to, to weak consistency and strong consistency. Anything less than linearizability or
+serializability might be considered kind of weak consistency, but there's also like, you know, kind
+of strong consistency and eventual consistency. So the eventual consistency is like, sometimes I can
+do an operation and it might not be immediately, I might not be able to see all the updates. The
+read results will not necessarily give me the current update, but they'll come back, you know, at
+some point, you know, I've written part of it and the rest of it will show up at some point. And
+oftentimes when you're doing... The easiest thing is your credit card balance, right? Yeah. Yeah.
+And it's faster to do it that way. Faster in terms of just what the performance you can get out of
+the system. But again, it's a little bit harder for the application to deal with. One of the places
+this often comes up in, in distributed databases or databases that have any sort of replication is
+that I could write to the primary replica and then I read from the secondary and it's not there yet.
+This is probably... That's eventual consistency. Yeah. That's eventual consistency. And you can
+often work around this, but just like puts bigger burden on the application developer because you
+have to pay attention to that. And then with CockroachDB, you have strong consistency, meaning as
+soon as you're writing it, when you're reading from the database, you already get the written value
+back. You get the written value back. You know, it's like you, you read whatever you wrote. It
+doesn't matter if you're reading from the same, you know, node you wrote it to. If you read it from
+another node, you still actually get the data you just wrote. Is the trade-off logically not that
+you would have higher latency because clearly to implement strong consistency, you would somehow
+need to, in the naive approach, you would need to write all replicas, right? Yeah. What are you
+doing inside CockroachDB? Yeah, yeah. Well, we are writing to all the replicas. So well, yeah. Yeah.
+So you're just doing it fast. You're just doing it fast. You're making that efficient. I think this
+is one of the things that kind of also fascinates me about the software industry is we keep on
+finding ways to be more and more sophisticated in order to provide, you know, like do things that
+make it easier to write the applications, but do it in a very high performance way. And we've
+gotten, you know, very, very good at this over, over the years. And this is the area I know about
+the databases. This is happening everywhere. Like I'm just fascinated by how fast graphics have
+gotten, where would I enter the industry? Like you were literally like writing out each individual
+pixel. And now you have these GPUs that are doing like billions of triangles per second, whatever
+the current numbers are. And just like kind of a standard, like how much sophistication I've got has
+gotten into every area of computer science, wherever you look at it. But one more thing on
+CockroachDB, I want to ask about the RAFT consensus. What is the RAFT consensus? Yeah. I mean,
+consensus protocols, the original consensus protocol is called Paxos, and it was famously hard to
+implement. RAFT was, you might think of it as a variant of Paxos. It was kind of like an alternative
+to Paxos, but in my mind today, and then because this is all great being that you have like a number
+of nodes, like three to a lot more. And then how do you get them to agree on what do you typically
+agree on? Yeah. So you agree that the write occurred. So like the way to think about consensus. So
+you might think I want to replicate data and I write it to a primary and write it to a secondary.
+And you can't actually have consensus when you only have two replicas. And the reason you can't have
+consensus is if there's a crash and I come up, like if I'm on the secondary, how do I know if
+something was written to the primary? If I'm on the primary, how do I know it was written on the
+secondary? Right. And you're always going to be in this kind of confusing place where it's like, you
+either have to roll back a little bit or like, you know, you lose some data and consensus requires
+at least three, but you can have consensus across more than three replicas. And the idea with
+consensus is I'm going to write to three places. And normally you don't actually, when you're doing
+a read, you don't read from a multiple of them, but if there's a crash, I have to do recovery. Then
+I'm reading, oh, I can read from two of the, uh, any two of the three. And I know I can kind of
+determine what had happened previously. Um, and it's usually just on the, the, the recovery time
+that you're actually doing that consensus read. So reads are typically just happening from one
+replica. You have to write to all three and on a crash during that kind of failure is when the
+consensus read occurs. And inside cockroach DB, how many replicas do you choose for either
+consensus? It's typically three, um, for some system tables, it can be five and then customers also
+have control of this at the database level. You can write to five, seven, five is like, you know, if
+you're really concerned, uh, you know, about the data durability, you might use five, but there's a
+slowdown, you know, the more you're writing to, it's like the more storage space that, and obviously
+like we're talking like slow down with nodes, but all of the, of course, if they're like between
+regions, there's now you have a lot more resilience for, let's say an earthquake or a power hours or
+whatever, but now you will have additional latency, just speed of light basics, right? Speed of
+light latency. Right. And it's, you know, tens, you know, or up to hundreds of milliseconds or even
+higher if you're going across the globe. So, you know, you have to be very careful with that, um, in
+terms of how you architect your queries. And one of the things that is just a general truth, some of
+distributed databases is you don't want to have a lot of back and forth. You want to kind of like do
+all your reads in one kind of parallel read set, get them back, then do your writes. Right. But if
+you're doing like kind of serial operations where I read a row, I write a row, I read a row, I write
+a row. I mean, the latencies just add up. We talked about founding CockroachDB, but how, how has the
+company grown and where are you today? Yeah. Yeah. I mean, we're being used in like, we're powering
+mission critical applications. That's our bread and butter. But by the way, can you elaborate a
+mission critical? Cause it's like, uh, yeah, if you're not, you are in the industry where you know
+what this means, but from the outside, it can feel hard to put a thumb on what is mission critical.
+Is, is, is, is, is my SAS that is like showing as a mission critical? Probably not. Yeah. Uh, so
+mission critical to my mind is like these, uh, kind of, uh, the other term of art is tier zero
+applications. The ones that are like just the, the core crown jewels of what's running a company,
+you know, like a trading system, you know, your trading system can't go down. If the trading system
+goes down, this is kind of a critical problem or the firm that is running the training system, you
+know, banking systems. Um, but also, you know, like we work with DoorDash, you know, like some
+people might think that delivering your burrito is a kind of a mission critical system. And it
+certainly is for DoorDash, right? You know, if that goes down, it's problematic. We power shopping
+carts, um, you know, other stuff like this where it's like, well, if the shopping cart goes down,
+you know, that company is losing, you know, hundreds of thousands, millions of dollars per hour. So
+that's kind of the criticality you think about. Yeah. I guess of course that they're losing, but,
+but this is like when the other, their customers are also like, they're used to this, just working
+like running water. And then when it's not the same thing as when your utility breaks, right? Your
+water electricity is out, you'll survive, but it's not what you expected. Yeah. Yeah. Yeah. And
+everybody's like, what, how, what age are we living in? The electricity goes out. We were kind of
+had this ingrained into our heads at Google. It's like Gmail cannot get down. People are relying on
+it. Yeah. Search cannot go down. You know, if it's goes, goes down too long, people are going to
+move to other systems. Um, and it's not like, you know, like in some ways search isn't as mission
+critical, except, oh wait, every single search is ad dollars behind it. And you can actually notice
+the blip in the revenue. And it's not just the blip in the revenue. It's the blip in reputation as
+well. I mean, I think that's the one that really poisons companies is like, if your bank is down for
+a serious amount of time, the reputational damage there will be horrifically bad. And you know, like
+we often talk about like, oh, and then grandma won't be able to pay her rent and she'll get evicted.
+You have to take this like responsibility really, really seriously. Yeah. No, but also like just
+Gmail being mission critical, just on the way here, we only exchange numbers later, but we were
+communicating over email. Like, oh, I'm, I was telling you that, that you were telling me that
+you're here. I emailed and I never for a second thought that it could go down. And I think we were
+like responding within 30 seconds. Right. And it's just, I just know it's, it's there. Like I, I
+didn't like bother setting up a secondary communication line. So yeah. Yeah. Yeah. It's like when
+people just like, when you have that kind of level of trust with your users, you got to maintain it
+and invest in it. But then it leads to this kind of freedom for the user as well, where you just
+don't think about like, I don't have to worry about it. It's just going to work. And then in terms
+of the company, like how many engineers do you have roughly? We have some hundreds. I don't actually
+know the precise engineering number 110, but there might be 150 in R and D overall. There's other
+folks besides just engineers. I'm clear as engineering managers, those are engineers as well. And
+then, you know, like we've been growing steadily. It takes quite a while to build a distributed
+database. Not for the faint of heart. Yeah. So it took a couple of years. You've done it a couple of
+times. Yeah. Yeah. Well, I did distribute storage system. I did a distributed database.  It's not
+for the faint of heart. Right. So there's a lot of work getting it to a level of stability, then a
+level of kind of quality beyond that level of stability, getting all the bugs out, and then continue
+to innovate and put more performance into the system, adding functionality to integrate better
+within, within enterprises. Our revenue has been, you know, kind of steadily growing over the years.
+And, you know, it's at this place now where we see a path to future success as well. And I want to
+ask about your coding habits. So when you co-founded the company, how much code did you write for
+the first few years? I wrote a lot. So I've always been a very prolific coder. I wrote a lot of code
+early days and early days. I mean, I was, uh, that kind of, we were all technical co-founders, Ben
+Spencer and I, um, and we were already a lot of code and always no exception, but you know, if like
+I look back at my GitHub output and you know, it's like kind of peak years, maybe a hundred thousand
+lines of code in a year, which is a lot. Yeah. Yeah. No. So, uh, we're, we're talking pre AI, pre
+AI, right? This is when you're back doing this manually. Right. You know, at some point, you know,
+we started out using a system called rocks DB, which is an LSM at some point, I think it's back in
+2019, you ran into limitations with it. I decided, um, we want to rewrite it and did a big push to
+write. That might've been like 40, 50,000 lines of code. And then a bunch of other people have come
+up and helped. And like, you kind of look at that output. I'm just like, oh my goodness, that was a
+lot to keep in your head. A lot. It's a lot just to type, you know, a hundred thousand lines of
+code. The average kind of like, uh, that the industry talks about is 3000 lines of code from an
+engineer in a month. And so if you multiply that out, maybe 36,000 in a year, that's good. Right. So
+I was doing a lot. You know, I kind of look at that and it's like, there's kind of a max that you
+can hold in your head at a time. Um, the tools have gotten a lot better since I first entered the
+industry, we gotten better debugging techniques, better testing techniques, but still, um, quite
+significant. And you were CTO from, from, from the beginning co-founder of CTO, but there was a time
+sometime around like 2022, when you decided to kind of be a bit more hands-off, right? Yeah. Yeah.
+Can you tell me about that? I mean, the general rule of thumb for, uh, engineering leaders is, well,
+you got to have your team at a manager team. And we have a VP of engineering. Um, but I was kind of
+getting to the point of like, okay, is my, are my coding days done? You know, like I just direct
+from a higher level and, you know, I got this advice for a long period of time and I pushed back on
+it, but you know, I kind of acquiesced at some point and I think it was the right advice. I'm not
+saying that the advice was wrong at the time. Um, but there was time period from about 2022 to 2024,
+whereas like my, my output declined. I think I actually did the Swiss tables thing in that time
+period, but I wasn't doing much on the, the core, the business. Yeah. The, the core business, you
+know, I would get in there and do some work, but like, it's really hard that if you're in meetings
+all day to also do coding, I mean, I think this is the fundamental tension. If you're like, so you
+kind of took on the kind of the meeting burden, the coordination burn and the, yeah, the, the, the
+stuff that was, if I'm reading correctly before you spent a lot of your head in the code and now
+you're spending a lot of your head, like above the code, the business, the engineering, the, or the
+whatever customers, that kind of stuff, the customers and just being an executive as well. Yeah. So
+very hard to wear all those hats simultaneously. And then I got back into it because AI started to
+emerge. So how, what, when did you get, when did you start using AI? When did you start to find it
+useful or in terms of coding? Yeah. Well, it's interesting because you know, those initial versions
+of like kind of glorified autocomplete came out and we were talking about the GitHub copilot, the
+cursor, the early one. Yeah, GitHub copilot. That was the one I had the first exposure to. We
+dabbled with cursor at the time, but they're all like kind of glorified autocomplete. And it was
+kind of crazy that you could just start typing something, you know, like the rest of the function
+you look at and you're like, wait, you kind of got that right. This is crazy. Right. And, um, you
+know, we're trying to encourage our engineers to use this. And at some point, you know, I can't
+remember if this is my idea or my co-founders or someone basically like, you know, like in order to
+like really guide people about how to use it, you have to be a user yourself. You know, I think this
+is true of like engineering management in general. Like you want to like manage engineers. You have
+to know how to be an engineer. Like if you, if you don't know how to be a good engineer, it's like
+really hard to manage other engineers. I feel like you'll have a hard time. I'm like just relating
+to them at the very least. Exactly. Exactly. So kind of took it on me like, no, I mean, this is
+like, it was clear very early on, like this is probably going to go somewhere, but it wasn't quite
+clear how far, how fast it would go. And you start dabbling this and I was like, oh, okay, well,
+it's not quite good enough. It's not quite good enough, but you know, let me start getting back into
+the coding very rapidly. You know, you started seeing the signs of life, like, you know, kind of the
+Opus models coming out. It was Sonnet first, then the Opus and you're like, you're looking at these
+and you're like, oh wow. Okay. Well, they seem to be able to do quite a lot, but you know, the code
+is still not great, but then it was just like the, just this cadence of continuing improvements. And
+you know, I was starting to do a lot with Sonnet and then starting to use Opus. And, you know, I had
+that same moment everybody else did. And this was last year, last November, November, December
+winter break, right? Yeah. It was Thanksgiving. I distinctly remember it because, you know, You were
+not chilling. You were coding, weren't you? Yeah. I was agenting. I was agenting just like everyone
+else. I mean, I had this thing I'd wanted to do for a long period of time on CockroachDB, which is
+like, I wanted to like test like all these configurations of CockroachDB across like, you know,
+different vertical scaling, like how many CPUs you have on a node, how many stores you, uh, discs
+you have on a node, how many nodes you have in the system and tested across all this huge matrix of
+it. It's one of these things that couldn't ever quite get prioritized appropriately, because it
+never seemed like kind of critical, but I've like, I always had this intuition. There was something
+there. And then over this like four day span, the code just like materialized as I was using, um, I
+think that was Opus four, seven or four or five, whatever the number was, like the recollection I
+had is, you know, like I'm pretty fast typer. And then I just remember having this feeling of like,
+well, the code is just like materializing before my eyes. You know, you would ask for these things.
+I got out of the habit of actually typing and you just kind of like ask for something materializes.
+If you've ever seen like some of those, um, you know, a movie where they had this kind of, uh,
+archetype of a software engineer gets in front of the keyboard and they start typing, show the
+screen. It's just like, it's going way beyond human speed. And then it was, it was gone that right.
+Like it wasn't, I think a software engineer is like, we used to laugh at these. Like, I still
+remember swordfish, the thing when they're visualizing the things are going or the code appearing,
+you know, you're seeing that the person's typing and then it's a big line and a software engineer is
+like, we're laughing cause it's not how it is, but, but it's crazy that like that effect, right?
+Yeah. Yeah. But now it's even better than that effect. Right. Cause it actually works this time. And
+it's that slow in comparison. It materializes faster than that. Like you can literally go, like
+we've been talking about B trees a whole bunch. I implemented another B tree in, in the past month.
+Of course you did. Yeah. And it took about 30 minutes to implement probably 10,000 lines of highly
+optimized rust. I mean, it's just like, it boggles the mind. Um, I mean, I, we should look up later
+on 10,000 lines. It's like a crazy amount. You physically cannot type that fast. You, you started
+getting back to coding. Like, are we talking about kind of vibe coding prototyping or are we
+actually talking, you started to contribute like proper production ready code that is up the level
+of what you're doing at home to be. Well, it started with this tool, um, that was like this kind of
+benchmarking tool that tested this matrix. I am the CTO. We have an office of the CTO. Um, the
+office of the CTO's mandate is to innovate. And I was looking for places like we can have
+innovation. And one of the things that we want to innovate in, um, was, you know, better, uh, auto
+scaling of a CockroachDB cluster and kind of in the January timeframe, I came out with like, what I
+would think is like kind of a, uh, a research breakthrough you might say. And it came about because
+I was dabbling in this area and just working with the models, trying to understand it. And they're
+not just good at coding. They're also good at like helping you explore design ideas. And I think
+this is kind of the fascinating thing where it's, you have to get out of the mindset of like, I know
+exactly what I'm going to build. Um, but more like, Hey, we have this problem. Talk through it. Be a
+partner with me and be a sparring partner, sparring partner. You know, like there's this advice you
+might have heard that like, you know, if you're stuck on a problem, you should go yellow, duck it,
+go rubber duck, rubber duck it. Uh, I think I've heard his yellow duck, you know, go, just go talk
+to something. You don't even need it to respond. Now you can talk to this system, uh, this
+intelligence and it will give you back stuff. And it's not always right. I mean, this is the thing.
+Even today, these models are fantastic. Fables, fantastic. Astros, fantastic. And they're not always
+right, but they, they kind of like, they know so much. It's just encyclopedia and you can explore
+ideas super, super fast. And then be pointing out, well, that doesn't sound right to me. And it'll
+be like, Oh yeah, you're absolutely right. You know, like, I hate that sick fancy. It's like, it
+kills me. Or you're right to push on back on you. You were right to push the back on that. That's a
+new episode. Right. Yeah. And yet like just able to make such fast progress. Um, and I, I, I find it
+absolutely incredible. So quickly moved from just doing kind of side things, um, building up some
+tools and whatnot to building, you know, essentially over the last eight months, it's a January. Um,
+we've been building towards a, you know, uh, a new launch and, you know, like a lot of that has been
+produced a gently powered engineers. And like the entire company has gone on board with this now,
+where I think it's like probably a hundred percent of engineers are using it to a greater or lesser
+degree. And a lot of code is being produced. And I think it's very high quality code. These models
+not test things adequately. They don't look quite intently enough about performance, but if you're
+like, uh, you can guide them in the right way. And I think there's actually a huge advantage to
+anybody who's done management before. It's a little bit like being a manager of people where you're
+a manager of a large group. You're not looking at every line of code, but you're definitely kind of
+helping architect the system. I think there's a very strong analogy there. I sometimes push back on
+this analogy. The reason being, I was an engineering manager. My take is that working with these
+agents, it's not like management because management has so much of the human stuff that like as a
+manager, when I think of all this, a bunch of stuff I dealt with, which was the people side of
+things, the conflicts between people, the performance reviews, the meeting, et cetera. And you have
+none of that. You do have the orchestration. Like, again, this is like almost like a, I guess a
+really like naive way of management where like, you know, they don't push back. They, they start to
+do it. Sometimes they're like unreliable, but you know, I almost like to use like orchestration a
+bit more because I feel management is so much more involved. Like, I think this is the thing where
+like a tech lead who has no management responsibilities, but they have a group of interns, but they
+don't need to do with their performance, with their anything. Like it's a lot closer to that, if you
+know what I mean. Yeah, I do agree. I use the engineering manager shorthand, but it's really about
+being a tech lead for like a 30 or 40 person organization, you know, or being an architect for one.
+I think that the term architect gives me a little bit of a distaste, but it's been architect. He's
+also on the ground, a hands-on architect, hands-on architect, and you don't have any of the
+management stuff, which is a blessing and curse, but it's kind of remarkable that you can spin these
+things up. If they make a mistake, you can keep on correcting them until they get it right. We've
+always been able to do that on the human side and I can do it faster. I think the ultimate result
+for me is you just have to be more ambitious about everything you do. You can produce more, higher
+performance, higher quality, more secure. So our ambitions have to raise up. You also mentioned that
+with AI, like you're ever using and you're building stuff, but also with CockroachDB, you're now
+building something that is also related to AI. Can you talk about that? Yeah. Yeah. We're building
+multiple things. I mean, AI is the future. Well, it's here to say. I think that's for sure. Yeah. I
+mean, like, you know, one of our theses, which is not crazy, every application in the future is
+going to be written by AI. You know, I think there will be some kind of bespoke software, you know,
+handcrafted software. I think we'll see that continue to exist just as people write assembly still,
+you know, but it's going to be diminishing in size. So, you know, asymptotically approaching 100% of
+software will be written by AI. And generated, right? Yeah. It's hard to say if like, when it's
+going to end where the humans are the agent, you know, kind of like supplying the agency and the
+vision behind it. I think that might exist for many, many years, but like, I think the code will
+like fundamentally be written by the AI. And I think we're going to just see this explosion of
+applications. And we're seeing that inside Cockroach Labs. We're seeing it elsewhere. Earlier this
+year, we kind of rolled out this internal platform where non-engineers could write kind of mini
+applications. I mean, this is like, you're hearing this at other companies. We did the same thing.
+And over the course of just a couple months, you know, 500 applications, a thousand applications. By
+non-engineers. By non-engineers, primarily by non-engineers. And I thought it was awesome. Like our
+HR team is building like these little applications. Like this is the thing I've always dreamed about
+doing. And like, they were never serviced. Like your CFOs all over the place and ours is no
+exception, producing dashboards that they can never created before. And I think it's very
+empowering. I'm married. I have a wife. She needs software. She cannot produce that software on her
+own. And I've never actually helped her produce the software, which is my own failing. But I think
+there's a world in the future where she gets like, everyone's gained custom software built for them.
+And you're just going to also see greater and greater applications and higher quality systems being
+produced by every company as well. David Pérez Yeah. Yeah. It's evolved over time. So, you know,
+like when I first started dabbling the AI stuff, again, it was, you know, GitHub Copilot. I was an
+Emacs user for like 20 something years. I got convinced to move to VS code, but that's all gone now.
+At some point I moved to using cloud code. That was the thing that whatever reason I just got
+started using is cloud code in the terminal of late. I use a mixture. So I'll just grab my current
+setup. I use the cloud desktop app, cloud code via the cloud desktop app. It's fantastic. Good job,
+Anthropic. I also sometimes use the codex desktop app just so I have an alternative model to turn to
+for some very critical things we're working on. I will get, you know, one of those models, sometimes
+like the best model. Oftentimes I'm using the best model like Fable. You know, I've recently started
+using that. Sometimes it's Astra. Sometimes it's the other ones, but you like you have one producer
+design. You have the other one being like, hey, my colleague produced this. Can you kind of tear it
+up? You know, adversarial review it. And it's not always perfect. Right. You know, but I think there
+is utility, especially for something that's super, super critical. We're pushing towards the launch
+really soon and kind of rushing towards the finish line. I'm telling folks on the team, it's like,
+you know, especially our very senior folks, like you should use the best model right now. Yeah. It's
+worthwhile to do that. I'm generally just using the best model. And part of the reason is I don't
+actually know that I'm getting a lot more intelligence from it, but I don't want to have the
+cognitive overhead of deciding on a case by case basis. Yeah. Should I use Sonnet? Should I use
+Opus? Should I use Fable? Should I use Sol or Astra? And I think, you know, maybe if you like, I
+really need the speed, I would make that decision. But oftentimes I'm like, I'm doing things in
+parallel. So you're asking how many agents I'm spinning up? Well, it depends. Like oftentimes
+there's like a certain number of sessions you might be using. I find like kind of cognitive overhead
+is about five to 10 sessions concurrently, but sometimes those sessions will have many sub agents
+doing things. Yeah. And they'll be long running. Yeah. It'll depend on what I'm doing. So as I was
+coming here, I was on the train, I spun up something to do a little bit of research and that was
+just probably using three sub agents. Other times it might be 20 sub agents, you know, with, uh,
+Anthropic has dynamic workflows. I can't remember what the codex thing is called, but they have
+various ways of spinning up kind of graphs of agents and, you know, prosecuting them. I mean, I
+think it's sometimes I'm probably using hundreds of agents. Others, it's only like five. It depends
+on what's happening. And sometimes I'm not doing any of that agentic stuff because I'm often
+thinking about something else. Since you were an Emacs user for 20 years, you know, using the
+terminal, right? Or well, Emacs, but how, how come you move to graphical interface with agents? A
+lot of people still use, uh, terminal UIs. Yeah. Yeah. Well, I, so I moved from Emacs to VS code and
+I was just like, a colleague was like, Hey, these IDs are really good. You need to try them out. I
+was like, Emacs is an ID. And then I, I kind of moved and like, you know, some of the stuff was just
+more seamless and like Emacs keeps on catching up. It always feels a little bit, you know, six
+months to a year behind. And like every time they have a new version, my setup would break and I
+just got tired of that. So I moved to VS code, but then I was like, I'd have many terminals open in
+VS code. Uh, my setup would always be like, uh, terminals in VS code tabs, the terminals and tabs,
+you know, have like eight of them open. And then they started taking over. It used to be like just
+cloud code in the terminal. Yeah. Yeah. And then, you know, just some point recently is like six
+weeks ago, colleague was like, well, have you tried out the cloud desktop app recently? It's really
+good. I was like, yeah, no, no, I'm very, very happy. And I made the switch and it was a little bit
+awkward at first. And then suddenly I'm like, holy crap, this is awesome. You can like manage the
+agents a bit better, easier sessions. Yeah. I mean, it's like, you have the sessions there, the
+sessions and down the side, you know, and it's like, they're kind of like tabs in some regard and
+shit, but the whole integration that Anthropik's been doing in open AI is doing the same thing now,
+by the way, like I'm not dissing cursor and factory and cognition. They're all pushing the same
+thing. It's incredible how fast these systems are innovating right now and evolving. What do you
+think good software engineering looks today compared to like, you know, four years ago, before we
+had a, has it, has it changed? Has good change or that's not really changed? Yeah. I think the
+ambition has to increase, you know, I think quality has to be higher. Security has to be higher. I'm
+glad you mentioned quality. Can we talk about that? Because I'm seeing across the industry, just
+quality declines, which you cannot fully put your finger on AI, but oftentimes it is people pushing
+out more and more and just not paying attention to just small regressions here and there. Again,
+like you're, you're building a database. Like, have you noticed any, or have you gotten feedback of
+any quality regressions or, or if not, like how come? Because like what, when, like, this is just
+basic, you know, like we talk about the law of physics. This is an observed thing that when you
+start to have more output, you increase your deployment frequency. You often, not always, but you
+often have like more regressions and more bugs. If you produce a certain number of lines of code,
+you're probably going to have a certain number of defects per line of code. And now you can produce
+more lines of code. So you probably would have more defects, right? But the thing that pushes
+against that is that you can be telling these agents and you have to give them quite a firm hand at
+this. This is a thing that I, I hope the, the model providers are listening to, but you need to give
+them quite a firm hand. They kind of get a little bit lazy on the testing side and you have to make
+sure the tests are comprehensive, but also they're using all the tech testing techniques. And
+there's a lot of testing techniques out there. We have a lot of knowledge about how to do testing
+well. And you know what? The agents are lazy. Humans are a little bit lazy. So getting the humans to
+actually be very disciplined about their testing is also challenging. And I think it's actually
+easier with the agents. You know, you can kind of instill that you can get them set up. You have to
+give them the guidance, use property-based testing, use metamorphic testing, use like these advanced
+testing techniques, deterministic simulation testing. You know, there's like technique after
+technique you can use. And humans have always like, I'm lazy myself. Like I'm pretty good about
+being disciplined about testing. At some point you're just like, okay, that was enough. We got a
+ship. And like, now you can get a little bit like, you know, a little bit stricter and firmer. I
+think the same thing applies over on the security side, the performance side. I mean, we've always
+had at Cockroach in the industry. We know security coding practices. Yep. You can literally have
+every single line of code on every commit reviewed by a security expert. Doing like an adverse or
+adverse error, uh, security review by an agent or multiple agents or multiple agents. Right. And you
+know, we're going through a tough time in the industry right now with like kind of, um, hacks and
+security leaks and whatnot. There's only a limited number of bugs that can be in software. I think
+we'll get it, you know, out of it on the security side and on the quality side. And then also just
+on the poll, when I say quality, it's not just bugs, but it's also like, you know, just a little
+thing. It's like, oh, that UX element is wrong. And there's no excuse for that right now. Like
+fixing it is so, so easy. And what we're also starting to see evolve is like, you know, designers
+using Figma. Well, I think that should be a thing of the past right now. Our designer just deals
+with HTML and CSS and JavaScript directly. And sometimes is even just producing pull requests, you
+know, PRs, which she loves. We all love everybody's happy with this. There's none of this waterfall.
+So she, she's producing pull requests for the production code base. Yeah. Yeah. And you know, this
+is on UX side, not on the core database. Of course. But this is the area that, that like she owns.
+Right. Yeah. Yeah. It's just, I mean, she loves it. Everybody loves it. I mean, there's no downside.
+This is not new. Yeah. For sure. Yeah. What about code review? What's your take on code review? I
+think it's pretty, it's starting to get a bit controversial. Like, is it going to stay or not? Cause
+it's been a practice that's been around like, think about, I mean, you, you worked at Google. Google
+has been so big on code review. As I understand there used, there are two code reviews, right? The,
+the, the main experts reviews it, and then there's a language expert reviews it. So you went through
+that. How did you think of it? And how are you thinking of it now? I used to be part of the, I was
+one of the early members of the C++ coding. I'm asking the right. Okay. You will have strong
+opinions. Tell me. Yeah. Yeah. I mean, I, I, I see that code review, I think was fairly essential
+before the age of AI, but now we're getting to the point where I'm reviewing and looking at code. I
+look at most of the code that the agent's producing still. And yet it's like, you're, you're not
+giving it the same level of scrutiny, right? And this has always been the case. If you get a pull
+request from a junior engineer, you have to give it more scrutiny than if you get it from your most
+senior engineer and you ask any, you know, tech lead, any engineer manager, any software engineer,
+they'll, we'll say, yeah, yeah. So the junior engineer or someone new to the code base, you know,
+you just have to get more scrutiny. And what I'm finding is the agents are getting better. You're
+having to give less and less scrutiny. And yet you do soft to give scrutiny to some things. It's
+like I said, it's like the testing will be incomplete and maybe they didn't follow the security
+stuff. Maybe, you know, like there was a performance regression. And I think it's like, you know,
+assuring there's kind of constraints on the system. So it's hard for them to do the wrong thing. I
+suspect that, you know, I don't know if it's going to be this year or next, that we're materially
+going to stop looking at the code in the same way that we don't look at assembly anymore. Like you
+will, we trust the compiler to produce pretty good assembly. We trust the compiler to produce good
+assembly. Unless you're one of those people where it's really important, you're, and you're maybe a
+game developer or, or someone and you look at it and, but there's fewer and fewer of those folks.
+Yeah. And even then I think what we'll be migrating to is why, why does the human have to look at
+the assembly? The AI should look at the assembly. Like I'm doing something right now where I want to
+have a zero overhead abstraction, you know, for doing something that is done at test time and when
+it's in compression is compiled out. Fable set up for me a little system where it actually looks at
+the decompiled code to verify like that there's only a few extra instructions put in place. I never
+would have put that in place, but now it has this guard rail that every time it changes this, it can
+verify that there's no regression. And I think you're going to see more and more of this where you
+kind of put guard rails in place. I think the model kind of likes it because it can work within that
+guard rail. Now for what, like 20 plus years you were writing so much code. Like I'm sure you were
+in the zone. Do you remember being in the zone and just churning it out? You wrote a lot of like
+production ready code. Now that you're coding with AI, like do you get into the zone? Yeah,
+absolutely. And how is that zone? Is it the same? Is it different? Feels, it definitely feels a
+little bit different. It's maybe a little bit less intense, but you're managing more things
+cognitively. Like, can you describe me like what is it right now when you're in the zone? Yeah.
+Well, I'm thinking of ideas that normally would have taken me a week to experiment with. And I take
+multiple of these experiments and I fire them off all simultaneously. And then I'm kind of like
+reviewing, like, what else should I do while that's being complete? Sometimes I'm kind of reviewing,
+like they'll be giving me progress updates of like, oh, hey, this is coming in. We're seeing this
+stuff. And I'm being like, well, that doesn't sound right. Hey, what about this? Or do we do this
+correctly? You know, maybe I had design and it's not implementing the design quite perfectly. But I
+have this little feeling that, you know, I haven't been a college professor, but maybe I was a, you
+know, if I was a college professor, I had a whole swarm of research assistants and they're all off
+doing things. And it's coming back, but it's coming back just really rapidly. Really rapidly. You're
+not waiting months or weeks. I'm not waiting months or weeks. And then I'm iterating. I'm like, oh,
+that one failed. That's fine. You know, you just got to let go. And this, this is the nature of the
+software I build. I think there's other pieces where it's like, you just whip out a website. You can
+whip out something that doesn't have this level of kind of scrutiny, you know, very quickly. But I
+talk about this in the, I have a whole bunch of analogies about like the Let's talk about analogies.
+What analogies do you have about, about using AI? I mean, the one I was, uh, you know, advocating
+for, uh, had kind of two that I was advocating for like late last year and this year, which is, you
+know, AI is coming for us. It's here. Right. And it's like, uh, you know, you're producing software,
+like walking down the road. And sometimes, you know, someone will pass you, they're running, they
+got an efficient gate and whatnot, but everyone's under their own locomotion. And the, these agentic
+coding agents came and it was like a car pulled up next to you. And you get into the car, you don't
+know how to drive. You don't understand the controls, but you got to get in and you start, you might
+figure out the gas pedal and it takes off and it crashes into a tree, but you have to learn how to
+drive. You know, I think using all these coding tools, it just isn't, it doesn't just happen
+naturally. It's learning how to drive. I think we might be in the era of F1 driver right now, which
+is like the really good people can drive these systems a lot harder, a lot faster than the people
+who just picking them up. If you've never used an agentic coding tool, there's a vast difference
+between someone who's like really expert in them, knows where they break, can pay attention to that
+versus someone who's just picking up for the first time. One analogy I've heard is we used to talk
+about 10X engineer. You remember like this, this used to be a debate for a very long time. Is it, or
+is it, is it not? But now what I'm hearing is the 100X engineer. Yeah. And so you're saying that you
+are seeing some folks who maybe let's not use the term 100X engineer, but like this, like F1 driver
+who was just really, really good at it. Like, how would you describe a person who you've seen this
+as, is it just like rock solid engineering basics and they picked up, uh, they lean into using these
+tools or what are they like? Yeah. Yeah. I mean, there, there is, uh, quite a bit of a, it feels
+like, you know, it's directional that they're good software engineering before. I mean, I, I
+sometimes think it's like, you know, everyone's in this kind of spectrum of capability of software
+engineering and this is just like, you know, taking that line and spread it out. And it's not quite
+true. You know, I think it's helped some people more than others, but you know, it feels like it's
+just stretched it out. So, you know, your ability before is now amplified. I'm always interested to
+learn that, for example, Boris Churny, Thibault at, uh, uh, OpenAI, they both have been really,
+really good software engineers. Boris wrote one of the the first TypeScript books, the first
+TypeScript book for O'Reilly. He built some massive systems, same, same with Thibault who built it.
+And now you're kind of seeing, oh, these people are building all these tools and innovating. Like,
+yeah, they were really good before. Yeah. Well, I mean, this is a, I mean, I have two other
+analogies to give you about like the, what it feels like an AI. You've undoubtedly heard about the
+term pair programming and programming, you know, and the, the idea behind pair programming is it's
+good to just like, you know, have one keyboard, one monitor and two engineers at it, one of the
+keyboard and the other one sitting beside them, kind of like looking over the shoulder and giving
+guidance. And I think there's an aspect of that feeling where I actually got Chachapiti to do a
+little image of this, where, you know, it's like the Android is at the computer typing and you're
+just there giving instructions. But that was maybe the way it felt like a year ago. I think it feels
+a little bit different now. Um, the one I, I, I've just started recently saying is that I feel like
+the domain experts, the people who were really strong before are now massively amplified. Have you
+seen all this mathematical stuff coming out like the crazy proofs? Well, I don't understand it, but
+I, I don't understand them either. Yeah. Yeah. So I told you I wasn't very good at math. You know,
+it's not complete. I just was like, I stopped in the freshman year of college. Right. Yeah. But you
+know, I kind of like watch along with these, uh, advancements and, you know, Terence Tao, he's like
+probably the most famous living mathematician, you know, super genius. He actually posted this
+session. There's this recent breakthrough. It's called the Jacobian conjecture. I don't even know
+what it meant, but he posted this chat GPT session where he's interacting. I think it was chat GPT
+and you can see him interacting with this intelligence. And it was crazy because he's talking to it
+as a peer colleague and it's responding. And literally it honestly looks like I'd encourage everyone
+to go look this up. It looks like, you know, almost a foreign language. It's like his domain
+expertise is getting amplified by the system he's interacting with. And you can see how he's like
+kind of learning and exploring ideas just really rapidly. Now there's all this controversy about AI
+mathematics, but I feel like the, the analogy that comes to mind to me though, is, uh, the domain
+experts, they're a little bit like sorcerers in their particular domain. You know, you have the
+earth sorcerers, the earth wizards, the water ones, whatnot. And if you know, the magic
+incantations, the right words to say the right order, you actually get something kind of magical.
+And if you don't, you just get sparkable stuff that doesn't have anything there behind it. You know,
+you would probably admit, you don't know much about distributed databases. If you're going to ask
+Fable or Astra, build me a distributed database like Cocker TV, you will get something out, but
+it'll kind of be ultimately hollow inside. But if you're an expert in databases and you asked to
+build a distributed database, and you can point out all the various things you have to know about
+distributed database, here's what you have to worry about the storage layer, the networking layer,
+here's the various data structures, runtime inside. You can actually get something quite magical
+very, very rapidly out of it. So what would your advice be for engineers with like mid-level to
+senior level who, you know, who have been figuring out how to do coding to become strong engineers
+in this, I guess, age of AI? Well, the first off is you have the most amazing tutor kind of readily
+at hand. And I mean, one of the things that I would always do, you know, throughout my career, and
+now I've kind of stopped doing it, but it's like the reason why is going to become obvious, which is
+like, I would always look at other people's code. So I was at, you know, Google early on. You
+probably heard of Jeff Dean. Jeff Dean was an amazing coder. His colleague, Sanjay Gamelat, also
+just an incredible coder. And, you know, I would be looking at their pull requests. I'd be looking
+at their changes. It wasn't called pull requests at Google. There's a different name for it, but I'd
+be looking at my CL, right? Yeah. CL. This is a P4. It's a different version control system. But I'd
+be looking at their changes, be like, how did they do what they did? Right. I'd be looking at their
+code. Oh my goodness. Sanjay's code is really always very elegant. You know, Jeff's high
+performance. How's he doing that? You know, like, how's he going about it? And it's almost just like
+you acquire it via osmosis. But now what you can do is not just acquire it via osmosis, but you can
+literally like, I mean, I would be encouraging if you're a junior engineer, you know, there's a
+senior engineer nearby. Like you could ask him how they're doing what they're doing, but you can
+just ask the AI to dissect what they've done and explain it to you and explain it to you at various
+different levels. Like, how does this code work? What is it doing? Give me a diagram. Explain it to
+me like I'm five. Explain it to me like I'm 10. Explain it to me in French, whatever you want. Like,
+I mean, fundamentally, to some degree, AI is a translation tool. They translate it from whatever,
+you know, kind of language or understanding it's in and keep on interrogating it until it gets it,
+you know, increases your understanding. You were saying how domain experts are very much amplified.
+I guess one strategy as a software engineer is like obviously become a great software engineer and
+use it as a tool. You can get a lot faster. You can get at distributed systems. Like I'm not a
+distributed databases expert at all, but I use AI to explain a few things for me to understand
+upfront, which was very helpful. And it would have taken me a lot longer time beforehand. So I can
+use this. But I wonder if there's another part of like as a software engineer, you can use it to
+become more of a domain expert wherever you're working. If it's a payments company, I mean, use it
+to learn about payments as well. So you can help the business, you can help your team. And honestly,
+you'll just learn more, right? Yeah. Yeah. I think, you know, I would encourage everyone. You have
+to have a little curiosity, right? Don't don't be bound in by, you know, the area you're working on
+explore outside of it. You know, I was working on Gmail, but I was fascinated about how like the
+main Google search engine worked. I was fascinated by like how the internals of big table worked,
+even though I wasn't directly working on a big table, just explore in, look at those things. And now
+it's so much easier because you have this super advanced patient intelligence there to explain to
+it. Like, why do you think it was done this way? And then like, I mean, once you become an expert,
+you can be integrated. Well, I see it's done that way. Why don't we change this? Would this be
+helpful? And you know, that's where you go from just kind of learning to actually contributing back.
+I think everyone has to have the personal agency to do this. You know, if you're just sitting there
+waiting for someone to educate you on how to do this, it's going to be really hard right now because
+anyone who's coming in explaining how to use AI or explain how to be a better software engineer,
+they're going to be out of date, right? You just got to get in there, be using this tools all the
+time yourself and using it like you have to learn. I feel like I've learned more in the past,
+probably even year than the previous five years combined is weird. Given your trajectory and given
+the environment you were working, right? Yeah. I mean, like, anybody who's been in the industry for
+a while, like, I'm definitely a better coder. I was a better coder 10 years ago than when I first
+got into the industry. It's like, I can look back every decade and realize like, I got a lot better.
+And I feel like I just got a lot better over this past year. And this was also one of the reasons I
+was really excited to talk to you because when we started to just exchange messages, the first thing
+you wrote to me and I asked you like, hey, you know, how, how are things going? You said like, you
+wouldn't believe, but my coding output is insane and it's high quality and it's database quality
+level. And those were the things I don't really usually see it. I usually see, okay, I'm not
+producing more code, but it's slop. But again, like to me, this is a bit of an inspiration. Like,
+look, like you can use these tools to just like amplify yourself as a software engineer. Like you
+are one example, right? Hopefully one of many. Yeah. Yeah. No. And I'm not the only one in Cockroach
+Labs. We have other people doing this as well. I find it very exciting. You know, it's a little bit
+exhausting right now, but it's very exciting. Like I got into software engineering, um, because I
+like building stuff and I can build stuff faster. You know, the stuff you might've had to compromise
+on the, in the past, and then you can take away some of those compromises. I mean, you see this in
+the UX of software coming out. I think the UX is a lot higher. You see all the fancy, like web
+animations and whatnot, but that's only just like the surface level. It just extends way, way below
+that. Peter, this was awesome. Thanks for coming on a podcast. Yeah, this is wonderful. Thanks for
+having me. One reason I was excited to talk to Peter is because he's been a very high profile and
+productive engineer pre-AI building some of the most resilient distributed systems in production.
+CockroachDB is known for its resilience and how even if several nodes are destroyed, the database
+still operates without data loss. Basically, it's as hard to get rid of as cockroaches are, hence
+the name. One interesting part of our conversation was how Peter built more efficient data
+structures than the standard coding libraries had, thanks to him and colleagues paying attention to
+parts of the library that seemed slow. He did it for the C++ STL map and then Go for the switch
+table implementation. I found both stories a good reminder that you can improve the existing library
+or even the language, especially if you measure which parts feel slow. Another part of his
+conversation that I liked was how Peter came a bit of a full circle. He used to write 100,000 lines
+of code per year, being a very productive engineer and CTO. He didn't stop writing code aiming to
+coach engineers between 2022 and 2024. And then he started to code again because with AI tools, he
+wanted to coach his engineers better, but it's hard to do if you don't use the tools yourself. And
+now he finds himself being extremely productive. And this time, the team around him is productive as
+well. And we're not talking about Vibe-coded software, but database-worthy, high-quality code
+generated and committed to production. Peter is convinced that AI amplifies existing expertise. And
+this is one reason why he probably learned more this last year, building with AI, than the previous
+five years combined. And I find it a valuable reminder that learning and building deep expertise in
+software engineering, this is very valuable. And as closing, I appreciate that Peter said that not
+only is he excited, but he's also exhausted. There's a lot to learn, but it's tiring and neither him
+nor anyone I know is immune to this. So if you're also exhausted with all of the things going on
+with AI, know that you're not alone. Check the show notes for more of the pragmatic engineering deep
+dives on Google's engineering culture and on distributed systems. If you liked this episode, please
+make sure you're subscribing to your podcast player and a special thank you if you leave a rating.
+Thanks, and I'll see you in the next one.

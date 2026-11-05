@@ -1,0 +1,557 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Right-Sizing AI: Small Language Models for Real-World Production
+DATE: 2025-09-20
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/model-size-selection-and-operational-investment-episode-61
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638939943424760953e40be519-ffe9-476e-bbad-a07a16136724.mp3
+DURATION_SECONDS: 3058
+TRANSCRIBED_AT: 2026-09-17T03:33:37Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. When ML teams try to run complex workflows through traditional
+orchestration tools, they hit walls. Cash App discovered this with their fraud detection models.
+They needed flexible compute, isolated environments, and seamless data exchange between workflows,
+but their existing tools couldn't deliver. That's why Cash App relies on Prefect. Now their ML
+workflows run on whatever infrastructure each model needs across Google Cloud, AWS, and Databricks.
+Custom packages stay isolated. Model outputs flow seamlessly between workflows. Companies like Whoop
+and 1Password also trust Prefect for their critical workflows, but Prefect didn't stop there. They
+just launched FastMCP, production ready infrastructure for AI tools. You get Prefect's orchestration
+plus instant OAuth, serverless scaling, and blazing fast Python execution. Deploy your AI tools
+once. Connect to Claude, Cursor, or any MCP client. No more building off flows or managing servers.
+Prefect orchestrates your ML pipeline. FastMCP handles your AI tool infrastructure. See what Prefect
+and FastMCP can do for your AI workflows at aiengineeringpodcast.com/prefect today. Your host is
+Tobias Macey, and today I'm interviewing Steven Huels about the benefits of small language models
+for production workloads. So, Steven, can you start by introducing yourself? Hey. Thanks, Tobias.
+Thanks for having me. So I am vice president of Red Hat's AI engineering organization. So I'm
+responsible for product strategy and engineering around our AI offerings in the market. And do you
+remember how you first got started working in the ML and AI space? I do. I remember because it
+basically happened right out of college. So I was hired right out of university primarily as a data
+warehousing consultant. And so in that endeavor, a lot of our efforts were really focused on
+preparing data for analytic purposes. Right? And this was pre generative AI. So this was the classic
+predictive AI stuff, right, that everyone knows, like the fraud detection, the regression analysis,
+things like that. And as you saw or as I saw sort of the the outputs of my work and how it was for
+helping companies and just the amazing things that analytics could actually produce, I just got more
+and more interested into it. Right? And I had plenty of opportunities to work on these kinds of
+projects. So when the opportunity to to join Red Hat came along and get deeper in in the actual
+practitioner space, I I jumped at it. Now as you mentioned, generative AI has become the predominant
+technology that people think about when somebody says AI even though it is not the entirety of the
+space. And within that overall ecosystem of generative AI, large language models, and these frontier
+models in particular have gained the most airtime. But as we're going to be discussing today,
+language models come in multiple different sizes for multiple different use cases. And I'm wondering
+if you can just start by giving your heuristics as far as how you think about the dividing line
+between small language models and large language models. Yeah. This is a good one because it's it's
+actually a bit of a moving target. Right? When you look at the models that have been produced since
+since ChatGPT launched, which effectively marks kind of the launch of generative AI from a a general
+public mindset perspective, The size of these models has really advanced a lot from things just
+being, like, pure as a service frontier models to then, like, derivatives of those models being, you
+know, in in much smaller parameter sizes. And as models were advancing, you might also saw similar
+advancements in hardware that was gonna be able to support these, the accelerators used for book
+model production and inference, and then the software supporting them on the the inference side of
+things. So when I look at, like, what's a large model versus what's a small model, I tend to base it
+on what will fit into the footprint of a single enterprise grade GPU. And anything that would fit
+into that single enterprise grade GPU, I tend to consider a small model because that's a model that
+if you're an enterprise looking to support a specific workload, you don't have to necessarily get
+into the complexities of networking and load balancing and resource sharing. Right? You can stand
+that model up single inference server GPU and start to to play around with it. Larger models are
+definitely include those frontier models, but extends to anything that's gonna require multiple GPUs
+to serve and inference that single model. And, again, this continues to shift, so it's tough to say
+what number of parameters constitutes a large model versus a small model. We've gotten to the point
+today where, like, even a 5,000,000,000 parameter model can run on an a data center grade CPU as
+well. Right? It's not gonna be quite as performant as a GPU, but it'll fit and you can actually work
+with it. So it tends to move, and I think we're gonna continue to see this as these advancements
+happen in hardware and accelerators and software where, like, the what now is considered a large
+model and spans multiple GPUs. Well, ultimately, here fit into a single GPU. Particularly as they
+keep stuffing more VRAM into those GPUs. Exactly. Yeah. One of the interesting elements of your
+description there of it being determined by the capacity of a enterprise grade GPU, so something
+that you're not going to have attached to your laptop or your desktop, is that it perpetuates this
+trend that we've been having for the better part of the last decade plus from the software
+development perspective where it is becoming more and more difficult to be able to have a full local
+environment for being able to do development and reproduction of your production systems. And I'm
+wondering how you're thinking about that as well as people are coming into this AI engineering space
+of, I'm going to select a model. I want to be able to do some early experimentation with it,
+understand its capabilities, understand how it fits in the overall system architecture, but I can't
+actually run it on my laptop. I need to be able to go and rent a GPU in the cloud somewhere to be
+able to actually use the model that I'm going to be using in production. Obviously, there are
+various service providers for being able to run these models as an API on a consumption based basis,
+but it still adds that extra bit of friction of I have to hand out a credit card before I can really
+get started. And I'm wondering how you think about the translatability of the models that can
+actually run on a laptop or a desktop without having to spend thousands of dollars on a custom rig
+versus the capabilities of the model that you're actually going to be using in production and how
+much of an actual real sense of the production system you can get before you actually run it in that
+production environment. Yeah. This is a great one, and this is, like, a paradigm I see a lot of of
+enterprises struggle with. And, frankly, like, even, like, within my organization, we've struggled a
+little bit where exactly what you said. Like, the thing that's most accessible to the developers and
+AI engineers today is their laptop. But a lot of times when it comes to generative AI and AI, like,
+all these things are experiments. Right? And so you're trying to run an experiment to prove a
+hypothesis to determine if there's viability or value in what you're doing. And sometimes, like,
+when you start with your laptop, there are techniques today that can give you sort of an analog for
+how the model is gonna perform. Right? Whether it's Q Laura or these these other sort of low
+fidelity type ways of working with models. But if you're not sure your idea has promise, sometimes
+starting with the smallest model and then using kind of a scaled down version of it isn't going to
+allow you to test the art of the possible to determine if there is value to in moving forward. So
+you might actually be leaving really great ideas on the floor. The corollary to that is exactly what
+you said. So, like, let me go start with the largest and best frontier model, but that has dollars
+associated with it. Right? And allocating budget and and getting friction and all that kind of stuff
+can kind of slow that thing down. So what I've tend to advocate for now with my teams, and we've
+been through multiple cycles of this, is if you have an idea or hypothesis that we want to try out
+and prove that there's potential value for, so something generally new that we haven't, you know,
+it's not a refinement and an idea we already have. My guidance has been, like, go start with the
+biggest and baddest and best model out there. We can we can absorb a little bit of the cost, but
+better to start with the best model to determine if the idea and experiment actually has value, and
+then try to scale it down from there into smaller models to figure out kind of where that right
+size, that goldilocks zone fit is for your specific use case, then to try to start with smaller
+models and iterate in in such a way that you don't get to a viable result. So far, this has worked
+pretty well for us. Being able to determine pretty quickly if an ideal has merit and then moving it
+down to to smaller models there because it needs to be something a little bit more tailored to our
+use case and before we start tuning things. So that's generally the way we're kinda looking at how
+these things work. Like, obviously, there's problems, though, also, like, with large scale models.
+If I'm attempting to solve a problem that's specific to my business, something that the data wasn't
+in the public domain that these frontier models could have been trained on. It may not be a valid
+experiment because how could it answer something about my specific customer base or my financials
+or, you know, something specific to my enterprise. So there's trade offs in there. Good news is
+there's plenty of customer data and product data and other financial data, like, generally available
+that these models have been trained on that you can kinda tell your tailor your initial experiment
+to kinda get use that as an analog for for your specific use case. But that's sort of that's the
+direction we're headed right now. There's just as much development happening on the developer
+toolkit side of things, though, to make model development and local, like, laptop development more
+accessible. You're also starting to see, like, increased power in these laptops and price points
+coming down. So, again, it's being attacked from kind of both angles. And, like, I'll say, where
+maybe two years ago, there was maybe one individual on my team that had a laptop powerful enough to
+to work with these models, I'd probably say 20% of the team now has has access to those kinds of
+resources. So it's gonna be solved from both directions. But right now, like, starting this direct
+with with this kind of technique has led to better results for us. The other interesting aspect of
+selecting a model that is potentially self hostable, whether on your laptop or in a data center and
+not just using some service provider and consuming the model via an API presumes that you're going
+to be running that model in a context where you don't have access to those API providers, which then
+requires a certain amount of operational and organizational sophistication to be able to even manage
+the actual deployment and care and feeding of these systems because they are very simple to get a
+proof of concept. But in order to have an actual production grade capacity to be able to run these
+models and deploy new models and fine tune and monitor the models, there are a lot of other moving
+pieces beyond just, can I stick it in a Docker container and launch it into my Kubernetes cluster?
+And so I'm wondering if you can talk to some of the ways that teams and organizations should be
+thinking about their overall capacity before they embark on the process of determining what is the
+actual right open weights model or model that I want to customize, and maybe they should just use an
+API provider because that hides a lot of the inherent complexity to the problem space. Yeah. This is
+I think, I at this point, across enterprises, right, every company knows they should be doing
+something with AI. And sometimes that leads to exactly what you're saying, like, well, how hard can
+this be? Let's just go ahead and stand one up. These things are sitting out there in a hugging face.
+I download it, put it on VLLM, and let's see what happens. There is a lot more to consider in it.
+And probably, like, the easiest bar for entry here is if you're an organization that most of your IT
+operations are being consumed via software as a service or or other components, you're probably
+going to struggle to stand up an AI platform and run this independent of those those cloud services.
+But if you're a company with an IT organization who today is running some type of platform, whether
+that's a data platform, an application platform, or anything else. Like, they're very similar to
+running an AI platform. So you're gonna have a lot of the core principles and capabilities already
+in your team. Right? Things to keep a mission critical application running twenty four seven are
+very similar to running a model twenty four seven. There's a lot of the same considerations when it
+comes to life cycle. Right? So companies who can build and maintain their own application base and
+life cycle those and secure them, same concerns come in with models. You have to be able to retrain
+models. You have to be able to test and validate models. You have to be able to roll them out. You
+have to be able to monitor and observe them. You have to be able to roll them back. And those and
+you need auditability and traceability, along the way. So if you've got that principle down, like,
+you're pretty well suited for it. The next thing that I tend to talk to a lot of customers about is
+around where do you get that AI platform. And and prior to the the rapid acceleration and the
+adoption of generative AI, there were a lot of very sophisticated enterprises who were building and
+maintaining their own AI platform. A lot of the AI stuff that everyone's playing with today has been
+in open source for quite some time. And if you had the right team, you could actually go and compose
+your full end to end AI platforms, including everything from development to to model life cycle, to
+monitoring, to inference, and and all of those things. But now, like, with the rapid pace and the
+dynamic nature of of the AI space, it it calls into question whether or not that's the core
+competency of the enterprise. And so I talked to a lot of companies about whether or not it's still
+the best use of their time to try to keep up and maintain that platform versus buying an integrated
+platform like what Red Hat ships. Right? We have our OpenShift AI platform, deploys right on top of
+OpenShift. And so if you're an enterprise that's already adopted an application platform like an
+OpenShift, throwing an OpenShift AI on top of it extends the capabilities that you've already
+trained your operations team to run with. And the skills are very transferable and allows you to
+focus more on the value added parts of AI. So, like, how are you actually going to put this into the
+business? How are you gonna track and manage whether or not you're you're actually getting value out
+of it? Manage the life cycle kind of thing. So this has been a a key consideration, but I will say,
+yeah, there there is sort of this expectation in a lot of customers where, hey. Like, everyone's
+doing generative AI. Like, I should I should be able to do it within my four walls as well, but they
+don't they haven't necessarily built up the discipline around it. It's not as plug and play as
+maybe, everyone makes it sound done in some of the articles you read out there. Another element of
+running your own models is the selection process where there are the big name models that are
+available in open weights. So everybody has heard about deep seek. There is the GPT OSS models.
+There are the LAMA models. So there are a certain handful of model creators and model providers that
+have gained a lot of visibility, but then there are also numerous derivative models either of those
+ones or other models from smaller firms that are maybe not as popularized, as well as the fact that
+selecting an off the shelf model from a provider that hasn't been thoroughly vetted also brings in a
+substantial amount of risk because of the potential for being able to actually embed malicious
+subroutines into that model if you are not doing a thorough evaluation of it. And I'm wondering how
+you see teams address the complexity of the overall model space in terms of, one, identifying what
+is the actual type of model that I want because there are different models with different
+specialties. So do you want a mixture of experts model? Do you want a model that is optimized for
+latency? Are you more worried about the context window, etcetera, and just the how you're seeing
+teams try to stay up to date with the selection process, the model availability, and being able to
+actually do their own evaluation of model capability as well as the security element. When it comes
+to model selection, probably the first thing that comes is, like, any kind of geopolitical concerns
+that we see on, like, which models that enterprises and customers have, like, approved for use with
+within their four walls. From that, like, moving on from that, there's there's sort of like a
+popularity factor. Right? You you can read a lot of articles from other individuals who have who
+have played with these models. So you get the big name ones, obviously, get a lot of the attention.
+Right? So whether it's the the DeepSeek, right, or GPTOSS or or llamas. There's only a handful of
+major providers of models that are out there. Now there are a lot of derivative models that get
+created off of that, which says not everyone's gonna well, practically nobody's gonna deploy the
+pure frontier model in inside their four walls. From there, again, it kinda comes down to use case.
+So as each new frontier and technology advances, sorry, when the MOE models first came out, we saw
+everyone shifting toward MOE models because this was gonna solve all of their problems. But then you
+start to realize that there are constraints. Right? And some of those constraints are performance
+based, some are cost based, and then you start to kinda whittle it down. And you see advancements in
+technology where they improve the internal routing so that we don't get routed to the expert that's
+actually needed versus, so it's optimizing across all the different layers. You have the ability to
+prune certain layers out. Again, these tend to be pretty advanced concepts for folks who are or more
+focused on, like, just getting the business value out of a specific model. Then it comes down to,
+like, specific use case. Right? So now we like, obviously, Agentic has been a a very popular trend
+this year. And so with Agentic, right, you start getting into tool calling and the ability for
+models to be able to take action based on specific prompts. And so at this point, like, most of the
+model like, the major model providers are generally pretty comparable with with one another. Right?
+So whether it's a like, GPT OSS, I'll say, has done very, very well. Quen has done very well. Llama,
+it has been previously very, very popular, but we're starting to see that fade in in favor of, like,
+GPT OSS. So I I think, you know, when you look at kind of the different evaluations that are out
+there and and based on, like, other people's use cases, I think that's driving a lot of the adoption
+within enterprises. From there, they'll refine it a little bit more based on their specific use
+cases. And where I'll see the difference there is if they're self hosting, they'll tend to do like,
+they're they'll have their own evaluation criteria. They'll run a set of, like, tests against
+various models, and they'll repeat those tests to determine which ones are giving the the better
+outputs. If they're consuming, like, API services, I'll say, like, a lot of, like, a lot of the the
+software as a service providers have put interesting customizations in front of some of these models
+that do help optimize the outputs of them. And so it's kind of the same methodology of let's take
+our our test framework, run it against these models, see which gives us the relevant results, and
+then pivot to toward that model. The hard thing, I think, for enterprises is, like, most of the ones
+that are are adopting generative AI today have a pretty good process around that model evaluation.
+What has been hard to adapt to is the frequency and pace at which these new models come out. And so,
+you know, you can imagine, you know, you're just adopting generative AI. You get your first set of
+agents built. Right? It's built on top of a specific model. And then, like, the next new model comes
+out, and now you have to life cycle and retest the whole thing. That rate of change has been a
+challenge challenge for a lot of enterprises to be able to absorb. But a lot of this is just driven
+based on use case. And, again, as these come out, they certainly get a lot of press. So there's no
+shortage of information to consume. As you mentioned, agentic use cases have gained a lot of the
+attention over the past several months as the models that are available have become more capable of
+things like tool calling and planning. In the agentic context, there's also the potential for having
+multiple models operating in concert where maybe you have a larger model that acts as the planner
+and orchestrator and all the set of smaller models that are doing the actual specific task
+execution, which also adds a little bit of nuance to the selection process. And I'm curious how
+you're seeing organizations work through some of that complexity and the evolution that they go
+through as far as their adoption of agentic use cases where, for the first year or so, the killer
+app of AI was, oh, I can talk to all of my documents, and I don't have to read them all. And so now
+we actually have things that are able to do more value creation, but they require a much higher
+compute capacity because of the fact that these models are running for longer periods and consuming
+more tokens. And I'm curious how you're seeing teams think about that aspect as well as far as the
+financial elements of, I can use a larger model that's more capable, but I can also run five smaller
+models for the same cost, and maybe I can split the the tasks out among them. Yeah. The world of
+Agentic and kinda where it's heading right now has been probably the most exciting part of for me
+about what's happened with generative AI. Like, models always existed, and models always gave people
+answers. Right? And it used to be individuals had to determine if that answer was valid or or
+invalid. But it when you start talking about agentic, like, this improves the overall accessibility
+and the value that that AI is going to provide. And kind of the the evolution of it going from,
+like, one agent that does a very does a series of complex tasks has now broken out into kind of a
+more service oriented architecture where you have individual agents who specialize in specific
+tasks, and then they coordinate amongst each other to solve much more complex tasks. And I love that
+architecture, by the way. Right? Because it helps to distribute some of the responsibility to
+organizations who can specialize in that specific discipline. And so they can make the best possible
+agent for whatever that that task is. But But it does introduce exactly like you said, hey. Do we
+have all the agents just work with one big model, or do we have smaller models tailored towards
+specific tasks? And I love looking back at historical predictive AI use cases for this because there
+was never a point where within an organization, there was one financial model that did your fraud
+analysis, provided your financial outlook predictions, and did your budgeting for your, like,
+internal departments. Those were individual models specialized for specific task and optimized for
+specific outcomes. This is the world we're moving toward with generative AI and agentic as well. And
+so we'll starting with a frontier model to test an idea and and validate it and kind of then work
+down toward a smaller model is the pattern I think we're gonna continue to see. And and so
+internally, like, again, like, what we do is we'll we'll take it down to the smallest possible model
+for a given set of outcomes. You don't need a model that can necessarily translate into 15 languages
+if you just needed to crunch numbers and provide recommendations on financial outlooks or ever
+summarize, specific, like, financial reports. So there's a lot that when you look at, like, the
+multilayer MOE models and what's been trained into a lot of these frontier models, It's okay if you
+regress or lose those capabilities because you're only focused on a a specific set of tasks for that
+agent. And then how they work together, the sum of the parts, right, is is is what you're really
+concerned with. This allows, like you said, to drive cost down. Right? So from a token perspective,
+you're gonna get it down to the smallest possible footprint from a resource utilization. This is
+where sharing across multiple GPUs and maximizing, like, GPU throughput. So even, like, fractions of
+GPUs is going to matter here. Because, again, when this stuff first rolled out, you would load a
+model up into memory. And I I remember our, CIO coming to me, like, hey. We loaded a model into
+memory. It was out there for people to use, and everyone was clamoring to use this thing. And a week
+later, I get a phone call that says, I don't understand what you're doing. We we're spending x
+amount of dollars a day on this thing for you, and it's sitting 68% idle. And, basically, like, you
+weren't able to to share across tasks. Right? So if we needed two models, it would just hold this
+this memory and the GPU, you know, static. And if someone was hitting one, right, great. Like, if
+they're hitting the other, great. But there was no sharing of resources across the two. That's all
+been improved now. Right? So where you're actually able to to maximize GPU utilization. So it's a
+lot that's been built into the systems to help with these use cases, and there's layers that have
+been built on top of the agents as well to help with the orchestration. So things that previously
+maybe had built been built into various model routers and whatnot are sitting a layer above it. So I
+think we are looking at a world where we are going to continue to drive towards smaller models, more
+specialized models as part of these agentic workflows. You'll probably have, like, a set of agents
+that are sort of that task oriented agent. Like, you'll get into an area where we have agents that
+are helping us coordinating. Right? So maybe they require a broader knowledge context to be able to
+perform their function across multiple sub agents. But you're gonna see these things fit for purpose
+versus just the general purpose, like, we hope one size fits all approach that that got everyone
+started. To your point of needing to customize the models for specific tasks or specific problem
+domains that has largely been done through post training or fine tuning, which generally requires a
+decent amount of understanding of the overall model architecture and how to actually do the model
+training. And I'm wondering how you're seeing the complexity and difficulty of that process change
+particularly over the past couple of years that this has been in very active use. Yeah. This has
+been an area of rapid development. So, again, going back to when I started, you had people who went
+to to school to become experts in being able to do analytics. The languages were tailored toward
+those experts. Those experts knew how to interpret the results. They had a set of specific tests
+they could run to validate whether a model performed the function and confidence intervals and
+things like that. So, like, it was a highly disciplined field, but then only when they were
+comfortable, they would make that model generally available to the public to consume. And the public
+didn't concern themselves if if the model was doing the right thing or the wrong thing because the
+expert had blessed it and said that that it was. When you look at it now, like, the availability of
+frameworks to be able to customize models, tune them, and and then serve them has really like, the
+ease of use has dramatically advanced to the point now. Like, if you look at kind of what we're
+doing with the InstruqtLab community, we have a set of components and an SDK that allows you to do
+things like synthetic data generation. So if you don't have, you know, millions of rows of clean
+data at your fingertips and you only have a handful of rows, you're able to take that and use
+synthetic data generation and then influence one of these larger models to to understand your use
+case better than it did previously. So the bar for entry on data has been lowered. The different
+types of tuning frameworks. Right? So whether it's SFT or or LoRa or or these like, all of these are
+now more available too and very easy to integrate into these workflows in a modular way. Serving has
+gotten down to a one line command. Right? VLLM serve and give it your model, and it'll stand it up.
+So I think, like, there's been a huge push toward accessibility and making these frameworks more
+performant, more easy to use, and more universal in the types of models they can work against. But
+with that easy use comes the challenge. Right? Like, with that accessibility, no longer do you need
+to be an expert in understanding how what's going on behind the scenes when weights are are created
+and and how models actually compute and work their way through the neural networks, which means,
+like, at the end of the day, like, again, these models are always gonna give you outputs. That's
+what they're they're great at giving you answers, and they sound very confident in all of those
+answers. But I think we're lacking a little bit on the the guardrails and safety and evaluation side
+of things right now where people are putting models into production that because the job ran, they
+think like, well, hey, it ran. It must work. It used to be like, if my code didn't compile, I knew
+that program didn't work. But if it compiled, like, hey, pretty good chance it did what I asked it
+to do. I think that's where I think the the next round of development has to occur so that we don't
+want to reduce the accessibility of being able to tune these models, but we do want to increase the
+confidence that the people have with rolling them out and putting them into into production. On that
+point of the evaluation harnesses and the guardrails and some of the other operational requirements
+even beyond just the hot path of serving a model, what are some of the other infrastructure and
+organizational capabilities that teams need to be aware of as far as being able to run a true
+production grade LLM or agentic system that are maybe below the waterline in terms of their initial
+evaluation and initial development path that become evident as they actually start serving these
+things and relying on them in an organizational capacity? Yeah. There's an interesting expectation.
+And, actually, I think there was a recent report that came out from MIT that got a lot of attention
+that talked about the high failure rate of generative AI projects within enterprises. Like, anyone
+doing DIY. I can't remember the exact number, but, like, let's call it greater than 90% of these
+these projects fail. And I think this is something that if you haven't worked in this space, sounds
+it's it sets off alarm bells. Like, oh my gosh. Like, that's a really terrible thing. But the
+reality is, like, AI, predictive AI, generative AI, like, they were always experiments. Right? And
+so you you always have a hypothesis. You're using data. You're encoding that data into a model, and
+then you're validating and testing the model to test your hypothesis. And this was expected. Right?
+And then it was a rinse and repeat type workflow. Like, this is where the whole MLOps workflows came
+from. So the expectation was that you would iterate over multiple experiments to arrive at the best
+possible result. And I think this, like, concept is lost in a lot of what we see with generative AI
+and some of the publications that are out there that it's just sort of a foregone conclusion that,
+of course, it works. And if it doesn't work the first time, then it probably wasn't done right, then
+it's it's an absolute failure. And that's not the case. Like, I think a lot of a lot of enterprises
+miss the point behind it's that rapid iteration that's actually gonna get you the best result. It's
+not everyone it's not always having the smartest engineers or the best data, but it's those who are
+able to put it into a repeatable life cycle and reiterate rapidly to test multiple hypotheses that
+will arrive at the best possible outcome. That coupled with the idea that a model is a one and done
+thing is is also dangerous. Right? Because things change. Right? Financial economies change. All
+kinds of products change. Customer support trends change. So your ability to continuously retrain
+that model, reevaluate it, and put it into production, like, that's gonna be a key element of
+success. And I think these are a lot of the things that people don't account for upfront. Right?
+They think about it as less of a living thing and more of maybe like a, like, a slowly life cycled
+application that, hey. Once I get it set, it'll live for, you know, six, nine month life cycle,
+twelve month life cycle, and then I'll have to go provide some updates. But that's not the case.
+Like, if you're running a very healthy, like, AI organization and workflow, you're training models
+nightly, you're evaluating those models nightly, sometimes multiple times per day, right, based on,
+like, as data's arriving for some of these more real time workflows. Like, imagine you're trying to
+detect defects on a factory floor line. Right? You're not gonna train once based on ten years of
+historical defects when you have a new product line coming out and expect it's going to detect all
+the right defects. You're gonna want to get real time input from from folks working on the factory
+floor and retrain models based on that real on that input and deploy those quickly. It's that
+overall life cycle that I think gets underestimated in a lot of cases. The other aspect of
+customizing models is that maybe if you have a very specific use case, there isn't an off the shelf
+model that has enough out of the box functionality. And so then you're down the path of, well, maybe
+I need to train my own model, which is another interesting heuristic of, one, do I have enough data?
+How do I decide that? And, two, do I have the technical and organizational capacity and know how to
+be able to actually develop and train and build that model? And I'm curious how you're seeing teams
+think about that as well where do they have the enough data or a unique enough problem that it is
+worth the time and financial investment to actually create their own model from scratch versus
+adopting something that they can pull down from hugging face, etcetera. Yeah. It this is one, like,
+I even in my personal like, I use this sort of heuristic as well, which has generally been the like,
+look. If time has value. Right? Your time has value. My time has value. Everyone's time has value.
+And if if I'm asking a question or proposing a problem to a model that is easily solved with, like,
+an off the shelf service, I'm going to use that service. Right? So, hey. Summarize my my email inbox
+for me. Hey. Summarize a set of documents for me. I don't need to tune a model for that because it's
+gonna take me, at best, hours, you know, more than likely days to be able to tune that model. And I
+may or may not get as as good a result as, like, one of this public services would give me because
+it's like, there's generally available data that these models were trained on. So they're very, very
+good at those things. When it comes to something specific to your organization, like, we have seen
+an increase in a premium put on AI engineering skills. So because enterprise have started to realize
+that they need some expertise within their company to be able to to produce these models. I'll say,
+like, there's an expectation that your general developer, though, with the advancements that have
+been made in the various toolkits, that the general developer should be able to actually customize
+models as needed under the guidance of, like, these AI engineers. Right? So it's not necessarily
+just the the wild west, but there's somebody to bounce the ideas off of and to kind of validate the
+the process and procedure. A lot of, like, the barriers for entry that used to be sort of, like, the
+data quality problem or the data volume problem to be able to move, like, the the weights on some of
+these models. There's been tremendous advancements in the synthetic data generation. So we have some
+out there in our instruct lab project. Nvidia has some great SDKs, and they have, like, NIMS
+available for for synthetic data generation. There's a number of, like, open source projects that
+are have launched around this as well. And so where these constraints have existed, open source has
+done a great job of kind of rallying around them and helping solve them in very meaningful and and
+effective ways. And now what you're seeing again, it used to be that even where these things were
+solved, the workflow that incorporated these components was highly prescriptive. And so they didn't
+have a lot of exit points or customization points for you. Now you're seeing again, like so, like,
+what we've done with InstruqtLab, we're distributing it now as an as an SDK. So it gives you the
+ability to use, like, our synthetic data generation with somebody else's tuning library. Right? So
+you're able to mix and match components from from different ecosystems to provide the the best
+possible outcome. The thing we haven't necessarily been able to solve for effectively is is just the
+overall, like, resource constraints when it comes to needing GPUs to be able to solve these things.
+Right? If if you have access to maybe earlier generation of GPUs, you may be waiting weeks for your
+result. Whereas if you have access to the newer generation, you may only be waiting hours. That's
+still a constraint that, like, there are the the different fidelity options you can use to to kinda
+test things early on. But for your final runs, things have advanced, but we don't have a a great
+answer yet for for some of the long running, routines that are required here. The availability of
+hardware is another interesting constraint that I'm curious to get your perspective on how that also
+influences the size and complexity of model that an organization wants to use where maybe if they
+could get hold of a certain grade of GPUs and high enough capacity to be able to install into their
+own data centers, they would go for the biggest, best open weights model. But because they're
+constrained to a previous generation of hardware, because that's what they've already spent their
+capital budget on or because that's the only thing that they're able to get in a large enough
+quantity for their intended deployment size, so maybe they need to scale down the size or complexity
+of the model, and I'm wondering how that factors into the overall calculus of what they're trying to
+do and how they're trying to do it. Yeah. It it definitely factors in. We've seen it factor in,
+like, it won in just increased requirements that we get from customers around things like model as a
+service and GPU as a service. So they have limited number of accelerators across various
+generations. They wanna maximize those as best possible. And so what used to be sort of a hard and
+fast allocation algorithm of, like, team a is using that particular GPU, it's locked until team a is
+done, has evolved now to a more, you know, GPU as a service or model as a service where you're
+providing the access, but the access is more fluid, like how you we would overprovision and and
+manage VMs in in previous generations of technology. So there've been a lot more emphasis on being
+able to optimize those types of requirements. Right? Being able to also have priority and preemption
+in various jobs. So if you have a high importance inference routine running, like, that may take
+priority over a very long running training job that takes multiple days so that you're fielding
+requests in in the right order. The other thing we're seeing is much more emphasis on being able to
+profile model performance across different accelerators. You're seeing, like, there's other entrance
+obviously into the accelerator market. I I think I mentioned earlier, you can run small language
+models on, like, Xeon processors as an example. Right? So there are some of these components within
+data centers today that customers are asking us, you know, to profile and and say, like, hey. Just
+how good would it run on this thing? Because it might be that the latency required or the the the
+time required fits within the quality of service that can be provided by that accelerator. So we've
+spent a lot of time, like, internally, I think a lot of us a lot of enterprises, like, you know,
+software developers, model developers, we're profiling models this way anyway. We just weren't
+making all of the data public. As part of, like, what we're rolling out, we're actually going to be
+giving the the evaluation frameworks and performance frameworks to customers. So as they customize
+models and they want to profile them to see which types of like, how they would perform across
+different hardware and accelerators, they're able to do so to to help maximize their their own
+throughput and and cost analysis there as well. So everyone's heading this direction. And, again,
+like, you're seeing it work down from both sides, software, hardware, models. Like, everyone
+understands that in order for generative AI and AI as a whole to to kinda take hold and grow, it's
+going to have to become a more cost effective, efficient process. And as you have been working in
+the space, working with customers, helping them determine the appropriate model selection criteria,
+evaluate their own technical capacity for actually deploying and maintaining these various models or
+develop agentic use cases? What are some of the most interesting or innovative or unexpected ways
+that you have seen organizations capitalize on the efficiency and deployability of these smaller
+models? Yeah. I like this one because, like, there's always you know, you right? I follow the
+industry quite closely, and you hear all these, like, the fears that AI is gonna take over the
+world, ruin quality of life. So I tend to kind of emphasize more the ones that are good for
+humanity. And some of the more interesting ones I've seen have come out of, like, the telco space
+where they have agents that in real time can flag AI generated voice calls, right, to help with
+consumers be able to kinda detect and and identify scams, right, that are emerging where these folks
+are able to emulate the voice of specific contacts that are personal to that individual to be able
+to, like, exploit it in some malicious way. So having an agent that can connect can flag for the
+individual that this is an AI generated voice is a great way of helping protect folks, right, from
+from some of this technology. The other one I love is around, like, this real time voice translation
+that'll actually do language translation for you. So if I'm communicating with a colleague in
+France, I can speak in English in real time. It'll communicate in French using my voice. This is
+another one. Like, I I tend to use my kids as a barometer here. And when I come home and I see my
+kids playing with a specific technology, that means it has reached the bar of accessibility that,
+hey. Like, a a preteen is able to use this. And it's also exceeded the bar of usefulness in that
+they're actually getting value out of it because they have friends in their school now, right, who
+are speaking multiple languages, and they're able to do this. So I I love looking at those things
+because it's we're a global economy. It it's great to be able to to connect to people that way. I
+don't think this one's so much, like, unexpected. But the thing I love now on, like, the the agentic
+workflows, we've moved away from sort of this monolithic agent who does everything into creating
+specific agents that represent specific specific workflows. And now, like, on my team, and I've seen
+this in other engineering organizations, we are building agents that basically reflect an individual
+persona on a development team. So we have an agent who, reflects, like, our product owner and one
+that represents our UI engineer and one that represents our dev test ops engineer. And we're able to
+build these into workflows to be able to arrive at, like, better defined requirements with better
+design specs that then we can auto generate the code for. And it's just great to see how we've been
+able to encode years and years and years of expertise into a meaningful way that is actually
+improving the quality of life for our individual engineers. Again, everyone thinks it's gonna take
+away their job or fears that it will take away their job, but that's not the case. Right? What it's
+doing is giving us such a better starting point that, you know, we're able to run and get multiple
+experiments, try out different user experiences, have agentic users try them out and give feedback
+on that, that we're we're getting the better products and we're getting the better quality, which is
+ultimately what, like, anyone who's building software, like, in my role wants to do. Like, we want
+the best experience. We want the best quality, and this is helping us get there. And so, again, I
+don't think that one was unexpected, but when you see it play out and just how effective it is, it
+really sets off a lot of lights in your head that, like, wow. This this has real tangible value to a
+lot of organizations. And as you have been working in this space and helping teams get up to speed
+and build capacity for being able to do that model selection, customization, deployment, manage the
+overall life cycle, what What are some of the most interesting or unexpected or challenging lessons
+that you've learned personally? Personally, like so, again, having worked in this space for a while
+and kinda lived through the evolution of how data and model developments advanced, It's impressive
+to me to how again, just how accessible models and model customization has become. The things that
+exist to help with data generation and model tuning and how easy that has, it's just phenomenal.
+Again, like, these used to be teams of two to three people in large organizations who would produce
+these models. And now you're you're basically turning it loose so hundreds and thousands of
+engineers within an organization can do it. Like, that is, to me, just phenomenal. Now I and I
+mentioned a little bit earlier, like, what it has impressed upon me, though, is the need for more
+comprehensive testing and evaluation to be able to help with the confidence level and quality of
+these models. Like, we've made the training development really, really easy, but I don't think we've
+necessarily done a great job improving the test and evaluation to ensure quality of output here,
+which can get a little scary. Right? Because if you've ever talked to one of these models and you've
+ever gotten gotten the wrong answer from it, you'll know it. It does a great job of sounding quite
+confident in that response even though it is incorrect. So this is an area I focus a lot on in areas
+that I'll contribute to is helping make sure that, like, this level of confidence is equal to the
+ease of use that's been developed out there. Because, again, like, when I look at potential
+pitfalls, you know, on why AI adoption may not take off, this would be one of them. Right? If you
+lose confidence that your model is actually gonna give you the right response, you're not gonna keep
+investing in it. Right? You're gonna throw it away and go back to to what you used to be doing. And
+so ensuring that that we've got that, worked into the systems for folks to me is a key input we
+need. As you continue to work in this space, keep track of the overall industry and how things are
+progressing, what are some of the predictions or expectations that you have for the near future,
+particularly in terms of the ecosystem of small language models and their overall capabilities and
+applicability? I think you're gonna just continue to see a drive toward efficiency. Resource
+efficiency, cost per token efficiency, idle resource optimization, ease of use and consumption,
+being able to drive this down to the point where you can run a full end to end workflow on your
+laptop. If the barrier for entry is having a millions of dollars in a data center to be able to get
+this thing to actually provide you value, like, that's a barrier that not every company out there is
+going to be able to overcome. And so this is I think that's where you're gonna see the the greatest
+advancements. Are there any other aspects of the work that you're doing in this space, your overall
+perspective and experiences around small language model utility and the organizational and technical
+capacity to facilitate that that we didn't discuss yet that you would like to cover before we close
+out the show? The thing I really like so the area that that also excites me. So when you start
+thinking about the challenges of agentic workflows, so we've talked about how, like, my team has
+sort of been codified into a set of agents. And I think right now, like, across our entire team, we
+have 30 or so different personas, which is still relatively manageable. Like, I can keep most of
+them in my head and keep track of which ones we've updated and and not updated. But then if you were
+to extend that across multiple departments across an entire company, that gets you into the hundreds
+and potentially thousands of agents. And so agentic management and agentic workflow is gonna start
+to become a real consideration here. This is an area that I watch with, like, excitement as well
+because how you start to manage, like, a catalog of agents and just like things we did with, like,
+Docker, like, how did we manage the catalog of of containers that were out there and how did we know
+which containers were the best possible containers. And, like, that sort of ecosystem is what I
+think we're gonna start to see evolve for for agents both on, like, a commercial side of agents that
+are provided by specific vendors, but then also internally for homegrown and DIY agents and how
+these things are are managed together. That to me is an exciting area because when you start to get
+to that level of complexity and adoption, then you know you've got a technology trend that has legs
+and is gonna take off. And again, having kinda dedicated a 100% of my professional career to this
+space, it's exciting to to see just how popular this stuff has become. Alright. Well, for anybody
+who wants to get in touch with you and follow along with the work that you're doing, I'll have you
+add your preferred contact information to the show notes. And as the final question, I'd like to get
+your perspective on what you see as being the biggest gaps in the tooling technology or human
+training that's available for AI systems today. Yeah. I'm gonna go back to my my I think I've said
+it a few times in here. That that whole guardrails and evaluation for folks, like, to me, that's the
+one we've gotta get right because, yeah, everyone's getting good at training models. They're getting
+really good at how to prompt models. They're getting good at what they would expect out of a model.
+But if we don't add the right guardrails and add the automation that that helps evaluate and make it
+super simple, determine if your output is valid or not, we're gonna have a lot of struggles in
+scaling this across the enterprise. So that's the one I would love to see serious investment from a
+lot of the AI leaders in. Alright. Well, thank you very much for taking the time today to join me
+and share your thoughts and experiences around the selection and operationalization of these various
+model sizes and how to think about incorporating them into these various use cases. It's a very
+interesting and constantly evolving space, so I appreciate the time that you're taking to help other
+teams get up to speed with this and the work that you and your the Red Hat folks are doing to
+simplify the operationalization of these systems. So thank you again for that, and I hope you enjoy
+the rest of your day. Thanks for having me. Goodbyes. Thank you for listening. Don't forget to check
+out our other shows. The data engineering podcast covers the latest on modern data management, and
+podcast.in it covers the Python language, its community, and the innovative ways it is being used.
+Visit the site to subscribe to the show, sign up for the mailing list, and read the show notes. And
+if you've learned something or tried out a project from the show, then tell us about it. Email
+hosts@AIengineeringpodcast.com with your story.

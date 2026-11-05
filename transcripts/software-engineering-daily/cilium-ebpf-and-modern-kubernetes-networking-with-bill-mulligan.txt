@@ -1,0 +1,323 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/03/SED1902-Cilium-and-eBPF.txt
+EPISODE: Cilium, eBPF, and Modern Kubernetes Networking with Bill Mulligan
+DATE: 2026-03-26
+SED: 1902
+HOSTS: Gregor Vand
+PAGE: https://softwareengineeringdaily.com/podcasts/cilium-ebpf-and-modern-kubernetes-networking-with-bill-mulligan/
+----------------------------------------------------------------------
+
+EPISODE 1902
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Modern cloud-native systems are built on highly dynamic distributed infrastructure where containers spin up and down constantly, services communicate across clusters, and traditional networking assumptions break down. Linux networking was designed decades ago around static IPs in linear rule processing, which makes it increasingly difficult to achieve scale in Kubernetes environments. At the same time, modifying the Linux kernel to keep up with these demands is slow, risky, and impractical for most organizations. 
+
+The Extended Berkeley Packet Filter, or eBPF, is a Linux kernel technology that allows sandboxed programs to run safely inside the kernel without modifying kernel source code or loading kernel modules. Cilium is an open-source cloud-native networking platform that's built on eBPF and provides, secures, and observes connectivity between workloads in Kubernetes and other distributed environments. 
+
+Bill Mulligan is a maintainer in the Cilium ecosystem and a member of the team at Isovalent, the company behind Cilium. He joins the show with Gregor Vand to discuss how eBPF works under the hood, why Cilium has become one of the most widely adopted Kubernetes networking projects, and how the future of cloud-native infrastructure is being reshaped by programmable kernels. 
+
+Gregor Vand is a security-focused technologist, having previously been a CTO across cybersecurity, cyber insurance, and general software engineering companies. He is based in Singapore and can be found via his profile at vand.hk or on LinkedIn.
+
+[INTERVIEW]
+
+[0:01:50] GV: Hello, and welcome to Software Engineering Daily. My guest today is Bill Mulligan. 
+
+[0:01:56] BM: Hey, thanks for having me. 
+
+[0:01:57] GV: Yeah, great to have you here today, Bill. We're going to be talking all about Cilium and the technology eBPF. Before we get there, as we like to do, it would be great just to hear a bit about you and what was your journey to joining Cilium. And I believe the company you work for is sort of a wrapper around Cilium, for example. Maybe just walk us through kind of all of that. 
+
+[0:02:21] BM: Yeah, definitely. I like to say it's a little bit of an accident how I've ended up here. Just a series of circumstances kind of going on. Actually, originally got my undergrad in biochemistry. Very, very far away from technology. Got my master's in social science and then ended up at the first startup that I was working at. And they were doing, back in 2018, an AI platform on top of Kubernetes. And at the time, nobody was doing AI, nobody was doing Kubernetes. Obviously, it went out of business pretty quickly. Moved on to the next startup. 
+
+Then I worked for the CNCF, the Cloud Native Computing Foundation, kind of looking at the global cloud-native community before ending up at Isovalent as kind of like this promising startup in the cloud-native space. And I was excited about going to Isovalent because Cilium at that time was really starting to emerge onto the scene as kind of a new and exciting way to do networking in the Kubernetes and cloud-native world. This company seems pretty interesting. They just emerged from stealth. And I was like, "Let's see where this rocket ship goes." And it's been kind of a wild ride since then. 
+
+[0:03:27] GV: Awesome. For those that are not totally familiar what exactly is CNCF, could you just sort of then describe what Isovalent and Cilium - what is sort of the relationship between the technology and the company, and that kind of thing.
+
+[0:03:41] BM: Yeah, definitely. CNCF, or the Cloud Native Computing Foundation, is a sub-foundation of the Linux Foundation. Linux hosts obviously the Linux kernel. But I think it's 900 other projects. And CNCF is the largest sub-foundation under that. And CNCF itself hosts just over 200 projects now. Cilium being one of the projects. And really kind of the CNCF was created with Kubernetes as the core project, and then kind of all of the cloud-native projects have been brought in around that. And Cilium being one of those. 
+
+And what Cilium does in the cloud-native world is - Kubernetes is a way to orchestrate containers and other types of workloads now too, but it actually doesn't come with any networking, right? And in the world of Kubernetes, it's all distributed systems. And the most important part of a distributed system is the network, right? Because everything's got to talk to each other. 
+
+Cilium is the CNI, or the Container Networking Interface, that plugs into Kubernetes and basically says, "This packet needs to go here. This is how traffic is getting into our cluster. This is how we egress traffic out of it," and a lot of other things. Essentially, you can think about Cilium at a very high level as networking for the cloud-native world at the very beginning. It's expanded a lot beyond that, which I guess we'll dive into a lot more after this. 
+
+And then Isovalent is a company that originated Cilium. Then they gave it to the CNCF. So it's a neutral governance under there. And we have a lot of contributors from different companies around the ecosystem. And Isovalent is a company that's creating commercial products around the different projects that are in the Cilium ecosystem. 
+
+[0:05:17] GV: Yeah. I saw the sort of annual report came out just a few hours ago, actually, for Cilium, effectively. And it was said on December 16th, 2015, Thomas Graf pushed the first commit for Cilium. We're literally almost to the day 10 years on from that first commit. 
+
+[0:05:35] BM: Yeah, exactly. It's a decade in the making, right? Decade in the making, overnight success, as people like to say. And it's kind of wild. I think different than a lot of open source projects. It actually is open source from the first commit. If you go look at the first commit, it's, I think, 200 lines of code, the license, and .gitignore. That's it. 
+
+[0:05:57] GV: Awesome. Full open source proper - 
+
+[0:05:59] BM: Yeah. 
+
+[0:05:59] GV: Yeah. Awesome. I think we maybe should sort of get sort of super base level and just understand what is - Cilium is what could be described as eBPF. And what is that? I think that's kind of where we need to start. I imagine some of our audience know this already, and it's great that you're here. Equally, I think a lot of our audience have maybe no clue what this is. 
+
+[0:06:24] BM: Yeah. So, eBPF is also a technology that's not 10 years old. Birthday is a little bit earlier. It's about 11 years old now. And it's a Linux kernel technology. And Cilium was founded from the ground up based on eBPF as a technology. And what eBPF allows you to do is to reprogram the Linux kernel. 
+
+And the comparison a lot of people like to make is like eBPF is to the kernel what JavaScript is to the browser. And so if you think back, before we had JavaScript, you kind of had static web pages, right? You can kind of consume information off of it, but you couldn't actually kind of do anything with the web page. 
+
+JavaScript comes along. And suddenly, you could add interactive elements. As you start to interact with the web page, it changes what it's doing. And that's exactly what eBPF is doing for the Linux kernel. And if you're not familiar with how the Linux kernel development cycle works and how the Linux kernel kind of works as a whole, I'll kind of jump into that. 
+
+And so the way Linux kernel works, it's not just you get this distribution, and you download it, and you're using it. The way it works is you need to upstream things into the kernel. And Linux is the largest open source project in the world. And kind of the development cycles are a little bit longer because it's deployed on literally billions of devices. Every single Android phone is running some portion of Linux. They need to be very careful about what actually goes into the upstream kernel. The development cycles. 
+
+And if you know anything about the Linux kernel mailing list, there's a lot of technical discussions that go on on the mailing list. To be able to get something upstream is a long process. It can take years or maybe, even for some more controversial things, a couple years. So it's not just like, "Okay, we need this new feature in Linux kernel. Let's just ship it." It's like, "Okay. Well, you need to have the discussions. Work with the people upstream. Decide on the right path forwards, and then it gets into the kernel." 
+
+And then you have it in the kernel, right? That's the latest one that Linus just goes out and produces, but that's not actually what you're running in production. If you look at most people, what kernel they're running, it's actually 2 years old, 3 years old, 5 years old. I mean, people don't run the latest kernel. They wait for it to actually kind of bake. They wait for an LTS, like a long-term stable release, or they get something from their vendor. 
+
+If you look at the actual like kernel version you're running, it's most likely a couple years out of date, right? One-year development cycle, a couple years till it actually gets into - maybe it's 5 years from like, "Okay, I have this idea to when I can actually receive this future." Right? For most people, all intents and purposes, the Linux kernel is pretty static. You're not going to change it. 
+
+EBPF came along and completely changed this programming model. What it allows you to do is you're saying you want a new feature. And the way that applications usually interact with the kernel is they interact by making system calls into the kernel or other ways to interact with it. And application says like, "Okay, can you read this file? Can you open this networking socket? Can you do these different things?" And it makes a call into the kernel. Kernel does that thing and sends things back to user space. 
+
+But what eBPF allows you to do is to modify how the kernel is actually running. You take a program that you write, you insert it into the kernel. And now, when the application makes a call from user space into kernel space, instead of working how the kernel normally does, your program now runs when that specific hook is called. If somebody, say a malicious process, is trying to read a file, you can be like, "We don't want this process to read this file." So it's blocked. 
+
+If you want to, in the case of Cilium, be like, "We want to do networking faster or more programmatic," we can be like, "Okay, this packet is coming here. We want to actually just reroute it directly without it going through the whole networking stack." 
+
+And so what eBPF is allowing you to do is to actually add functionality on the fly into the Linux kernel. And if you've gotten to this point, you're kind of like, "Okay. Well, Linux kernel, pretty important. I know if I crash it, that's really bad. All the systems are over." And so that's kind of what makes eBPF really powerful is because it's not just extending the Linux kernel, but it's doing it in a safe way. Because if you just throw random code into the kernel, you're very likely to crash it. 
+
+If you're familiar with the CrowdStrike incident, where they took out half the world's IT, right? That was because there was a bug in the kernel and they crashed all the kernels around the world. That's obviously something you want to avoid. And so what eBPF allows you to do is it lets you insert programs into the kernel in a safe way. And the way that it does that is, for each of the programs that you're adding to your kernel, it goes through a verification step. 
+
+And what this verification step is basically checks that the program is safe to run the kernel. It's not going to crash the kernel. It's not going to call memory out of bounds. It's not going to do these things that will essentially harm the kernel. And so these programs are safe to run in the kernel. They won't crash the system. And they're a very efficient way to reprogram what's happening. And so that's kind of like the foundational technology, right? 
+
+EBPF got merged into the kernel about 11 years ago. The Cilium team was like, "Okay, this way of programming the kernel is going to let us rebuild everything in the kernel better. What can we rebuild first?" And the team at the time was working on - they came out of the Open vSwitch team. They were doing a lot of networking stuff, and they're like, "Okay, we're going to start rebuilding networking in the Linux kernel better, faster, and ready for the cloud-native world." And so that's the birth of Cilium. 
+
+[0:11:50] GV: Got it. And I think it's actually helpful. What does eBPF stand for? It's Extended Berkeley Packet Filter, I guess. Packet Filter on the end there is kind of the thing. I mean, I believe there was, in theory, a retroactively named Classic Berkeley Packet Filter. And eBPF is the sort of advanced version of that. Is that correct? 
+
+[0:12:12] BM: Yeah. BPF, or Berkeley Packet Filter, was kind of like the original thing from decades ago. It was like, "Okay, can we put like a packet filter into the kernel?" And that was the thing. And originally, kind of like the story was Alexei, who was one of the co-creators of eBPF came to the Linux kernel and says, "I want to be able to insert bytecode into this." And this huge patch check coming into the kernel, they're like, "No, no. We don't want to do that." 
+
+And so Alexei went back to work with Daniel and a couple other people, and they're like, "Okay, how can we actually get to this into the kernel?" And they're like, "Well, there's actually this packet filter already in the kernel. What if we just improved that to be able to get what we wanted into it?" 
+
+And so piece by piece, they started improving the original BPF, the packet filter, and then also extending it. And so what they were able to do was to improve the existing subsystem and then change it into a more generalized version. The CBPF, like the classic BPF, is the original kind of Berkeley Packet Filter. And now eBPF is the extended version. We don't really call it extended Berkeley Packet Filter because it does so much more than just networking now. And saying that it's a packet filter isn't really true. It does things across observability, security, profiling, scheduling, interacting with devices. It's basically a generalized way to reprogram the Linux kernel. We just kind of use it as like the standalone eBPF term. But that's kind of the history, and why. 
+
+If you hear somebody, it's a little bit confusing because there's BPF, there's CBPF and eBPF. And if you talk with some of the kernel people, they use EBPF and BPF kind of interchangeably just because of that history. But technically, now it's called eBPF. 
+
+[0:13:49] GV: Gotcha. Okay. I think you've set the stage pretty well in terms of what does ePBF allow within Linux and Linux kernel. It's kind of become this framework for enabling things that can run in the kernel almost like a sort of set of, I guess, rules that mean that if you want to build things that touch that, they're not going to break some of the big things. And I think, yeah, the CrowdStrike example was a good one. That's what happens when this isn't done properly. That's obviously Windows. It's not Linux. But, yes, that was a problem. 
+
+Where did then Cilium come from in that sense? And I guess Cilium is handling the networking side of what can be done with this capability? There must be other products, companies that then deal with other bits that are now possible with EBF being there. But yeah, what does Cilium enable? And Kubernetes is obviously a big part of that. Let's kind of go there. 
+
+[0:14:49] BM: If you rewind back again about 10 years ago, we had like the whole containerization movement that was really exploding at the time, and Kubernetes had also just been released as open source, not from the first commit, but as this actual standalone project. And so we kind of have this new cloud-native world. 
+
+And if you think about the transition into the cloud-native world, what you're kind of seeing is a lot more ephemeral, dynamic environments. Containers are coming and going, and kind of the traditional world of how Linux was built. Right? Linux is not a 10-year-old technology. It's, next year, a 35-year-old technology. And so kind of the programming model for the Linux kernel is very different from what you need in the cloud-native world. Right? 
+
+A lot of Linux networking is built based on IPs, based on IP tables. Think of like, "Okay, we have this list of IPs that we trust, a list of IPs that we don't trust. But if you think about the cloud-native world, you're spinning up containers up and down all the time. And so how can we have this decades-old technology and bring it into the cloud-native world? And that's really the challenge that Cilium was set out to do is how can we do cloud-native identity-based networking? 
+
+And so some of the original challenges that Cilium was looking at, one is IP tables is the way that we do a lot of networking. As you're being like, "Okay, we need to send a packet from this IP to this next IP," and then the way that you do that is you have like a list of IP tables, and you go through them linearly. But if you're having, I don't know, thousands, tens of thousands, a million containers in a cluster, going through a linear list of rules is not very efficient. 
+
+One of the first things that do and one of the reasons that a lot of people like Cilium is because it replaced IP tables and Kube-proxy, which is the proxy that routes most of the traffic in Kubernetes, we replaced that with what we call Kube-proxy Replacement. And that's all written in BPF. And so it replaces IP tables with eBPF. And rather going through things linearly and having to do things kind of in an 0N order, what eBPF allows us to do is have everything in a HashMap and it's able to look things up in 01. A lot faster and a lot more scalable, right? 
+
+If you look at the difference, when you have 10 servers into the cluster, it's not that big, right? Because you can run through a list of 10 services pretty quickly. But if you have 10,000, the difference between reading through the rules linearly and being able to just look them up in the HashMap is very significant. That's one of the things, being able to write things in a modern way for the modern technology and the modern way of doing things is making networking a lot more efficient. 
+
+And there's a lot of stories now about being able to replace Kube-proxy, like Trendyol, an e-commerce company in Turkey. By replacing Kube-proxy, they increase cluster throughput by 40%. Big performance gains there. Then the next thing about Cilium is - right. So you have a lot of containers, you have these IPs, but the IPs aren't fixed because they're coming and going all the time. 
+
+And a big thing in networking is not just yes, one is like connecting things, but it's also making sure that things that aren't supposed to be connected don't stay connected. This whole network security part. And if you're doing that based on IPs, you're going to have to be updating all these rules a lot and being like, "Okay, this IP is no longer being used, so we shouldn't be able to route traffic to it." And so being able to understand network routing and like network security, if you're doing that with fixed IPs as containers are coming and going, you're going to have to be updating these rules a lot. It's going to cause a lot of churn in the cluster, a lot of overhead. 
+
+And Cilium was like, "Okay, as we're moving from a world of IPs towards identity, the classic DevOps analogy from pets to cattle, we're not looking at individuals anymore. We're looking at groups or sets of people or things with like labels. And so Cilium switched the whole networking model from this IP-based model to this identity-based model. And so rather than saying like IP X can talk to IP Y, we can say front end talks to back end. 
+
+Then as we kind of rotate the containers behind these labels, it doesn't actually matter. And as you spin up a new container, you can be like, "Okay, this is a backend label." And so it can now automatically talk to all the front-end labels. And so if you think about the cloud-native world, it's like how can we switch to this identity-based model? And by being able to give things identity, it makes things a lot easier because you can swap things out on the back end, and the identity is still the exact same. And it reduces a lot of the churn in the cluster, too. 
+
+What Cilium was trying to do at the beginning is we have this new modern cloud-native world. Things are a much more dynamic, ephemeral. The current networking technology that we have isn't going to be able to keep pace with what we need to do in this world. How can we rethink networking for the modern world with eBPF? And the way eBPF allows us to do that, we can take out IP tables, we can route things very efficiently. We can move from IP towards identity for both our networking and our security model, and allows us to bring networking into the modern cloud-native world. 
+
+[0:19:50] GV: Yeah, it's a really good way to explain it. I guess there are some analogies with just cloud IM, identity management. How the cloud providers effectively added this. What is, unfortunately, now an incredibly complex thing. And you've got layers on IM now to try and make it easier to administer because people end up creating the wrong identity profiles and all sorts of things. But yeah, is that kind of a good analogy? 
+
+[0:20:14] BM: Yeah, exactly. If you think about it, when you join a new company, they give you - an example would be, or in my personal life, I log into Google, and it gives me access to a lot of different services based on the identity that I have. I say I'm Bill Mulligan. I give this identity to Google, and Google goes out and says this is Bill Mulligan to all these different services. You could do the same thing in Kubernetes. You can be like, "Okay, this new pod is now front end. It's front end to all these other services." Or it's the back end that all the front ends want to talk to essentially." 
+
+And if you think about, when you're spinning, adding a new developer to your team, you don't want to give them kind of like access to GitHub, and your cloud resources, and your developer environment, and to all the other services that they need. The way that you probably do it is you probably give them one identity to something like Okta. And then Okta provides the identity out to all the other services that they need access to. 
+
+[0:21:09] GV: Yeah, that makes sense. Maybe if we sort of just look at what are the features, feature set, if you like, of Cilium. We've got things like - we've touched on it there, but network policies. I think that'd be interesting to kind of dive into a little bit more. Service mesh as well. And I think that would be also helpful maybe when we get there to just touch on what it even is a service mesh, because I think some listeners may not be familiar with that. And then we could maybe just sort of get on to some of the more advanced features as well. But yeah, let's maybe just start with like network policies. That seems to be kind of the core of Cilium. Maybe if you just dive into that a little bit more. 
+
+[0:21:46] BM: I talked to a lot of users out in the Cilium community, and the main three reasons that they choose Cilium, because there's a lot of different networking solutions in Kubernetes, is one is network policy. Another one is Kube-proxy replacement. Getting the performance and scalability benefits, encryption of network traffic, and observability with Hubble. 
+
+But starting with network policy. This is going back distributed system. We want to make sure things can talk to each other. But we also want to make sure things can't talk to each other. And so in Kubernetes, there's Kubernetes network policies. And these are layer 3, layer 4 network policies. You're looking at things like IPEs. This IPE can or can't talk to that other IPE. Cilium implements Kubernetes network policies for layer 3 and layer 4. 
+
+But the additional thing that a lot of people look at is also it's not just these low-level. We also want to look at layer 7 network policies. Cilium has layer 7 network policies, too. And we call them Cilium Network Policies. Things like allow traffic from star.google.com, or don't allow traffic from this domain. Right? Being able to look at the actual domain with layer 7 network policies is super helpful for a lot of people. 
+
+You can also do things like cluster-wide network policies. Looking at which namespaces cannot talk to each other or can talk to each other. One interesting one that use case that we had was like Bloomberg. Obviously, a lot of financial data. And they were coming out with a new product that was essentially data sandbox studio. Customer logs in. They're able to access the financial data. They're able to do different types of work with it. They had a Jupyter Notebook. And they could write different programs against the data, get what they wanted to, and then see the data. 
+
+I mean, the important thing is Bloomberg's financial data. They want to make sure data is not being exfiltrated out of this data sandbox studio. They want to make sure they had multiple tenants. And so each of the tenants can't talk to the other tenants. One person can't see what the other person is doing with the data. And a lot of that you can do with network policy. You basically namespace each of the tenants within their namespace and make sure that they can't, with network policy, talk across the different namespaces in the cluster. 
+
+And you can also write network policies, basically saying that data can't egress out of the Kubernetes cluster at all, too. And so with that, they were able to create a new product for their customers while still keeping their sensitive financial data secure. Network policy is a really important thing to be able to secure your Kubernetes clusters. 
+
+[0:24:30] GV: That's a really good example. Funny enough, I'm working on something similar. So I'm going to just ask a question on that basis. Why does Cilium make that easier than if not using Cilium? 
+
+[0:24:40] BM: If you're just using Kubernetes, there's different CNIs that you could use in Kubernetes. And some of them, it's not a requirement that they implement network policies. Some CNIs don't have any network policies. And then you can't write any Kubernet - or you can write Kubernetes network policies, but they won't be enforced. It's really not effective. 
+
+Some of them just do the Kubernetes network policies. Then you only get the layer 3, layer 4. You can't write more complex or advanced use cases around network policy. And then the other one is - other things, if you're doing multi-cluster network policy. If you're running multiple Kubernetes clusters, this is another thing a lot of people turn towards Cilium for because it simplifies that. Cilium allows you to look at network policy not in just one Kubernetes clusters but across multiple Kubernetes clusters. Kubernetes gives you basic network policy. And Cilium allows you to do much more advanced use cases around network policy. 
+
+[0:25:32] GV: Yeah, makes sense. Is there anything more around network policies? Or do you want to go to service mesh? 
+
+[0:25:39] BM: We can go to service mesh. 
+
+[0:25:41] GV: Yeah, talk to us about service mesh. Again, I think, what is a service mesh, first and foremost? And then how is Cilium helping to that end? 
+
+[0:25:47] BM: Yeah. Anybody that knows me might know that I'm trying to kill the word service mesh and the category service mesh. If you go look at it, there's an article that I wrote that I think explains a lot of my opinion that it's called like the future of service mesh is networking. And so service mesh is a little bit newer than Kubernetes. And it's, once again, like, "Okay, new cloud native world." There's kind of a lot of things that we need to rethink. And a lot of this is service routing. 
+
+Service mesh is a term that tried to mean a lot of different things. If we have microservices, we have a lot of new challenges of how do we do the networking between them? How do we do the observability? How do we do the security between all of them? Microservices is running all over the place. And service mesh tried to solve this with a lot of layer 7 networking stuff. Right? It's like networking, observability, and security. A lot around layer 7 stuff. 
+
+And this is why I kind of have a problem with the category service mesh is, if you look at all those, those are all fundamentally like networking things. And if you're trying to do it at just one specific layer, you might be missing a lot of the context from all the other layers. I think we had a big arc where service mesh was very hot and a lot of people were trying to implement it. But I think we're kind of getting into a phase where people are understanding that you can't separate out the different layers of the networking stack. You can't be like, "Oh, I'm just going to look at only layer three." Actually, if you want to have the full context for your application, you need to look at all the layers, and you need to look them holistically, right? 
+
+Because an example that I've heard is people are running Cilium as a CNI. And then Cilium has a service mesh, which I'll get to in a second. But you can also run a different service mesh on top. They're running Cilium, and they're running a different service mesh. And they're, "Okay. Well, Cilium does a lot of smart things in eBPF." It doesn't use IP tables. It just reroutes traffic. Can do things - just route packets from socket to socket within the same Linux host. You can do a lot of things that will make it much more efficient, scalable, performant, save you CPU cycles, but it doesn't mean all the other parts of the networking stack know what's happening. 
+
+An example would be Cilium can route things directly from one socket to the next, and it doesn't go through the whole Linux kernel networking stack. The service mesh is looking at the end of the Linux kernel networking stack, and it's like, "Okay, I'll do this like layer 7 processing once it comes out of that." Well, it actually never goes through the networking stack. So, you never see the packet. 
+
+And so, you're like, "Okay, all this traffic is disappearing. Or we don't route it. Or we don't see it." And it's because it doesn't go through the traditional networking stack as the service mesh was expecting." And so, service mesh, I think, can't be its own standing-alone category. You need to think of it in the context of your whole networking stack. And so, this is why Cilium came along. It was originally just a CNI doing a lot of this layer 3, layer 4 routing. But then we were like, "Okay. Well, networking is not just like a couple-layer standalone category." Actually, you need to have the context of the full stack. 
+
+What we did is we came out with Cilium service mesh. And this is where some of the layer 7 network policies started to come in. And also, doing other things like traffic routing in layer 7. Some of the observability stuff, but integrated within the rest of the CNI and the rest of the kind of networking story. 
+
+And I think I also have a problem with the term service mesh because it's kind of nebulous. It's like where does service mesh live? Where does networking start? Where do they overlap? They're all just kind of overlapping concerns. What I think of today as Cilium service mesh is Cilium's gateway API implementation in Kubernetes. And some gamut. Sorry. I have a lot of problems with service mesh. 
+
+[0:29:35] GV: There's a lot of emotion that comes up with service mesh. But it's good, it's good. Yeah. 
+
+[0:29:40] BM: But I think it's also really funny. I look at the analytics for the website, and one of the top, I think, three pages is a Cilium service mesh page. It's what people are interested in. But I'm like, "So what are you actually interested in? Is it the routing? Is it the observability? Is it the security?" It's like people aren't trying to solve - service mesh isn't a problem. What they're trying to solve is like, "Okay, we need to do layer 7 routing and host path, or something. Or we need to do layer 7 network security." That's the actual problem you're trying to solve. Service meshes is this kind of nebulous term that somebody told me I needed it. 
+
+[0:30:15] GV: Yeah. I mean, I think I can probably give then my perspective on that. because, yeah, working on a specific problem. I'm not an engineer by day anymore, but working pretty sort of hand-in-hand with pretty advanced engineers. And when I was looking at what we're needing to achieve, and did a sort of bit of running around, sort of understanding, "Okay. What are the bits to the network stack that we need to think about here?" Service mesh just kept popping up. So I'm like, "Okay, guys, do we have a service mesh?" was kind of my first question just to kind of maybe get a sense of do we have a concept of this thing or not. And then I got my answer. And then we move on from there. I guess it's just as a sort of a catchall term to help to that end. And maybe that's why people look it up so much on the website because it's sort of like, "Yeah." But that's just an anecdote, I guess. But yeah. 
+
+[0:31:06] BM: Yeah, I think you're exactly right. I think it's kind of like, as we saw this transition to the cloud native world, there is kind of like a lot of "new problems" that were - as we have a bunch of microservices, there's new networking problems and new network security problems. And service mesh was the label to solve a lot of those problems. It's like, "Okay, we want a service mesh to solve the specific problems that we have." 
+
+But kind of how the Cilium service mesh came around is like we also - people started asking us about service mesh. And we looked into it, and we're like, "Okay, what does a service mesh actually look like?" And we're like, "Okay, what we have so far, we actually have 80% of a service mesh." Because it's a lot of networking, network security, network observability parts. The only part we're missing is a bit of the layer 7 stuff. And so we're not actually building a whole service mesh from scratch. We're actually just adding like that last 20% is what people are looking for. And so that's how we originally came out with what was the Cilium service mesh. 
+
+[0:32:03] GV: Got it. Let's maybe move on from service mesh. That's been, I think, super helpful. And I'm sure there's a lot of people that will sort of look at the term service mesh differently now. 
+
+[0:32:14] BM: Sorry if I'm destroying people's hopes and dreams. One thing to solve it all. 
+
+[0:32:18] GV: Yeah, exactly. That's all we're looking for, right? We're always looking for a term that just solves all our problems. 
+
+[0:32:23] BM: Yeah. 
+
+[0:32:24] GV: Cilium also does observability, to my understanding, through, I guess, a sort of arm of the product called Hubble. Could you maybe talk to us a bit about Hubble? 
+
+[0:32:35] BM: Yeah, definitely. This, like everything else in kind of the Cilium ecosystem, is based on eBPF. And so what Hubble does is like, "Okay, since our eBPF programs are in the kernel, routing all the traffic, and we can see all of that, what if we just took that information and surfaced it to the user?" 
+
+And to be honest with you, I think Hubble is the favorite feature of basically every user I talk to. The quote from the ESNet, Energy Science Network, which is all the national laboratories in the US, they're doing crazy stuff like IPv6-only Kubernetes cluster. And it's like Hubble's a godsend. What used to take multiple days of engineering time, I can now solve it in 30 seconds. 
+
+And so going back, if we think about it, distributed computing packets are flying everywhere. We need to be able to understand it. It's not just like, "Okay, let me debug my one application. I can follow it through the whole program." It's like, "Okay, applications are making calls out to different programs. It's going over the network. We don't know where the packets are going. We don't know where the information is going. Where are things being dropped?" And so this is where Hubble came along. It's like, "Okay. So if we're actually routing all the packets already with eBPF, why don't we actually observe them?" 
+
+And so Hubble kind of just kind of piggybacks on top of the Cilim CNI and basically takes the information from the CNI and surfaces it to the user in a couple different ways. One is like network flow logs. It's basically saying, "Here are all the packets going through. This is where they're going." And then the other one is the Hubble UI. And this allows you to create a service map of everything that's going on in your cluster. And you can see where things are being routed, where different things are connecting. And also, I think more importantly, where traffic is being dropped. 
+
+Because, to be honest, that's when most people run into networking. Everybody to not have to think about networking. The only time they do is when things are going wrong. And with Hubble, they're able to very easily visualize either through the UI or through the flow logs. They're able to see, "Okay, where is our traffic being dropped." Right? Because that's probably what most people are concerned. The security team is concerned about like, "Okay, where are things going that they shouldn't be?" 
+
+But most developers on a day-to-day basis, they're saying, "Why isn't my traffic reaching the destination?" And Hubble's a great way to understand that. It can give you the reasons for the policy drops. You can be like, "Okay, our security team wrote all these new network policies and deployed them into the cluster. And now, all of my traffic's being blocked because they didn't want this type of traffic going in the cluster anymore." And then you can go have that conversation. Or you deploy new service, why isn't any traffic reaching it? Well, okay, it's in a new namespace, and we don't have the network policy. We have a default deny all network policy in our cluster, and we forgot to write one. Okay, we should allow traffic to this new namespace. So, people love Hubble because it allows you to have insight into where all the network packets are going in your cluster in a very easy way. 
+
+[0:35:29] GV: How would this be done, I guess, without a Hubble? You just have to kind of roll your own or - 
+
+[0:35:34] BM: Linux, like decades-old technology, there's a lot of networking tools to be able to understand where things are going, like TCP dump. But that's right if you're using the networking stack. And the problem with BPF is there's kind of this - sometimes people say eBPF magic that people sprinkle on, and it's like this black magic happening in the kernel. And the packet just disappears because it's routed from one socket to the other. And it doesn't go through all the traditional tooling. Right? As you're switching how you're doing things, you also need to come up with new tools. Yeah, Hubble is one of them. 
+
+And there's also another project under Cilium called pwru, like packet where are you. And that's another great debugging tool that allows you to essentially pull more information out of the kernel. One of the reasons that people love eBPF is because you can hook anywhere in the kernel. You can pull any system information that you want. You can modify any system information. And you can essentially pull out this fire hose of data. 
+
+The limitations of some of the previous tooling is like it's either - one, it doesn't pull out the information you need, or it's like it's designed in a certain way. It's like this is what it does. But eBPF allows you to look for anything that you want to. You want to pull out new type of information from the kernel? Well, you can write a program to be able to do that. And so what pwru and Hubble allow you to do is to surface exactly the information that you want, rather than relying on tooling that may not even work. 
+
+[0:36:55] GV: Yeah, I think that's a helpful call out given, as you say, eBPF could be seen as a bit of magic then. Unfortunately, with the magic, often - yeah. I mean, my sort of long ago version of that was like when you start using Ruby on Rails, for example. And then it's like, "Yeah, but we need like tools to actually then understand what's going on." Because it's just a whole layer of magic, passing data between the back end and the front end. And I need to sort of understand what's going on there, for example. 
+
+[0:37:20] BM: Exactly. You can think about it, new tooling for the new world. 
+
+[0:37:25] GV: We've kind of looked at what Cilium does and why developers might want to look at it or why they're using it already. Let's maybe just spend a little time going a bit deeper on how Cilium actually works, sort of under the hood. We've got the idea of what is a Cilium data path, for example? And then we can maybe sort of jump into just the actual component architecture after that. I believe there sort of a concept of BPF hooks. Maybe we could kind of start there and just sort of how does Cilium actually work, I guess.
+
+[0:37:58] BM: Kind of like the basic architecture for Cilium is there's a Cilium operator running into your cluster. And this runs kind of like the life cycle for all the Cilium agents. And the way the Cilium agents work, it's like a Damon set. It's one Cilium agent running on each of the nodes in your Kubernetes cluster. And what the Cilium agent does is it installs all the eBPF programs onto that specific node. And so what the agent does is it gets information and basically writes all the BPF programs and installs them actually into the cluster. 
+
+And the interesting thing about this architecture is it, in some ways, simplifies a lot of the networking and upgrade life cycle. Because the data plane, which is the BPF program is running in the kernel, is actually separated from the actual life cycle of the control plane, which is the agent and the operator running in the cluster. 
+
+And so one thing I didn't touch on before with eBPF programs is that you install them into the cluster and they start running. And you can deinstall them. And so what that allows you to do - and there doesn't have to be any communication between kernel space and user space between the control plane and the data plane. The agent is installed on the node. It installs all the BPF programs. The BPF programs start routing all the networking packets. Or they're with Hubble, and they're observing all the networking packets. 
+
+And with that, you're able to - essentially, if the agent goes down, it doesn't matter because all the programs are pre-installed, and they're still going to be routing the packets. The only thing that won't happen is you're not able to update any of the data path because the agent's not there anymore. And so what you can do is you can update the agent. New agent is there, and it can then modify the eBPF programs. 
+
+It's a little bit different with Envoy. That's with all the BPF stuff. Some of the layer 7 stuff, which I guess I didn't touch on yet, is done with Envoy, which is a very popular service proxy. It's what a lot of the other service meshes are based on. And Envoy is also run as a Damon set. One Envoy on every single node in the cluster. And that works with the Cilium agent and the BPF programs to do some of the layer 7-based routing. And so the BPF programs and the Envoy together kind of create the whole networking story, and they work in concert with each other. 
+
+And then layer 7 is a little bit different because this is something that they're working on right now. It's like some layer 7 connections are more long-lived. If you restart the Envoy on the node, then it resets some of the connections. But now they're working on hot restart of Envoy. That story is changing a little bit different. But I guess what's different about the Cilium architecture is the agent is separate from the BPF programs that are running in the kernel. The data path can keep on running even as things are changing on the control plane, too. 
+
+[0:40:53] GV: Then we've got the Cilium agent. I guess there's also the Cilium operator as well? 
+
+[0:40:58] BM: Yeah, the operator manages the life cycle of all the agents in the cluster. 
+
+[0:41:03] GV: Gotcha. 
+
+[0:41:03] BM: And then the CNI plugin and then identity management, which we've obviously touched on a little bit as well. 
+
+In terms of getting up and running with Cilium, maybe we could take sort of two brief examples. One is like total green field, which is obviously hopefully the easier one, and then one is you've already got a Kubernetes cluster kind of running something medium advanced. Maybe we take those kind of two cases. What are we talking in terms of getting up and running? 
+
+[0:41:31] BM: Have a brand new Kubernetes cluster. There's a couple different ways to install Cilium. The first and the easiest one is you're on a cloud provider doing something like GKE or AKS. And Cilium is already the default on that cluster. The cloud provider sets up your cluster. You get Cilium off and running to the races. It's already in there. I think that's one of the cool thing is Cilium is already the default CNI for a lot of managed Kubernetes clusters. 
+
+The next one is you're setting up your own Kubernetes cluster. And this is super common use case for on-prem or other things. Cilium has a couple different tools. I think most often people installs Cilium with the Helm chart. Install that with Helm into your cluster. You can also install it with the Cilium CLI, but this is, I guess, maybe not as recommended because then it's what things do you pass into the CLI and trying to remember that versus like a Helm chart. You're going to probably see most people install Cilium with a Cilium Helm chart. 
+
+And then the migration story is something that we see commonly. Because when I look at the way people usually set up the Kubernetes cluster, it's like what I was saying before, nobody wants to care about the network until they have to care about it. And they don't usually turn to Cilium. Or they might not always use Cilium until they come across one of the problems that they're having that Cilium helps solves, like I was saying before. Something like performance and scalability, the network policy or encryption, the observability aspect, or multi-cluster networking. 
+
+Because if you're running on something, like OpenShift, OpenShift has their own CNI that they install into their Kubernetes clusters. Or AWS has the AWS VPC CNI. There's already one installed in there. Or maybe, for instance, a lot of tutorials start with Flannel. And so you already have a Kubernetes cluster running with a different networking CNI in there. And you run into one of these challenges that you're like, "Okay. Well, I need to have better performance and scalability in my cluster. And our security team says we need to have these layer 7 network policies. And our application developers are having a hard time debugging the cluster because they don't have any insight into where the traffic's actually going. And we're thinking about spinning up some more Kubernetes clusters." And you're like, "Okay. Well, Cilium solves a lot of these problems. So I think we should migrate to Cilium as our CNI." And the questions become, "Okay. How do we do that?" 
+
+And so the migration path that we see most commonly that people do is the cool thing about Cilium is it's not kind of a big bang where you're like, "Okay, we need to like switch this over." It actually allows a lot of incremental things. And so one common path I see people doing is like, "Okay, we need better observability in our cluster." And so what you're able to do is to do CNI chaining. 
+
+You essentially have your first CNI, say Flannel. And you're like, "Okay, I need better observability." Because it doesn't have any observability. And so you're able to essentially install Cilium on top of Flannel. Flannel still does all the network routing, but Cilium is able to see all that networking and being able to surface that information through Hubble. So you now have the network observability without having to change any of your data plane. 
+
+And you also now have the added benefit of having Cilium as a CNI in there. Or people also installs Cilium for network policy. And so we don't want to change our data plane. Actually, there's a lot of companies that actually wrote their own in-house data plane. For example, Alibaba wrote their own CNI, but they wanted to add network policy. So they installed Cilium on top to do the network policy part. And so now you have two CNIs in there. One's doing the networking, one's doing the network observability or network policy. 
+
+And what you're able to do is Cilium has this flag called Cilium node config. And you're able to specify on each node in your cluster which CNI you want to do the network routing. And so at the time, you're able to essentially say, "Okay, I want all of my original CNI to do the network routing." Well, what you can then do is you're able to drain traffic off of a node and say like, "Okay, we want this new node to be - as you're adding new nodes to the cluster, we want this new node to be using Cilium as a CNI for traffic routing." 
+
+And so you can basically roll over your whole cluster node by node. And each node that's coming online now is able to have Cilium as the CNI. Until eventually you're basically switching over all your traffic to the new CNI, Cilium is your CNI. And at that point, you can uninstall the old CNI. 
+
+[0:46:01] GV: Wow. Yeah, that's really cool. Yeah, I like the CNI chaining. That's super cool in terms of - yeah. Because, as you say, migration is - well, it's probably the more likely case for a lot of people maybe listening today that aren't using it already. But unfortunately, that's also often the reason it doesn't get adopted as quickly, because it's often challenging. 
+
+[0:46:19] BM: Yeah. Nobody likes to mess around with the network. 
+
+[0:46:22] GV: Yes. Quite. Yeah. 
+
+[0:46:25] BM: If it's working, just leave it, right? But yeah, if you start to run into some of these problems, you're looking at a migration story. And a lot of people want to do live migrations. If you go on the Cilium website, there's actually quite a few stories. The most recent one was from DB Schenker, which is the German national rail logistics thing. And they needed to migrate over to Cilium. And they did the Cilium node config and were able to do a live migration of Cilium. 
+
+[0:46:48] GV: Exactly. That's infrastructure sort of at some of the most important levels. So that's pretty cool. So kind of looking at - as we touched on right at the beginning, Cilium is a very open-source project. And, again, looking at just some of the stats from the report that you guys just put out, there's a number. Yeah. A thousand individual contributors. You crossed that line basically on the project in October 2025. That's a huge number. That's a huge number of contributors. This is truly one of the, I guess, largest open source projects out there. 
+
+[0:47:22] BM: Yeah, I think this is like kind of interesting for me. Because, also, if you're looking at other vanity metrics like GitHub Stars and things like that, it's like, "Okay, how do you measure the size success of the project?" Right? A lot of the people that I'm talking to, Cilium is run by the platform team. And it's four engineers supporting 200 developers. 
+
+And so if you look at a lot of other projects, they're going to be a lot bigger, but it's just because the number of people actually interacting with that is a lot bigger. A front end framework or something like that, it's going to have 200 developers for one SRE supporting those 200 people. And so, it's kind of wild to me that Cilium has kind of grown into such a large project, right? If you're looking at there's a lot more developers that can write HTML than can write BPF code, right? A thousand contributors is actually quite a lot in some ways. 
+
+In terms of stats, depending on how you look at it, Cilium is in the top three projects in the Cloud Native Computing Foundation. 200-some projects are the largest ones in the cloud-native space. Kubernetes, obviously, number one because it's also the second-largest open source project in the world. Number two or number three is Cilium. Yeah, one of the fastest-moving projects in the whole CNCF ecosystem. 
+
+[0:48:38] GV: Yeah. I think I said in the report, now the second largest. Cilium is now the second largest. That's pretty awesome. Yeah. I mean, I guess sort of on that note sort of in terms of community and contributions, is it usually someone who's kind of, I guess, using already through their company, I guess, that sort of ends up then jumping in and making a pull request for something that they've seen? Or do you also just have kind of diehard Cilium fans that just work on this? 
+
+[0:49:05] BM: Yeah, I would say the most common thing, it's kind of like what I was saying before, the number of people that can write eBPF code in the world is not that large. The Cilium agent is written in Go. So it's a little bit different there. I think it's a bit more approachable. But yeah, Cilium is a pretty deep networking technology, or technology as a whole. 
+
+And so, yeah, the most common use case is we're running Cilium in our production cluster. We're running into this issue or bug. It's open source. We're contributing this fix because nobody else in the community is working on it, and we really need this. That's actually how some of the earliest maintainers of the project came along. 
+
+Some of the earliest ones were actually from Palantir and Datadog. Because they were running Cilium in production, they needed things solved. Easiest way to do that is to upstream the changes into the project. They got more and more involved and became maintainers of the project. 
+
+And then in the exact same way, two of the other big companies, like I said, Google and Microsoft use Cilium as the data plane in their managed Kubernetes cluster. So they need to get involved to be able to upstream their changes. It's people running Cilium in production that are trying to solve the issues that they have. And that's really how they get involved. 
+
+[0:50:16] GV: Looking ahead, when it's sort of this open source road map, it can be a bit of an ephemeral term. But what are you - 2025 looks like it was a pretty big year. What do you think is kind of on the horizon through 2026? 
+
+[0:50:29] BM: I think there's a couple of different things. One, in the Kubernetes world, is really starting to see this transition to IPv6. I was just at Cilium Con in Atlanta, next to KubeCon, and there is actually two talks from ESnet and also from TikTok talking about using IPv6-only Kubernetes clusters. I think maybe this is finally the year of IPv6. But I think we're really starting to get there. 
+
+And a lot of the work done this year by the project was around how can we basically bring IPv6 feature parody up to IPv4. I think there's a lot of work being done around there because we're actually starting to really see IPv6-only clusters going into production. And not only that, going into production at scale. If you look at the scale of the national labs infrastructure in US, it's pretty big. Also, TikTok. Quite big. Very different use cases. That's one is like in Kubernetes itself. 
+
+The next one that I didn't touch on that much is around - I guess everybody's kind of aware of the whole VMware thing. And so people are looking to migrate off of that. And I think that plays into Cilium a couple different ways. One is how can we bring VMs into Kubernetes? And another part is how can we connect Kubernetes or the cloud-native world with the rest of our IT estate sitting in virtual machines outside of that? If we're migrating and modernizing, how do we still connect it to what we already have? 
+
+There's kind of like two pieces there. One is how do we run VMs in Kubernetes? And KubeVirt, I think, is what a lot of people are using. And one thing that I'm really excited about that Cilium's coming up with is this thing called Netkit. And this was originally developed to solve the container networking overhead. The problem with containers is it's a process running on the host in its own network namespace. And by traversing into the network namespace, it creates essentially some overhead. 
+
+And what Netkit allows you to do is to basically take something off of the NIC and put it into the container with essentially no overhead. Eliminating the networking overhead of containers, right? Since KubeVirt is kind of like a VM running in a container in Kubernetes, what we're doing now is can we use Netkit to get the packet into the VM directly from the NIC. Eliminating the overhead of not just the container but of the VM running inside the container running inside of the host. 
+
+Once again, how can we reprogram the networking stack to make it faster, more efficient, more scalable? As we add more layers of abstraction, how can we still kind of make those abstractions thin so that we can still get the performance that we need to out of our clusters? So that's on running VMs inside of it. And then the second part is connecting to the outside world. 
+
+We're actually doing a lot of work at Isovalent, getting Cilium to connect to the outside world. So VMs running outside of your cluster, or VMs that you're trying to migrate into your Kubernetes cluster in a seamless way. Once again, how do we make that transition, that migration story as easy as possible, and doing that in a very smart way with eBPF? 
+
+[0:53:40] GV: Awesome. Very cool. Netkit, that will be available sort of in 2026? 
+
+[0:53:46] BM: No. That's actually out now and a part of Cilium. This is another thing, it was made by Daniel Borkmann, who's also one of the co-creators at eBPF. That was kind of like the next project he was working on was Netkit. And that was a Linux kernel feature. It's actually part of the Linux kernel. Cilium uses Netkit to be able to eliminate that container networking overhead. And then we're also implementing it to work with KubeVirt, too. The whole part with four containers is already - it's in the kernel and it's in Cilium if you're running the right versions. And then the part with VMs is kind of for next year. 
+
+[0:54:23] GV: Awesome. Just as we wrap up, where's best for a developer or just someone who's kind of interested in Cilium and maybe thinking about - I don't want to say throwing over the fence to the developers, but throwing it into the mix. Where's best to go and just sort of get acquainted with Cilium? 
+
+[0:54:38] BM: Yeah. I'm extremely biased because I'm a maintainer of the website. I would say go to cilium.io first. And I think there's a lot of helpful resources for the different things that I've talked about. If you're interested in like, "Okay, I'm interested in like this Kube-proxy replacement," or other things like that, we have pages for all the different features. I want to learn more about Cilium as a CNI, about Kube-proxy replacement, about BGP, or cluster mesh, or host firewall. I want to learn more about Hubble. We can do that. 
+
+We also have created different pages for different industries kind of talking to the challenges that a cloud provider, or a consulting company, or a financial services company. So it's not just like here are the features. It's here are these features and how do they apply to your actual industry. 
+
+And then the last part that we have is these outcome pages. Because, once again, it's like you have these features, but companies aren't buying a service mesh. They're buying a specific outcome. Hhow do we do layer 7 routing? Or how do we do zero-trust networking? Or how do we do network automation? How do we consolidate our networking tools? And so actually looking at those outcomes. And so it's kind of like moving up the stack from here's the feature to here's the business value that we're getting. And how do we do it for the industries? 
+
+But if you actually want to get hands-on, what I'd recommend is going to the getting started and going to the labs. And there's a lot of hands-on labs around Cilium. And so what these will actually allow you to do is to you don't even have to set up your own Kubernetes cluster. It's set up for you. Cilium is installed, and it'll walk you through the different features. 
+
+Basic one is like, "Okay, how do we install Cilium?" And it'll walk you through that. The next one is, "Okay, I need to do network policy. How does Cilium network policy work?" And there's a really famous Star Wars demo. It's like how do we blow up the Death Star? How do we protect the Death Star? That's like a fun lab. And it's different, like hands-on labs. You're actually in a Kubernetes cluster and walking you through these different features, how they work, and how do you actually apply them to your cluster. Yeah. So those are all great sources. 
+
+Obviously, there's always GitHub. We have a Slack channel if you want to jump in there, too. But I would recommend, if you want to get hands- on with Cilium, go to the labs. I know I like to actually be in a cluster and be able to do things. Or just read through some of the stuff. And then there's also the documentation pages there, too. 
+
+[0:56:50] GV: Awesome. Sounds pretty fully featured on that front. Yeah, cool. Well, Bill, awesome to have you on today. Thanks a lot for coming on. As we were talking about before recording, you've been doing a lot of traveling, so you managed to find a slot on that schedule for this. That's really appreciated. And no doubt we'll be following along and maybe catch up again in a couple of years, or something. 
+
+[0:57:12] BM: Yeah, that'd be great. 
+
+[0:57:13] GV: All right, thanks a lot. 
+
+[0:57:15] BM: Yeah, thanks for having me.
+
+[END]
+
+
+

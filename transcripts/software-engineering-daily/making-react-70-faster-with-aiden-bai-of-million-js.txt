@@ -1,0 +1,239 @@
+[00:00:01] MB: Welcome back to Software Engineering Daily. My name is Mike Bifulco. I am one of the hosts of Software Engineering Daily. And I have for a very long time been living in the world of React and building applications, and websites, and tools and all sorts of things with React. And it is one of my major interests in this world as a professional person, which is why today I am super, super excited to be hanging out and talking with Aiden Bai, the creator of Million.js. Aiden, thanks so much for hanging out with me today. I appreciate you joining me. How are you doing?
+
+[00:00:34] AB: Hey, Mike. I'm doing well. Thank you so much for the invite. I'm really excited to be on this podcast and talk a little bit about Million. 
+
+[00:00:41] MB: Of course. Yeah. I'm glad you're here, too. And I have so many questions for you. But before we do that, why don't we start with like Million.js 101? Can you tell me what Million.js is and how the project got started? 
+
+[00:00:55] AB: Sure. Yeah. Million is a drop-in replacement for React. Essentially, you can install a Million, put in your bundler like V or Next.js and it optimizes components for you. I kind of got started because – funny story. My grandma owns a 2015 iPad. And if you know anything about slow iPads is that they can't load websites. They suck at loading websites. 
+
+And so every time I send my grandma like a cat TikTok, an ice cream TikTok, it just wouldn't load. And I was so frustrated because I understand why these developers have slow websites. It's because React is slow. It doesn't work in the majority of low-end devices around the world. But I kind of thought about it. It's like, "Okay, what if we design better frameworks for developers to work with? What if we designed React but faster?" Essentially, million is trying to answer the question of what if we can retain the current developer experience or make it better while ensuring great user experience?
+
+[00:01:58] MB: Yeah. Got it. Really interesting to hear that the project kind of comes from just wanting to share cat memes with your grandma. I think that's like something that most of us can relate to. And in all honesty, something that people forget a lot is that like most of the devices in the world are not your super-fast iPhone or MacBook Pro or iPad. Many, many, many people are using devices that are like a year or three or five or seven behind. And so, it's easy to think as developers that like everyone has the performance luxuries that we have. But of course, that's not true. 
+
+And so, you created Million as a sort of an experiment to replace the React developer experience. And it sounds like it was pretty successful, right? Can you tell us a little bit about the statistics of the performance gains? 
+
+[00:02:41] AB: Sure. On the JS server benchmark, which is kind of like the community-accepted benchmark for JavaScript frameworks, it's around 70% faster than React. Around 40 faster than Preact. Although I assume it could scale depending on like – depending how your user interface looks like. If you have a lot of static content, it could work very well. Yeah, it's pretty dang fast. In terms of like loading, it's also – initialization and rendering is both fast. 
+
+[00:03:16] MB: Yeah. Incredibly fast. A 70% gain is something that uh most projects like dream about within their entire lifespan and can take years and years to get to. How did you achieve that? What did you have to do to gain 70% performance benefit over the standard React virtual dom? 
+
+[00:03:33] AB: Yeah. And like you said, React uses a virtual dom. And the issue with the virtual dom is that you have to do something called like tree diffing. Imagine you have like two big trees and you have to check every single node in the tree to see if it's changed. And that kind of sucks. Because as your components or as your app gets bigger, the bigger the trees get, the more work the virtual dom has to do and the slower your app gets. 
+
+Million kind of takes a different approach. Instead of running that diff every single time you render, we use a compiler. The compiler figures out which nodes are dynamic. For example, if you have like a [inaudible 00:04:10] state or like an open or closed state, we know where those things are. And so, instead of diffing the tree every single time, we just update that specific node. And so, we basically turn the time complexity from like [inaudible 00:04:24] to the power of whatever to [inaudible 00:04:28]. 
+
+[00:04:29] MB: That's pretty shocking and definitely one of those things that makes a lot of sense as you sort of start to parse the problem space that you're in. And I think that the obviousness of the approach makes more sense like sort of in retrospect. It sounds like something that obviously the React team will value kind of the difference here and will understand the gains. 
+
+How did you get there? How did you start to understand that React has a performance problem and have the desire to like, "Okay, I want to improve the performance on react?" I would love to know about the journey from A to B there. I have a goal. I have a problem. How do you connect those two things in this case?
+
+[00:05:07] AB: Right. Right. Exactly. React has a forest problem, but it has always been kind of muted because our hardware just gets better every single year, right? And so, on the majority of developers' advices or like in the first-world, you have really fast devices. And so, if your bottleneck is rendering, it doesn't really matter unless it gets to like a hundred thousand elements or something crazy. 
+
+But I live in a family where we don't have the latest devices. Except for me. I get firsthand of like what exactly the problem is. And so, React has gone down. I was chatting with Ryan Carniato from Solid.js, which is a similar React alternative that's super-fast. And it's really interesting, because how I kind of discovered this sort of technique to make virtual dom faster was from a project called Blockdom, which is essentially "predecessor for Million". It's actually used in some other stuff as well. 
+
+But the main difference from Million and Blockdom is that we actually applied it to React. And so, one of the things I wanted to do was what if we could take a really, really fast virtual dom and put it inside React? It's really interesting because Ryan actually mentioned that Dominic, who worked on Inferno.js, now Svelte, actually created this idea several years prior while he was on the React team. 
+
+It was really interesting because, from what I understand, the React was at fork. They could either choose to go with the Million sort of rendering route or the concurrence. The thing we have now with start transition. It's interesting that this is what react could have been. Million is kind of like, "Yeah, reenacting what it could have been." 
+
+[00:07:00] MB: Yeah. Sure. And obviously, there's a lot of complexities that go into making those decisions, especially on a big team like the React team at meta. And now my understanding is that the React team is sort of more than just Meta, right? It's like a broader group from around the world. 
+
+And I'm sure that one of the complexities of making those decisions is that you have to take into account like many, many more important use cases that might be not just performance. It might be developer experience. It might be things like compatibility across browsers and with React Native and things like that too. 
+
+One of the things that stood out to me the most about Million is that it also sort of interrupts with React. You can use Million within a sort of standard React project. And that's kind of the standard developer experience. Can you talk a little bit about that? 
+
+[00:07:45] AB: Yeah, that's actually. Our goal is essentially what if we can have React – essentially like the analogy we can have our cake and eat it too. We can use React and also make it really fast. Although our approach is a little bit different from if you've heard of like Preact compat or Inferno compat. Those libraries try to like – essentially what they do is they masquerade as React. They have all the same APIs as react and they just pretend to be React. 
+
+We actually take a slightly different approach. We understand that React is okay for certain things, right? For example, if you have two elements, you probably don't need a whole blown out virtual dom for that. But if you have a lot of elements, you might need it. 
+
+And so, we provide two modes. Automatic and manual. Automatic has a compiler that makes all the decision-making for you. It determines which components should use our APIs and which components should use React's. 
+
+Another thing is we have manual. If you want to opt into specific things, like if you have like a really long virtualized list and you need to like configure that with your thing, you can manually do it that yourself as well. 
+
+[00:08:52] MB: Yeah. Got it. And so, from a developer experience perspective, it kind of allows you to like choose when Million makes the most sense for you. And maybe the inverse of that is choose when leaning on plain old React makes sense for you too, which gives a lot of control. And I'm sure that's something that like, as a side effect, allows people to integrate Million without having to take it on for everything, which is really cool. 
+
+And so, then I guess my next question is what does "Hello, World!" look like when you're using Million? What's the very like simplest way to integrate and add Million a project if I want to experiment with it? 
+
+[00:09:29] AB: Yeah. Our hope is that you can integrate Million at any scale. And so, whether you have a giant project that you've been maintaining for years or you're just getting started with Create React App, you can integrate any level. 
+
+We do have a quick start. Essentially, you can play with like interactive guide and see exactly how fast the performance is compared to React. And it's on our website, million.dev, if you want to check it out. 
+
+[00:09:57] MB: Cool. Yeah. was on there before looking at some of the code snippets. And it's like for the gain of 70% performance, the little get started, like quick start tutorial, is like – gosh. I don't know. Maybe changing 10 lines of code total or something like that. Kind of a pretty mind-blowing experience and definitely comes down to some very thoughtful developer experience that's engineered into the library. And I think that's really something that's quite the accomplishment and something to be celebrated there. 
+
+I do also feel like maybe I buried the lead a little bit in talking about Million because it's not necessarily like a trivial project. You've gotten a ton of attention for this. At the moment, as you and I are talking, Million has 11,600 stars on GitHub. It was featured in a video from Fireship. There's a bunch of people who've talked about this online who are sort of like pundits, luminaries in the developer world. 
+
+I'm really, really curious to hear what does that mean for you? As you built this project, initially, were you working on it alone? Were you collaborating with other people? And what was it like when you started to get attention with the project? 
+
+[00:11:04] AB: Yeah. It's been quite a long journey. It's actually been two years now. It's been very interesting. It was and it has always been a side project to me until recently. Literally in between high school classes. Whether I was in AP economics or maybe calculus or AP literature, I would be on my Chromebook or on my laptop just coding. 
+
+And it's really interesting because people keep asking me like, "Okay, how did you get into virtual doms?" And I don't really know either. I just thought it was really interesting. I come to realize that I learned very slow, but I'm really interested in really pretty like kind of – I wouldn't say esoteric concepts. But like very weird things that people don't like necessarily think about. 
+
+And so, I love building virtual doms because it was a challenge to me. There's zero documentation on how to do virtual doms. Figuring out how to make it fast, which is really, really fun for me. 
+
+In terms of like when it started blowing up, around December-ish, I started posting on Twitter. The reason why is because I didn't want to post on Hacker News anymore. I think I either was getting Hacker News or it was shadow band or whatever. 
+
+Yeah, I just started posting stuff on Twitter. Like, "Oh, I made this thing. I made this thing." And just kind of grew from there. The kind of catalyst was I posted like a really, really like sick video on Twitter and I was like, "The virtual dom replaced in for React." And it was just like this crazy Apple-style video and then like it kind of blew up. Partially because it was kind of cool. But also, partially because the video was like super over the top. And so, that kind of blew up. And from there, the stars came in. The 11,000 whatever.
+
+[00:13:10] MB: Yeah. Yeah. Got it. You also have sort of brought in an interesting and kind of bombastic point there, too. You said you've been working on this for two years. And at the time when the project started, you were in high school. Right now, my understanding is you're headed off to university in probably a few weeks here I would guess. You were in high school building something that got essentially worldwide attention from the developer community. And also, built like a really intensely cool trailer for this thing that you had made. 
+
+From my perspective, that feels like you not only understand some pretty intense computer science topics. You also have a knack for marketing yourself and marketing projects that you're working on. Can you tell me a little bit about how you got there? When did you start coding? 
+
+[00:13:59] AB: Yeah. I started coding – actually, I didn't have a computer at home. And so, the only technology we had was like this super old. What is it called? The phone with the keypad on it. Whatever that's called. 
+
+[00:14:11] MB: Oh, yeah. Like a feature phone. 
+
+[00:14:13] AB: Like a feature phone. Exactly. And so, in fifth grade when the schools started distributing like uh Chromebooks or devices to all the students, I was kind of addicted. Not because I wanted to code but because I wanted to play cool math games. Games like Papa's Pizzeria or like Pac-Man were my jam. 
+
+And so, one day, the school woke up with a lot of students playing games and they wanted people to be productive, right? They should be in Google Docs instead of cool math games. And so, they implemented a firewall. And that ruined my day, but not for long. 
+
+And so, I just went online. I just look for how do I unblock these games. How do I use this? I discovered like iframe, proxies, VPNs or whatever. And from there, I kind of figured out from there. Like learn HTML, CSS, JavaScript and so on. 
+
+[00:15:03] MB: Yeah. Wow. Necessity is the mother of invention. All this just to play some games I think is pretty cool. And so you're interested in – software development kind of came from a reasonably early age as well. But you also seem to have a really good skill at video editing and some of that stuff, too. I noticed your personal website is aiden.mov, which has to be a nod to movies, I'm guessing, and sort of video editing and production, stuff like that. How did you get into that stuff? 
+
+[00:15:32] AB: Yeah. Actually, I'm not the main video editor for that specific video. I'm lucky to have a bunch of talented friends literally – actually, younger than me. I used to play a lot of Minecraft as well. And so, just like talking with people in Minecraft and one of them just happened to be very good at video editing. I'm very lucky to have people around me that can help around with the project as well.
+
+[00:15:58] MB: Yeah, cool. That's really cool. Always nice to be surrounded by people who are talented as well. And I'm sure there's lots to learn from them, too. You just finished high school and you're headed off to University. What are you planning on studying? 
+
+[00:16:13] AB: I plan on studying computer science, but I don't know if I plan on studying that much. Personally, I've always been kind of adverse to classes. It's not that I don't enjoy them. Or, actually, I never enjoyed them. But like it's not that I don't hate them. It's just that I always find myself distracted with something that I want to actually – or something that I'm actually interested in. 
+
+And so, I plan to use university as kind of like a social arena. And so, how do I say this? I plan to use university as like onboarding to life. A lot of the things that I have to learn through university is that. In terms of education, it'd be really cool to learn some new classes. But also, graduating is not a requirement. 
+
+[00:17:01] MB: Sure. Wow. Man, you are wiser than your years from the sounds of it. That's a really interesting perspective to have. I'm a few years removed from my undergrad university experience at this point. But I feel pretty strongly that like one of the most valuable things I got out of it was the social experience and the intermingling of people with various different backgrounds and interests from my own. And graduation not being a requirement. Man, that takes some stones. I appreciate that. I think that's really cool perspective to have there. 
+
+You're studying computer science. You're off to university in probably a manner of weeks here. What is your balance look like? Are you working on Millions still? Is there a team built around it? What's that look like? 
+
+[00:17:42] AB: Yeah, most of the engineering is pretty much still me. But we do have a community team around it. People post on the community Twitter, on the Discord. And there's a lot of active folks that I'm glad to have on. 
+
+Work-life balance is probably something I'm trying to still learn. It's really interesting. Because, originally, it was good. Pretty good. Because it was just a side project, right? You just worked on it whatever you want. Maybe on weekends or nights. But when it blows up, you kind of like are hit with a bunch of volume, like traffic and volume. And so, whether it'd be issues or whatever. 
+
+It's very difficult to balance that because it always feels kind of like a continuous cycle of, "Okay, now I have to fix this issue or I have to implement this feature or I have to ship this thing." It's a bit tiring, but I'm learning how to balance it. 
+
+[00:18:38] MB: Sure. Well, this is one of those places where I feel like my experience has been you're always kind of surfing the balance between work and life. And work-life balance is maybe a bit of a misnomer. It's kind of work-life coexistence and figuring out how to make those things work for you. 
+
+You've also been thrust in like a really interesting position where you've got this project that has all this attention that has like lots of real devs who are interested in using it. Have you found many people who are using it for projects that are like actually in production? 
+
+[00:19:09] AB: Yeah. A company called Wyz actually from Seattle is using it. There are a couple of companies I'm talking to that are interested in using it as well. A lot of it I think comes down to how easy it is to integrate. We purposely made it so that it's – I mean, it's literally an install and put it in your bundler, right? Making that process really smooth has been really important and really great for adoption and interest as well. 
+
+[00:19:37] MB: I think that you are in an enviable place where there's lots of people who are interested in your project. And there's loads of people who are no doubt asking things of you, like expecting that you're working on this thing non-stop. And to a certain extent, I'm sure there are people who don't have the context that you're like about to be a student entering a fairly busy time and that this started as a side project and is now something that's grown to a size that's pretty massive. What's it like managing a project this big? Have you found that building the community around it is something that comes naturally to you? Or does it have its own challenges as well? 
+
+[00:20:10] AB: Oh, no. I'm terrible at it, frankly. I'm still learning a lot. I've never been at a position of leadership before. And so, being thrust into it is like very challenging. People's skills are not my thing. That's why I code all day. But I'm actually really fortunate to have this opportunity to learn more about it. 
+
+One thing I'm really happy is I brought on a couple people from the community team just to help. And it's really cool because I can kind of experiment and learn from them and see how they do it, right? It's because it's like this project is difficult. One part of it is leadership in terms of like working with people. But also, actually building relationships with 20 people at once and also working on PRs and fixing issues. And there's a lot of stuff that comes with it. 
+
+But it's really cool. I think, personally, this may sound very naive. But it's kind of changing my perspective on what I want to do. Open source is really cool because it's a medium where I can actually impact the world. Whether it'd be 10 or hundreds or thousands of people. And provide just a little bit of help to everyone. 
+
+My hope is I can kind of dedicate maybe my next working years to open source. I think this is naive. But I think it's really important. There's projects [inaudible 00:21:40] really inspire me because like it's just like one guy in Portland who has a cat and like he just sits in his computer. And it's like – and then like – I don't know. Hundreds of thousands or thousands of people come together to make this thing. And it impacts millions of people. It's so cool to me. Open source is super cool.
+
+[00:22:00] MB: Yeah, I think that's something that you've also sort of like threaded the needle on a problem that's really tough to crack for a lot of people. There are many people who have successful open source projects and manage things that get attention from thousands of people and never really find a way to turn that into a sustainable model. 
+
+One of the perpetual elephants in the room for open source software is how do we fund the work of the people who's going into making these projects and products? And how does that work? And my understanding is that Million, at least right now, it looks like from the GitHub repo that you've got a pretty solid backing for sponsorship going. How did that start? Did you have people offer sponsorship to you or did you sort of reach out and say like, "Hey, I'm working on this more than I thought. I need to spin up a sponsor thing to be able to fund it." 
+
+[00:22:44] AB: Frankly, we're still figuring this out. And I honestly don't really know what I'm doing. So far, what I've been doing is just throwing stuff on the wall and seeing what sticks. I really forged – I can kind of position myself as a student and I say like I need this money for whatever, whatever, right? There has been a little bit of success. We're actually break even now from our GitHub sponsors, which is really awesome. 
+
+[00:23:10] MB: Yeah. Congratulations. 
+
+[00:23:12] AB: Yeah. I mean, it's funny because it's like I'm working open source and also working at a literal net loss. And so, now it's not. But I'm really fortunate that's the case. Definitely, writing a really strong pitch for the GitHub sponsors. Kind of tweeting about it. Say, "Can you support me?" 
+
+But also, what I found success in especially is open source grants and fellowships. I found that if you're able open source projects, if there's any maintainers listening out there, it may be a good idea to position– kind of sell yours – not sell yourself, but like apply as yourself. Because if you're able to build and scale an open source project, that means you have some sort of success there, right? And so, applying for fellowships and grants has been really successful for me in terms of getting funding. 
+
+[00:24:02] MB: Sure. How do you find those? 
+
+[00:24:05] AB: Definitely, if you look up open source grant right now – I can name a few. Emergent Ventures, Z Fellows. Sequoia's open source. There's a bunch that are generally non-diluted and no strings attached that are pretty interesting to look at. 
+
+[00:24:22] MB: Yeah. Yeah. That's also a very interesting point that like getting your project funded without attaching too much strings to it, so to say, is really important. There are definitely grants and programs and sponsorships available that sort of like make you in one way or another owe time or effort or licensing or whatever it may be to the people who are sponsoring you. And there's a real balance to be struck there. And it really depends on the project. And like having a deep understanding of open source licensing, open source law to a certain extent and like the program that you're trying to build is super important. 
+
+This is probably also where I should say I'm not a lawyer. Aiden, I'm guessing, you're not a lawyer. Don't take legal advice from us, but definitely go do some serious research if you're trying to crack this nut. It's a really interesting thing. And I also think this is probably a really good point to drop some plugs for you here, too, Aiden. Where should people go if they want to back you and they want to back Million? 
+
+[00:25:23] AB: Yeah. If you look up Million.dev or go to our GitHub, there's a sponsor link. And if you want to sponsor us, that'd be awesome. I'm aidenybai on GitHub if you want to check me out. 
+
+[00:25:38] MB: Cool. Yeah. And I will make absolutely certain that there's links to all that in the show notes for people listening here. It's a really an inspiring project and a very cool thing to see you building. What is sort of coming next for Million.js? Are there uh features or releases in the works that you're excited about? 
+
+[00:25:56] AB: Yeah, for sure. I've been thinking a lot about kind of regenerative web applications. I'm like what I mean by that is what if web applications can have knowledge on how they run unused devices? I'm a strong advocate of developers. I love great developer experience. But I also know that balancing user experience is – user experience is like – for me, it's like first principles. It has to be there. It's the fundamentals of your application. 
+
+And so, I've been exploring ways Million can essentially get diagnostics from like a real-time web application. Let's say you like deploy your web app or Next.js web app to the web. And some sort of monetary applications, like Datadog, Sentry or whatever can essentially get data on how users experience your application. They can identify which components are slow or fast and apply Million to them. And so, you can kind of think about it as web apps regenerate. They figure out which parts of app engine that's slow and they can apply Million to it. 
+
+[00:27:04] MB: Yeah. So, over time they actually get more performant by learning about which parts of them are sort of least performant. Super cool. That's such an interesting idea and it's definitely like an adaptive use case. Almost like an evolution. The app itself is making itself better, which is a very, very intriguing thing to see. 
+
+And definitely, I can imagine the value when you're collecting data with Sentry or Datadog or whatever the case may be. That like you're learning more about the app. You're learning about how people are using and experiencing it. That's almost like a meta-analysis of the information that's coming in. That's super, super cool. 
+
+I think people tend to use Sentry, for example, for error logs and event reports and things like that. But every single one of those things has a time stamp on it and there's something to be learned from all those little bits of information. Fascinating. I really like that. I think that's super cool. 
+
+Okay, so let's take a step aside for Million. You're headed off to university. You may or may not finish university depending on what the future holds for you. Let's say, pie in the sky, you had your choice to work on anything in the world. What do you think you would be working on? 
+
+[00:28:07] AB: I'd be working on Million. I think for me it's the most interesting thing for me right now. Definitely, just the other projects. Don't get me wrong. Okay, maybe I have a little bit obsessed with Million. But, yeah, I'll be definitely working on like – the other day, I worked on like be real for touching grass just to get like CS majors to go outside. 
+
+[00:28:30] MB: Yeah. 
+
+[00:28:30] AB: I'm always working on funny side projects. But, yeah, mainly Million if I work on it. 
+
+[00:28:36] MB: Cool. Right on. I appreciate that. And I think you've very obviously done a good job of picking a passion project that's like exactly in the center of your Venn diagram of passions and interests. 
+
+Okay. I want to pull a thread a little bit on building community online. Like I said, you seem to have a really good knack for sort of marketing yourself and building support for yourself. But that obviously doesn't come from nowhere. Some of it is maybe dropping a trailer that gets people's attention. But what have you found to be like ways that you've connected with people online or generated support from people online without previously having a knockout project? What's that been like for you?
+
+[00:29:16] AB: Right. Building a community is hard. First of all, we don't do it perfectly. I don't do it perfectly. It's not great. But some techniques that I found pretty successful are – Million is like something that's easy to rally behind. 
+
+I think people are excited about Million. They think that they're tired of performance. That's why things like Astro or Solid exists, right? Million's able to have that positioning where you can't really hate it. You can only really kind of love it, right? And so, people are really excited about Million. 
+
+One of our things is we have a Discord. We do events. We do posts. We do whatever. And so, we have a bunch of people interacting with Discord. We kind of build this really strong core community. 
+
+Another thing we do is – one thing I personally do is I tweet like very like – I'm very personal on Twitter. I'm not trying to sell you anything. I know Superbeast does like – I don't know what they do. Like the little cat memes. I think they're funny. It's just like they don't really hit that well. And so, kind of if you can be personal, if you're not trying to sell anything. You're just saying like I like this thing or like I'm doing this thing, people will support you there. 
+
+And the third thing is, what I found really good, is people who interact with their community and also contribute PRs, you should invite them as collaborators through GitHub repo. And that might be a little bit dangerous. But like what I found really successful with that is people feel ownership over the project. 
+
+I think that's why I started Million in the first place. It's something that I kind of felt ownership over and I felt that I actually was making impact with. And so, if you can share that little bit of ownership with a bunch of people, you can really, really build a strong core team. 
+
+[00:31:02] MB: Yeah. That's one of those things that I think people genuinely tend to have a very defensive position on initially. Adding people to your GitHub repo. Giving people permissions to merge things and whatever else can potentially be dangerous and damaging. But in a lot of cases, people tend to do good first. 
+
+And one of the nice things about Git if done correctly is there's a history of everything and you can always roll back changes if you need to. Obviously, the problems will come when they do. But if you're paying strong attention to your team into the code that's getting added to the project, there are healthy ways to do that, too. I think that's really a genuinely good perspective to have and definitely something that like can provide growth and support for your community. 
+
+I do kind of also want to prod a little bit at what she said a minute ago about sharing on Twitter and being very personal on Twitter and kind of being yourself. I think, over the years, this is something that I've been figuring out. I worked in developer relations for a while. Working in the developer community and helping people. And a big part of that is establishing a brand as a person on the internet who's helpful and knowledgeable and all those other things. 
+
+And almost more so than being a smart person who can write code and do things and like make JavaScript do what you want to do, the things that I have always found create more attachment is like just sharing a little more about you with your project than just the project. 
+
+When you're having good days, when you're having bad days, there's some value in sharing a sarcastic meme every once in a while, because people see a real human behind that. And to a large extent, I think people attach to the human just as much as they do to the project. 
+
+Million is an insanely cool project and you're tackling something that will help potentially thousands and thousands and millions of people. But truly, like some of the value of what you've built is that it comes from someone who's interesting, and open and different and kind of an outlier in the dev world. And I think that's a subtlety that we kind of often glaze over and is really something to admire. 
+
+It's also like super hard to be open on Twitter in a world where – I don't know. Sometimes it feels like 99% of the internet is trolls, too. How does that work for you? Do you find yourself shying away from it from time to time? 
+
+[00:33:18] AB: Yeah. For me, I definitely was not a fan of Twitter when I guess – especially – okay, I came from Hacker News. Twitter was kind of easy for me. But, yeah, some people are just like [inaudible 00:33:34]. I'm chronically online. I kind of understand where they're coming from. But, also, it is what it is. There will always be trolls. There'll always be people who are shutting you down for no reason. 
+
+But the nice thing is there are a lot of great people online. A lot of people I talk to in the community are from Twitter, right? And so, it's really cool to see positive – if you see the positive side of it and kind of ignore the negative side, you'll be okay. 
+
+[00:34:02] MB: Yeah. Yeah. Definitely. I want to know a little bit more about what it's like to come from Hacker News. I think it's possible that at least some of the people listening to the show won't be Hacker News literate. Won't have spent much time there before. Can you talk a little bit about, first of all, maybe what Hacker News is and what the culture of Hacker News is like online? 
+
+[00:34:23] AB: Yeah. From what you said, Hacker News is like a form site for developers made by Y Combinator, which is like an accelerator VC thing. It's very similar to Reddit. But it's – I don't know how to describe it. It's a lot of like very technical nerds. And these nerds tend to be very – in not a derogatory way. And I'm not saying there's – very like technical nerds that tend to be overly skeptical or overly dismissive. 
+
+And so, it's a great way to – I guess it's a pretty good way to validate your product because they're pretty critical and like you can really figure out – well, depending on what your product is, you can really figure out what is wrong with your product or like what things you can improve. It's really interesting because it also generates a lot of traffic. And so, compared to Twitter, you can get like a lot more developers seeing what you're building. 
+
+[00:35:27] MB: Yeah, I think that's absolutely true. This is probably also a good time for me to, in the interest of full disclosure, mentioned that I'm a CTO of a startup that is backed by Y Combinator. I'm in the middle of a Y Combinator batch. And so, there are some probably important disclosures there that you I'm not here to make a value judgment as to your perspective YC or Hacker News or anything like that. But just kind of interested in the culture there. 
+
+Yeah, you will get a lot of developer interest uh from Hacker News and a lot of people who are like wildly smart and deeply interested in certain very specific wedges of building software. And I think, especially for projects like Million, you'll get the right eyes on the thing and start to build momentum very quickly in that way. 
+
+Let's talk a little bit then about what's to come for you. You're headed off to university. You're going to keep developing this project. How do you see yourself sort of continuing to maintain the project over the next few years? Is your job going to be primarily like orchestrating things and getting volunteers from the community to work on the project? Do you see yourself as sort of remaining as the head of the architecture and engineering behind million? Or is that something you think eventually will shift for you? 
+
+[00:36:40] AB: Yeah. Frankly, I'm still figuring it out. What I'm doing right now is just trying a bunch of things and seeing what works. I, unfortunately, have to be able to graduate in two years because I took like way too many advanced placement classes in high school. But also, the comes with benefits, right? I can take a very reduced course load and like primarily focus on this. 
+
+From where like it is in two years, I don't know. But what I want to achieve with Million is there either is more awareness where we have to create more tools or create – perpetuate the idea that low-end devices which power the majority of the world are left behind. I strongly believe this hardware is going to accelerate. It's going to become better. But we can't leave everyone else behind for the sake of our first-world. And so, I want to be able to have that either fifth-grade year old me or my grandma's 2015 iPad be able to load today's websites. 
+
+[00:37:47] MB: Fure. I think that's extremely admirable and it shows you have a lot of context and perspective on the world that can be very valuable going forward. For folks who are listening to the show, what's a good indicator to a developer who has a React project that Million is something that they should be interested in or try out? 
+
+[00:38:06] AB: Yeah. Honestly, I don't want to over-prescribe. But honestly, you could plug a Million right now. There is no downside technically. Because if you use automatic node, there is no trade-off. It figures out what the trade-offs are. Determines whether it's okay and it's like – okay, I'm going to say it's around 10 minutes of your day. Probably less than 10 minutes if your network speed is good. 
+
+But, yeah, just try it out. If you don't like it, don't use it. If you have a very data-heavy or UI-heavy applications, definitely try it out. But yeah, that's – yeah. 
+
+[00:38:45] MB: Got it. Okay. And for the sake of the project, are there people or companies that you are interested in talking to or who you haven't been able to connect to yet? 
+
+[00:38:53] AB: Not specifically. But if you're listening and you do want to reach out, I'm always available to chat. I'm literally always available to chat. I'm probably awake at 4am at night for some reason. 
+
+[00:39:04] MB: Cool. And one more time for the sake of it, Million.js is open source and available on GitHub. You guys are accepting backers through GitHub sponsors. And I think it's probably important to call out that breaking even for a project like this is probably not nowhere near good enough. And that paying for ramen for a student is not complicit on the level of this project, right? 
+
+If you're listening to this and you're someone who has the ability to back open source projects or if you work at a company that has an open source office, drop in the line. Take a look at the project. It's something that's super interesting. And I think that like supporting open source devs and building community around this is something we have a great opportunity to do here. Aiden, one more time. Where's the best place for people to find you online? 
+
+[00:39:51] AB: Aiden Y. Bai anywhere online. You could just look up Aiden Bai, it should pop up my GitHub website, whatever. 
+
+[00:39:58] MB: Cool. Right on. Thanks so much. I really appreciate you taking the time to chat and hang out with me today. Aiden Bai from Million.js, it's been an absolute pleasure hanging out with you. I wish you the best of luck in university and with Million and all the things you've got coming your way. Feel free to come back on the show anytime if you want to give us some updates on what you're working on. And thanks for hanging out today. 
+
+[00:40:19] AB: Likewise. Thank you so much for your time. 
+
+[00:40:21] MB: All right. Take care.
+
+[END]
+
+

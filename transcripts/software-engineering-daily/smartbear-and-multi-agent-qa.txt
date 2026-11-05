@@ -1,0 +1,333 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/04/SED1927-SmartBear.txt
+EPISODE: SmartBear and Multi-Agent QA
+DATE: 2026-05-05
+SED: 1927
+HOSTS: Kevin Ball
+PAGE: https://softwareengineeringdaily.com/podcasts/smartbear-and-multi-agent-qa/
+----------------------------------------------------------------------
+
+EPISODE 1927
+
+[INTRODUCTION]
+
+[0:00:00] KB: AI coding tools have dramatically accelerated the pace of development, and the bottleneck in the software development life cycle has shifted to code validation and testing. However, the conventional tools and workflows that QA teams have relied on were not designed for a world where a single engineer can generate thousands of lines of code in a day. 
+
+SmartBear is a software quality platform spanning test automation, API lifecycle management, and observability. The company recently launched an AI native QA platform called BearQ, which deploys autonomous agents that explore web applications, learns their structure and behavior, and authors and maintains test cases continuously. 
+
+Fitz Nowlan is the VP of AI and Architecture at SmartBear, and the co-founder of Reflect, which is a web testing platform acquired by SmartBear in 2024. In this episode, Fitz joins Kevin Ball to discuss why web UI testing is uniquely challenging, how BearQ's multi-agent architecture coordinates exploration and testing, why test data management becomes a hard-distributed systems problem at scale, and what agentic development means for the future of QA. 
+
+Kevin Ball, or Kball, is the Vice President of Engineering at Mento, and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies, founded the San Diego JavaScript Meetup, and organizes the AI in Action discussion group through Latent Space. Check out the show notes to follow Kball on Twitter or LinkedIn, or visit his website, kball.llc.
+
+[INTERVIEW]
+
+[0:01:49] KB: Fitz, welcome to the show. 
+
+[0:01:51] FN: Kevin, thank you so much for having me. Glad to be here. 
+
+[0:01:53] KB: Yeah, I'm excited to have this conversation. Let's start with you. Can you give us a little bit of your background and how you ended up at SmartBear, what you do there? 
+
+[0:02:02] FN: Yeah, sure. I was a CS undergrad, and then I went right from there to a PhD program for computer science at Yale where I focused on distributed systems and networking. And while I was there, I did some internships at big tech, focused pretty specifically on networking protocols and low latency networking. When I graduated there in 2014, I was very excited to take a startup job offer at a place called Curalate in Philadelphia, which is the area where I grew up. Went there and worked there for about 5 years, and met my co-founder Todd McNeal, who I then went and started Reflect with. 
+
+And Reflect is an end-to-end web testing platform. Now we support mobile as well. And it's basically record and play, allows your QA teams to build out test suites and then run them automatically without needing to know how to code. That was in 2019 that we started that. And then we were acquired by SmartBear in 2024. And all the Reflect team is still there at SmartBear today. And Reflect is just one of the products in SmartBear's broad portfolio focused on software quality and testing. Now, post-acquisition, I've extended beyond reflect, and now I work across the product portfolio at SmartBear in the VP of AI and architecture role where I look to bring AI features and AI agentic AI workflows into the different products at SmartBear. 
+
+[0:03:17] KB: That is a great role for the times that we're in right now. 
+
+[0:03:21] FN: Yeah. Yeah. There's a lot of focus on AI obviously in the last couple years. It kind of started as bringing AI into the different products. And now it's actually accelerated into even releasing AI native products as well, which we'll talk more about later, I'm sure. 
+
+[0:03:35] KB: Absolutely. Before we get into that, let's orient just quickly about SmartBear in general. As a company focused on software quality? Or how would you describe the company? 
+
+[0:03:44] FN: Good question. SmartBear helps organizations ensure application integrity across modern tech stacks. We're trying to ensure that organizations software is working as intended at speed and scale, and that's ever more important in the age of AI. But you can imagine that our platform combines test automation, API life cycle management and observability integrated across the SDLC to ensure software quality. 
+
+We also just released a new standalone product called BearQ, which is one of the products I was mentioning. That's an AI native product which extends these capabilities across our portfolio to help teams move faster with confidence more or less. We have a big install base, 16 million users, 32,000 organizations, some big names, Adobe, JetBlue, Microsoft. And then we also have some open source components as well in the form of swagger. And we also have some legacy products that are quite successful in compliance and governance applications like TestComplete and Zephyr. That's the overall spiel for where SmartBear is and where your listeners might see our products. 
+
+[0:04:44] FN: Yeah. I didn't realize that swagger was you guys. I've been using that for years. That's a good product also. 
+
+[0:04:48] FN: Yeah, the open source. And then there's an on-prem version. There's a cloud version. And that's obviously the industry standard for API life cycle management. 
+
+[0:04:56] KB: I feel like quality is a really key question right now. It's something that is getting both talked about a lot as people talk about challenges in the state of software right now, but then it's also just getting pushed on from so many dimensions with the changes going on with AI coding. Let's maybe start. If I understand properly, BearQ is focused on web. Maybe we start with web a little bit. 
+
+[0:05:19] FN: Yeah. 
+
+[0:05:19] KB: As somebody who's living and breathing this stuff, how do you think about the challenges of testing in web? 
+
+[0:05:25] FN: It's a rapidly changing landscape. On the one hand, you have a bound kind of on all the things that are possible in web by virtue of the web browser and the deep teeth that you have into the application running in the web browser. Maybe not to the extent that you would have had on the OS level for a desktop application. Mobile's probably pretty similar too, right? The platform there was built in an age where the notions of debugging and exposing these detailed informations were kind of already apparent. 
+
+It's a good domain to tackle because of that tight bound on what's possible and the control you have over the different accesses to the different parts of the operating system. The microphone, that type of stuff. On the other hand, there's just so much explosion of new applications and people pushing web applications to do totally different things. And then there's local storage, and you can run local apps. And so it's a very creative and almost infinite world of applications. It's very exciting in that sense. 
+
+Kind of a roundabout introduction, I think the big thing with web apps is that they're always connected to the network. You get a little bit of leeway there on the network latency and the notion of a cloud application and not needing to download new software to get the upgrades. The always on, always connected nature of it makes it a very interesting beast. Yeah, I kind of pause there. What part should we explore next, I guess? 
+
+[0:06:41] KB: Yeah. One of the things that is always interesting to me is looking at how you validate things across the stack. Because as you say, some parts of the web platform are very bounded right you could do very focused front-end tests, you can wrap them around really carefully, and you can be pretty confident in what you're doing. But then you start expanding out, and you say, "Okay. Well, actually, there's more browsers out there. I need to think about how does this behave not just logically but from a UI perspective on a mobile device, versus on a laptop, versus -" there are still some people running Firefox, and that behaves slightly different. All of those different multi-combinatorial explosion factors that really leads me down the path. 
+
+[0:07:25] FN: That's a great point. The other one that comes to mind too is just all the state on the backend that you don't have visibility into except for the final output result word, right? The output token that's like, "Okay. Token is an overload term." Just the result, right? You submitted a form, the backend does all this churning and all this work, and then you get the, "Okay, it worked." And so your test has no way to validate that backend experience unless you're going to do a full stack integration. Do you have runtime visibility, monitoring, that type of stuff? Can you access the database directly to confirm that that row is in fact written in the way that it appeared to be? It's within that context that BearQ was created. 
+
+And our thought with BearQ was, with the velocity of software development teams 10xing or 100xing with these AI coding agents, where is the complementary AI scale solution for quality on the output. If you think about the whole SDLC, there's design, there's functional spec, there's coding, there's review, there's testing, and then there's deployment. There's another batch of testing there and review to make sure things are working. And then maybe there's live site monitoring at the end of the SDLC there. And then, of course, it's a circle, and it always feeds back in on itself. 
+
+Pick one of those sections. Maybe the first two. Design was AI. Very going to be influenced by AI. And then coding obviously is very influenced by AI. But we weren't seeing the same attention being paid to quality. That was our attempt to insert ourselves into the AI native SDLC with BearQ. 
+
+[0:08:51] KB: It's a huge challenge. The first parts of the cycle are speeding up dramatically, which is just building pressure and pressure on the backend. And I've been seeing that starting at code review. Everybody's trying to figure out what do I do with code review. And there are agentic tools and ways that people are using AI there. But then the steps after that, right? Okay. How do I validate from a UI perspective? How do I validate that this is actually - when I connect all the pieces, this is working exactly this quality question. Everybody's overloaded. What do you do? How do you do it? 
+
+[0:09:22] FN: I think it has to be two things that come to mind. One is it has to be at AI scale. It can't be human in the loop for the inner loop. Obviously, you want a human judgment, human oversight, but the core unit of work has to be AI native, has to be AI-driven because the core unit of work of say writing a function has now been taken over by the AI coding assistant on the development side. So, you fight fire with fire so to speak, right? You have to match that velocity. It has to be AI native is part one. 
+
+The second thing that comes to mind is trust, is the connection to reality, we'll say. The accuracy. And how do you get trust is kind of something we've chewed on a ton. And we're still working on it. It's not a solved problem by any means. But the way that we've approached it is we're trying to basically take a multi-pronged approach where we use the application to develop an understanding for the content of the application. 
+
+And so our BearQ agents go out, they use the application, they point, they click, they use computer vision and vision LLM to take in screenshots, click on things, enter content, manipulate the application to learn about it from scratch. Simultaneously, we want to take in context from your Jira stories, from your GitHub pull requests, from your codebase, from Linear, whatever you use, wherever your source of truth for your designs and your functional specifications. Those come into context. 
+
+And then we want to basically tell you how closely do these two things match, right? What's the drift or the gap between what you intended and the reality of your application's user experience? And then we help you drive that gap to zero basically. That's the two sides of the coin, I think. 
+
+[0:10:59] KB: Yeah. That's interesting. And there's a lot of different pieces to pull on there. I want to actually start with this question of having the human out of the inner loop, because I think this is one of the things that we've definitely seen on the agentic development side, right? The more you can give the agent an internal feedback loop, whether it's through tests, or a CLI, or some other way that it can do some work or do some sort of coding or some sort of thing, test that work, get feedback on what's there and what's not, and do this inner loop at AI speed, the better off you are. What is that inner loop look like when you're talking about a QA context? 
+
+[0:11:33] FN: If you break an application down to a set of screens, say, and a set of elements. For example, the menu navigation bar or the profile icon in the top right corner of an application where you click it, you've got manage my account, settings, integration, stuff like that. That's sort of a component that's going to appear many times throughout your application. 
+
+And so if you can have AI recognize that element many times throughout many different screens in your application, now you can correlate failures and tests, working tests across your screens with that same component. You can deduplicate a little bit like a human would, right? They might test that in a specific test case. They may test the functionality of the profile icon in one specific test case, but they won't necessarily have to interact with it a hundred times if you have a hundred pages in your application. 
+
+Maybe in certain cases, you would want that, right? But in most cases, you're going to say, "Okay. Look, if it's working in one or two of these pages, let's assume it's working in all of them because it's the same component." That's a place where you have, if you can have programmatic intelligence to do that deduplication for you, you can avoid the brute force amount of work that you would otherwise do. 
+
+And let's imagine now that you're producing new pages at a 10x velocity in your application. If you don't have that programmatic intelligence to do that deduplication in an automated way, well, then you're going to have a human in the loop problem. That's an example of an inner loop unit of work where the LLM or the AI allows you to achieve a speed up on par with the human performance for that without needing a human in the loop. That's just one of the examples that we see in trying to build out BearQ where we need to have an AI driving the process but then, of course, producing auditable results. So that at any given moment, the human can jump in, the human reviewer can jump down in there and confirm that things are working as they expect but still be able to do it at a scale and a velocity to match the software development. 
+
+[0:13:27] KB: Well, and those durable, audible, understandable results are also really helpful for the agents to help them drive and things around that. Right? 
+
+[0:13:35] FN: Exactly. Yeah. There's my output is my input, that type of a thing, where it can build on itself. This is a very recent thing. We've seen cases where the feedback loop can actually be pathological, where the AI is taking it in and say it's consuming more. I can still make progress here. I can still make progress. And then it sees all the work it tried to do, and it said, "Let me try that again. I don't want to give up." My theory here is that the LLM providers have probably conditioned their models, "Don't ever give up. Use more tokens, and consume more AI as much as you can." 
+
+[0:14:04] KB: Well, it's funny, because a year ago the problem was you tell them, "Keep going. Keep going. Don't stop." But now everybody shift to token-based pricing, and now it's like, "Stop, please." 
+
+[0:14:11] FN: Yeah. Yeah. That bill is huge. You have to have guardrails in place. And again, I don't think that you can have a human guardrail in place to check that loop, right? It has to be an automated check. Maybe there's heuristics. Maybe there's a static check you could do or execute this function, and this will tell you if you've made progress. And that might be checking my prior results. Or even doing heuristics things, like if you say the same output multiple times in a row, I'm going to proactively cut off the loop with static code as opposed to the AI-driven version of that. You have to be careful on the AI output feeding the AI input. But to your point, those auditable logs are really helpful for creating more context for tracking and execution over time in an agentic system. 
+
+[0:14:54] KB: Thinking about that point that you just raised. One of the things that's very interesting if I watch humans who are effective at using coding agents, they will use the agent to extract more durable tools. They'll use it to create its own CLI tools that they can use for better exploration, or they'll create skills which are just kind of reusable context chunks usually but may also involve more deterministic code. To what extent are you with BearQ trying to extract out patterns that can then be run deterministically without having to have an AI agent doing the driving? 
+
+[0:15:30] FN: Yeah, this is such an important point to getting us beyond the feeling I think a lot of developers and myself included have had at times using AI to build software, like you're building on sand, where you haven't quite gotten into touch with reality. Everything you're building was AI generated below it. You don't have that feeling of stability of having built on a known solid foundation of best practices so to speak. Or you have best practices, but they're ill applied. 
+
+To that end, where we see the durable reusable components in BearQ are things like identifying that profile component and then presenting to our user, "Look, we've used your application quite a bit. We've observed your pull request. We've observed your Jira. We think we've identified maybe 20 to 30 or more of these reusable components. This form for creating a new opportunity in your Salesforce app, or this form for modifying your profile, or this form for creating a record in your car sales dealer database, something like that. This is a reusable component we see in several places. This is what we know about it. This is what we think to be true. These are valid inputs here. These are example inputs that we use. And this is context that you've given us for how we interact with this element. Is this correct? Do you prove this?" 
+
+And then we can build up reusable components that we've gotten back into touch with realty on through the form of user input. And that's where this gets back to our position really is that the QA team doesn't go away just like the software engineers don't go away. They just develop slightly different skills, and they're managing more of these automated, repeatable tasks, and they're thinking in a slightly higher order of abstraction. 
+
+And so rather than thinking in the form of 100 pages that you must interact with, think in terms of these 30 to 40 components and how they interact. And what's their sequential relationship or their mutual exclusivity relationship? And presenting that to the user to get that feedback to get confirmation that we're on the right track. We've identified truth. 
+
+[0:17:26] KB: Yeah. When you're doing this discovery process, is that blackbox discovery? You're not looking at the underlying code that's generating this? Or is that white box where you can maybe correlate with, if it's a React app, React components or things like that? 
+
+[0:17:39] FN: It starts as blackbox. When you sign up for BearQ, the first thing we do is we kick off these agents and they go and they use your app with no prior knowledge other than maybe a little bit of tech context that you provide during sign up. Don't ever check out on the ecom page for whatever reason. Or if you're going to check out, use this credit card number. Stuff like that. Little tidbits that you can give us. 
+
+As soon as we've kicked off those agents though, you can then attach your context. And so you can integrate with Jira, you can connect GitHub. And so those two pieces of context then come together pretty soon thereafter. We don't play them off each other or anything like that. It's more just we want to be able to do this from first principles. From nothing. But of course, we don't want to rob ourselves of rich, valuable knowledge that you can provide. I would say they're pretty much equal in our estimation. 
+
+[0:18:21] KB: Yeah, it just got me thinking, right? In a well-factored codebase, those components that you're identifying from the outside blackbox style should map to components that you can see in the codebase. Now, they may not. And in fact, there's kind of an interesting extension there where you could say, "Hey, we've identified 30 components. You've got 400. Maybe you need a little bit of refactoring going on here." 
+
+[0:18:44] FN: Exactly. And this is again where you wouldn't probably expect your QA team to say, "These components here are logically quite similar. Are they the same in the backend code? If not, let me open a ticket to get the dev team to make them the same." Whereas with AI building the components, I know for sure it's not going to do a great job at factoring those things. It's going to build those 400 components. 
+
+[0:19:05] KB: That's why I had it go in that direction. Because back in the day, it might have been they had too few. But with AI, it's going to be an order of magnitude too many. 
+
+[0:19:11] FN: Yeah. And that still continues to be the major weakness that I see on the AI coding front. It's just its inability to properly factor an application certainly from scratch, but 100% for an existing codebase. It doesn't necessarily know how to fit in and reuse all the things that it should unless it gets very strict, very targeted input. Yeah, I think that's where on the QA side, the AI can really help to try to analyze, "Let me bring this back to the code and let you know if we're straying from our intent here of a well-factored codebase." 
+
+[0:19:42] KB: Let's get a little bit more granular in detail about how some of this stuff works. So you talked about you go in, you explore the application from some sort of web browser style context. And maybe we can talk about what actually is that. Is it Chrome with computer vision, versus it's a headless browser, versus what? You go through that, and then you're validating against some context about what correct looks like. But how do those different pieces actually work under the hood? 
+
+[0:20:09] FN: Yeah. Plain and simple. When you're in BearQ and you start up a session, we have a couple different types of tasks. We have an exploration session. That's where we have a browser attached. We have a test run session, which also has a browser attached, but it's trying to execute to a specific test description. A test case of x number of steps that have to be performed in that browser. 
+
+And then the third type is our most general type is the QA lead type. And the QA lead agent doesn't have a browser attached to it by default. It can use the browser of a test runner agent or an exploration agent if it's spun up in the context of helping one of those two agents achieve their goal. The idea here is to narrowly scope the exploration agent and the test runner agent. Test runner agent, just do the steps here in this test case. And if you can't, ask for help. 
+
+When you ask for help, the QA lead who has access to more context, richer models, or more robust models, that type of thing. The QA lead can help you get to done, but we don't want the test runner to be so complex that it's a QA lead itself. We try to break it down into smaller things. Because the hope is, for the majority of tests that are going to run and pass, we want to be able to do that faster and a little more cheaper than having to invoke the big expensive QA lead. 
+
+We spin up a browser for those two types of sessions. We have basically an agent running in memory in our system, and it's driving that browser to perform those steps. It takes constant screenshots to determine whether it's progressing through its goals. If it fails, it'll bring in a QA lead to try to figure that out. It'll also look at things like context for creating valid random inputs. 
+
+Let's say that you have a registration test. I want to verify that my new account registration is working. You're going to need to do a different email address each time to make sure that you don't collide with an account that already exists. We'll generate that email address randomly, and the agents can do that kind of logic. We spin up the browser, we control the browser with the agent in memory. And then when it's done its task or it's achieved its goal, then we'll shut down the browser and write the results to disk, so to speak, and then the agent's done. 
+
+And so, we run thousands of tasks a day across our customers. And any individual account might have hundreds of regression tests that we're running each day. And I guess the last piece that's worth mentioning just for this segment here is the exploration agent, as it acquires knowledge, we kick off a process to try to author new test cases. The idea is that you're constantly in a state of - 
+
+[0:22:28] KB: I was going to ask about that. Yeah. 
+
+[0:22:28] FN: - adding test cases and then archiving test cases which have become stale or which are unreliable or flaky. And then we look to replace them with more reliable tests, more accurate tests. Your account state is always in flux. Obviously, we hope that it's centered around this core understanding of what your application does. 
+
+[0:22:45] KB: Now, let's say I, as a human, want to add some test cases. Do I just talk to an LLM and be like, "Hey, I want you to test this, this, and that?" 
+
+[0:22:54] FN: Totally. Yeah. It's as simple as you just pull up a QA lead and you just say, "Hey, I want you to create a couple of tests related to the checkout functionality, or a couple of tests related to the create an opportunity functionality in my Salesforce app." Something like that. 
+
+[0:23:08] KB: You have now this multi-agent coordination system that's going on. How are you coordinating that? Is the QA lead doing the orchestration, or you have another orchestrator? How does all those pieces get wired up? 
+
+[0:23:23] FN: We have a very async system basically built where a new task is identified, and we cue that up in our system. And then there's a pool of agent workers that grab the task. They identify which type of agent they need, and then they instantiate themselves into memory, and then they start off running. They'll spin up a browser if they need to, perform the actions, and then tear that browser down. 
+
+The QA lead, the system itself kind of is that orchestrator in other words. Anyone's able to create a task, whether it's an end user, or a schedule firing, or an API call from a CI/CD system to say, "Hey, create a task to run this test case." And then it gets spun up. Anything can create a task. But once it's created, then the system will create an agent to execute the task. And then again, certain tasks have the ability to fork or spawn another task. 
+
+[0:24:09] KB: Say, can you create subtasks and do this whole planning? 
+
+[0:24:12] FN: Exactly. Yeah. And then we try to link all that up to it in the UI. If you spin up a QA lead task to help with a test running task, then that QA lead task will be linked into the original task it was spun up within. 
+
+[0:24:22] KB: Got it. And then I'm particularly interested in this multitask coordination. What interface do you pass context around through for that? Are you just giving them a starter place? Do you have a tool available for them to fetch the original? How does that end up working? 
+
+[0:24:38] FN: Yeah. Yeah. This is cool because this is one of the funniest parts to work on as an engineer in the system. The test runner spins up. It's got a browser attached to it. It has access to an LLM. Let's say it hits a failing step. It spins up a QA lead. It tells the QA lead to say, "Here's a screenshot of the browser where I am. I have the functionality to do anything in the browser. Click, input, hover, scroll, keys, whatever you want. Tell me what I should." 
+
+And so then the QA lead has access to an LLM as well. And so the QA lead follows this predefined loop. You might call it a skill, where it collects context. So it takes a screenshot. It looks at recent runs for the current test case that we're executing to see what they looked like at this particular step. It collects extra context. 
+
+And it also has access to basically all of the data in the account. That includes things like custom-defined resources or context provided by our end user. This is where that case of like if you're ever executing a test and need a credit card, this is the test credit card that you should use. Something like that. The QA league can assemble that context. It can actually manipulate the browser in a nondestructive way, in a non-side-effecting way. 
+
+For example, scrolls, other than infinite scroll, where that actually fetches more data. Scrolls are generally non-side-effecting. Meaning that you can perform actions to learn more, to capture more screenshots about the state of the app without actually changing any of the state. Again, within reason, there's infinite scrolls and edge case there. 
+
+The QA lead can collect more context, it can query the LLM, it can take actions, and then it can send back to the test runner, and it says, "Look, I did this, this, and this, and it looks like you've gotten further in your test case." It's not a true failure. You just needed to word your test case steps a little differently. Here's the wording for your test steps, for your updates, for your definition. It's been self-healed. You're good to go. QA lead shuts down and the test runner continues on its way. They communicate to each other over like a predefined interface just sort of using like a relay through the database like a Pub/Sub. 
+
+[0:26:31] KB: Okay, got it. Interesting. I'm going to echo back to make sure I understand. You have tester agent is running, and it says, "Oh shoot, I'm stuck. Let me create a new task," which is going to spin up the QA lead. It has sufficient context that the QA lead then knows my ID so it can Pub/Sub to me. We have some shared Pub/Sub. It has info about what test case and all these different things. Now a QA lead has access to a whole bunch of other tools that it can use to. And based on what I'm hearing, you're using this agentic pull approach, where it's basically going and fetching, and it says, "Okay, let me fetch this from this, not pre-loaded with a bunch of context. But let me fetch this account info. Let me fetch anything I need."
+
+Actually, one thing that that leads me to. If it's wanting to manipulate the browser, it's wanting to test a thing, does it do that by sending Pub/Subs to the tester agent having the tester agent do it? Or does it have a direct route to that browser entity? 
+
+[0:27:22] FN: Yes. That's a great question. I'm loving that you're getting to this level of detail. It goes back to the testr runner and the test runner says, "I have these tools, these faculties, these capabilities that I can perform in the browser. Let me know if you want me to do something." The QA lead sends a message to the tester agent. The tester agent remains the source of truth for manipulating the browser. 
+
+The QA lead's the - 
+
+[0:27:42] KB: The thinker. 
+
+[0:27:43] FN: - author or the visionary, but the manual tester agent remains the owner of the relationship to the browser. Now, conversely, the manual tester does not have access to all the account data, right? The happy state. What that tester just doing what it was narrowly charged with doing. And then if it fails, it can speak up and pull in a more authorized agent to then go and access more of the account. And that agent is tasked with assembling the correct context. 
+
+Now, one piece I left out is we do often pass information indirectly through blob storage. Rather than the manual tester agent sending 100 megabytes or 30 gig megabytes of images and data back to the QA lead, it puts that into S3, blob storage, and then it gives an identifier to the QA lead to pull that down. That's just sort of to minimize copying and sending basically. That data lives in S3 when the manual agent gets it. And so manifester agent. 
+
+[0:28:38] KB: That makes sense. That makes sense. I'm going to still just keep digging in the details if you don't mind, because I geek out about this stuff entirely. 
+
+[0:28:45] FN: That's great. 
+
+[0:28:45] KB: When you have the QA lead, I'm going to say remotely manipulating the tester agent, right? It's like asking for things. Is it directly accessing the browser tools so that there's not an LLM in the loop on the tester agent side, right? So that it's accessing through that container but not through the LLM. The tester agent doesn't have the history context. Or is it sending a request, and the LLM is like doing a tool call and kind of building up this conversation of, "Oh, my lead asked me for this. I'm going to do this work and then send it back." 
+
+[0:29:16] FN: Yeah, very much the former. Yep. Another great question. Makes total sense. The QA lead has that LLM agentic loop. It basically has a manifest of tools that the manual tester contract that the manual tester agent is willing to fulfill. The QA lead manipulates that as if it were its own set of tools. And then at the conclusion though, the QA lead does provide sort of like a summary, a rollup if you will, of like, "This is what I did. This is what you need to know. These are the updates you need to make to your test case when you're done." But it does not share the entire conversation history. It summarizes that and gives that back to the manual tester. 
+
+[0:29:49] KB: That makes sense, right? The programmatic ownership of the browser is still in the process that is running the tester agent. But it's running off in this LLM loop in the QA lead agent, and it's only, yeah, giving a digest at the end of here's what's changed, here's what I did, here's all these things. 
+
+[0:30:03] FN: Yeah. And the thinking there is like that keeps the separation of concerns a little bit intact, where if you have a browser sessions - we have a couple different services for spinning up these different parts of the thing. We have one service that does the browsers. We want that to be owned by one sort of place in memory, one worker agent, one instantiation. That's the test runner agent. If you find that test runner agent, you can find everything that we told it to do. 
+
+We also want the expensive, the full-on account access loop to live in a separate QA lead process that's always the thing responsible for, that has the authority, that has the expensive models. So, that's always there. And they communicate over this Pub/Sub. Yeah, it's intentional to do it that way. 
+
+Really, the reason is if you get the manual tester, if the manual tester starts being able to access everything in the account, everything's a QA lead, right? You have one agent now, and it's doing all these. And maybe we get there eventually. But the benefit now is it's a little safer in these early innings of the AI world, where we don't want the manual testers screwing up and doing something in the account that we didn't intend. 
+
+[0:31:00] KB: Yeah. No, that makes sense. And I think it also, to your point, allows you to use much cheaper models or much - just like the smaller the model, the more it will get confused if you give it lots and lots of tools. All those different things. You can keep it scoped down. 
+
+[0:31:14] FN: Exactly. 
+
+[0:31:15] KB: This does lead to the question of what happens when something breaks. And I'm going to put a particular case on that. I'm going to say, "Okay, let's say your tester agent has delegated to a QA lead agent. The QA agent is manipulating your browser." And now, for whatever reason, the browser crashes. What happens? 
+
+[0:31:33] FN: Yeah. So in that case again - and this is where we want the more complex, we'll say, construction of prompts if you will, the chain of thought. All these different prompts that are coming through in that agentic loop. We want that in one place. In the QA lead loop, it will do things at a couple different levels of abstraction. 
+
+At the smallest level, it's thinking, "I want to try to get this form submitted. What's it going to take to submit this form?" But it's also operating within the larger context of a test case and the goal of that test case or the description of that test case. As it's doing things, it needs to keep periodically checking back into the context of the test case to make sure, "have I strayed too far from my goal or my description?" And then the outermost loop is just, "Is this app even up and working? Is the browser still up? Is it too slow to do anything? Is there an external issue?" 
+
+And periodically, we need to rise to that level of abstraction. It's kind of like the human mind, how at any given moment you can focus intensely on one thing, but you're doing that and you're also breathing and you're also you know feeding yourself throughout the day. And is there a threat to your safety? You're kind of like different levels of abstraction. The QA lead has to do that. 
+
+And so if the app crashes, the QA lead will rise to that higher level of abstraction and basically say, "I need to stop. The test case is not working. The application has crashed. We'll pause here, and it won't do any further work." And so it sends that back to the tester agent, and it says, "Terminate your session. There's nothing else to be done right now. The application has crashed." 
+
+[0:33:01] KB: Are there any particularly challenging error states or error cases to manage? Especially, I keep going into anytime you have multiple things orchestrating, where are the edge cases that you run into in that? 
+
+[0:33:13] FN: The really challenging thing that we're dealing with a lot now is that test data problem. And so it's not so much within a single browser session that we have this issue. It's the interplay of multiple sessions running at once. An example here, right? Let's say you say I've got this QA team, and I want to spin them up. I want to hire a 100 people because I have 100 test cases. I want them each to do one thing, and I want to be done in three minutes. Every test case is three to five minutes long. 
+
+You can do that, but you probably would give each of them their own QA testing account. And so they wouldn't be conflicting on each other. One person, the most recently created record in one of those accounts is the record we just create, that person just created earlier in this test case, right? But now in the world of AI, at least today in BearQ, we don't accept, we don't take a hundred QA accounts. We do the same account, but we spin up a lot of agents at once. 
+
+And so when there's concurrent rights or not even necessarily concurrent rights, it might be sequential. But if one test case adds something to cart, but leaves it there, and the next test case goes to the cart thinking that there should be nothing in it, and it sees something in there, and that throws off a problem. 
+
+I actually think there's a startup worthy problem around test data management of applications. And it's probably also related too to something that we do in BearQ a lot, which is trying to build up sort of a holistic vision of the application and the organization of it, the screens, the content, the functionality. The you user experience. How you interact with it. We try to build up an application knowledge graph basically for your application. 
+
+Test data has to fill a role in there. And that's one of our challenges that we're going to have to solve in our - what we call like the application model. In that object we construct that describes your application test data. And just the data relationship. Again, a lots of apps, you figure you can't take one action without having created a whole bunch of records in the database that do XYZ. And so managing that state is incredibly challenging.
+
+[0:35:08] KB: Yeah. I'm imagining, right? Because your agents probably try to do some amount of self-correction in different places. I go to the cart, I see, "Oh, there's something in here. Well, let me clear that out so I can do my test." And then the other agent, which has been waiting on an LLM, comes back, and he's like, "Where's my thing?" 
+
+[0:35:24] FN: Right. Right. Exactly. You're totally right. And so, I think this is where people think like, "Oh, it's AI, or it's computer-based. It's not human-based." Just spin up a hundred agents simultaneously. It's like, "We can do that from an infrastructure perspective. That's no problem." But the data coordination isn't there. And so I'm kind of solutioning this with you right now. I think the solution is to get - we'll run as many parallel agents as you want to give us test accounts in your application. Then we won't be conflicting. And we'll be sure that we can run at full parallelism. 
+
+[0:35:54] KB: Depending on what you end up testing, there still ends up being challenges. Right? If you're testing an admin account, it's going to see different records popping in and out and other things. 
+
+[0:36:04] FN: Right. 
+
+[0:36:04] KB: I wonder if there's a world at which sometimes you start building up a sort of data model, right? You mentioned you build a component model essentially, where you're inferring a component model. But do you start building up a data model or at least dependencies between the different data types and components, right? I add something to this form and something shows up over here. Okay, there's a linkage here. And then now you have an orchestration problem instead of a data problem. 
+
+[0:36:31] FN: Yeah, you're spot on. You're spot on. I absolutely think there's a startup worthy problem there. Just basically looking at applications. It's effectively like the data model in the underlying database. Or if there's a NoSQL store or blob storage, whatever it is. Just figuring out those relationships between fields in different data objects and how changing one has to have an equal reaction in the other. 
+
+[0:36:53] KB: What's interesting there, coming back to the AI coding side of things, is you may be able to build up a better understanding than the engineers have. I mean, not in a well-run engineering org, I don't think. Right? Because in theory, we still are all understanding and reviewing things. But there's a whole lot of code that's getting vibe coded out there that nobody knows how it's working. 
+
+[0:37:15] FN: Yeah. And I think the key point you're making too is the relationship between those two data types may not be apparent at the code level, but it may be apparent in the application experience level. And so if you submit a form in one place, and that brings up a row and a table somewhere else, those two may be pulling from potentially different places in the code through vibe coding error, right? Lack of proper factoring. And could we uncover that? And could we actually have almost a source of truth for the data relationships inferred or gleaned from using the app? It's an interesting problem, and I think it's a new frontier that we're all approaching here. Can you understand the design of an application better from using it than from authoring it? 
+
+[0:37:59] KB: It gets to this question of how do we build our understandings of what our things do, right? This has been one of the challenges that I've been talking with all sorts of people around with vibe coding, because coding itself has multiple - back when we were hand coding everything, it was serving multiple purposes. One of those purposes was creating an executable artifact. Another purpose was helping us build up a mental model of a system and also a mental model of our user and our users problems. And if you're delegating it all to a machine, where do you get those mental models? Well, maybe you get it from something like your tool. 
+
+[0:38:34] FN: I totally agree with you there. I also think that we're not quite at the point yet, at least on our team, where people can author code without owning it. We make the argument, the LLM may still type the individual lines of code, so to speak. But each line of code you commit, you own. And so we're still at that point. 
+
+I don't know if you saw Bryan Cantrill. He's at Oxide Computing. He wrote this post about proper use of LLMs for software development. I've shared that with my team. I really believe in a lot of the things he's calling out there. But basically, we're not quite at the point yet. Basically, everyone's using AI to author their code. But the expectation is that you know how it's working. And the data that gets spit out from one function, how it's used in the next function. You know that relationship. 
+
+Certainly, there's lots of pressure to go faster and maybe relinquish some of that control from the engineers. But we still own the code that we author on my team. And I think that's helping to push back a little bit on this loss of knowledge, a deep knowledge about how applications are building, how the data is flowing. But you're totally right that there was like a big part of writing the code actually was getting you to keep it in your head and helping you to make sure that these relationships that you had or these invariants that you demanded were in fact being upheld and were still as you thought they were. 
+
+[0:39:47] KB: And it's not even necessarily. I think having humans have ownership in the end is really valuable and really important. And there is a whole can of worms to dig into if you start unlocking that and/or removing that that linkage. 
+
+[0:39:59] FN: Yeah.
+
+[0:40:00] KB: But I think it is not 100% clear to me that reading code is as effective for updating our mental models as writing it is. Certainly, I see people with different amounts of challenges when they're reviewing code and trying to update things and things like that. I was wondering, yeah, you have this like outside-in approach of let me infer what the components are. Let me infer maybe what the data model is. If not yet, then maybe sometime soon. Is that exploration approach maybe with a tool in the loop a better way for us to build those mental models? 
+
+[0:40:33] FN: I think it's possible. But even if we infer a proper relationship graph suppose between the data, and we can explain that, that alone would still be text. And probably pretty dense text. Or maybe it's a visual if you generate like a system diagram or something. That to me is going to be consumed with the same efficacy as reading source code would be. 
+
+I also strongly agree that the writing of the code, it's like taking notes in school. Writing the note down probably may helped you remember the things better than just hearing it or seeing it on the blackboard. I think there's definitely something to the act of writing code, writing lines of code yourself, and how that contributes to your understanding. 
+
+It is possible that we'll need new tools in the future world. You may read it, but are you really going to grok it, you may not. Is there some way to have kind of the external result read back to you by an agent that helps you to understand what it's doing better? At the end of the day, that'll be the new normal, right? It doesn't really matter so much what the code says. It matters does the application work as intended. And if it doesn't, let's say that the common retort to that is what if it fails under scale? Well, then we'll just define that into does it work as intended? Well, to work as intended, it must now support 100,000 concurrent users. And then that goes and manipulates the code. 
+
+In certain perspectives, you could imagine, the code really doesn't matter as long as you've adequately, in painstaking detail, described all of the requirements of your application. Of course, at that point, that requirement stock ends up looking like source code. And so, would it be more efficient to just write the code yourself? Maybe. That remains to be seen. 
+
+[0:42:09] KB: We're kind of moving now into this concept of how do humans fit into this world again. And I'd like to bring that back to BearQ in terms of we talked a lot about the inner loop and things like this. What is the outer loop? What is the human in the loop do at this point in a QA process with BearQ? 
+
+[0:42:25] FN: It's validating that we have in fact identified components that are important and worth reusing in your application. It's validating that the test cases we've written are accurate and important. We kind of have a common sense grounding there. But there's lots of nuance for every individual application. And so we take human input for that. Are these valuable test cases? Etc. 
+
+We also take human input on the report side of things. We make suggestions or recommendations for how we want to update your account. And you kind of can imagine in this QA team analogy, we trying to maintain this image of a person of a human user, whether they're on the QA team or it's a smaller organization, maybe they're the VP of engineering at a five-person startup. But they poke their head through the door and they bark out an order. And they can get a response or an action taken in response to their command by this fleet of agents. 
+
+And so the things that a director of engineering, or the QA manager, or the head of quality may care about out of various organizations are the things that we hope to surface in our reporting feature. We'll do things like this is how many test cases we ran. This is a failure we saw across 13 of your test cases, for example. We think it's the same underlying issue. We've suspended further tests that are going to manipulate that component because we think that it's an external failure. We won't waste any more time. We did this, we did that. Performance is slower now today compared to the last three days. Or performance is right in line as things have been. So you're good. 
+
+And then the human user can say things like, "Well, we're doing a big push on the -" I always use the profile settings as my example. We're doing a big push on the settings page. Go and create more tests there. Or run the tests there again but do it with a higher level of debugging logging. And so I can then mine those logs later. We see the human basically as an orchestrator director, approver, that type of thing, of these QA agents. 
+
+[0:44:17] KB: What do you have in terms of guardrails? Let's say I want to use - I mean, I think we've talked a lot about test accounts in places. But let's say I want to use you on my production application. But there may be pieces of it, I'm like, "That's risky. I don't want to actually put an agent in the loop there or things like that." What can I do to control it? Are there ways I can disable destructive behavior? What are the knobs I have? 
+
+[0:44:41] FN: Yeah. The resources, or we call it resources or context, is the open form input you can give us. It includes Jira, GitHub, etc. It's also just open-ended instructions. You can tell us things to do or not to do. And we adhere to those instructions throughout all of our actions. Those are always in context. You can kind of think those human-level instructions. Things like don't ever visit this page. Or if you're on this page, immediately navigate away. That's an instruction that's always in context for all of our LLM interactions. 
+
+[0:45:11] KB: Okay. But I'm a paranoid VP of engineering. I don't want to trust the LLM to this. Are there any hard lines I can put? 
+
+[0:45:18] FN: Yeah. Exactly. We don't do this yet today. We're still in the early stages having just released. But what we envision is something along the lines of what the session replay tools do, where you can annotate individual elements or pages in your application. I'm thinking like LogRocket. You can tag certain fields or certain elements as just like no record or whatever. And so then LogRocket just doesn't even pull them into its DOM map. And so we would do kind of the same thing there. That would kind of get you back into reality, right? Getting back to this notion of building the house on sand. And instead being in touch with reality. That would be something where it's like, "No, you're in the code. As long as your engineering team has those annotations in your application, we'll honor them, and we won't even see them." That would be a way to get you back into touch. 
+
+[0:46:06] KB: Got it. That makes sense. And so that's kind of at the UI level. Can I put in any sort of like browser-level blocks or things, where I'm like, "Okay, any path starting with this or any of these things, just don't even hit it." 
+
+[0:46:18] FN: We don't support that today. But there's absolutely no reason we couldn't. We're spinning up these browsers. We're setting all sorts of flags and capturing the HAR file, and the video, and all that type of stuff. That's a great feature. Actually, I'll take a note of that after the call here. I think it's a great idea. Basically, just to intercept that call and block it. I think, yeah, absolutely. There's no reason why we couldn't support something like that. For example, we already support setting custom cookies or setting custom local storage values in the browser. All of that stuff is configurable. 
+
+[0:46:46] KB: That's awesome. This kind of brings us into this sort of future-looking conversation. Where do you see autonomous testing and just AI-related quality work going over the next couple years? 
+
+[0:46:59] FN: I think the trust question is still the biggest unknown, and I think that's where the bulk of the work has to come. Really, actually, I think it's the same in the software, on the coding side of things, as well as the quality side of things. What's possible now is so much more than what was before. And I think we're still kind of towards the tail end of discovering the bound of what is now possible. I'm selfishly kind of hoping the rate of velocity of change slows down a little bit here and the models don't - 
+
+[0:47:28] KB: That would be nice, wouldn't it? 
+
+[0:47:29] FN: There's so much to digest, you know? Every week, it's like something new. I'm hoping I think we're kind of maybe near the tail end of kind of this wave here of the last call the last year and a half or two years. Now I think take a breath. See what's possible. And now we set to where the engineering work of building on top of this new capability. Hopefully, that will be satisfying in a different way. 
+
+I think there's so much curiosity and like, "Whoa." Mind-blowing stuff in the last couple years. But I think it'll be really satisfying from an engineering perspective again to get out of that building on sand and building on rock, and starting to establish patterns, and bounds, and scope, and best practices with these tools and around how to build software with them. That's kind of what I predict. 
+
+And so that engineering work is where you'll start to build up trust that, "Okay, we have a new way to build a bridge now. There's new materials. They're hyper, whatever, resilient. And they don't break or whatever." Now we have the engineering task of what is the right way to lay the bricks to build this bridge or to connect these pieces here. I think that's really what the focus will be for the next couple years. 
+
+And so QA will be impacted. I think software engineering will be impacted by that. I think it's all about building up the trust that this software is going to work with 99.99% reliability the way that the pre-AI software did. Not speaking about bugs. Im' talking about like gamma rays coming in and flipping a bit to break your non-AI software. We want to try to get to that level of of error. 
+
+[0:48:56] KB: That makes a ton of sense. Related to that, everybody in the software engineering world right now is kind of grappling with what does my role look like now? What am I still doing? What is still important? What is more important now? What things am I getting rid of? What does that look like for QA folks? 
+
+[0:49:10] FN: It's a great question. I think it's really similar. I probably shouldn't be testing the basic create update delete record flow in my application anymore. At a minimum, even if I don't use a BearQ, I should probably be using an agent to perform these three to five steps that I do every day as a smoke test in my application. 
+
+The QA person should probably think in terms of how can I use an AI agent to do these mundane tasks at a minimum that I'm doing. These repetitive, these well-known, well-understood, we'll say, high value. The fact that they're working. But low complexity tasks. That's what they should be focusing on, getting out of that loop. 
+
+And then I think after that, they can start to think about maybe - and this is where we kind of - we haven't talked about this. But a lot of people talk about maybe the merging or the blending of roles at organizations. You kind of start to see the QA person kind of becomes almost like a junior PM or maybe a regular PM. And the PM who was doing some QA work, maybe now they have agents doing the QA work. And so there's less of a need for them to perform in that role. 
+
+At organizations of all different sizes, you have engineers doing QA, you've got engineers doing customer support, like I did for years at my startup. And you've got marketing folks who are doubling as customer success. And you've got other types of role boundaries getting blurred. I think AI maybe accelerates that. And so in some ways, it's a risk, right? Is someone else going to perform the QA role that you use to perform? In other ways, it's an opportunity. Can you now contribute in other ways in actually more valuable ways to your organization by using AI properly? I think it's a rising of the level. It's the raising of the level of abstraction. People are not going to operate at that low level anymore. 
+
+[0:50:58] KB: Yeah. I've seen it described as we're moving from T-shaped people, right? Where you're deep in one and shallow in a lot, to like plus-shaped people, where you're still deep on one. But maybe with the AI, you can be like reasonably good at a lot of different things. 
+
+[0:51:11] FN: Yeah, absolutely. I think it's an amplifier. If you have talent and skill, you can contribute in more ways to an organization through the use of AI. One thing I actually wanted to mention that if you kind of think of the golden era of SaaS is under attack, say, of the CRUD app, where I built this custom app for barbers. It's really great software that knows - it was custom built for their domain, and it's really great. Maybe that's under attack a little bit in the next 5 to 10 years because AI can build a lot of it. And so that the basic CRUD app is under threat. 
+
+What that means then is if you're building software, you probably want to be building something more complex and harder. And I think that's where you'll see a lot of innovation now is in bringing software into the physical world in the form of drones, or robots, or whatever. And so it's a raising of that complexity factor. Or the other thing I was going to say is dropping down a little lower if you're working on something like a compiler. That's something that you probably need a human in the loop for a lot of those decisions. Maybe still not for like the individual function writing. You can still have AI for that. But there's a lot of complexity that the AI is not necessarily going to nail out of the gate. Some of those lower level software engineering tasks might increase in importance as well. 
+
+To make that kind of concrete, let's imagine that your LLM, all this LLM's taken over all the building of the CRUD software, but they're all making sort of one common "best practice" mistake where they do something very inefficient. If you're looking, say, at the lower level and you're observing how memory is allocated in these apps, or you're working, say, in the JVM or something like that, there could be a real outsized impact to the 10x amount of software that is now being shipped and released on top of the JVM. That one compute cycle that you're saving for every loop iteration might actually be millions of dollars in savings. So, that type of software is worth a second look as well, I think. Basically, go higher or go lower, but don't stay in the CRUD app. 
+
+[0:53:07] KB: Yeah, for sure. Where's SmartBear looking for the next - you're talking about embedded. I have this little embedded device I'm playing. Any QA harnesses for embedded coming down or other different things? 
+
+[0:53:20] FN: Nothing in embedded. The BearQ approach is visual by nature. So we could support something like a kiosk based app, something like an ATM, or something like that. I know historically there was a whole market for testing specifically kiosk tablet-focused apps that was sort of underserved. Or maybe there were one or two big players, but very legacy players, opportunity for some disruption. We don't have anything in the embedded space, but we would hope to extend BearQ to desktop, maybe to kiosk, but certainly to mobile. And obviously, hope to dominate the web. That's kind of where our head is right now is BearQ and visual processing. 
+
+Embedded would be very cool. But that kind of aligns with my point. I think that there will be a whole market as more of this tech - more software gets pushed into the physical world in the form of robots, and toys, and drones, and whatever, machines, I think there will then be opportunities for testing harnesses of those machines. 
+
+[0:54:07] KB: Yeah. And given a visual outside-in blackbox approach, y'all will be pretty well positioned to start exploring that too. 
+
+[0:54:15] FN: Yeah. If you could tell me from the exterior that things are working, I can do these 50,000 things, it's probably the case then that the software is working as intended as long as 50,000 things is an exhaustive list of what you wanted it to do, right? You can kind of always prove that it does everything I want. And if it doesn't, "Oh, it doesn't do X." Well, X wasn't in the list, so let's add it to the list and let's make sure it does it. 
+
+[0:54:36] KB: Yeah. I love it. Well, we're just about at the end of our time. Is there anything we haven't talked about that you would like to discuss before we wrap? 
+
+[0:54:43] FN: This was really interesting. I'm really glad we got into the nitty-gritty details of kind of the multi-agent passing. I think it's a fun problem to work on. And I hope it resonates with your audience. Yeah, I think we've kind of covered all the stuff on BearQ, and my views on AI and the velocity, rate of change, that type of stuff. So yeah, all good on my side. 
+
+[0:55:01] KB: Cool.
+
+[END]
+
+SED 1927		Transcript
+
+	(c) 2026 Software Engineering Daily	1
+

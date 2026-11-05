@@ -1,0 +1,419 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/03/SED1920-FastMCP.txt
+EPISODE: FastMCP with Adam Azzam and Jeremiah Lowin
+DATE: 2026-04-07
+SED: 1920
+HOSTS: Gregor Vand
+PAGE: https://softwareengineeringdaily.com/podcasts/fastmcp-with-adam-azzam-and-jeremiah-lowin/
+----------------------------------------------------------------------
+
+EPISODE 1920
+
+
+[INTRODUCTION]
+
+
+[0:00:00] GV: The Model Context Protocol, or MCP, gives developers a common way to expose tools, data, and capabilities to large language models, and it has quickly become an important standard in agentic AI. FastMCP is an open-source project stewarded by the team at Prefect, which is an orchestration platform for AI and data workflows. The FastMCP project builds on MCP to provide high-level ergonomic abstractions for Python developers to rapidly build and deploy MCP servers and applications.
+
+Jeremiah Lowin is the Founder and CEO of Prefect, and Adam Azzam is the VP of Product at the company. In this episode, Jeremiah and Adam join Gregor Vand to discuss the origin story of FastMCP, the three pillars of the framework, the architectural decisions behind FastMCP 3.0, and much more.
+
+Gregor Vand is a security-focused technologist, having previously been a CTO across cybersecurity, cyber insurance, and general software engineering companies. He is based in Singapore and can be found via his profile at vand.hk. HK, or on LinkedIn.
+
+[INTERVIEW]
+
+
+[0:01:23] GV: Hello, and welcome to Software Engineering Daily. Today we have two guests, which is always exciting. Today we've got Jeremiah Lowin and Adam Azzam. Thank you for joining us guys.
+
+[0:01:34] JL: Thank you so much for having us.
+
+
+[0:01:35] GV: Yeah. So, we're here to talk all things FastMCP, which I'm sure a lot of our listener base know about at least, but maybe a good chunk have used as well. So, we're going to get into where it's come from, what it's all about. As usual, we do like to just hear the backstories of who we're talking to. So, you guys can fight amongst yourselves who wants to go first. But yeah, where did you both come from in terms of careers and getting to, I guess, founding MCP?
+
+
+
+[0:02:05] JL: Sure. This is Jeremiah. I spent most of my career actually in buy-side finance in some risk, or technology, or applied statistics, or machine learning kind of field. Data scientist is probably the best career heading for what I was doing there. And as a result, I became obsessed with building tools for people, tools for my colleagues, tools for folks across the firm, different objectives, whatever it was. I just became obsessed with building tools. And Python became a real home for building those tools and also automating those tools.
+
+I like to joke, it's not really a joke, but I had unlimited budget for software and zero budget for headcount. And so this is 20 years ago. So it was really how do we find more hours in the day through technology? And so through some circuitous paths, that led me to be part of the original Airflow team, which I think popularized a lot of code-first automation in a lot of folks eyes. And then, of course, I started Prefect in 2018 to build a more data science native, more Pythonic automation framework.
+
+And so for the last eight years, I've been the CEO of Prefect. And for most of that time, our product focus has been almost entirely on automation and orchestration of enterprise workflows. And that's been a lot of fun. And then about a year and a half ago, when MCP was announced, I thought that that might be the link that we had been really looking for of how to bridge the gap between programmatic workflows and agentic workflows. And I got really involved and wrote the first version of FastMCP. And I'm sure we'll go more into the history of that in a moment.
+
+But FastMCP took off in a way that I don't think we could have quite anticipated. And Adam and I have been working together for a few years now. And so we sort of stuck a flag in the ground and made this a new pillar of Prefect's business. And it's been an incredible ride. I'm sure we'll explore a lot of it today.
+
+[0:03:46] GV: Nice. Awesome. Yeah, Adam, what about you?
+
+
+[0:03:49] AA: I was an academic. I did a PhD in math in an alternate universe. I was off being a math professor doing partial differential equations. I got bit by the data science and ML bug in my last year, two years of grad school. So, went into data science. And my first job in data science was basically how do you help folks get jobs? How do you help match them to
+
+recruiters? How do you help them? How do you recommend interview preparation material to them to improve their outcomes in interviews?
+
+Worked in basically data science for improving job seeker outcomes for a bit. Founded a startup around that really when LLMs were - they're more like small language models at the time. And in working on that startup, it really turned into this large orchestration problem. I was making millions of LLM calls to extract structured information from job descriptions that I was using to feed my recommendation engine.
+
+I was a customer of Prefect actually. I was doing orchestration of scraping job descriptions, doing orchestration of a lot of LLM calls. And so I was using Prefect a lot and was building a lot of internal AI orchestration tools. I built that on top of Prefect. And in 2023, Prefect put out an LLM framework to help basically do a lot of these sort of LLM call orchestration. And I loved it. And it was almost exactly what I had built internally.
+
+And it's so rare that you find kindred spirits and how you think about software and how to build it. And so I DM Jeremiah on Twitter, and I say like, "Hey, I like the cut of your jib. I like the way that you guys build software. Do you guys want to talk about this?" And I think what started off as maybe a discussion about becoming a maintainer for that library quickly turned into, "Hey, do you want to build software together?"
+
+And so I joined Prefect as an employee three years ago, and really have just been working with Jeremiah super closely on how to make Prefect the best orchestrator for AI workflows. And then about a year and change ago, as Jeremiah mentioned, when we first saw MCP, it was funny because to us, we'd always been obsessing over, "All right, if a human is writing a workflow, how do we make this ergonomic and pleasant to go take this workflow and go execute it as the human had written it?"
+
+And MCP was very interesting to us because it was, well, just programmatically write this interoperable tool set, and you can go hand it off for an agent to go figure out the right control flow to execute this stuff in. And so when we saw MCP, we thought it was a cool orchestration primitive. That's what really got us interested.
+
+And when it first came out, it was a low-level framework. Maybe for your listeners, if you're in the Python world, they built Starlet is what they released. If you're in the JavaScript world, they put out Node. And we were kind of hungering for what's that FastAPI or that Next.js style experience. One higher level order of abstraction that lets us kind of move fast and not break things.
+
+And so Jeremiah and I were going to get together that next week to go start on it. And fool me 10 times. Shame on me. Jeremiah just disappeared over the weekend and showed up on Monday with FastMCP totally built out. And so shame on me. But it was very cool. And that's a bit of how I got involved in the project and maybe jumping the gun on kind of the genesis of how we got started on it.
+
+[0:07:09] GV: Amazing. Yeah, that's a really nice story in terms of how you guys got to working together. Sort of feels kind of like "old school", where you actually just sort of cold email, it sounds almost. And then just start working on something together. Or, rather, Jeremiah started working, and then you caught up, Adam.
+
+[0:07:25] AA: Yeah. No, that's such an apt description of our relationship.
+
+
+[0:07:27] JL: I was going to say, it's not the most fair characterization. Gregor, we should probably clarify slightly, because I think it's a really common misperception people have, because it's easy to do, that FastMCP is actually not a company at all. It is just a project, and hopefully an ecosystem, which we're super excited about. Could have been a company potentially in a different life in a different world. But Prefect is a profitable software business, which we're really proud of. We had this opportunity to steward this thing without the outside pressures that that normally takes to sort of found a young company. And so it's been really exciting to also do that with that sort of independence in mind.
+
+[0:08:02] GV: Yeah, I think that's a really good call out. Yeah, in terms of me saying founders and co-founders and this kind of thing. Yeah, it's -
+
+[0:08:08] JL: We're stewards.
+
+[0:08:09] GV: Yeah, stewards.
+
+
+[0:08:10] AA: We're maintainers.
+
+
+[0:08:11] GV: That's a very good way to put it. Yeah. Let's sort of just talk about that V1 basically or FastMCP. And I believe it was actually adopted within the official MCP SDK. Could you maybe just talk through that? How did that kind of, I say, come to be? And then what does the journey then look like? Because we're on to V3 now, I believe. And just to kind of clarify, has Prefect always been part of the story there? Yeah, just sort of understand.
+
+[0:08:36] JL: Well, I think that's part of why there's a little bit of misperception. FastMCP starts out as a weekend project of mine, as a side project. And with the best of intentions to not infect Prefect, which has sort of an intense product culture and focus, I put it on my personal GitHub under J. Lo and FastMCP. And that's where it was a few months later when virality hit and it took off.
+
+And we moved it under the Prefect banner as part of the 3.0 release a few weeks ago. And I think that the optics of that probably led to some of the confusion about it being independent from Prefect, which it never was in an honest sense. Because, frankly, as a founder of Prefect, nothing I do is separate from Prefect. That just doesn't work that way. But it was also something that the optics of changing it is very difficult. Change management is hard no matter how much GitHub does the redirect. And so we wanted to make sure that we did that at a moment when we had the attention to explain why it was moving, and so there would be no concern.
+
+But that brings us back to the beginning. MCP is in the world. Adam and I have a conversation about it. Maybe this is a cool thing. I go to use it. And frankly, it was just really hard to use. Not because I think it was poorly written, but because it was just a low-level SDK. It was not designed to be the most ergonomic thing. It was designed to be the thing that let you actually work with this JSON RPC protocol.
+
+And I'm a person who loves high-level abstractions. And so I became a little bit frustrated, to be honest with you, with how long it took me to build a basic server that I ended up really spiking out a lot of FastMCP that weekend to just serve my own needs. And then I open sourced it
+
+because why not? Let's see what the world says. And then I kind of forgot about it. I had other things on my mind that I needed to go deal with.
+
+And it was a couple weeks later I got a call from David Soria Parra, who is the inventor of MCP over at Anthropic. And he says, "This is really cool. I think this would be a great way for people to use MCP. Can we make this part of the official SDK?" And so that was the coolest call that I've ever gotten in my life. And we said absolutely. We made sure that the open source license permitted this. And then worked with David to copy my codebase into the official SDK where it remains today.
+
+There will be finally a renaming of the official FastMCP object coming up soon. It's become a little confusing that there are two a year and a half later. But yeah, off it goes into the official SDK. Super exciting for everyone. And I sort of thought that was that. I thought that was the end of that story. And I got my contribution, and that would be that.
+
+And what happened is in the spring when OpenAI and Google announced that they were going to support the protocol, and it sort of really took off in it sort of maximum hype moment, I think, there was this influx of folks to my essentially dead repo, where I said, "Please don't use this. Please go use the official SDK." And they were begging for essentially a high-level application ecosystem. How do I do off? How do I do composition? How do I do this, that, and the other? Things that I don't think are ever going to have a home in the low-level MCP SDKs for a variety of reasons.
+
+And so we really wanted to serve that, and we already had this FastMCP repo that, whether we were maintaining it or not, was accumulating stars like crazy. And so we said, "Great, let's let FastMCP 1 be the server building low-level toolkit that we put in the official SDK. And let's build a FastMCP 2 that has all of these higher-level abstractions that people seem to be asking for." And so that was maybe April of 2025, almost a year ago now.
+
+And we built that like crazy and followed the hype train. And then eventually found it necessary to release a 3.0 just a month ago to sort of actually design the framework as opposing to letting the whims of the MCP world dictate its roadmap.
+
+[0:12:07] GV: Nice. And one of the sort of key things, I guess, that started on this high-level abstraction, I believe, was this decorator pattern that was implemented. This @mcp.tool. Was that kind of what you did over that weekend, and kind of went from there?
+
+[0:12:21] JL: That was fundamentally what we shipped. If we boil it all down and are very reductionist, I wrote this decorator that was just useful. So the way the SDK still works, to be honest with you, if you don't use the decorator, is you register a single handler. And the request comes in, where, somewhere in it, there's the name of the tool that's being called. And somewhere else in it are the arguments for that tool. And you write a single handler that basically you have to write your own dispatch logic.
+
+And in Python, we have an idiom for this. We have decorator patterns for when you're trying to call a function in a different manner. Prefect popularized the use of decorators in our world in automation. We were sort of the first thing that we tried to do there was make it super easy to say this function needs to be automated by this framework. We have a very similar thing here. This tool needs to be part of that MCP server.
+
+And so decorator just seemed like this incredibly natural way to do it. FastMCP's name is homage to FastAPI, which popularized exactly the same approach of this function needs to be an endpoint in my web server, right? And so we are trying to make this very idiomatic Python pattern that I think is very familiar to folks just available.
+
+And we could point out a lot of different aspects of FastMCP 1. But I don't think any of them mattered nearly as much as this single decorator. I don't know, Adam, if you think there's any other surface area there. I think that was it.
+
+[0:13:33] AA: No, that was it. I mean, we were trying to just make it feel Pythonic at the end of the day, which is just an analogy for like idiomatically Python. And for us, our design goal is if somebody knows Python, and they're already using Python tools or frameworks, should they be able to get started with this pretty quickly? Should there be an analogy between, "All right, you did this thing in FastAPI. You've been using that for a few years."
+
+And so when we saw MCP, we were, "All right, this is going to be hard to use for somebody who already knows Python." And so how do we make this feel slightly more part of that ethos than it was? Well, there's some pretty established patterns around this. And so, yeah, just shipping those decorators out of the box, I think we were surprised that that led to enough ergonomics to get people to be excited about it. But I think that was really the first shot over the bow.
+
+[0:14:21] GV: Nice. I guess jumping across the different versions, one through three, just that growth story, what did that look like to you in terms of - I think one of you mentioned earlier there was some kind of semi-overnight change on terms of the trajectory of this. What was around that?
+
+[0:14:39] AA: It was not popular at all for a long time. I think from November 26th, I'm going to just plus or minus a few days. From November 26 to March, I don't think anybody cared.
+
+[0:14:54] JL: We cared.
+
+
+[0:14:55] AA: Sorry. We cared. Yeah. Yeah. We cared. And there were dozens of us that cared. And so when we got a star on the repo or an issue, we'd be like, "Oh, my god. Somebody cares about this thing?" That's great. But yeah, it was really in, I think, March is when OpenAI and Microsoft came out, and they were like, "Hey, I think we're going to support this." And then now, suddenly, it was like, "Okay, this is not just some toy protocol from Anthropic. This is going to be an industry standard."
+
+And I think when it became an industry standard, that's when folks were just trying to figure out, "All right, how do I stand this up? How do I start immediately building with this?" And so I would say about March is when we started getting crushed by issues, and also just seeing the downloads go up and to the right.
+
+It's funny. Back then, we would look at the downloads going up and to the right, and we were like, "Oh my god, this is amazing." And then you contrasted with it now, and I think we're 100x magnitude more than we were at the time. And I would say that through that summer, summer of 2025, was a bit of a pretty healthy hype wave. And then I would say that fall is when we saw
+
+enterprise actually choose to take a bet on this. And so that's when we saw the Databricks MCP server, the Snowflake MCP server, MLflow adopted us.
+
+And so that's when I think we hit mainstream enterprise adoption as opposed to enthusiast adoption over that summer. And so that's when things kind of skyrocketed in the fall. And then that's when I think we started having conversations over the holidays, Jeremiah and I, where we were like, "All right, we've got a bunch of enterprises that are like, 'Hey, I'm trying to adopt this pattern into FastMCP. I don't quite know how to do this."
+
+And then that's when Jeremiah called me up and he says like, "I've made a huge mistake. There's a thousand things that I want to do." But, so far, all of the features that we added have kind of been incremental or bolted on. And I need to take a step back and redesign the guts of this thing, because all these thousand things that these companies are asking for, they're actually relatively straightforward. But there needs to be a central design philosophy, so that adding these things can be not just yet another bolted-on feature. And so that's what led to three. But Jeremiah, I'm speaking your story here. That's how I've seen the trajectory. Is there anything on that where you'll remember it differently?
+
+[0:17:18] JL: It's been an intense feeling of needing to deliver something to a community that's demanding it, which I've been fortunate in my career over, gosh, almost 20 years now to be involved in a lot of popular open source products. Never one that's been this popular before.
+
+And so when we talk about downloads are skyrocketing or stars are skyrocketing, that could mean five stars. In the beginning, it's just when you have a side project like this, you have your finger on the pulse of it. I still get an alert in real time on every single comment, and issue, and everything on that repo.
+
+Back then, if someone took the time to chat about it, it was the greatest. Someone actually found my software, and they liked it. And what can I do to help them. Right? And so, you really have your finger on the pulse of it. But the outpouring of interest both in the spring of '25 and then in the winter of 25 that led to both FastMCP 2 and FastMCP 3 was so intense that I actually restructured my role at Prefect very slightly. And I formally asked my team, including Adam, to help me create the space to be an engineer who needed to do some intense design work and
+
+sort of disappear for a moment while not doing the company wrong by being sort of an absentee CEO.
+
+And as I deeply appreciate that my team made it possible for me to go do some of that work. And as Adam said, in FastMCP 2, that was all about, "Great, we put this server-building toolkit that I hamfisted together as a bunch of decorators into the world, and people liked the ergonomics of it." But it was literally bolted onto an SDK. And now the demand is how do you put off into that? How do you compose these things?
+
+And we needed to build abstractions that could actually handle the complexity of those applications that people were starting to build. And so FastMCP 2 introduced those application- level things. And then we just built feature after feature after feature, as Adam said, all summer, all fall. A new feature, bolted on. Proxying a remote server, bolted on. Turning an open API spec into an MCP server automatically, which is both the best and worst feature we ever built, bolt that on.
+
+And all of these became independent code paths. Thousands of lines of code to deliver these features. Users didn't know that. They saw a common interface to them. But a disproportionate amount of, I think, the engineering know-how here was the fact that they were actually completely different stacks that then emerged in a common place. And so, yeah, we had stuff we really wanted to do. Yesterday, as a matter of fact, we shipped code mode server-side, which Adam built. And it's phenomenal.
+
+And I think that if we hadn't have made some of the decisions to rearchitect FastMCP 3 anticipating some of this cool futuristic stuff in the MCP world, Adam probably would have written 5,000, 10,000 lines of code just to implement this thing. And because of transforms, which is a new thing we have, it's one file. He slots it in. It just works everywhere. That's the sort of engineering we want to engage with.
+
+[0:19:59] AA: It's funny, I actually have the counterfactual on this one, where there was construction in the office where I normally work. And so, basically, to go build this thing, I had to go work off of whatever some random laptop I had at home. And it had a stale branch of FastMCP on it. I didn't pull main. And so I was working on a 2.X branch, and I'm working with
+
+Claude, and I'm like, "All right, here's roughly how I want the API to look. Here's what it should do." I'm going back and forth with it. And it comes back with this plus 4,000, minus 20,000 change. And I messaged Jeremiah, and I'm like, "I thought this was going to be such a straightforward change. I don't know what's going on."
+
+And then, of course, I push it to a branch. There's merge conflicts. And then that's when I realize that like, "Oh, I built it on a 2.X branch." So then I go, basically replay my whole session on a
+3.X branch. And I think what did it end up being, Jeremiah? The tests are probably 800 lines of code, but the core feature itself is probably plus 500, minus 100. And so, yeah, actually have the counterfactual here of just three definitely made it a lot easier to actually build these things at the end of the day. Not just more spaghetti tack on.
+
+[0:21:10] JL: I just looked it up. And net of tests, you were plus 1,200, and your tests were 500. Yeah, you got it down to a couple hundred lines of code. And that's why we built FastMCP 3. We didn't plan this. I just looked it up right now, right? But that's why we built FastMCP 3. A feature like this, which is transformative. After we record this podcast, we have to go in the world and tell people about it. Just shipped last night. But this is a transformative feature, in my opinion.
+And it was a couple of hundred lines of code. And if you can't innovate at that speed in this AI crazy world, I don't know what you're doing. We had to create that opportunity for ourselves.
+
+[0:21:41] GV: Yeah. So, we're going to get on to code mode. And it's incredibly awesome that we're speaking to you the day after this thing was created. And as you say, you're going to go off and tell people. And we're doing it in real time. So, that's cool. Let's just talk about just before that was a thing, kind of, I guess, the sort of three pillars, if you like, of FastMCP. Basically, on- server, on-client. And then the newest before code mode was on-apps. Could you maybe just walk us through those three. Let's start with just the one that most people will be most familiar with, which is on-server.
+
+[0:22:13] JL: Servers is the meat and potatoes of FastMCP. FastMCP 1 is literally how you build a server. FastMCP 2 is how do you compose a bunch of servers into an application. And now it's really with FastMCP 3 that we're trying to take a much more opinionated framework approach to the entire ecosystem of MCP. And that's where we came up with these three pillars to organize our work; servers, clients and apps, because they have very different - well, very
+
+different use cases and very different users. And they all show up in this kitchen sink framework. And frankly, FastMCP is getting very big. We need a way to organize it. And so this is just a very natural way that aligns on, I think, the big initiatives in the MCP space.
+
+When we talk about servers, which is where we focus most of our time on FastMCP, what we're talking about is you, as the author of code, want to expose it to an agent. And the server category, I think, encompasses everything that could possibly fall in that, with a big asterisk, because we're going to talk about apps in a moment. Maybe a better way to say that is you want to expose it directly to an agent. Apps will be how you expose it to a human.
+
+And what do you need to do? You need to authenticate. You need to authorize. You need to version. You need to maybe compartmentalize and build modular applications. You need dependencies, you need latency, you need middleware, you need transfer. All these stuff that it takes to get it in the world. Can we as framework authors come up with a sane set of common- sense defaults that let you ship a server as quickly as possible while still exposing all the knobs in the place you'd expect to see them on the control panel so that you can build your own?
+
+FastMCP tries to expose as much of the configuration as possible, but it is not our goal. If you really want to build this thing from scratch in exactly the way that you want, then you really should be using the actual SDK. FastMCP is not trying to funnel you to the SDK. We have an opinion represented in code about what the happy path is for the vast majority of use cases that we are fortunate enough to now see in the world. And that's what FastMCP is. And so that server bucket really encompasses, I think, the vast majority of that capability.
+
+The client bucket is probably not what most people think. And Adam, maybe I'll turn it to you, although having said that like weird cliffhanger, I won't leave it to you to fill that out. But what I mean by that is we're not trying to build an LLM client in FastMCP. We're trying to make sure that you can interact with a server at all. Adam, I don't know if you want to pick up there maybe.
+
+[0:24:34] AA: Yeah. If a server is really how do I write business logic that can be exposed over the wire to an LLM to call, right? A server, you can think about as a big bundle of tools, data, / comands, that kind of stuff, it's a portable tool set. If I take an MCP server and I author that business logic once, then the promise of MCP is that it can be used wherever MCP is accepted.
+
+That's Claude in the web for maybe technical, non-technical folks to use. ChatGPT for non- technical folks. Can be used in Claude Code. It can be used in your favorite LLM framework.
+
+Clients then are really basically the means through which you can consume an MCP server. And for every protocol rule about building a server, there's probably - or for every five rules about building a server, there's one for a client. Clients tend to be very unopinionated. Or there's not a lot of opinions about how you should build clients. What clients have to do at the end of the day is they have to connect to the server. They have to go peruse what tools are available and then represent that somehow to your base LLM client.
+
+And so there's a lot more design leeway in how people build clients that really impact the end user experience.
+
+I'll give you an example. in Claude web, that's an example of they have an MCP client. And when I log on to Claude's web client and I put in an MCP server, they will go and they will fetch every single tool. And on the first chat that you have with Claude in the web application, it will say - Gregor, you'll be like, "Hey, what's the weather today?" And every single MCP server that you have connected to, it will take all of those tools, all the different representations of them, all the arguments, keyword arguments, whatever, and then also go shove them behind the scenes into the context window of your LLM. That can maybe penalize or lobotomize whatever LLM that you're working with because you're stuffing it full of context that it may not be relevant to it.
+
+There are other MCP clients like Claude Code, which now dynamically searches across your MCP catalog. Claude Code, you can go stuff it full of 100,000 tools. And if you say like, "Hey, what's the weather?" like all of us normally do with Claude Code, of course, instead of going and taking every single tool and putting into the context window, it'll actually do - I think it's just BM25 search over all of your tools to go highlight which tools are most relevant to this query.
+
+And so servers tend to the business logic that you write that is maybe what informs the quality of a server. MCP clients tend to differ wildly in their design and quality because, MCP clients, they don't have to support the full specification. Many of them only work with tools. Half of them work with resources, which is another part of the spec. Maybe another half work with prompts. Maybe another half work with tasks. And so your mileage may vary with clients, and that's really
+
+where what I find are the distinguishing - that's actually really what drives my choice to use any one specific provider at the end of the day, whether it's Claude, or ChatGPT, or something like that. That's clients. Clients are really - they own the responsibility of talking to the server, understanding what capabilities are available, and then choosing how to represent those tools to the base LLM at the end of the day.
+
+And then applications, maybe I'll tee up the first part and pass it back to you, Jeremiah, is MCP apps, at the end of the day, they're sort of born out of the following problem. Which is, Gregor, you and I are going to go build an MCP server that it's a search over restaurants in New York City, or in Northern Scotland, or something like that. And Jeremiah gets into Claude Web, and he says, "Hey, I'm going out to dinner in Northern Scotland tonight. What are the best places for me to eat?"
+
+And what Claude web is going to do is it's going to call our MCP server that you and I wrote. It's going to get a big list of restaurants, and it's going to just render a long markdown list of, "Great. Here is the hundred restaurants that were returned to me from the server," or something like that. And what MCP apps did is they said, "Well, look. We've got -" I don't know. How long have we been making user interfaces? 40 years or something like this. It basically acknowledged that, in the last 40 years, research did not conclude that markdown was the best way of presenting information to human beings. That there's better visuals. Maybe I actually want to see a photo of the thing that I'm trying to buy that helps me make a decision.
+
+Maybe instead of seeing the number of stars in markdown or seeing like a list of dishes they have in markdown, maybe I want to give people the ability to like peruse through those photos, or swipe on them, or read reviews, that type of stuff. And so MCP apps kind of was born out of this. We've spent a lot of time figuring out that there are better ways of presenting information to humans to make a decision.
+
+In an LLM client, restricting ourselves purely to text in and text out really limits the interactions that we can have with a system through an LLM. And so MCP apps were really born out of this, like, "Instead of just sending text that your LLM will render as markdown, what if the server can send data and a representation of how to render it?" And then the LLM client can take on the responsibility of rendering that in the way that the server is dictated. And so that's where
+
+basically you get a really, really cool design space that you didn't always have with MCP out of the box.
+
+Jeremiah, anything to add there?
+
+
+[0:30:13] JL: I think, if it's interesting to listeners, we can talk about sort of our unique take on this and where I think we can add some value as a framework also in clients, right? These are related. I'm just going to say, most MCP clients are terrible. They implement tool calling, and they are probably solely responsible for most of the legitimate charges that MCP has failed to reach its potential is because, yeah, you are correct. Most clients can't do the majority of the things that MCP is intended to do. And that's a real problem.
+
+And so even testing is one of the reasons we introduced FastMCP's own client. We could just have good deterministic fast tests of our own servers. And so that's really an angle we're pushing on. I'm very concerned that apps, which I think are a phenomenal innovation for MCP, will also be left by the wayside by most clients.
+
+And so I think it's even worth shouting out a few of the ones we like the most. Goose is a phenomenal client. VS Code is a phenomenal MCP client. Claude Code is a phenomenal MCP client. MCPJam is a phenomenal MCP client. There are probably others. I don't mean that's an exclusive list, but those are ones that I use regularly. And I use them because I can test the entire range of MCP, and I can do cool things.
+
+And one of those cool things is build apps. Adam and I were chatting on our podcast, which, compared to SE Daily, is a diggy next to an ocean liner. But nonetheless, we were shouting into the void about apps and talking about how it's a little dismaying that the first crop of MCP apps are basically SaaS applications stuffed into a chat window. Right?
+
+[0:31:36] AA: Yeah. And the promise of MCP was you don't have to go browse people's SaaS apps anymore. Instead of 12 SaaS apps, you get everybody's SaaS data inside of one LLM client.
+
+[0:31:48] JL: I think it's good. It's useful for all the reasons Adam said. But is it really the promise of the user experience that we can deliver right here? And so when I think of where things break - and FastMCP's roadmap is primarily defined by what is hard. Building services is hard, we make decorators for that. Authenticating services is hard, we make oneliners for that. Right? Deploying services hard, we built a product for that. Everything is dictated by what's hard.
+
+What's really hard right now is working with large amounts of data, which is a world that we know intimately from Prefect and from our professional histories. If I go off and I run a SQL query or something against a database and I get 10,000 rows back, what are we supposed to do with that? Either that's going to be stuffed into my context window, so the LLM can tell me about it. Or we're going to have to now go write some summary of that, which is going to take time, and latency, and tokens, and maybe not be what I want.
+
+What I really want when I make a query against a database and get so much information back is I want to probably either browse it myself or plot it, get an impression of it, and go on. And do that in an interactive way. And so that's the type of thing where I think MCP apps - almost, I've been calling them mini apps. I don't know if that will survive as a vocabulary. But little discrete interactive experiences that let me step around the context window and not pollute it with all this nonsense, but just let me access the result of something.
+
+I think showing charts, showing data tables and showing forms I expect to be something 80%, 90% of all of the MCP apps use cases because it exactly satisfies this idea of let's exchange information interactively between the MCP server and the user who's interacting with it. And let's not force the LLM's context window to be a part of that conversation.
+
+And so when I think about this, I'm a Pythonista, Python guy, whatever. I don't know what the term these days is. I love Python. I think it's a phenomenal language. Thanks to Claude, I probably can write in any language I want. But the language I know and have opinions on, and know how to think about idiomatically, is Python.
+
+And so when I think about the opportunity that there is to introduce these interactive applications as MCP apps, but then for obvious reasons, all of the weight and gravity there is in the
+
+JavaScript and TypeScript MCP SDK in particular. It made me wish that there was a way to do that in Python. That's a very dangerous wish, right? We are not trying to port front ends to Python.
+
+But the other thing that's been on my mind is generative UIs. What if the agent just wants to show me something, but I haven't bothered to pre-program it as an MCP application? And so, another late night conversation between Adam and myself led to the idea of a JSON protocol that itself could compile to a limited but highly functional React application.
+
+And now, all of a sudden, an LLM can write JSON, a human can write with a nice little Python DSL, and you can quickly compile these restricted but functional web applications. And so this is another thing that we have not really talked about publicly except kind of cryptically. So I guess this is the first real time. But we've been building this in the open, and folks have been kind of drive by and peering in and saying this is interesting.
+
+[0:34:53] GV: And it is interesting because some of the cases - admittedly, I don't use MCP a whole ton. Just going to put that out there. But that's not any shade against MCP. That's just purely my functioning professionally, etc. But when I am using LLMs, which I do use a lot, and something vaguely complex has to be given back to me and in an interactive way, it then just becomes an entirely written React app. And I'm like, "There must be a better way than an LLM just going from scratch on a React -" and I hit the stop button. Say, "No, no, no, no. You're not going to create a React app to show me this. I don't need that." But there has to be a better way.
+
+[0:35:29] JL: That's exactly it. And so my dream is that as an MCP author in FastMCP, if I know that I'm getting a bunch of data back, I want to return a bar chart in the same way that I would return a dictionary, or a Pydantic model, or something like that. That's what we have been building. It's called Prefab. It's in the universe as an open source project. And it is a very simple DSL for building these interactive applications.
+
+And we're building a native integration into FastMCP so that you really can import the bar chart component and return it. You can import the data table and return it. You can build forms from Pydantic. You can do all this stuff. And the goal is, yeah, someone is using, say, the Supabase MCP server, and they want information. 10,000 rows come back. The LLM can decide how to
+
+present it. The MCP author can decide how to present it. It's all possible. And we don't need to go to a different ecosystem. Which, aside from just being different, which for someone like me is going to be a pretty big friction, a big hurdle to actually bundling an app, it also means that you have this weird tight coupling, where how do I know that my app and my MCP server are in sync? What if I change the name of a tool on my MCP server? Do I have to remember to go to my other application now that's tightly coupled but independent? We don't like that. We want it to be one place, one happy path. And so we're trying to solve for that without reimplementing the front-end world. And that's been a real adventure. That's probably one of the crazier projects I've ever worked on that has now really overspilled its bounds. And we'll really be talking about that a lot in a couple of weeks when it's more ready than it is now, I guess.
+
+[0:36:57] GV: Let's talk about code then. This ultra-new flavor. You're clearly very excited about it. I want to hear more about it.
+
+[0:37:05] AA: We talked earlier about MCP clients and their relationship to servers, right? So an MCP client takes on the responsibility of getting all the capabilities that are available on the server and then choosing basically what to do with them. And the default for the longest time was go get all the tools, present them all to the LLM at the same time. This is where you get context bloating over the last few months.
+
+And then you also have this pernicious problem where the LLM will - if you pass it all those those tools to an LLM, the LLM will invoke those tools serially. And so it'll call the server that you and I authored. It'll get restaurants in Northern Scotland. And then I'll say, "Okay, this restaurant looks great." And it will go fetch reviews. And then after I say, "Okay, it's well reviewed." Then it will go and it will fetch the menu items. And then that's when we discover that like I don't like the food, or something like this.
+
+But you'll notice that the LLM is invoking one tool after another. And if you take a step back and you think through mechanically what's going on, you're taking a conversation up until n- messages. You're invoking a tool, you're appending that, you're shoving that back over to your server. Comes back. You append another tool, you shove that entire thing back over to the server. It means that unless you're managing caching yourselves, then you end up having this
+
+quadratic number of tokens as you keep having a conversation one message over another and shoving it back to the server every time.
+
+And there were a couple of swings at how to solve this problem. It starts off with the team at Block, who a few months ago, I think, actually was one of the folks who pioneered this pattern of, "Well, if you've got a thousand tools on the back end, you probably don't want to just lobotomize your agent with a thousand tools. You should probably give it access to search. And then you should give it access to execute."
+
+Instead of giving it a thousand tools, you give it a tool to search over your tool catalog. And so it's going to return the three tools that are most relevant. But where Block stopped is Block was like, "Great. And now you've got those three tools. And then Claude will execute those tools one after another." The company who kind of said like, "All right, hold my beer. I'm going to check raise this idea," was Cloudflare.
+
+Cloudflare came out and they said - actually, I think Kenton Varda is his name. I might be butchering his name. Yeah, I mean, this is somebody who's been working on just RPC for a while. And he was basically like, "Well, look, I'm glad that Block was able to like reduce context bloating with this search tool. But the idea that it still has to call tools one after another, that kind of seems goofy to me."
+
+Instead, the key observation that I think that team had was most LLMs are great at writing programs. Instead of forcing it to execute a program of call this thing, then pause, then call this thing, then pause, why don't we give it the ability to author a program in the actual tool set that's been provided to it?
+
+And so what this means is that in code mode, you give your LLM client, you basically give it a search tool to search over entire catalog. And then you give it the ability to write basically a program in your MCP tools. And so what that program is going to look like, it's Cloudflare. It's TypeScript on their end, where they're like, "Great. First, I'm going to, in parallel, go get the top 100 restaurants in Northern Scotland. Then iterating over all of those, I'm going to go fetch their reviews and go fetch their menu. Then I'm going to take this data. Then I'm going to go do something with it."
+
+
+
+And so if I wanted to go get a 100 restaurants, and then for each one of those restaurants, go and get their reviews and menus or whatever, in traditional MCP clients, you're making hundreds of tool calls, which means you're making n-squared number of tokens you're submitting back and forth to the server. And so it's really, really cumbersome.
+
+And so they basically, on the client side a few months ago, were, "Great. I'm going to show you in an MCP client how to author this so I can execute a program against the server." And it was a hit. And it sparked a lot of discussion. But, ultimately, it was a client concern, which was tough. When something is a client concern, think about it from the perspective of an author.
+
+[0:41:34] GV: I've got to interject for one second. Listeners know me as living in Singapore, which I do, but I happen to be Northern Scotland when we're recording this. That's why Adam keeps talking about Northern Scotland, or else would be talking about Singapore a lot, but we're talking about Northern Scotland, which I love. Which I love.
+
+[0:41:46] JL: But that's why you need to know about the restaurants, because if you happen -
+
+
+[0:41:49] GV: I just want to have as much knowledge up here of the restaurant scene. Keep rolling on it, because it's good. It's good.
+
+[0:41:55] AA: Okay. Okay. But think about the experience of you and I writing this server. You and I, we both quit our jobs. You and I go write this restaurant MCP server, and we're going to stake it all on it. And then what happens is we start going and we share this thing. And the feedback that comes in is people say, "Oh, man. This is amazing. I use this in Claude, and this was the best experience ever."
+
+And then somebody uses it in ChatGPT, and they're like, "This MCP server sucks. I can't get it to do anything." And that's infuriating as a server author because you're implicitly depending on separate clients to all have the same behavior. And so Cloudflare had this great idea, which was how do you let clients author programs against servers? But where it kind of failed to get adoption was like, "All right. That's cool, but I'm never going to be able to get ChatGPT to know
+
+that it has to write a program." I don't have access to that client. I can't go request that it operates in code mode.
+
+And so I think it was about three weeks ago that Cloudflare was like, "Well, why did we need this thing to happen on the client?" And it was because, well, the client has its own secure runtime. And so it can author a program. And we don't have to think about the security of executing untrusted code.
+
+But as I'm sure folks listening know, is there's also kind of been another separate renaissance in, let's call it, AI infra the last few months. And that's really been the focus on, let's call them, code sandboxes, remote sandbox execution. And so Cloudflare was like, "Well, look, we can actually take this thing that you had to be lucky if a client implemented it. And we can actually make it happen server-side as long as that server is equipped with basically a secure primitive to go execute that untrusted code."
+
+Cloudflare has its own sandbox runtime. It was also good advertisement for Cloudflare. But the real excitement from us came from, is like, well, now you and I, again, we go to our jobs, we build the server. Now what we can do is we can say, "Hey, on the server, I'm going to just expose two tools. I'm going to let people search over this giant catalog of tools behind the scenes that's always existed." But now I'm going to let my clients submit code, and then I'm going to take on the burden of securely executing that code against all of my backend tools.
+
+And so that's code mode in a nutshell, is code mode started as a client concern, where you had to be very lucky and fortunate that you were using a client that could support it. And then now, where Cloudflare I think really pushed the envelope was saying, "Well, now that sandboxes are pretty good, we can actually, in a very low latency way, go and execute untrusted programs that are written in your MCP tools."
+
+And so last night, what we did is we basically shipped, "Hey, in a line of code, you know this MCP server that you used to ship that had 300 tools on it, just enable this option. And what we'll do is we will expose it a search tool over your catalog of tools. And we'll give you a means of executing code written by your clients that connect to it." And so you can bring your own secure sandbox runtime. You can use Modal, Daytona, Cloudflare, whoever you want. But what we ship
+
+with out of the gate is a secure local sandbox environment that was written by Pydantic. It's a new project of theirs called Monty.
+
+And so they basically allow you to, a handful of microseconds, spin up a secure local runtime. Basically, a subprocess, but safe. Samuel's going to kill me. That's not the right way of describing it. And so we finally, I think, have a - really happy with what we got out, which is basically now your clients can submit programs over your MCP tools. You can spin up a local sandbox thread that executes that program. And that little sandboxed thread only has access to those tools. It can't go do funny stuff. You can make sure that it only has specific resources. No other connection to the internet.
+
+I mean, we've run a bunch of tests on it. We've run it in our own MCP server, and it's been great. The downsides are when it's sideloaded against a bunch of other code mode servers. If the Supabase one is running in code mode, and the Prefect one is running in code mode, Cloudflare is running in code mode. What does Claude see when it opens it eyes? It sees like, "Oh, should I call the search tool, the search tool, or the search tool? And should I call the execute tool, execute tool, or execute tool?" And so there's still some namespace collisions. I'm sure that that'll evolve a little bit. But for a single server, it's definitely a huge improvement.
+
+[0:46:48] GV: Amazing. This will get released probably a couple of weeks after we've spoken, but this is available kind of now. Is that right?
+
+[0:46:54] JL: That went out last night as we're recording this in FastMCP 3.1. And what I'm super happy about, aside from the fact that it works really well, is it makes the bet we made in the 3.0 rearchitecture. I already mentioned that Adam's PR itself was small. But for example, one line of code, add code mode to your server. Two lines of code, add code mode to somebody else's server because we can proxy it so quickly. Three lines of code, add code mode to somebody else's server and customize the search tool because you know that they have a ton of tools, and you need to - that sort of progressive incremental complexity, where you only need another line of code to add one more feature, is what we're trying to achieve in building a really effective toolkit and framework. And so I'm just very happy with this as like a proof point of a lot of decisions we made over the last few months.
+
+[0:47:39] GV: Yeah. And as you said, Adam, the sandboxing part. That's super interesting. And we're seeing a lot of players go the sandboxing route now. And well, Pydantic being kind of what - what was the name of the Pydantic's version?
+
+[0:47:54] AA: It's called Monty.
+
+
+[0:47:56] GV: Monty. There we go. I had Sam on for an episode not that long ago. Yeah, go check that out, listeners, if you're interested to hear Sam talk about all things Pydantic AI. Yeah, Monty, great choice. It's a nice segue, though, when we talk about sandboxing. Because what is not sandboxing is OpenClaw. I think this is perhaps what some of our listeners might be thinking now. And sort of as we go into our vaguely landing the plane phase of the episode, I want to just talk a little bit about OpenClaw. And I want to also just talk about MCP's current and future state when it comes to what some developers might be thinking right now.
+
+Let's just quickly touch on OpenClaw. What were your reactions? And did you ever look at that and think, "Oh, this is going to have an effect on sort of how MCP is viewed." Or anything like that? I'm just curious. Because it had such an explosive landing for us as developers and even non-developers who come across it. But from your perspective, what did it look like and feel like?
+
+[0:48:52] JL: I love it. I think it's phenomenal. I've now deployed three iterations of my bot, where I've slowly trusted it more and given it more capabilities. But you're always a little nervous when you have something like this, right? But it's been an incredibly useful thing to me.
+
+It actually started as a family-focused bot, because I realized every company in the world is trying to sell me productivity software at Prefect. Nobody seems to be trying to sell me productivity at home. And I have a lot of kids. My wife and I both work full-time, and there's a lot to do there. And so I actually started it just at home managing, keeping an eye on my school calendar, and what the kids need. And it's been phenomenal. And so I've been slowly trying to find a role for at work.
+
+MCP shows up because we have to wonder how do we give it new capabilities. And that's sort of the promise of MCP. Now, OpenClaw doesn't ship with a native MCP integration. Pete has a
+
+tool called MC Porter, which is a tool that converts an MCP server into a CLI. FastMCP has a similar functionality. It's very useful in a lot of different cases.
+
+I think what it is proving out there for is the need for something like MCP, whether it is MCP or not, which is a weird thing to say. But something Adam and I spend a lot of time discussing in these arguments is forget MCP. Let's just say that we want to add capabilities to an agent.
+Someone somewhere needs to define how those capabilities are accessed and what they look like. And if you want that to be a CLI, that's fantastic. Let's make it a CLI. So now I need human written natural language help docs. I need a way to discover the commands. I need a way to discover the arguments. And before you know it, you end up inventing some sort of protocol for communicating this information up front.
+
+Today, that protocol happens to be called MCP. And if you want to implement MCP via CLI, that's great. If you want to implement CLI without the MCP, that's great, too. But do expect your agent to spend a lot of time discovering it. So, my OpenClaw manages to kill itself about every hour because I ask it to do something.
+
+[0:50:51] AA: How bad is your calendar that it kills itself when it looks at it?
+
+
+[0:50:54] JL: What I'm trying to do is I'm trying to get it to install some new audio transcription software, and it keeps hallucinating a CLI argument that there's an output directory. This just happens to be what I was struggling with this morning. And it keeps adding this into the OpenClaw config, and then it keeps restarting the gateway, and then it keeps killing itself because that doesn't exist. It keeps making an illegal call.
+
+And so this is where I feel the pain of, "Ugh. If only I had a tool that just broadcast exactly what was available and how to call it instead of having to write everything from scratch." Now, is that a reason to use MCP servers? No. MCP servers have other baggage that they bring. That they're not as easy to install. That they're not just written out as text. That they have to be hosted. There's all this stuff.
+
+I'm not trying to make a strong argument that OpenClaw should or should not embrace MCP. But I am trying to make a very strong argument that no matter what the technology and the
+
+transport is, we will need a protocol by which people who write software and people who consume software, in this case, agents who consume software, agree on the contract of that software. What is the UI, so to speak? The AI, I guess, to use a bastardization of that initials, of using this software. And that's not going to sound as good to anybody. But MCP happens to be the prevalent way of doing it.
+
+And so what's been really fun is we're focused mostly on how you build the MCP servers. You want to deliver them as a CLI? By all means, go ahead. I think that's fantastic. I think it gives you as a server author a way to know for a fact that your software will be used with first try in the correct way. And it's our obligation to make that as easy as possible.
+
+And so I keep bolting new MCP servers onto my agent because it's easier to bolt someone else's hard work to build an effective server than have my agent write a wrapper script around a CLI to make it comply with what its expectations are. But I also use CLIs. I think at the end of the day, we're just trying to give our agent superpowers.
+
+[0:52:42] GV: And that's also a nice segue into - in terms of when we're recording, this was one day ago. Quite sort of high up on Hacker News was an article, when does MCP makes sense versus CLI. Very timely. Rather than go through the whole thing, we're not here to dissect a Hacker News article. But at the end of that article, the person says a plea to builders. It says, "If you're a company investing in an MCP server but you don't have an official CLI, stop and rethink what you're doing. Ship a good API, then ship a good CLI. The agents will figure it out." And I guess you've kind of semi-answered that already. I mean, I think it's just interesting to kind of hear what you say to that.
+
+[0:53:20] JL: Adam and I have a hard one opinion that really affects how we view arguments like this, and it has to do with where MCP is being deployed. The vast majority of MCP use cases are inside companies for that company's own employees. The vast majority of MCP use cases that the average person is aware of are when companies release an MCP server for the use of their customers. We call that external MCP as opposed to internal MCP.
+
+If you are a company who is deploying an MCP server internally, you absolutely should not make it a CLI. You absolutely should make it an MCP server with a tight contract. You control
+
+the server. You control the client. You don't have to waste time building a client that knows your CLI. You get all the benefits of MCP. And it's fantastic. And that's more than 80% of the use cases that we see every day.
+
+And at this point, FastMCP, I think it was downloaded two million times just yesterday. We see the market. We know how people are using the software. With that said, I also understand that for the average person, they see MCP through the lens of a restaurant browser for Northern Scotland. And they may say, "You know what? This MCP server could have been a CLI." And they may be right in that instance.
+
+And so this debate has taken on a very weird tenor, where the median person doesn't see the median use case in a really interesting way, which I think there's probably some statistical paradox named for that. That, I don't know. But I probably should. And as a result, we find ourselves arguing strenuously to companies to take advantage of all the contracts that MCP affords them for these internal use cases. Where we see if the longtail of MCP servers, I'm going to say finger in the air, there's 20 or 30 MCP servers in the world that are popular. And then a long tale that have zero or one users.
+
+But inside a given company, some of the enterprises we work with, there are hundreds of MCP servers that are heavily used by only the, say, 5,000 employees of that enterprise. That's where we are focused on MCP as a primary and enabling technology. And all of these arguments sound ridiculous in that setting.
+
+And so I think it's a really complicated thing, where I see these arguments. They make sense to me as a consumer. Give me the easier thing. Give me the more flexible thing. Just do the thing. That is the most fungible. But inside an organization, I don't think that makes any sense.
+
+[0:55:30] AA: Yeah. Maybe two things I'll add on this is just like I think CLIs are probably a good MCP client if you squint your eyes, which is they can be good at consuming an MCP server at the end of the day. I think that a lot of the appreciation for CLIs is just that MCP clients tend to be really bad.
+
+But if you go actually introspect the tokens that are sent to the LLM at the end of the day, great. Take a CLI, what's the first thing an LLM is going to do? If it can even discover that it has that CLI available to it, it's going to call CLI--Help. And what's CLI--Help going to do? It's going to render all of the options that are available to it in its CLI. That's going to be more or less the same amount of tokens as rendering the list of tools that are available to it. That gets shipped over the wire.
+
+Then what happens next? Then it says, "Great. CLI superbase create." Whatever. Or CLI restaurant finder find, or something like that. Great. Cool. And then what it's going to do is it's going to add an argument that's maybe of the wrong type. The server is going to reject it because you built that great API on the back end. You're going to get a 422 error also shoved into your context window that's going to say you formatted this request wrong. And on the MCP side, you pay that tax upfront, depending on your client, that says, "By the way, here's the JSON schema of how to format your data. So that the LLM has better type hints of the type of data that's going to be accepted by your backend server."
+
+And so I think that just empirically the amount of - you're like I made a bunch of CLI requests. And I had to guess at what the signature it is of the backing thing. That can be pretty tough. Or you go and you include all of that in your CLI anyway, and then you're just consuming just as many tokens. And so I find those kinds of arguments on a token consumption business side kind of pretty unconvincing.
+
+I'd say the second bit, this kind of fits Jeremiah's picture of inside of an organization, is I'm not trying to be like a merchant of complexity here. But genuinely, when I say the word governance, I don't mean some bureaucrat sitting in a company that's trying to make up weird data rules. But genuinely, if I have an MCP server, there are going to be tools that can mutate and destroy data. And there's going to be some that can just read data.
+
+And even if you built an API for your company, everybody can internalize the fact that, Gregor, you should probably get read access on Prefect's MCP server. If we give you access to it, you should probably get read access to data. You probably shouldn't get delete our internal data tools.
+
+And so what that means is that I have to have some backing server that looks one way when you access it and it looks another way when Jeremiah access it. Jeremiah is my boss. When Jeremiah sees that server, he should probably get some extra super special tools that I don't get access to.
+
+And so this idea of how do you get this many-faced API that represents itself one way to different people depending on their permissions, that's like a thing that's somewhat inexpressible through classic REST. The other bit of these MCP tends to take on longer running tasks by virtue of just the types of things we're trying to get it to do, which means that sending progress notifications tends to be a thing.
+
+The reason why I bring this up is, great, we have REST APIs. Fantastic. Great. So, we have REST. We want it to be stateful, identity-aware, so it can reveal different interfaces to different people. It should be bidirectional, so that I can give people progress updates on long-running stuff. Okay, call it MCP, or go implement that. You're inventing a protocol either way.
+
+And so I think that I don't want to forgive the sins of the current state of MCP. I actually think it's pretty tame at the moment. I think there were some legitimate gripes over last summer. But maybe what I would pose to folks is just whether it's an API or a CLI, you want to represent different capabilities to different people. You don't want to have to give everybody api/v2/safe/ gregor/scotland/singapore v3 final final. You want to just give them like superbase.com/mcp, or something like this.
+
+And once you commit to that as a design philosophy, which we can debate is a good philosophy or a good design goal or not, then to what Jeremiah said, all right, you either get MCP, or you're inventing a new protocol, or you're trying to get hypermedia as the engine of all state. But trying to get people to adopt that.
+
+[1:00:08] JL: You get into this place real fast. I like what you just said there, right? It's much more fun to debate the design of it than the implementation transport of it. That's ridiculous. And a lot of the critiques that you levied, they have solutions. A lot of them are solved by skills. And people also say, "Well, skills versus MCP." I'm like, "No, skills with MCP. A skill helps you learn
+
+how to use a CLI. A skill helps you learn how to use an MCP server. Skill helps you decide if you even need an MCP."
+
+There's all this wonderful stuff in the ecosystem for enhancing the context of your LLM. I think at the end of the day, the most important thing is just do it in a way that the LLM understands. I think MCP is more LLM native than not. I would do it with MCP. But they're powerful little creatures. They can figure it out. Maybe we can give them a hand.
+
+[1:00:53] GV: Yeah. Well, I don't want to say a convincing argument. Because, at the end of the day, it's up to the developer to have figured out what they need. But there's clearly a massive use case for MCP.
+
+[1:01:04] JL: I think the thing we could agree on indisputably is that you should always build a product for its user. That is probably the most true thing that I believe in my career is design the product for the user. CLIs are not designed for agents.
+
+[1:01:18] AA: Well, no, no, no. But CLIs are designed for terminal agents. And I think that that's fine, right?
+
+[1:01:23] JL: Fair, fair, fair.
+
+
+[1:01:24] AA: Get ChatGPT to use your CLI. If I went to chat GBT, and I was like, "All right, go call the GitHub." Now I'm depending on this one client to have a little VM that actually has any of these CLIs on it. And it's just like I get it. If you're a developer, a CLI is a native thing for your Claude Code client to call out to. I get that.
+
+[1:01:46] GV: We're going to leave it there. I must make sure that my colleagues are happy with me. We're all in on MCP at Supabase, and it's mcp.supbase.com. Yeah. You were so close.
+Yeah. Yeah. Yeah. But we're all in on it. And I know we've got users absolutely loving Supabase at MCP. But I'll stop plugging Superbase there. Yeah.
+
+[1:02:03] JL: I really enjoyed the collaboration with Supabase on launching, while we're doing a Supabase commercial, the 2.1 OAuth support. That was huge. Yeah. That was a fun collaboration.
+
+[1:02:13] GV: And as we were talking off audio before the episode, I discovered you guys in our Slack, which is always fun when you're about to speak to someone and then a colleague says, "Oh, go over to this channel. They're in there." I love that about Slack that you kind of have all these intermingling or company to company. But I digress. Fortunately, we do have to wrap up. There's so much more we could have talked about, but there's always a way. In terms of classic kind of where to go up and running and also just contributing, do you have quite a large contributing community? Or what does that look like?
+
+[1:02:47] JL: We do really proud. I think we have 200 individuals have contributed to the FastMCP codebase at this point. Another eight joined the ranks last night in the 3.1 release. It's really cool to see. Anyone who wants to get involved, we do welcome it. The repo is at github.com/prefecthq/fastmcp. That's where you can find us.
+
+I already mentioned, I think, in this conversation, I get a notification on everything. I can't quite keep up the early Prefect 15-minute response SLA, but I do do my best. And would love to collaborate with folks to make the framework as great as possible. Docs are at gofastmcp.com. You can find Adam and myself probably on your favorite social network, wherever that might be, and Prefect at Prefect.io.
+
+[1:03:30] GV: Amazing. Well, Jeremiah, Adam, thank you so much. We've heard tons today. And yeah, this has just been a really fun one. Always fun to have two guests, not just one. Yeah, thanks for coming on. And I'm sure we'll be catching up again in the future.
+
+[1:03:44] JL: Thank you so much for having us.
+
+
+[1:03:46] AA: Thanks for having us. See you in Singapore.
+
+
+[1:03:47] GV: Yes. Yes, we will.
+
+[1:03:50] AA: Cheers.
+
+
+[END]
+
+
+
+

@@ -1,0 +1,433 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Agent, skill, or MCP? Which to use and when to use them | AWS’ Clare Liguori
+DATE: 2026-08-18
+SHOW: Dev Interrupted
+LINK: 
+AUDIO: https://www.buzzsprout.com/1422892/episodes/19663699-agent-skill-or-mcp-which-to-use-and-when-to-use-them-aws-clare-liguori.mp3
+DURATION_SECONDS: 2645
+TRANSCRIBED_AT: 2026-11-04T00:41:49Z
+----------------------------------------------------------------------
+Welcome back to Dev Interrupted, brought to you by Linear V. My guest today is Claire Liguori, a
+senior principal engineer at AWS. She also leads the open source Strands SDK and is a core
+maintainer for MCP. And this one's a treat for me because we've been following MCP's journey from
+the very beginning, from its huge initial hype cycle to its death, to its return, to its now easy-
+to-adopt stateless form in the recent 728 spec. And Claire is one of the people driving that roadmap
+behind the scenes and also building an agent framework born from cross-team needs at AWS. And Claire
+and I dig into not only the next version of MCP, but what you should be doing now about it as an
+engineering leader. MCP is a game changer for Linear V customers too, because it brings their SDLC
+context layer, and that's get project management and software delivery into any agentic surface.
+What could your agents achieve if they can query your SDLC? Let's find out in my conversation with
+Claire. Claire, it's really fantastic to have you here because these topics are top of mind for us
+here on the show. And over the last year, you've been pretty deeply involved in all of the stuff
+that's powering the things that our engineering leaders that are listening are trying to grapple
+with to transform their engineering organizations. So, Claire, welcome to Dev Interrupted. Thanks.
+Let's do it. Great. Well, I want to start at the top with the big item here, which is the strands
+agent SDK. And I got to say, I've checked out this tool before. And so when I was offered the
+opportunity to speak with you, I was really excited about it because getting to dive into the minds
+of folks that are not only building and getting a lot of output from their own agents, but able to
+express it then into a composable, modular format that other folks can benefit from, this kind of
+spreading of the knowledge and getting folks systematized around how these things should work is
+exactly the kind of movement that we need to see right now. And so, you know, what did it mean to
+you to come to this project and build this, like, open and composable agent tool? And why do you
+think that this architecture style is, you know, here to stay? Well, strands actually started as an
+internal project. We were working on it for probably a year before we even initially open sourced
+it. And we didn't have an idea in the beginning to make a reusable framework for anyone else. We
+were really just building it for ourselves. I also work on Kiro, our agentic coding assistant. And
+we built it for ourselves in the agentic AI org because we were just finding other frameworks to be
+really difficult to use. We found them to be a lot of cognitive overhead for us as developers
+getting started building agents. And then we had a ton of work going into production. I actually
+just saw a little graphic on X this morning that was like, prototype, two hours. Production app, two
+days. Actually getting it into production, six months. And that was kind of hard. That was kind of
+our experience because we would literally take six months to get something into production built on
+other frameworks. And so a group of people just kind of started building it internally. And we
+started applying it to some more projects internally. We launched what was at the time called the
+QCLI. It's now called the Kiro CLI. We launched that in three weeks, which like to the world's
+public production. And previously that was just unthinkable, right? And I think part of what makes
+it easy is that the team spent a lot of time on what is the developer interface for the human and
+making it really clear and very declarative in a way. So that you're really just focusing on the
+things that matter. You're focusing on what model do you want to use? What's your system prompt?
+What tools do you want to use? Instead of a lot of the other scaffolding that we had been building
+previously. And then I think we also saw at the time the real shift was agents got or models got so
+much better at being agents. And so previously we had been building up all of the scaffolding around
+like Sonnet 3.5 to make it do anything reliably in production. And then we saw around the time that
+Sonnet 3.7 came out, we didn't need to do any of that anymore. And even in Sonnet 3.5, it was
+another like leap where we already didn't have to do a bunch of the stuff we were already doing. And
+so we wanted to just kind of strip all of that scaffolding away and let the model be at its best. We
+call that the model driven approach where let the model do most of the work. I think as engineers,
+we want to build a lot. That's kind of our DNA is that we want to build. And so I see, you know,
+even inside of Amazon, teams wanting to just build a lot on top of the model, feeling like they're
+going to be able to get the best results out of the model if they build more and more on top of it.
+And it's counterintuitive, but it's kind of the reverse, especially because we see these massive
+leaps in model capabilities every six months, right? And so what we would see internally is we would
+have built a bunch of scaffolding and then like Sonnet 3.5 came out and we were making the model
+actively worse because of all of the scaffolding on top. Because we weren't giving it the right
+context anymore. Sonnet 3.7, it would be the same thing. But what I found is that as you build up
+all of the scaffolding, we have this very personal connection to the thing, the systems we have
+built. It is so hard for us to tear them down, especially when their lifetime has only been six
+months, right? Right. And so, you know, what we started telling teams internally and what we really
+built into strands was this model-driven approach where, you know, assume that in six months you
+should be able to just change a line in your agent configuration to the new model. And now you're
+fully taking advantage of all of the new capabilities of that model, especially around reasoning,
+tool calling, you know, all of these have made huge strides. And agents, just model-driven agents
+have become so powerful. But it's hard to do that when you build just kind of this layer of stuff on
+top and constrain what the model can do. Exactly. There's a lot in there I want to unpack because
+you just gave us, like, so much in terms of the evolution of where it came from, but also the kinds
+of things you're optimizing for that I think I'm seeing, certainly see a lot of these universal
+things that are emerging. So I think it's worth, like, talking about them for a minute. And one of
+them is that, you know, strands, it was born out of an internal need, right? It was built to deliver
+fast for the exact reason of what you said. Like, writing the code and getting the code up has never
+been easier. Getting it to production now takes a really long time. And even if you did get it to
+production, understanding then what happened afterwards, what was the impact? Like, actually
+quantifying the lift of the whole project is exceedingly hard, especially as humans are further
+abstracted from whatever it is that you've created as you're trying to justify it and get it across
+the finish line. So I think that's a really common pain. And I think it's actually, this is
+something we, when I recently even interviewed one of the lead, he's a distinguished engineer at
+LinkedIn. And he was part of the system that kind of transformed all of LinkedIn's internal
+engineering to be more agentic and be agentically powered. And it all started, you know, out of
+this, like, need to address these, like, across the board issues with delivery and with consistency.
+And with just ultimately getting a system-wide approach for the organization as a unit to work more
+efficiently, not the individual developers themselves, but the whole organization to benefit from
+the aggregate of all of that working. And a big part of that is having to lean into the simplicity
+of what the models are capable of doing now and the ways we're able to express them. Because I love
+that you took us through the tours through old memory lane, a very tool-happy sonnet that was, like,
+so stoked to use tools. It was, like, just now using tools for the first time. When we had Jeffrey
+Huntley on the show, you might recognize him. He was one of the people at the top of the year who
+started talking about the Ralph loop. He's the guy who kind of called it Ralph. So we had him here,
+and he talked about that. And he was in the same situation as you, Claire. He was trying to build
+something. He built this massive kind of system, this big harness that was pushing everything
+forward. And then it was just a dumb loop that was just going and going. And what he learned along
+the way is that sonnet just wanted to, was a tool-happy squirrel, was what he called it. It just,
+like, wanted to. It was dangerous. It was just running on everything and pressing everything. So you
+had to build all of this crazy stuff to scaffold it. And then there was, like, a step change event
+that happened at the end of last year that we're all familiar with. Everyone came back. GitHub
+suddenly couldn't stay online because we're all just, like, running these crazy orchestration flows.
+And so the whole environment changes in terms of, like, what we're doing with these tools. And the
+models just simply get better. And now we're challenged as engineers. Like, whoa, I just spent,
+like, all that time investing and optimizing and getting my cool prompts and defining my sub-agents
+and doing this whole, like, LARPing thing where, like, I defined all my little people that did all
+my little things. Like, and then we had to wipe all that away and simplify our hardices, simplify
+the ways that our agents work, make it more expressive, make it simpler, make it static. And the
+staticness is actually part of what we're going to talk about a little bit later with, you know, MCP
+becoming more simplified, but in terms of, like, state and session as well. And so I think all of
+this kind of things about stripping away stuff that's adding complexity is what we need to turn into
+a building block. So I think it's really, really insightful to hear that from you with your own
+experiences. When you make something that's, like, composable and you steer this as, like, an
+architectural philosophy, right, within Amazon, within AWS, this is how we transform our
+engineering. Like, what became, like, a turning point early in strands that made you all understand
+that, like, oh, this is something more formalized than just, like, it's helping us push things,
+throw things over the fence. This is actually something that now maybe has developed and we're going
+to open source or share. Like, what does that evolution look like? Well, we had gone through a
+couple, I think, three projects at that point, three major things that we had shipped into
+production in less than six weeks at that point. And at that point, I said, we should really put
+this in the hands of customers because I think this is something that is repeatable now, that the
+success that we're having in, you know, not just building in, like, that initial time of prototyping
+something and actually seeing success, but actually getting it into the hands of customers, we've
+now kind of repeated that for ourselves. We built, we had kind of an end-to-end experience for it.
+We had an eval SDK. We had the main SDK. And then we had a lot of open telemetry observability
+integrations. And so we put it in preview and we weren't really sure, you know, how it was going to
+be received, right? This is a super crowded space. But it was really exciting to see, even just when
+we were in preview, people telling us how quickly they were able to move with it. I remember a
+particular customer reached out to us maybe two months into the preview and said, hey, I took a goal
+to have, like, 25% of my traffic go through agents. And this was, like, June. And he said, and we
+picked up strands and we pushed an agent to production in a month and we just completed the goal in
+the middle of the year. And so that was, I think that was a really exciting point for me, just me
+personally, right, of, like, yes, other people are seeing the same success that we are. I think that
+the world has, you know, is always evolving, as you pointed out as well. And so since we launched
+initially last, not last May, because now it's over a year ago, I think, I guess we had our one-year
+anniversary just in May. Happy birthday, Strands. Yeah, you know, the fall of last year, the winter
+of last year, when harnesses became the thing, right? And that's a point where I started to see kind
+of an interesting transition in, like, thinking about who should build agents from scratch. Because
+all of a sudden, our coding assistants are super powerful, right? So maybe you don't need to build,
+like, an on-call troubleshooter agent from scratch anymore because we were seeing thousands of
+people just do, like, a little custom agent config with their coding assistant with Kiro internally.
+And so you want to be able to build this kind of harness platform internally is the best way that I
+can describe it. I think previously what I used to see is in large organizations, not just scale in
+terms of, like, number of transactions per second, but in terms of scale in terms of complex
+organizations. Conway's law has been applied to agents very much in the sense of agents become the
+number of agents you ship maps to your organizational architecture. So every team feels like they
+have to own an agent, that, you know, they're going to take a goal this year on building an agent.
+And I've seen this internally at Amazon, but also at our customers, which I'm starting to hear from
+AWS customers that, hey, I have 500 agents across all of these teams internally. And that just seems
+like too much these days. You really don't have to constrain agents so much. I think there was
+previously a, and there's some pockets that still feel like you should build micro agents, that you
+should build these very domain-specific agents that only have, like, one or two skills. But I think
+since we've seen these massive leaps in models, and especially with things like progressive
+disclosure, you just don't need that anymore. And so, but still you have the organizational problem
+of everybody feels like we need to build an agent. When really, many, many products really just need
+one agent and a bunch of tools and skills that are progressively disclosed. And so, internally with
+Amazon, we recently GA'd, I think last month, the AWS MCP server. This is a great example where we
+had hundreds of MCP servers published by individual service teams. Everybody was kind of eager to
+build an MCP server for a while internally. And then we came together and we said, hey, we actually
+don't need that many MCP tools. What we need is skills to teach models how to use the AWS APIs
+because there are 16,000 of them. And so, it's actually very difficult for a model to reason about
+the AWS APIs. And so, that's what we built. We built a remote HGP MCP server that exposes a number
+of skills that are owned by individual service teams about how best to use their APIs, right? But
+that's what I've been talking to a lot of teams internally and a lot of customers of, you know,
+thinking about whether you need to build an agent as an individual team, or maybe you just need to
+own a skill. Or maybe you just need to own an MCP server or a collection of tools in an MCP server.
+Yeah, that really resonates with me because that's actually something at Linear B we've talked about
+too as well with how we've, you know, built and distributed our internal services and MCP servers
+and skills. And everyone does want to own one. I really loved how you related the agents to Conway's
+Law that it's reflected in your org chart. Like, it couldn't be more true. I really find that to be
+the case when I talk with folks at their organizations that it is true. Most teams do want to take
+it upon themselves to own an agent. It feels like a part of an org chart that they feel justified to
+have and that they would, you know, enable them, help them be better by other teams. Everybody wants
+to just, like, deliver more, right? So I think that's a familiar pain or rather a familiar
+aspiration that then turns into a pain because then internally it's like, oh, we have this big
+tangle of all of these different systems and processes and everyone's on a different page, right? It
+goes back to what I was saying earlier about how you kind of get these individual developers that
+are, like, super agentic. It can, like, you know, be in the fast lane and get a lot delivered, but
+they have a hard time translating that into their peers or their team or into an organizational
+composable thing. Or you find that there's this person over here and this person over here and
+they're doing kind of the same thing. And they've made this whole world of tools, but they've never
+talked to each other. And so it's like, oh, gosh, it's like creating an ecosystem to bring all of
+that together, I think, is the biggest challenge for engineering leaders. I think it's really
+salient that folks are asking you that or bringing that to you in conversations because, like, even
+when I talked with James Everingham, who's now leading Guild AI, he was the head of DevInfra for
+Meta during part of their agentic transformation. And he labeled that as one of their, like, it was
+the biggest internal change that they possibly could have made was to create an internal ecosystem
+where people could bring workflows, bring skills, bring MCP servers and agents and bring into one
+shared layer so that there was no more duplication. And now folks that had similar minds were
+organizing into guilds around stuff that they were interested or were specialized in. And then they
+just got a lot more organizational gains. And it brought everybody to the table. He was talking
+about, like, folks on, like, account payable that were, like, making agents. It's like people,
+everyone was at the table. And so I think that's a really powerful strategy. And I think part of
+that challenge, too, for folks is you get into this tangled web of, oh, we have this whole, you
+know, dark web, like, massive, like, AI stuff going on in our org. Let's, like, figure out where all
+the humans are in relations to this stuff as well because you have organizations wanting to make
+sure that there's appropriate oversight and expertise in the loop. And it really just depends on,
+like, what the loop ultimately looks like for, like, what you're delivering and what your agents are
+doing. Like, I know for us, like, at Linear B, especially with our customers, like, the loop is the
+terminus or, like, the beginning of the next is, like, the merge boundary, right? We're looking at
+the AI's effect creating code and ultimately merging and delivering. And then what happens
+afterwards. But you have to have this point where then at that merge boundary where you're doing a
+PR review, is it a human reviewing it? Is it an agent reviewing it? Is it both? Or is it an agent
+that's taking the cognitive load off of the human and elevating to the human on these specific
+criteria? Like, these are the kind of automations and stuff that I think, like, folks that are
+trying to crave control again over their SDLC are really, really looking for when they come to us at
+Linear B. And so it makes sense that, like, folks who would be building and distributing these
+agents and trying to, like, corral it would have that same kind of question. Like, what do you think
+about in terms of, like, the terminus of the merge or the loop, right? Like, what does the loop look
+like? And where do you think the human should be inserted most of the time? We call this frontier
+engineering at Amazon because we're really seeing, you know, I think over the last three years that
+I've been involved or three and a half years that I've been involved, we've gone from, you know,
+these inline code completion where it's just helping you to write the next line or maybe the next
+function. And then we started chatting about our code, like, asking what does this code mean? And
+then we sort of vibe coding. But I think across all of that, none of us really felt that much more
+productive. Like, not a step function change in production, like productivity. And now I think, you
+know, as you were talking about these really AI native folks, we're literally seeing based on we're
+doing some pilot, we've been doing pilots with different teams, four to five X productivity
+increase. I mean, it's amazing what now with these newer models since kind of the winter of last
+year that we're able to get. But we're also seeing there are some real practices that they put in
+place. Like, it's not just about the tools, right? It's about the practices and the change in habits
+that they've been making. But one of them is around accountability of quality of code. Because I
+think that I used to say the thing that a new hire will always do coming in is do something wrong
+with Git. Right. Right. They'll try to do a force flash. Yeah. I mean, all of us are. Everywhere it
+comes in, you go and you clopper Git. Exactly. It's a ritual. But now people coming in, it's always
+an AI swap pull request. Oh, yeah. It doesn't hit the same right. It doesn't feel as good. You know,
+we have to be accountable as I, you know, I tell teams, you have to take accountability for the code
+that you produced. Even if you generated it using a model or if you wrote it by hand, you have to
+take the same accountability. And so typically, like on the teams that I work with, we assume that
+you have read it before you push it to pull request. Often those slop ones are like, you know, the
+person's coding assistant just pushed it and the human never looked at it. But then we also have
+been doing a lot with automated AI code review to catch the total slop, but also to catch the nitty
+gritty stuff that we shouldn't have to look at anymore. Like, is this maintainable? Is this, did you
+add tests? Do the tests make any sense? And then we get to focus in the pull request on, are we
+doing the right thing here? Is this the right thing to do? Is this touching, very sensitive code
+that tends to break in production if we change it? Like all of those types of things where they're
+really important stuff, but that I think people in code, in manual code review have tended to miss
+the forest for the trees. I think we all know someone who's very nitpicky in code review and, and
+doesn't really, you know, look at the, the overall picture of like, is this, is this the right thing
+to, to push? Um, and now the AI gets to be picky for us, right? And the, and the AI code reviewer
+and your AI code generator get to chat with each other. A new hire's first mistake used to be doing
+something wrong with Git. Now it's an AI slot pull request merged straight into main from an untamed
+agent. But the accountability should be the same. You should own the code that you ship, whether you
+wrote it or generated it. As AI writes more of your code, it's more important than ever to have
+strong checks and balances in place. Without them, security risks and spec mismatches slip straight
+into production. Linear B provides policy driven AI code review that catches risks and enforces your
+standards before human review even begins. Govern your AI workflows without slowing your team down.
+Learn more at linearb.io. I want to dig into some of that because that's really fascinating. So on
+the submitter side, like the code producer side, there's an ownership value. You have to read it.
+You're owning the code. It's a matter of if you wrote it, your agent wrote it. That's a great
+universal value. And then you bring it to the team. And then you flagged it. Like, then you can have
+something like an AI review come in and look at the PR before a human and take care of those nits
+and check for tiny things. And even like code spell stuff. Did you add new code or did you go and
+find the thing you should have refactored and refactored it or figured out what was dependent? Did
+you just like choose a shortcut? Because that's like, I think, a really big challenge, especially in
+like bigger, more brownfield code bases as well. So in that world, are all of those PRs typically
+getting an AI code review first? Is that like a pretty much an expectation at this point? Yeah. And
+I think, but I think like you said, the challenge in a large organization is, are we sharing the
+prompts of these AI code reviewers, right? Is it getting installed across everybody? And we have
+built internally some good mechanisms around that. We have something called, it's called AIM. It's
+kind of like a, like an NPM install, kind of where you can install custom agents. You can install
+MCP servers. You can install skills onto your local machine. And so that's a great way for
+organizations as a whole to do that. And we've seen everybody struggling with this, like all large
+organizations, because for the last 25 years, we have been, you know, fed the gospel of service
+oriented architecture. And now we're just shoving Markdown files around. Right. And so, like some
+kind of order. Or HTML if you're fancy. Yeah, exactly. Like I'll, I'll upload it to Slack for you,
+you know, but we also have some, you know, the hooks into your code review system is also really
+important. And so we have this thing called, it's called auto SDE, but it's effectively, you know,
+anybody could, could implement kind of a custom agent in GitHub actions, right? To, to go and review
+a pull request and add comments. Right. But that's just like almost a necessity now because of the
+volume of code that's moving through the code base. Now it's just so much higher. You're in, you're
+definitely seeing that. Fire hose, right? You can't, you couldn't even drink from it if you wanted
+to. That's right. And so, and so like having also control over or standardization on the review
+prompts, how things are getting reviewed, what matters. I think that organizational level
+standardization is really important. It's definitely why teams definitely would turn to like tools
+that standardize that, right? I think that's a really critical thing. And another thing too is like
+even thinking in the future about like, oh, okay, what's the, what's the prompt going into my AI
+code review? Okay. But what was the prompt that made the code? Where does that live in here? Or
+where does the whole conversation log in? That's what like, I'm seeing like really cool takes on the
+Git forge starting to come out. Like the Git forge obviously has to be reborn, you know, from the
+ashes. It needs to be more agentic. More stuff frankly needs to live in it. And you got companies
+like entire really trying to tackle that problem. So I think we're going to see a lot of interesting
+developments. But my last thing I want to pull from your head on this, like, do you think that Git
+forge is insufficient? Do you definitely think it needs to change too? I do. I think a lot of the
+work out there right now is focused on kind of the storage problem, the scale of changes. And it's
+interesting. Git has been misused as a database for a long time. Say it louder. Say it again. We've
+gone through GitOps where people are trying to use Git reverts as production rollbacks and things.
+And so, I mean, one of my hopes is that we come out of this with an actually good database for
+handling these things. Because we're starting to see, you know, for use cases that do really need
+multi-agent architectures, or even when you have multiple agents working in parallel on the same,
+like, workspace or code base or whatever it is, and the same data, basically, they're going to run
+into conflicts. And you have to resolve those conflicts. And engineers are extremely comfortable
+with Git conflict resolution, right? And so, anyway, I hope that we come out with nice database
+solutions around this. But I also think that the code review process has to change, right? And we're
+kind of working around the current experience right now. But it seems crazy that we have, we now
+have, you know, multi-thousand line code reviews. And we are still just kind of putting that all on
+the page in hurry or new, right? Right. And so, I think that there's a lot of room for improvement
+around just the experience of the life cycle of the code as well. Oh, yeah. The PRs just become like
+theater. You go in and it's like stamp, stamp, stamp, stamp, stamp with a bunch of, you know, big
+long blocks. And people aren't even reading the CICD. There's a whole refactor there that will be
+due. But when it happens, Claire, I guess you and I will have to reunite and then gossip about it.
+That's right. That's right. But, you know, this episode is going to be coming out a little bit after
+when this happens. But we got to talk about it because it's still going to be a hot burning topic
+when this episode does drop. And that's the MCP-728 formalization around the spec, which you are
+obviously playing a big part in as a core maintainer at MCP. I'm super excited about this. I'm one
+of the AAIF ambassadors this year. And so I've been also out there sharing the news about how the
+spec has been changing and what folks need to do to get prepared and actually how much simpler it
+really is going to be for all of us. I'm super stoked, but I wonder what you're stoked about. Like
+what's top of mind for you as a maintainer about what is going to be coming with the 728 change?
+Well, the first big one is how much easier it's going to be for people to build remote MCP servers
+with the HTTP transport. I think that I have long been a proponent of getting out of the standard IO
+MCP server game. I think that really any SaaS provider should have an MCP endpoint for their APIs.
+But it's been hard so far. It's been really difficult to do anything in the MCP, to implement
+anything as a remote server provider other than basic, basic tools. Elicitation is a great example
+where as an MCP server owner, you can respond back with a form or a URL that you want the user to go
+and fill more information out and respond. And that has been impossible so far because it required
+the server to be super stateful. And that's just, and we've heard the feedback loud and clear from
+lots of people that that's hard. And it is hard to build a streaming API into your web server in
+order to support things like elicitation. And so my hope at least is that now that we're
+transitioning to a much more stateful or stateless design rather, with much more typical request
+response patterns in requests that people are going to be able to embrace a lot more of the spec,
+that they're going to be able to implement elicitations because now it's really simple to do a
+request response typical API pattern. Yeah, it sounds like you're taking the same strategy to it
+that you took the things that we talked about earlier in our chat, simplifying it, right? We have
+this opportunity of taking things away. MCP used to have to be this stateful thing. It was
+basically, you know, like someone with like a newspaper spec in the agent when it would do something
+wrong or otherwise, like it had to just, it had a whole different approach. It was in a whole
+different world of models and harnesses. So for it to be more, it's like coming in and just kind of
+trimming out what isn't really contributing, what's actually holding folks back because you pointed
+out a key thing that has been something that's played with the MCP spec and its adoption more
+broadly is that it's hard to produce and serve this streaming server like at scale. And it makes it
+hard for folks to go beyond internal usages as well. And so because of that, this opens then the
+opportunity for those teams to reevaluate MCP as a step changer for their own products, for their
+internal workflows. And ultimately, it just makes it more capable because you're taking away stuff
+that doesn't work. So do you feel like more about like this release is more about simplifying than
+adding things on? I think so. And I think especially for, you know, the developers that are building
+on top of MCP, right? That's really my hope is that it's simpler for people that are building on top
+of it. I think the other one, the other piece is in terms of simplifying is figuring out and getting
+better signals around what is really working in the MCP protocol. So one example is that tasks has
+been in the spec as kind of this experimental thing. Tasks allow you to model long running jobs
+through MCP. So you can kick off a task and then see the status of a task and then get a task
+completion as opposed to a tool, which is very, you know, request response, typically pretty short
+lived. But it's, there's been a bunch of changes to it. And as we've gotten feedback, and so that
+has created, I think, a lot of churn for folks. And again, we need to make it simple and easy and
+straightforward to build on top of this, this protocol. So we moved tasks to an extension. And we
+already have a set of extensions. MCP apps is an example where the server can provide a UI, a full
+UI widget. It's supported in chat GPT, for example. But it's, you know, an extension could be
+something that is pretty mature, but is a pretty particular use case that is not necessarily going
+to get promoted into the main spec. But it can also be for experimental things where we can make
+breaking changes. We don't want to make a lot of breaking changes in the main spec. We want it to be
+very stable. But we also, you know, the space is moving fast and we want to experiment with some of
+these new ideas like tasks. I'm also working on MCP events and web hooks. But we want to make sure
+that we design it right, that we design it in a way that people can actually easily build servers,
+easily build clients and harnesses on top of it. And so moving forward, what you'll see is a lot
+more extensions and then things kind of graduating into the spec as they become more stable and as
+we see more real world usage of them. Yeah, I think that's a great way to kind of chart how the spec
+is going to evolve. First, we have this simplification stage. We're going to make it just easier for
+everyone to build with the baseline parts of this tool that are transforming agentic workflows. Now,
+let's get this simple now. And then we create these opt-in experimental kinds of add-ons, these
+working groups, these communities that expand, that find these things that are durable and actually
+have a lot of cross-industry uses. And let's formalize it because that's the point of having the
+open spec, the open protocol. And MCP apps is a big one. We've talked about that a lot on the show.
+So we followed it actually in its infancy when it was very, very first kind of announced, obviously,
+for its shopping use case. Because why else would you be making MCP apps? And so we then followed it
+to its recent fruition with the chief product officer at Slack, Jamie DeLang. They're integrating
+MCP pretty deeply and MCP apps into their system as well. And it's been pretty transformative
+because you bring these UIs, iframes, and React to the whole world of the web that we're already
+really familiar with and already really fluent with. And then you can bring it into the
+conversation. I think that's a big unlock for teams to build these more composable workflows. And
+then that, I think, then, at least for me, starts to shine a light on when and why, as an
+organization, would I have an MCP server over a skill or an agent? When do I choose which to own?
+And which goes back to the earlier thing you said as well, because all of those things can just be
+next-level contributions to the team without having to be, like, the agent, right? So the idea of
+being able to more simply build a skill versus an MTP server and they have their very separate use
+cases is something that then becomes more clear. Because, oh, I use MCP to serve these very distinct
+tools or internal visual experiences or to then stand upon the platform of my skills that my
+organization has managed to standardize. So they have, like, a synergy to them. How do you think
+about MCP and skills and untangling them for engineering teams? They are definitely complementary.
+There is, right now, an experimental extension for skills over MCP. One thing that we see a lot is
+that skills describe how to use MCP server tools. As I was saying, we have this AWS MCP server,
+which you can call 16,000 AWS APIs through. And you can do, you know, thousands of things. And a lot
+of the things that you want to do through those APIs requires multiple API calls in a particular
+sequence, right? I want to stand up a serverless app. That's going to require who knows how many AWS
+API calls. And so we have this list of, we surface skills through this MCP server to describe how to
+use the other tools on the MCP server to do very specific things. If you want to, you know, in the
+description, we get to say, if you want to build a serverless app or you are, you know,
+troubleshooting something about an RDS database, call these APIs or call these APIs. And that's kind
+of the beauty of progressive disclosure, right, is you definitely do not need all of that content at
+once. Right, right, right. And there could be thousands of them, right? And so we've heard a lot of
+use cases in the community, the MCP community around, I want to describe different use cases of how
+to connect these different MCP tools together for the server. And that makes a ton of sense if you
+are using it internally, an internal MCP server or you're a SaaS provider and you want to provide,
+you know, great ways to use your APIs for agents. We also hear a little bit of people having trouble
+kind of wanting a package manager for skills and trying to use MCP for that. I think that's a little
+bit different. That's a really big challenge for teams. Yes, it is a very big challenge. We could
+just chuck it into Git, but then, you know, a lot of folks that are making and using skills that
+aren't anywhere near Git. So it's like it's very hard to distribute it. That's right. That's right.
+Yeah, I do like the MPX skills tool from Brassell, but it does then rely on Git. And then we always
+have to remember not everybody is a developer who's using agents, right? That's the thing. We have
+to make these tools more accessible. And you're right that they are very complementary. MCP brings
+the distribution and then skills bring the capability. And for me myself, I use skills over MCP. I'm
+a user of that experimental plugin because I do find that to be a great synergy. The progressive
+disclosure, as you've called, is really what's so critical about working with these tools is, you
+know, they are so powerful. But then they have big context windows. But if you clobber them, then
+you're just not going to get the results you want. But also, more crucially, if you clobber them,
+then they're not going to know what to look at. So the progressive disclosure actually allows it to
+reason better. It thinks between the things that it learns. And those kinds of tiny changes with our
+tools are super critical. And MCP is obviously playing a big part in that. So just to kind of round
+out our conversation here, if you were to say something to an engineering leader right now whose
+teams have maybe been experimenting with skills and MCP in particular, they're having trouble
+standardizing. What should they pay attention to right now? What strategies can they take back to
+their teams to get ahead based on the stuff that you're seeing in shipping? I think one is always
+think about simplicity. We have arrived at a time where the models are simply amazing of what they
+can do. And so focusing on building out context, whether that be a tool that goes and gets context
+or takes an action or a skill that provides context about using tools, whether that be this MCP
+server or a CLI or an API. That's really the thing to focus on now because the context is what makes
+all of that, all of this work. Amazing. Well, Claire, thank you so much for joining me today and
+taking a deep dive into the Strands Asian SDK, but also a tour through MCP and its evolutions. And
+even, like I said, a trip down memory lane. We got to reflect on how the models and the tools used
+to be and how they are now and how good we really do have it now compared to them. I think the
+challenge for everybody to strive for simplicity is something I say all the time on Dev Interrupted.
+I couldn't resonate with that more. And just as we round up here, Claire, where can our listeners go
+to learn more about you and your work and everything that we chatted about today? Well, you can go
+to strandsagents.com to learn more about Strands Agents SDK. And then I hang out on X and LinkedIn.
+Amazing. Well, we're going to tag you on LinkedIn. We also are sometimes shared around on X as well.
+And so for our listeners, if you're listening to us on a podcast provider like Apple or Spotify, be
+sure to leave us a like or review. If you came all the way to the end of this chat, then you're
+obviously a big MCP nerd like Claire and I. So please come and find us on LinkedIn. Tell us what you
+thought about today's episode. Drop a comment on the Substack and LinkedIn newsletters that
+accompany it as well. And we'll see you next time. Thanks again for listening to Dev Interrupted by
+Linear B. And Claire, thanks again for coming on the show. It was an absolute pleasure chatting with
+you. Thank you.

@@ -1,0 +1,218 @@
+EPISODE 1661
+
+[00:00:00] ANNOUNCER: Figma is a cloud-based design and prototyping tool that is widely used in UI and UX work. It allows users to collaborate in real time, a key feature that has helped drive its popularity. Figma is an impressive engineering feat impart because of how far it pushes what's possible in a web browser.
+
+Abhi Mathur is the VP of Engineering at Figma. He joins the show today to talk about his path to Figma, architecture, scaling, team organization and more.
+
+This episode is hosted by Josh Goldberg, an independent, full-time open-source developer. Josh works on projects in the TypeScript ecosystem. Most notably, TypeScript ESLint, the tooling that enables ESLint and prettier to run on Typescript code. Josh is also the author of the O'ReillyLearning TypeScriptbook, a Microsoft MVP for developer technologies and a live code streamer on Twitch. Find Josh on Bluesky, Mastodon, Twitter, YouTube and .com as Joshua K. Goldberg.
+
+[INTERVIEW]
+
+[00:01:16] JG: Abhi, welcome to Software Engineering Daily. How's it going?
+
+[00:01:19] AM: Thank you, Josh, for having me.
+
+[00:01:21] JG: I understand that you've been at Figma for a little while at this point. What have you been working on recently?
+
+[00:01:26] AM: Josh, I've been at Figma now for one and a half years. And I support the platform engineering team here at Figma. Think of this team as building blocks to make Figma a successful, multi-product company. The core infrastructural pieces of storage, compute, egress, traffic is part of this team. I also support Figma multiplayer system.
+
+In some ways, Figma is a gaming engine that allows multiple people to do things together. You can do design together in the Figma design tool. You can do collaboration together in the FigJam tool. But that togetherness engine could be used for building any other collaborative product. I support that.
+
+I support the shared functions, like TPM, security, quality. And we have very expansive thinking of what a platform is. Part of the platform team is shared product experiences, like searching, building, user management. And the latest area that I'm really excited about is AI. I support that area as well.
+
+[00:02:23] JG: That's quite the broad purview. How do you fit all that into your day-to-day?
+
+[00:02:28] AM: The area is broad but the thinking is simpler, to create a platform that allows us to be multi-product. Most of the times, things are pretty much in control. And I mostly contribute to the things that are new or on-fire. These are the two areas that I focus on.
+
+[00:02:44] JG: Good to know. Before we dive into those new and on-fire areas, I'd love to dive in first to your personal backstory. You've been coding for a little while. How did you first get into the industry?
+
+[00:02:54] AM: I, in very early days of college as well, was doing some programming. I did my engineering in electronics and instrumentation. But I was really passionate about computer science and did random projects for whoever needed anything. From building computers to writing small applications. And through then, I've worked in several other companies. My first real job was at Microsoft. I joined the developer division and worked on Visual Studio. That was quite an interesting thing. Worked on Office 365. And then moved to Facebook. And now here I am.
+
+[00:03:28] JG: What made you take that jump from the Facebook area to Figma?
+
+[00:03:32] AM: I thought I had the best job at Facebook, to be honest. I could watch cat videos all day and call it work-related. And we were doing a full stack development. And when I say full stack, I mean really full stack. A part of my team was building ASIC to do video compression. Some of the engineers in the team were doing new codec development. We built our own protocols. We had databases - specific database for video storage. We were tackling a billion-plus videos on compression and playback. It was one of the best jobs.
+
+And then through a mutual acquaintance, I connected with Figma. And I was really excited about three things. First, the product. It's such an exciting product. People love it. All the designers within Facebook used to really love it as well. It was very good. The second one was people. I found the most humblest and really smart people in the discussions. And then the third part was technology. I'm a technologist at the heart. And Figma has one of the most interesting, complex, technical problems to solve. A combination of these three things got me here.
+
+[00:04:39] JG: It sounds lovely. We had a previous interview with one of your co-workers, Marcel, at Figma. And he did a great job of explaining some of the technical challenges faced by Figma. I'd love to hear from you since you've been working on quite a few different areas. Is there a particular challenge that you've been thinking about lately that comes to mind?
+
+[00:04:57] AM: Yeah. I'll say three. You asked me for one. But I'll describe three interesting ones. First is Figma is a very unique kind of an application. Building real-time applications is very hard. Building real-time applications that work at scale is harder. Building real-time applications that work at scale with multiple people modifying the data is even harder. And doing it on a browser, which is very thin and low capability often, is one of the more complex problems. We try and do that.
+
+The second one is overall usage of Figma is increasing. Every day is a bigger day than the last day, which is a really good problem to have. And just scaling the infrastructure to accommodate that designed files are becoming complex. Some of our biggest customers have their design files becoming bigger and more complex as they build on things over Figma over a period of time. Scale is an interesting problem.
+
+And the last one I feel is an interesting problem is how we launch. We, of course, do experiments. We do beta testing. But a lot of our features we try and release to everybody at the same time. And as a platform owner, that's a pretty daunting experience sometimes and keeps me excited. These are the three areas I would say are quite interesting.
+
+[00:06:15] JG: Sure. You've answered three times as much as what I had hoped for. Thank you. That's three as good of an answer. Let's talk a little bit about that scaling issue. I can imagine Figma is not a small, new company anymore. It's been around for several years. It's got quite a few users. As you said, some very large documents out there. How do you make it so that, as you scale, the already built-up infrastructure isn't kept rigid and brittle? Such that you're actually able to change large systems over time?
+
+[00:06:44] AM: Yeah. I think we are being sort of very thoughtful about it. We try and shy away from over-engineering but having an eye for the future. I think we have the right solutions for now. But we sort of carve out some bandwidth for future. For example, we had a singular database. We're starting to shard it now. And gradually doing this in production is like changing the engine while you're driving the car.
+
+Similarly, our early designs were supportive of a certain size of file and file complexity. As time has progressed, it does not scale anymore. We are starting to invest in, "Hey, do we need to load the whole file? Can we load part of the file, whatever is being shown in the viewport, so that we can make the experience snappy?" We look at it not only from sort of one stack view but across the stack, what are the changes necessary to enable the scale and snappiness to continue?
+
+[00:07:42] JG: Is there a particular area that you found users request a lot of features in but then is rather difficult to add features while still being able to scale for technical or organizational reasons?
+
+[00:07:52] AM: I think there are sort of two types of requests that come in. There are product changes that are necessary. People are asking for new capabilities within the designer surface. But, also, equally where they want their data to be is an interesting kind of a problem that can happen.
+
+We recently launched a new capability to have data for their customers locally available within their geography. EU customers can now choose to have their data there. And doing that while the service is running, while their data is already there is an interesting one.
+
+[00:08:26] JG: Is that a challenge that you're able to speak to the solution for? As in how do you migrate or create availability for data in specific regions while you're already in production?
+
+[00:08:37] AM: Yeah. I think without going too much into the details, we work with the customers to understand what they are trying to look for. We have created some mechanisms where we sort of dual write for a little while and then cut off the write in certain - the geographies they didn't want the data in. And then we have the copy of the write data available in the write geography.
+
+[00:08:57] JG: Got it. I want to switch a little bit the topic over to some of the organizational sides. You're vice president of software engineering, which means that you deal a lot with setting up teams for success. Making sure that they're working on the things that they need to work on and want to work on. Larger companies, at times, it can be difficult to find bandwidth or prioritization funding for the more platform or framework side of things that don't directly lead into customer growth or revenue. But you've just described in great detail all the things you've done that do work on the platform with or without user revenue. How do you manage to convince stakeholders that this is still valuable stuff that should be worked on?
+
+[00:09:35] AM: Yeah. It is relatively much more simpler within Figma because there is a very high appreciation already of the value the platform brings already. I think about these investments in sort of all the kind of investments in two broad level categories. Big gear and small gear.
+
+I think of big gear investments as investments that will just accrue goodness to the company in the future. And they don't get changed based on some smaller product or priority change. For example, we know that we need to scale our databases. We need to make sure we handle large files in a better manner. We need to have better failover stories in case our dependencies fail. That's sort of the big gear category.
+
+And then we try and preserve some bandwidth for the team for these big gear items. And then there is small gear, which we want to keep very dynamic. Because we don't want to be a platform team that is set in stone and does not react to the new market situations or product situations.
+
+The small gear is something that we quickly are able to change and say, "Okay, this is the priority now. Let's start working on this. Let's pause this activity. Move to a new one." Just sort of preserving certain bandwidth for future.
+
+Also, sort of tying it to the company's priorities also helps. When we were investing in scale, it is clear that it accrues to our future ARR. And supporting that when we are building capability to only have data in certain geography, it is associated with sort of some locked revenue from the customers that would have not bought our service. Associating it with the company priorities also has helped a lot.
+
+But overall, platform is already seen within Figma as an enabler for us to be a multi-product company. Our vision as a company is to sort of be a full spectrum of product life cycle products. And having a stronger platform base has always been a useful thing.
+
+I've seen this play out so many times in my career before as well, whether it is Office 365, which used to be only like two, three services. And now there are like several, several services. And we built a really strong foundation and platform that enabled many new products to just like snap in to the video platform. We built a video platform for Facebook. And then that was available for anybody who wanted to do video within the company.
+
+Instagram was able to share Facebook live capabilities within like weeks. Not months. It has played out very positively. I'm very vested in having a strong platform and the company already thinks about it already.
+
+[00:12:21] JG: A personal observation, if you'll permit it, you're very calm in the way you describe things, which I imagine is probably necessary by your job area. But I'm seeing little glimmers of excitement come through. Do you still get excited as an engineer seeing all these platform initiatives? And do you get particularly excited seeing the company invest in them with Gusto?
+
+[00:12:38] AM: Yeah. I have to remain calm. But I do get excited. I get excited about ways in which technology can just like change the way people do work. Whether it is sort of consumer-focused, or developer-focused, or engineering-focused. My latest excitement is around AI and all the possibilities it is bringing. Yeah, I still get very excited. And I have to stay calm. But I get excited on a lot of these technical topics.
+
+[00:13:07] JG: That's an excellent segue. Because we should talk about AI at some point. What can you tell me about Figma and AI? Is the company doing anything in particular in that area?
+
+[00:13:14] AM: Yeah. Our company's mission is to make design accessible to everyone. And I totally believe AI can be that level. We are investing in AI in three dimensions. One is the collaboration dimension. FigJam is our collaboration product which allows multiple people to collaborate effectively. And we have made it recently AI-powered. And it makes collaboration much more fun, richer, quicker.
+
+We are working on making design better with AI. We have certainly the designer persona, which is our primary persona. We want to make them much more efficient, productive within the tool with AI.
+
+There are a lot of sort of repetitive activities that you will have to do as a designer, "Could we make them better? Could we make search better? Could we help you make your designs look a little bit more realistic by auto-completing things or auto-filling things?"
+
+We also want to reduce the barrier to entry for design and make non-designers more effective. How can you remove these barriers of seeing a blank canvas? You come to Figma and you have never done design and you see this blank canvas and you don't know where to get started. Could we help you get started? We are exploring those possibilities.
+
+And then the last one is around sort of how can we make the transition from design to development better? We are covering all these three domains. And we think AI is the fabric that will enable all of these three scenarios to be better.
+
+[00:14:49] JG: I can certainly see how AI would help with many of those tasks, such as, as you described, making search better, helping with the repetitive parts. But it seems like right now we're in the peak of the Gartner hype cycle for AI where we've hit the maximum utility that the current amount of AI is able to provide. And some companies are starting to see diminishing returns in rolling out more and more AI. Are there particular areas of the product that you think AI could help in the future but not yet or you think it's just not applicable for AI at the moment?
+
+[00:15:21] AM: I think we have only started to scratch the surface. I feel there are so many possibilities to just make your imagination come to reality much more quicker. But I want to initially sort of ground a lot of the work we do on very realistic pain and scenarios rather than sort of creating AI for AI.
+
+You talked about search. As the companies grow, design systems become complex. Think of design systems as - as an engineer, you think you're writing code and there are code libraries. And you can say, "Okay, I don't have to write the database connection library again or file reader library again. Somebody has done a really good job. Can I find that?"
+
+Similarly, in design, we have design systems. And as companies grow, these design systems become really complex. And if you want to make a new nav bar, just finding - where does it exist? And has anybody done similar components. It becomes really complex. And could we make that easier? So that, as a designer, you're not spending time doing repetitive stuff. You're just finding things better.
+
+To very simple things like, "Hey, if I make a table, can you auto-fill it with data?" Otherwise, you'll have to type this and - or you will call it like FUBAR, or like [inaudible 00:16:36], or something like that. Can it look realistic? And that's such a simple thing to do. And so much time saving and high-value for people.
+
+We are mostly focused on sort of productivity acceleration. Very features realistically grounded in day-to-day activities. And I think we are just scratching the surface. I think there'll be like much more to come.
+
+[00:16:57] JG: That's very interesting. Speaking a little bit back towards your role as a software leader, AI is very cool, very exciting. But at the scale of a company like Figma, it can be quite expensive to just willy-nilly put AI into everything. How are you balancing the cost of more expensive AI models with the quality needed by the more expensive AI models?
+
+[00:17:17] AM: Yeah. We are still early in the journey. I think our current focus is mostly around value creation. Of course, we want to think about efficiency. But my way of thinking is could we start creating the right scenarios, right value? And subsequently think about efficiency. It's an important thing. I don't want to sort of diminish the importance of this.
+
+There are multiple ways in which we are thinking about it. One is sort of, "Hey, over a period of time, the cost of running these models will continue to go down." We are exploring what could be done within the infrastructure that we have rather than relying always on a third party. How can we be more token-efficient? We are exploring all of these possibilities? But my experience has been to sort of solve the customer value first. Understand what will be the areas of investment and make that efficient.
+
+I'll give an example from my past experience. When I was leading the video team, video was not very big initially. This was 8 years ago. But we knew it'll be very big. Over a period of time we sort of did things inefficiently but then worked on making things efficient. And the depth of efficiency investments will depend on the scenario and the possibility of success. We saw that this is now a billion-plus videos. We need to have our own ASIC or we need to have a specific codec. Because these were like so widely utilized that 5% saving is going to be a huge thing.
+
+Similarly, within our infrastructure, we are sort of trying to figure out how can we rightsize our compute? How can we rightsize our caches? And I'm thinking for AI. We will tackle this as a subsequent problem and mostly focus on just enablement now.
+
+[00:19:02] JG: Mm-hmm. Have you had any particular user stories come through that have been validating or invalidating for your early uses of AI?
+
+[00:19:08] AM: Yeah. The ways in which people are using FigJam and AI is quite interesting. And we use it ourselves quite widely within Figma to do all the planning and team meetings. And I have a personal story. I did an offsite with my directs and I was somewhat unprepared for that meeting in the morning. And I told FigJam, "Yeah, to create a fun icebreaker for me," and it did. It was such a fun 30 minutes with my directs. And we sort of learned about each other and it did a really good job. And I would have taken a long, long time to get there and would have not been that fun. Users are starting to utilize it in so many different ways. And I have been a personal beneficiary for that as well.
+
+[00:19:55] JG: I have to ask what the icebreaker was.
+
+[00:19:57] AM: This Icebreaker was mostly around sort of your childhood memories and things that other people don't know. And people shared their pictures of growing up and what brought them to where they are. It was a sort of their journey to Figma and all the path that had. And it was emotional for some people to sort of share their journey. But it was like a good 30 minutes of togetherness. And we all knew each other better.
+
+[00:20:25] JG: That can be very hard to do, to get into the side of folks, especially when you're all leaders of - or so used to being political with each other. Do you find that that has helped you in working with these folks now that you've seen the personal side of them a bit more?
+
+[00:20:38] AM: I think so. My way of working is with everyone as if I'm going to work with them forever. And that changes the sort of dynamics altogether. If you create a transactional relationship, I think it's a different thing. You don't have the amount of investment in knowing, sharing, learning, growing. And if you work with everybody as if you're going to work with them forever, it's a different kind of work thing.
+
+And as a leader, often maybe leading with sharing is a way to get sharing reciprocated. It's always good to know where somebody's coming from. We are all sort of an aggregation of our past experiences. We all come with our prisms. And knowing that is helpful. At least I found it useful.
+
+[00:21:25] JG: I think there's an interesting parallel to be made. Please tell me if I'm right or wrong here. You've talked about how long-term investments in the platform might be hard to immediately show value from but are demonstrably valuable. Similarly, working with people, you can try for a transactional relationship. Just go for what you need at the moment. But the long-term investment of getting to know folks is useful. Would you say that there's any parallel here in how you lead people and trying to work both short and long-term?
+
+[00:21:49] AM: This is absolutely similar in nature. You're building foundations. And if your foundations are great, they always pay up. I have personally benefited from these in the form of sort of career growth, coaching, opportunities, references. It's a very small world in technology. You come across the same set of people. And it is helpful.
+
+Similarly, these things can't be done in a day. You can't make a great technology foundation or platform in a short period of time. It requires work. I talked about the big gear, small gear. You can't be a team that is only like sort of focused on big gear. You carve out only some small percentage but you do it over a longer period of time and make things better. You invest in observability. You invest in extensibility. You invest in scale. And these are endeavors that often take many years and they pay off. Similarly, in relationships and business, saying hello. Getting a lunch with somebody you don't need to necessarily do some work with but will pay off in the future is a really beneficial thing.
+
+I was reflecting back yesterday on my day. Of course, I work with the engineering teams all the time. But my day yesterday was some discussions with the recruiting team, some discussions with the design team, some discussion with the team that publishes our content. I think they understand me a little bit more. I understand their work a little bit more. And they are not always about exactly the thing that we need to deliver now. But often, ideas spring up as we sort of work together.
+
+[00:23:27] JG: That's really lovely. Figma is also one of the companies that's somehow managed to keep its careers page open and populated significantly above the average throughout much of the last few years of the tech industry's pains. How has that been a possibility? How have you managed to do that?
+
+[00:23:42] AM: I think there are two parts to this. The team has done a really, really good job being conservative on what we hire for. There's sort of a lot of thoughtfulness that goes into how we organize. How we create a role? Is this necessary. And this is also enabled by the growth that we are seeing. Even with the economic constraints in 2023, our user base and revenue grew significantly. That has allowed us to sort of continue to grow in engineering and other functions as well. Now we are 1300 people strong.
+
+And the most important thing is our future looks great. I feel we have proven that we are not a single-product company with the three products that we have in the market; FigJam, Dev Mode and the design product. And we have ambitions to sort of continue to expand that product range across the product development life cycle. There is a need. We have been thoughtful. And we have the means to accommodate that. I think we are blessed and in a good place.
+
+[00:24:48] JG: As the company's grown to more than a thousand people, it, generally speaking for many companies, becomes hard to maintain conservative hiring with consistent standards, consistent rubrics for what you do or don't want an employee. And every company has its own hodgepodge mix of things they arbitrarily or informed by data prefer to higher for or against. Have you found any growing pains in trying to grow past the 1K mark?
+
+[00:25:10] AM: Full disclosure, this is the smallest company I've worked with. My team was bigger than the full company. Please take this with a grain of salt.
+
+[00:25:19] JG: Sure.
+
+[00:25:21] AM: I think we have good processes. We are still a pretty cozy set of leaders who are able to sort of brainstorm. Think about the kind of hiring we need to do. What is the bar of hiring? What will be the rubrics of hiring? Within the engineering function particularly, we have very clear interview questions. What qualifies as an acceptable performance? Processes of making sure we are hiring the right people. Blind reviews of feedback from the interviews. A final approval committee that looks at the interview performance. We have sort of checks and balances across from the stages of planning, headcount, creating roles, interview processes and then final offer. I feel we've still been able to maintain it quite well. I think we are poised to be able to sort of grow to the next level with the current setup process. I feel good about it.
+
+[00:26:17] JG: That's great. That's also a great segue into those ambitions that you mentioned. There's a Figma conference every year. This one is happening in a few months at time of recording. Is there anything you can tell me about what coming next?
+
+[00:26:28] AM: In June, we have our Config, which is this amazing event where all of our users get together. This conference has grown quite rapidly last time. I think we had close to 9,000 designers and users of Figma in one big, giant conference center in San Francisco. And it was just really high-energy experience.
+
+In this, the things that we're going to continue to talk about is similar to what we have done in the past. We're going to share more about the dev mode and the areas that we are expanding there. We certainly are going to be talking about AI and what we are doing for our customers. And then certainly making our design tools better. But AI will be like the new set of features that we'll be announcing during Config.
+
+[00:27:17] JG: Figma is one of the companies that seems to be rather on the forefront of modern dev tools. When I talked with Marcel in the previous interview, one of the big areas we discussed was the next five to 10 years. Even the next 15, 20 years of productivity. And I'd love to float some of those same questions by you.
+
+Speaking broadly, not necessarily specifically to Figma, what do you think are going to be some of the key trends over the next 5, 10 years for developer and designer tools such as Figma?
+
+[00:27:45] AM: More and more tools will sort of bridge the gap of imagination and reality. One of the things that we are hoping is that we are able to enable design is the product. You don't have to sort of think about a lot of details of what happens after design. It can the design be the product.
+
+A lot of investment in sort of not needing to think about base capabilities. And mostly thinking about creative and unique things about your product will be a thing. If you remember, if you wanted to write a program, you needed to start, "Hey, how do I get handled to a thread? Or where is my pointer?" And very few people think about it now. And most people think about writing application logic. And I'm thinking we are going to move from there to mostly thinking about what is unique about my product? What is unique about the activity it does rather than the plumbing necessary? The plumbing will probably be taken care of by the tools that exist. And then most of the energy will go in imaginative things. AI I feel will continue to play a really large part in enabling this migration of imagination to reality. And, certainly, we want to be part of that journey.
+
+[00:29:02] JG: Are there any particular parts of the Figma stack that you work on and around that you think might be made smoother by this transition?
+
+[00:29:09] AM: Within Figma engineering, we started to use some of the AI technologies. And it has helped us do things faster particularly around testing and sort of removing repetitive tasks. In the capability set, I'm really excited about design being easier thing to do or more productive thing for designers.
+
+And the thing that excites me is non-designers or developers. One-third of our users in Figma already are developers. They being able to sort of do some base designs. If you're an engineer in Google - Google is one of our customers or Microsoft. They already have a lot of designs and design systems. As an engineer, can I create a reasonable design to demonstrate my ideas or do a hackathon? Those will become much more possible. I'm really excited about that of making everybody designer and really making sure our company's mission is becoming a reality.
+
+[00:30:02] AM: I'm really excited about that of making everybody designer and really making sure our company's mission is becoming a reality.
+
+[00:30:11] JG: It's interesting that you mention hackathons because in my experience, there's quite a big difference between hackathon-level code or unshipped code and shipped code or real production-quality code. One of the big drawbacks that a lot of developers have seen from AI is that although they can use AI to scaffold large pieces of an application or even suggest how to design the app, the AI doesn't actually have context on what you're trying to do. It's more of an autocomplete than an actual intelligence. Are you worried at all that as people continue to rely on these tools, they might take for granted that things are being built properly when they may or may not actually be correct on the inside?
+
+[00:30:45] AM: Yes. I think that's a really important one, knowing the difference between a draft and really a production system. Finding the right places for that is a really critical one. You correct that currently very few systems can generate production-ready code or code that will scale or code that will be maintainable. It'll be a little while. But could we sort of remove the barriers to entry? Accelerate innovations is where we are. Eventually, I think we'll get to a place where it might be easier. Now, your point is totally accurate. Each of them has their own place, as you are doing things earlier in the life cycle of product. Quickly iterating, quickly brainstorming before you have to invest a ton of energy is also a really valuable thing. Systems thinking and just thinking about future still requires really good engineers and thinkers on that.
+
+[00:31:45] JG: For sure. It's fascinating, too, because I think most people just - we do not have the context to be able to predict what AI, what technology in general is going to look like in, say, 20 years. We can make guesses based on current technology. But 200 years ago, people thought we'd have flying cars or whatnot. Are there any particular predictions that you look at as, "You know, I really don't think that's likely."?
+
+[00:32:07] AM: I think the threat to humanity seems less likely to me. I think we are still a little bit further away from ATI. And I feel I'm a much more positive person, and I feel like there'll be enough regulations to make sure we use AI for our advantage and accelerating humanity. I think that seemed like a little bit overblown to me, and I have a much more positive outlook of things will play out.
+
+[00:32:35] JG: Must be very nice and comforting to have a positive outlook. Quite a few people out there are ringing quite a few alarm bells. When someone to me mentions they think Skynet was going to happen, I show them Windows Me. But there is a legitimate risk, right, of all this stuff?
+
+[00:32:51] AM: Absolutely. I think we should not take it for granted. What I feel is a thing that we are talking about it now versus when we are so far ahead. A lot of companies are starting to think about ethics. They're starting to think about protections. It's the right time, and we have to all work together to make sure we continue to invest in these.
+
+[00:33:13] JG: Absolutely. Well, that's a great topic to launch into our final section of the interview, which is I'd like to ask you a few fun personal questions. Now, I will note, your online presence is locked down. But I did notice you've mentioned that you are big into traveling. Do you have any particular fun places you've been or stories you want to share with us?
+
+[00:33:30] AM: Yes. Me and my family love to travel. I have two boys, 11 and 5. Me and my wife and two boys have traveled a lot. My little son, before he was two, had traveled to 30 different countries. My favorite, favorite place is Egypt. I first went to Egypt to speak in a conference. It was a Middle Eastern developer conference when I was at Microsoft. I just fell in love with that country, nicest people, very interesting food. I'm always just amazed by how much progress humanity had made 3,000 years ago. You look at the pyramids, and you look at the artifacts, and you feel like maybe we have not made that much progress in the last 3,000 years, and we can move faster.
+
+The other thing that is unique about Egypt is when people look at the big pyramids, some people say, "Hey, maybe the aliens made it. It's so far advanced." People miss out on the other pyramids. You go to Dahshur, which is just next to the Pyramids of Giza, you'd see step pyramids. You'll see a bent pyramid. Everything is an iteration. It's not like you don't get - innovation does not happen in one shot. It takes sort of iteration, failure, learning, improvement. It's true with pyramids and it's true with products.
+
+I worked on Office 365 and a billion-dollar product, multibillion product. It started with Business Productivity Online Suite which a lot of people don't know. It was not the best architecture. It was a learning, and then we made it better and similarly videos and what we are doing in AI. Everything is sort of an iteration, and Egypt reminds me of that quite a bit.
+
+[00:35:16] JG: This is such a tech developer podcast, where we've somehow managed to join the architecture of the pyramids to how technology unravels. But you're absolutely right. I mean, speaking of specifically Office 365, Microsoft's need to create web-based, even JavaScript runtime-based office, led to a lot of the innovations that Microsoft then pushed into the open source web communities such as TypeScript, which then also helped VS Code, which has helped Microsoft quite a bit. If you look at the archaeological dig of technology in any particular area, you can always see underpinnings that are completely or mostly unrelated to where it ended up. It's fascinating.
+
+[00:35:53] AM: Yes, it is.
+
+[00:35:54] JG: I've got one final question for you. You're familiar with at the area of Seattle. Yes?
+
+[00:35:58] AM: Yes.
+
+[00:35:59] JG: I want to hear your hot takes. Why is Cap Hill the best food zone in the Seattle District?
+
+[00:36:05] AM: I think somehow, we have - man, I live on the East Side, which is not the best eating place. Somehow a combination of just the best restaurants, great patrons, good walkable localities have converged into this really bustling amazing food place. You can find the best pizza and interesting pubs and joints. I don't know the reason, but I really love that place.
+
+[00:36:34] JG: East Side actually has some good stuff, too. For reference, there's a lake, Lake Washington that divides Seattle proper with Redmond Washington, which is where companies such as Microsoft actually have headquarters as well. One of my favorite pizza places ever is Can Am Pizza, which is on the East Side. I want to give them a shout-out because all the old Microsoft people used to get their chicken tandoori and other pizzas for work events. They're fantastic pizza, truly wonderful.
+
+[00:36:58] AM: It is. It is interesting, yes. It's not your regular pizza, and it is very fun and interesting. I don't know when you were there last. They have added a bunch of interesting flavors on top of what already existed. It's a fusion cuisine.
+
+[00:37:13] JG: Wonderful. I'm glad we've shared this. Is there anything else you'd like to talk about or share before we hang up for the day?
+
+[00:37:19] AM: No, Josh. Thank you so much for inviting me and having me on the podcast. I really enjoyed talking to you.
+
+[00:37:24] JG: Well, this was my pleasure. Thanks for hopping on. This is Josh and Abhi with Software Engineering Daily. Cheers, folks.
+
+[END]
+

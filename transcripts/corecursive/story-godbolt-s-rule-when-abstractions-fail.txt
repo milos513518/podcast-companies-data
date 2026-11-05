@@ -1,0 +1,499 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Story: Godbolt's Rule - When Abstractions Fail
+DATE: 2025-11-04
+SHOW: CoRecursive
+LINK: https://corecursive.com/godbolt-rule-matt-godbolt/
+AUDIO: https://traffic.libsyn.com/secure/corecursive/godbolts-rule.mp3?dest-id=628353
+DURATION_SECONDS: 2653
+TRANSCRIBED_AT: 2026-08-05T17:40:45Z
+----------------------------------------------------------------------
+Hello, this is Co-Recursive and I'm Adam Gordon Bell. Today I want to talk about abstractions and
+when they break and how to see past them. Like you have this idea of how a network request works or
+how memory works and it's very simple and concise, but it's also a lie or at very least a
+simplification. I was reading this book called Database Internals and about half of the book digs
+into this core challenges of database design, which is how to spend less time reading and writing to
+disk. There are all these tricky trade-offs and a lot of the big breakthroughs in databases in the
+back end of a database come from finding smarter ways to handle disk input and output for a
+particular type of workload so that things work fast and you don't lose any data. But here's the
+thing, it's all very tied to how disks work, right? Whether a spinning old-fashioned disk or a
+modern SSD disk, how they perform and what they're good at and what they tell the computer they can
+do. But here's the thing that surprised me, kind of blew my mind because once you dig into actual
+how a hard drive works, especially a solid state drive, it only gets more confusing because the disk
+interface, it's actually a lie. It's such a simplification. It's just this convenient abstraction,
+but it doesn't match what's actually happening under the hood in some pretty important ways. It's
+like realizing that car you've been tuning to get faster is actually three motorcycles bolted
+together under a plastic shell. And the reason that some of your clever tuning worked and some of it
+didn't is because you didn't know about that illusion. You didn't know about the reality underneath.
+You weren't debugging the real thing. You were debugging its shadow. Abstractions help us. They give
+us an easy concept to hold onto, but sometimes they trip us up. And so as you can tell, I was
+excited about this concept and I had to talk to somebody about this and I knew just the person
+because the craziest abstraction, the one that blew my mind is on AWS. A lot of data lives in RDS
+where it's running Postgres or MySQL, but that disk that it's optimized to write to is actually
+another machine. The abstraction is such a lie that you don't even realize that every time you write
+to disk in your database, it's actually a network request. It's like a SCSI hard disk where you rip
+out the SCSI controller and just plug it into the network and say, okay, as long as someone sends a
+packet, a SCSI looking packet to this, I can read and write a block. It's like bonkers stuff. Yeah.
+Yeah. Because that is often like the bottleneck on like so many systems and they just put a network
+in the middle of it. I mean, it's, it's, they're pretty good. It's a fast network. It's not the same
+as having, it always used to confuse me when there's this provision diopse and whatever you're like,
+why does this matter? It's in the machine. Surely it's like, well, this one is because it's, you
+know, a physical disk that you're provisioning in a machine that happens to have a disk in it, but
+everything else is virtualized through a file system that's really writing to what it thinks is
+local storage, but it's actually a network blast off an iSCSI packet or whatever it's actually using
+behind the scenes to racks and racks and racks of disks. Yeah. So, and, and then, you know, you can
+take the abstraction even further. Those disks, right? They present somewhere like the, here's a
+number of cylinders, sectors, whatever. But it's like, that's not really what's happening either.
+They, if it's, if it's SSD backed, then the SSD has a mapping table between where you say to put the
+data and where it's actually going to put the data because it has to do where leveling it says you
+only write over and over and over stuff. I don't want to keep writing to the same place over and
+over again. I need to keep moving where I'm writing around the physical characteristics of the
+system in order to not have the boot sector get completely screwed because you keep rewriting,
+whatever you do, you know, some sector like that. And so that's a lie as well. And then, you know,
+back to your point about, you know, traditional databases, you write a file and say flush and the
+operating system says, it's good. And then you're like, but it isn't, is it? No, because it's, it's
+not yet been flushed to the disk controller. Oh yeah. It has been flushed to the disk controller. Oh
+yeah. But the, the disk controller has a back, a cache. Oh, that's cool. All right. But it's been
+written to the drive. Yes. Yeah. No, because the drive has several CPUs on there that are doing some
+of this like scheduling of IO or whatever, and they've stored it for now. And they're waiting for
+the disk head to come back around before they actually put it in disk to be faster. You know, when
+does it actually get to the disk? Just tell me. I was neat. That's Matt Godbolt. And yeah, to me, he
+is the king of pulling back these abstractions. You know, I knew when I realized that disks were
+more complicated than I thought, metaphorically, you know, I was discovering my car is actually
+three motorcycles, that Matt would already know this. And he would have more facts like that one of
+the motorcycle engines was not in fact a motorcycle engine, but really a lawnmower engine running
+sideways. That's just how curious he is. He's the person who gets into these details. And that's the
+same curiosity that led him to build Compiler Explorer, a tool that shows you exactly what assembly
+your compiled code turns into. It lets you sort of pull back the veil on the compiler abstraction. I
+feel like Matt is pure curiosity emotion. When you when you talk to him, you can't help but feel
+energized. I, you know, everyone knows I get excited about it. And, you know, my eyes light up and,
+and a curious thing, the inside of my nose gets itchy when I'm excited. There is something about
+what we do as software engineers, that is magical, we can use magic words to make a computer do
+something that we couldn't do or to make it do something. I don't know, sort a list of things,
+thousands of things that would take you forever. It just feels powerful. And it feels exciting. But
+also just like the constraints you have in these systems where it's like, well, it's not really
+supposed to work this way, or it's hard to get it to work at all. But you kind of fight through
+those constraints, or you use the constraints as a positive and kind of come out of it and go like,
+oh, this is and when you're down really deep down in the hardware, there's loads of funny little
+constraints that you can take advantage of. And I think there's just an intellectual, like riddle or
+solve a puzzle to solve there where you're like, hey, wait a second, if we use this thing, we can,
+we've already squared it. It's already in the R2 register. Don't touch the R2 register. We're going
+to do something else over here. I don't know. It feels like you're solving some cool Sudoku puzzle.
+You get that endorphin rush. Oh, you know how Ethernet works? We can do this clever thing with it.
+And it contributes to something that's fun and interesting that you can explain to, I don't know,
+your mum and say, hey, I made a game. And she's like, that's nice, dear. Right. Yeah. So that's
+today's show. Matt is back. If you haven't listened before, he was here in episode 57, which was
+five years ago, crazy enough. And there Matt talked about pulling things apart and about building
+games. And we're going to do the same a bit today, but this time we're taking that curiosity all the
+way down to the metal to where hardware and software blur. And sometimes with Matt, I can get a bit
+out of my depth, but I always find it inspiring and I always find it interesting. So let's do it.
+Matt's story starts when he was in university. And towards the end of 95, beginnings of 96, I
+started looking for a job and there was this thing called IRC, which is internet relay chat. And I
+was in one of the many chat rooms and I happened to mention in passing and somebody said, hey, you
+should try, you know, apply to where I work. It's a, it's a cool game development place. So I did
+got in and they were like, when can you start? I'm like, well, no, I haven't actually finished
+university yet. Um, so, uh, I don't think I can start until I've graduated. I said, okay, well, how
+about you come in in the summer, do some work for us and then come back again once you've graduated.
+So that was, that was what I did. And so when I joined in 1996, they didn't know what to do with me.
+Uh, although I had applied for and got a programming job, there wasn't really any intern like work.
+So I was just a games tester. A game tester at Argonaut games. Argonaut was a small studio in North
+London, and they were the studio that could mix hardware and software in ways that most places
+didn't. They built the super effects chip that made 3d possible on the super Nintendo, for instance,
+it was a interesting office place. It was essentially what you would imagine that you would get if
+you took a whole bunch of people who had been programming in their bedrooms when, from when they
+were like teenagers, 12, 13, 14 upwards. And as soon as they had reached the age where you could
+legally employ them, you had transported them from their bedroom into this building. The, the
+environment was a converted car dealership. So it was a very weird, very long, thin building that
+was designed to have, you know, you could walk in and there were cars that would have been parked
+down the side into inside. And so it was, I mean, or, you know, programmers, artists, designers,
+level, uh, creators, um, animators. And so everyone was self-taught. There wasn't really any formal
+training. There was no software engineering, the various limited software engineering ideas at the
+time. And it was, yeah, it was pretty fast and loose. The hours were very, very, very long. Um, the,
+the pressure from publishers was high. And, uh, as you might imagine in a more liberal, chill, artsy
+environment, there was a lot of things going on whose legality were questionable, especially in the
+evenings. Once things, once the management had gone home, I mean, they were very, very incredibly
+motivated people. They believed in what they were doing. They knew what they had to do and they went
+on and, and, and got it done. And then I think, you know, we, we did pick up software engineering
+practices as time ticked on. But at the time, the big project at Argonaut was Croc, the legend of
+Gobos for the original PlayStation. And Matt was seated in the Croc room. The Croc room was a room
+that had probably 12 people in it, 12, 14 people, something like that, in sort of dotted around.
+There was like the, the animator with the one precious SGI machine that was, that ran the animation
+software. And so she was like set up with that. Everyone else had, you know, some form of like 486
+ish era, uh, DOS computer. Um, desks were covered with crap, frankly, you know, anything and
+everything that was around, uh, you could tell where the animators were and where the artists were
+because they would have every kind of manga doll or, you know, you know, transformer, or it was, you
+know, like a shrine to the things that they found really interesting and exciting. And it was a real
+eye opener for me, having sort of come from a very boring background. Um, the, you know, wow, there
+are people out there that are like arty and I'm used to nerds and these are different, these are
+nerds in a different way. They're a very different kind of nerd, but they are extremely talented in
+a very non overlapping with me until that point. And so that was a huge, uh, uh, eyeopening
+experience. Croc actually started as a Yoshi game for the Nintendo 64, but after some deal fell
+through the dinosaur got turned into a crocodile and the game shifted to the PlayStation. And Matt's
+first job was testing this PlayStation version of this little crocodile. That was my first
+introduction to Argonaut games was playing through a VHS recorder, which was an amazing
+transformation in the testing ability. If you imagine, you know, like you're playing a game and it
+crashes and you tell somebody and they're like, what did you do? And you're like, I didn't do
+anything. It just crashed. And they're like, no, I bet you did something. I didn't do anything. And
+then, so it became an argument and just like you went to the VHS, you rewound the tape, right? You
+went, look, look, you see, I was just standing there. Nothing was going on. And then it just froze.
+That summer, Matt got thrown into the deep end of game development. It was hands-on and it was
+unpredictable and he loved it. And then when he came back after college, he wasn't a tester anymore.
+He got his first real programming job, which was to take that same little green crocodile, who
+honestly looks a lot like Yoshi and make him run on the PC. One of the things that we had was a tie-
+in deal with Intel and they wanted to sort of put us in the ship the game alongside the motherboards
+for certain of their new chips, upcoming chips as like a, you know, Hey, look, it runs great on. And
+of course, back then, you know, PlayStation was like head and shoulders, but above of what most PCs
+were doing, or at least, you know, without spending a huge amount of money on these newfangled GPUs
+of which, you know, how different the world is these days. So they were like, no, no, the CPU is
+fast enough to do this work being Intel. Let's show you them by, by showcasing it. So I was very
+lucky to be given one of the engineering samples of the then new Pentium two. And so I got to play
+with this beast 266 megahertz, if I remember right. And we had, you know, if you put a bunch of game
+developers in a room and connect all their computers up, what's going to happen every lunchtime?
+You're going to play Quake, right? Or Doom or anything. And so I was, for a short period of time, I
+was the best Quake player in the entirety of Argonaut, but only because my frame rate was four times
+quicker than everyone else's. And so I have no skill. I was just, it was just, it was like shooting
+fish in a barrel, right? They couldn't keep up with me. That changed pretty quickly. But yeah, so
+the day in, day out was take fairly grotty C code that has been beaten to work in, on the
+PlayStation, along with tons of assembly code that they'd also written for the various GPU, GPU like
+chips that are in there and port it to, to work in Visual Studio and compile in Visual Studio and
+then connect it to DirectX, which was this relatively new thing at back then. So I learned far too
+much about how direct input works. I did the front end. So I had to deal with all of the keyboard
+remapping and reading the mouse and the joysticks and all of those things along a bunch of other
+bits and pieces that were just bits in between the bits. By then Matt and Argonaut had grown up. The
+company had moved into a more normal office space. And for the first time, it felt like a real
+studio, not just a bunch of bedroom coders all working together. But at the same time, the industry
+was changing. PCs were slowly growing in importance. And John Carmack and others were showing what
+was possible with 3D technology, with games like Doom and Quake. And studios started to realize that
+they might need their own in-house engines, that they shouldn't just be coding every game from
+scratch. Games were getting too complex. And for Argonaut, this meant trying something new, building
+a 3D engine called B-Render, short for Blazing Render. But then the Dreamcast was about to launch
+and everybody was excited. And a game producer pitched an idea for a new game and a new engine that
+would be built just for this Dreamcast, Sega's new exciting console. And my ears pricked up because
+by complete coincidence, the producer of that game, who was pitching the idea to Sega, happened to
+have a spare, it was the only seat spare in the office. And so he was sat in the same room as the
+ATL group who were doing technical support for this B-Render product and then me in the corner doing
+Croc. And I heard him talking about this new project. And I said, oh, I could write an engine. I
+mean, honestly, the hubris of youth. And so I was like 22, didn't really know what I was doing.
+Again, no formal training in this, but then neither did anybody else. I didn't know what I didn't
+know about 3D or matrix transformations or high performance anything, right? I was, you know, I'd
+done a ton of programming as a kid growing up and, you know, it was all in assembly up until that
+point. I've sort of learned C kind of as a begrudging, I guess I need to learn this thing. So that's
+my background. So I felt I was well positioned and this guy, Nick Clark, his name gave me the break
+and said, yeah, sure. And then he threw me in with a couple of other programmers who'd just finished
+a Sega Saturn port of Croc. Like we'd all suffered through the same pain of porting Croc to a new
+platform. That project became the game Red Dog, the Dreamcast project that gave Matt his first real
+shot at building a game engine. And before long, he was all in. Here's what made the Dreamcast stand
+out. Its graphics pipeline didn't use a traditional full screen frame buffer. Most systems, they
+render each frame of a game into this offscreen frame buffer. It's like a big block of memory that
+stores the color values for every pixel. And then once that frame is complete, the buffer is swapped
+onto the display where you can see it. Which, you know, it has for every pixel, it has what color
+that pixel is stored in memory. And then a typical graphics accelerator draws triangles into that by
+being given a triangle one, giving a triangle one at a time. And as it gets that triangle, it goes,
+okay, well, here's the extent of that triangle. I'm just going to fill in those pixels now. Okay,
+next triangle. And there may be cues and there may be, you know, other bits and pieces, but broadly,
+that's what's happening. Every time a triangle is drawn, the frame buffer has been updated. And that
+frame buffer may be the back buffer, and then you may switch it around to sort of suddenly go, haha,
+here's all the things I've just drawn. But that's it. The power VR chip that lives inside the
+Dreamcast was different. Every time you gave it a triangle, it goes, that's lovely. Thank you for
+this. I will note that down. And you're like, well, did you draw it? It goes, nope, but I remember
+to draw it later. And then at the end, provided you didn't run the graphics unit out of its memory
+for storing all these extra triangles you're storing and the link lists and everything. And it would
+look through the list of triangles that happened to overlap that 16 by 16 grid. And it would only
+draw them into a tiny 16 by 16 buffer, which could be in like chip cache, right? Rather than being
+on the main video memory of the system, it was in a, and it could be done in floating point because
+why the heck not? I'm going to store 32 bits per pixel or 16 bits per pixel in floating point. I'm
+going to render all of them. And when I finished, I've got the perfect 16 by 16 tile that needs to
+go in the top left-hand corner of the frame buffer. And now, and only now do I dither it down to the
+horrible 16 bit that is all we can afford to store our screen in. And so then I send it out to
+screen and I've started working on the next one. And so it was this deferred rendering thing. It was
+fascinating. In other words, Red Dog, the game looked cleaner because of the engine, but also really
+because of the Dreamcast Power VR chip, which didn't render like other consoles. It processed each
+16 by 16 tile in full detail. And then it could call out all the hidden surfaces before doing the
+shading. And then the dithering was only done when they wrote those final pixels. So by designing
+the engine around this tile-based approach, Matt unlocked sharper colors and smoother gradients and
+a quality that could rival the PlayStation 2 or even the Xbox. But once that part was working, weird
+bugs started to appear and the development workflow on the Dreamcast started to become very top of
+mind. When we develop video games for a console, you get a very special version of the console. It
+may look like just a tower PC that just happens to have all the components of that console inside of
+it in some way. It might look like a retail version of the console with a different color or
+slightly taller or things like that. And so the Dreamcast was like a mini tower PC and it connected
+back to the host through SCSI. It looked like a SCSI device as far as the PC was concerned. And it
+actually, there was some clever stuff going on to communicate both for the debugging of it, but also
+so the PC could pretend to be a CD-ROM drive to the Dreamcast so that you could boot your game off
+of the CD-ROM drive. As they got closer to shipping the game, the team started burning real disks.
+These were called GDROMs, but they were basically CD-ROMs. And these let them see how the game would
+actually run on real production Dreamcast hardware. So you put it in the machine, you burn the disk,
+and now you can take that disk and for the first time you can put it into a nearly retail Dreamcast.
+This Dreamcast has had its copy protection taken out, so it will boot anything you put into it. So
+you put it into the disk drive, you close the lid, you turn it on, and it spins up and nothing
+happens. And you're like, but I have a game. The game works on the emulator. It works fine. It works
+perfectly well on the emulator over here where I'm emulating. This is, sorry, this is the CD
+emulator on a real Dreamcast reading the CD that's actually your PC, an ISO image you've built on
+your PC. Why does it not work on a real Dreamcast? What the heck is going on here? And so how do you
+debug that? You know, normally you'd bring out your debugger, you put print Fs in or whatever, but
+it's a retail Dreamcast or near enough a retail Dreamcast. And you need to know where it crashed. So
+the solution I came up with was, so there is a single hardware register inside the Dreamcast that
+you could just poke to at any time, you know, in C star volatile, char star blah, or D word star
+blah, equals some number. And that controlled the TV output color when there was no picture. So
+there is no picture when you haven't configured the screen. There's no picture around the border,
+the top and the sides of the picture. But if you look at old video game hardware, you know, the 640
+by 480 screen was actually sort of in the middle of the CRT screen. And the bit around the outside
+was the border, right? And that was out of spec really. And it was meant to be black and there was
+color. There's some signal processing stuff, but you could set the color to be whatever you like
+there. Taking an aside to this, even a story for the longest time profiling on these machines,
+right? How do you profile your code? You want to have a really low overhead. How long did this part
+of the code take? So we would use that register while we, the game was running. We would say, okay,
+I'm about to do the transformation. Then you would do the transformation code and you would set the
+border color to be red. And then you would do the transformation code. It's about to the AI. You'd
+set it to green. You do that code. And then because the beam of the CRT is tracing out the whole
+time and that right into that register takes instantaneous effect, that little border color around
+the outside, you're using it as a time measurement, right? How many scan lines of a 60 hertz TV
+screen did it take before the next thing happened? And you know as well that it's very visually
+representative because as you get closer to the bottom of the screen, you're getting closer to
+dropping a frame and being slower than a frame rate, a frame refresh, right? So it's a very visible
+thing. And so you would talk, any developer of like my vintage who worked in a game industry would
+refer to things in scan lines. That was your unit of time currency was always, I managed to shave a
+scan line off of that routine or whatever. You know, that was what you were doing. It would be one,
+I don't know, 512th of a 60th of a second type of thing. It's awesome because it's so visual, right?
+Like it really gives you an intuition for what's super low overhead because you're just changing,
+writing a single value somewhere. It's brilliant. Anyway, so we knew that this existed and we'd used
+it for this purpose and it was very valuable for that. But that's what we ended up using to debug
+this issue. So I peppered the code with different colored, the initialization code with different
+colors. And then we burnt one of these disks. Now these are 1x speed and they're like 850 meg disks
+because we packed it through full of the rafters. So you're sat on tenterhooks waiting for the
+stupid thing to burn. And the technology of the time was incredibly sensitive to movement. So if you
+banged into it, it would go, oh fault, the lens would lose track of where it was writing. And
+admittedly, by this time we were in our nice headquarters in North London. There was like an area
+that we kind of marked out, it was like, do not walk around here because the suspended floor is
+bouncy enough that it will knock the machine around and will maybe lose a burn. So this was sort of
+behind my desk and I was like frantically changing the code, building a new image, burning the disk,
+putting it in the machine. It's yellow. Okay. And I kind of had a chart. What does yellow mean?
+Yellow means it got to this line of code, but clearly didn't get to the thing that changes it to
+purple that's afterwards. Okay. So now we put, we do a new build with the colors reset and wherever
+that yellow was, we start with red and we move through the spectrum and you kind of, I was going to
+say binary search, but you know, however many colors were distinguishable search through. And
+eventually we found it and it was the absolute classic of C programs of the year. Although there was
+a little bit of C++ in there as well, but from an empty, from a cold boot, like literally turning
+the machine off, putting the disk in and turning it on memory is just random numbers, right? Um, you
+hit this issue and I don't even remember exactly which line it was. I mean, I have got the source
+code that we have open source, the source code to this, and I can't find where it was for the life
+of me, but it was a relatively like single line change. You're like, Oh yeah, equals zero on the end
+of a line or something like that. And then that fixed everything. And you're like, crikey, you know,
+do you remember what color it was? I don't remember what color it was. No, no, unfortunately not.
+No, I don't. I don't remember which colors we used or how many I could actually distinguish, you
+know, uh, unambiguously. So, and the irony was, um, the, a very similar bug had happened on the croc
+Saturn version that I alluded to before where a hardware register. So this wasn't uninitialized
+memory in the CPUs like domain. This was one of the many registers that was inside the Jeep. The
+graphics unit was not being set. And exactly the same thing. If you booted it through the normal
+screen or that a hardware register has been set up, but if you just booted from cold, it, it wasn't
+set correctly. And the worry about this, or the, the, the, the, the worst part of this is this got
+to the retail, right? They didn't notice this until they'd already shipped them to stores. And then
+it was only on cold boots with the ones that had come from the factory that the issue. And the thing
+is almost worse. Again, it's not that it didn't work. It's the fact that actually some of the
+graphics were inside out, which if you have a cute crocodile with a tongue and a tooth, you know,
+inside his head, the wrong way round, that's kind of disturbing. A whole generation of children
+were, were, were terrified of this sort of garish looking, uh, inside out crocodile head, which, you
+know, whoops, they, they put it there. Actually for the first set of things, they put it printed a
+little slip in saying, you know, Hey, to play croc, turn it on with the lid open first so that it
+goes into the, Hey, insert a disc thing, which is enough to initialize the registers, then put the
+disc in and close the lid. So the same thing twice. Back then making a console game felt like
+chasing a moving target, that moving target being PCs because PC hardware was evolving at warp
+speed. There was new 3d cards. There was new drivers. There was new buzzwords every few months,
+quick two, and the unreal engine dropped. And all of a sudden overnight, everything else looked kind
+of dated and consoles couldn't upgrade. You got one shot with the hardware you shipped on and that
+gap was starting to show, especially for the red dog team. So they said, look, I don't think this
+game's up to scratch. This is Sega who are publishing it for us. We need, we need dynamic lighting.
+And this was on like a Thursday, uh, or, you know, I think we're going to have to reconsider whether
+this is okay to go forward or not. And I didn't get any sleep that weekend, but by Monday morning,
+we had a full lighting system. Uh, it wasn't too bad to actually put in, I think we were kind of
+relenting on it because we're like, well, we don't have the time budget to spend doing extra
+lighting. So we want to put more explosions and things in rather than, than light the scene all the
+time. But that was a fun time of being under the gun, but yeah, it came out. It was, it was
+reasonably well received. Uh, and you know, it's, there's something nice about going into a store
+and seeing something that you made, you know, obviously I'd seen croc croc had done really, really
+well, but that wasn't my game. It was a game I worked on. Whereas red dog, I was there from the
+beginning. You know, I felt like I was part of the team that came up with the ideas. We argued about
+what the arts should look like. I designed the engine. I designed all of the, uh, the tooling for
+it. I wrote the build system, you know, there was a load of stuff around it that felt like, Oh yeah,
+this is, this is mine. And it worked out. So very fortunate. And again, that was just because one
+guy, uh, happened to mention it loud enough. And I, and I was, I put my hand up and said, I can do
+that. And he believed me. So I'm endlessly thankful to him. Their next project after red dog was
+something fun. We prototyped a sort of, um, real time strategy ish team based combat game using the
+red dog engine on the dreamcast. And which was wonderful because we could throw away everything and
+use all the stuff that we'd learn. And I was able to get something running at 60 frames a second at
+some beautiful thing rather than the 30 frames that the red dog was. So it was really sweet and it
+was lovely and whatever, but you know, the dreamcast was probably dead on arrival when it, when it
+even ships, you know, it was, it was not well received commercially overall. So unfortunately it was
+never to be on the dreamcast. So anyway, we showed the company and I'm forgetting who it was now.
+Um, and they were like, yeah, that's looks good, but we've got this SWAT license. Uh, so we were
+lucky. We got one of the SWAT, you know, special weapons and tactics, us police. Can we kind of like
+put them together? And we've never done a SWAT game on a console before. So we pitched some ideas.
+We came in and that became SWAT global striking. And it was originally an Xbox exclusive. Instead of
+reusing the red dog code base, the team built a new Xbox engine with one big focus. Uh, so we want
+really beautiful, sharp shadows and we want lights that are very dynamic. So you can shoot out any
+light. Cause this is a, it's a game, you know, like you want to be going stealthy. So maybe you want
+to take out all the lights and then you go in with your night vision goggles and stuff. So ideas we
+had for the engine would actually become gameplay elements later on. And so we had this really cool
+and convoluted system for doing our lighting, which I still think is fab. I don't know that anything
+else has ever done it, but it was definitely not the way the rest of the industry went. And so what
+we did is for every light in the scene, we effectively shot out rays and worked out what it could
+see, right? What would be the geometry that it could see? And then we stored a separate mesh of the
+weird spidery mass of where the light would land on all of the surfaces. So instead of storing it as
+a texture, we stored it as actual geometry. So you'd have this, this area of lighting. Now that was
+hugely computationally expensive at the time. You're taking scene geometry. That's got thousands and
+thousands of polygons. You're taking every light and you're saying, what, what can, what geometry
+can this light reach? And then cut out the shadows effectively where the light can't be reached,
+store that as well. But it meant that we could store each light individually. And so we had this, it
+was, it was great. Turning lighting into geometry is challenging, but it could be done with an
+understanding of the Xbox hardware and it totally paid off. They ended up getting crisp shadows,
+shootable light bulbs, and scenes that reacted to the players in real time. The line between engine
+design and game design was blurring together. Anyway, this was fab. We were having a whale of a
+time. We learned so much about how big, big, big, big C++ projects end up looking because we were
+writing one, but then a spanner came or a wrench, depending on your side of the Atlantic in, in the
+works and said, well, this Xbox exclusive title, Xbox, eh, not doing so well. It's looking like a
+dreamcast all over again. We should probably also do this for PlayStation 2. And that was when the
+sort of the bottom fell out of our world because we're like, but all of these tricks that we're
+doing aren't really PlayStation E. The PlayStation 2 was powerful, but it was super low level.
+Developers had to juggle these DMA engines and vector units manually with little support for the
+type of like per pixel effects that the Xbox could do. The Xbox GPU could handle all the fancy
+lighting out of the box. It had these shaders, but the PS2, you could push pixels fast, but it
+lacked the shaders. But we were able to get the same lighting system in, which is like a really
+difficult thing. We were able to come up with a way of remapping the 3D texture into 2D dynamically
+so that we could get the same kind of light fall off. And then the blending. Oh, so the blending was
+a real trick. We essentially lie to the hardware and say, hey, you see this screen over here? You
+think it's the screen, right? We've just drawn all these lights to it. But actually, it's not a
+32-bit per pixel screen like you thought it was. We're just going to tell you that it's an 8-bit per
+pixel alpha image, right? So you're basically telling it it's the wrong format. Now, because of some
+really strange hardware characteristics and for convenience of being able to, when it's in 32-bit
+mode, write out red, green, and blue to separate RAM chips in the system so that that blending was
+fast, so that it could effectively be reading and writing red and green and blue in parallel.
+They're in literal physical different chips. When you changed it from one mode to the other, you
+suddenly became exposed to that. So if you could somehow get a microscope and peer into the memory
+of that 32-bit color image, you would see that what you would see is blocks of all the red pixels
+grouped together, then all of the blue pixels, then all of the green pixels, but in weird banding
+and alternating again, because this was really a hardware optimization that was meant to be hidden
+from you, but you lied to it and said it's an 8-bit. But what that meant was you could pluck out the
+red pixels by drawing thousands and thousands and thousands of tiny triangles that drew out the
+regions of where you knew the red pixels were going to be, and that gave you an alpha image of the
+red color, and then you could just draw, using that as the source texture, so this is where I'm
+reading from, you draw a big red triangle over the main screen with this texture on it, and that
+effectively gives you that multiply, but just for the red component. Then you do it again for the
+green, and then you do it again for the blue, and each of these is like that. But again, luckily,
+there were these funny little DSPs, and you could write a program that generates these millions of
+stupid little pointless triangles just to draw. Again, without a photograph or an image of me
+pointing, it's difficult to convey, so I hope that your listeners have got a decent visual
+understanding of what I mean. Basically, they're hacking the frame buffer, so that they could pull
+out this red and green and blue as separate layers, and rebuild the lighting step-by-step. It's a
+classic matte move. Ignore the rules, see how things actually work under the covers, and talk
+straight to the hardware. But in principle, it was a massive trick, and it was one of those like,
+oh, that's clever. And it wasn't my trick, it wasn't Nick's trick, we found it. It was one of the
+things that actually, I think it was Mike Abrash, who was working, I think, for Sony at the time.
+And that's why Matt is proud of this. There was a business constraint, and it forced them to do
+something uncomfortable. The Dreamcast prototype became this SWAT project on the Xbox, where they
+built this new engine, but then they had to stretch it, and find ways to do it on the PlayStation 2,
+through deep hardware-specific hacks. And the payoff wasn't just getting these ports working,
+although that was a big thing. It was also this lesson about how knowing about the next layer below
+you gives you options when the rules change. After games, Matt carried the same instinct for pulling
+back the curtain into a new world, high-speed finance. The problems looked different, but the
+pattern was the same. When something felt off, he couldn't stop until he understood what was
+happening. Why was this abstraction breaking down? In game engines, that might mean poking hardware
+registers and debugging with colors, but in trading systems, it would be more like chasing down
+timing bugs, asking what the machine was really doing underneath all of the abstractions. Here's a
+real example. A weird issue started cropping up at market open. An expensive, high-performing
+network card kept dropping packets. It wasn't the most urgent problem, but something about it had
+that same feel as debugging the Dreamcast. Something about it implied that the operating system
+abstraction wasn't quite working the way it said it should. And so it grabbed Matt's attention, and
+he started digging in. The first thing he noticed was that this network card needed a huge chunk of
+memory, ready to go. And it had a flag that let us pre-fault in all of the memory that it was going
+to use so that it was never going to be demand-paged. So normally, when you allocate a big slab of
+memory in Linux, Linux goes, yes, and it hands you back an area of memory that has no memory in it.
+And then as you start reading and writing to it, it actually starts finding the memory and giving it
+to you. So that means that when you allocate, you know, 20 gig, it'll go, yep. And it's like, well,
+I haven't got 20 gigs. So yeah, hopefully you won't look at all 20 of those gigabytes, because if
+you do, we're in trouble. But if you don't, no harm, no foul, right? You know, so, but that's really
+important because that process of faulting in those pages takes time, and it's also magic invisible
+time. You know, as far as you're concerned, you just read some bytes from the network, but actually,
+or you wrote some bytes in this instance, but actually in this instance, that caused the operating
+system to go, whoops, I lied to you. There's no memory there. I'm going to come in right now. You
+know, nobody expects the operating system. It comes in like the Spanish Inquisition and starts like
+taking up loads of your time. You know, I'm in the middle of doing something really time critical.
+And now you're allocating memory for me. This is bonkers. The vendor saw this problem coming. That's
+why they had added this flag. Their idea was to avoid page faults by reading all the memory up
+front. They were basically poking through this virtual memory abstraction to force pre-allocate
+everything. But even with this workaround, things were still breaking. And the way it was breaking
+is what caught Matt's attention, because it just didn't make sense. Why the hell, you know, this
+network thread is the one that's actually having the problem, and it should be doing nothing other
+than looking at these bits of memory. Very long story. But we discovered a tool called System Tap,
+which allows us to like really hook in at the lowest level of the operating system and go, why are
+you doing this? What's going on? And we discovered that the network process when it was under heavy
+load was trying to take out a lock. And we're like, what are you doing, network code? You're
+literally like zero copy network code with zero lock, lock-free code and everything. Where the hell
+is this lock coming from? Skipping over some steps, here's what Matt found. The flag for pre-
+allocating memory tried to trigger page faults by reading a byte from each block in that 20 gig
+chunk. Okay. Seems reasonable. That definitely causes it to become faulted in, except that it'd been
+written in C. And when you read from memory, there's no side effect for reading to memory. And so a
+compiler, an optimizing compiler will go, well, you just read that and did nothing with it. And so
+it optimized it away. But it worked for years because, you know, compilers have been crap. Luckily,
+there was this website that I could use where I could submit a bug report and the patch to say,
+like, I think you'll find that you're not actually faulting in the memory after all. And there's a
+much better way to do it anyway. But, you know, but we dug and we dug and we dug and we found that
+issue. And I learned what system tap was. And that has been a regular part of my armory for this
+kind of like tool going forward. And we solved a problem which was not just in our code. It was in,
+I mean, we solved our actual business goal, which was like, don't drop packets during the open. And
+we made the open source software better. So, you know, everyone was a winner in this and it took a
+long time to get here. And, you know, there's that famous XKCD. Well, there are many famous XKCDs,
+right? But, you know, there's an XKCD that talks about automating your tools. And, you know, if it
+takes you one minute and it takes you two minutes to build a tool, it's not worth it. Those kinds of
+things, right? That matrix. And I fundamentally disagree, unfortunately, with that particular thing,
+because it does not take into account the lessons you learnt along the way. And so while you could
+sort of say to me, you know, you know, if this issue wasn't quite as, you know, business limiting as
+it was, it was actually causing us trouble, but it was just one of those niggling problems. We're
+like, why is that? And I'd left there. Okay. You could have said like, it's equivocal whether it was
+actually better or not. Sure. But I learned system tap and I learned how kernel bypass worked. And I
+learned how the operating system does this. And I learned a compiler thing. You know, all of these
+things are more important than actually solving the problem. And so I think the journey is worth it.
+Even if the thing you get to is not, you don't, maybe you don't even get there, right? It's just,
+you're learning all the way. Maybe you don't know how the operating system itself exactly works, but
+know that page tables exist because that may be some reason why your thing doesn't work. You don't,
+again, it's going to be like somewhere in your head, that there's a place as a starting point for me
+to look at, to know that these things exist, not being familiar with it is fine, but just knowing
+that it's there. And similarly, like if you're up in the web world, like what layers are between the
+webpage that I'm writing in this format and the actual HTML that goes to a browser, how does a
+browser actually understand the HTML, right? There's a lot of subtleties in there. Why does the
+browser make these stupid decisions sometimes? Well, if you thought about how a browser has to work,
+well, maybe you should think about that. Or, you know, why doesn't my thing work this way? You know,
+like when I had a friend who'd always say like, oh, this can't be that hard. How hard can this be?
+And it would be like package management or build system. And then I'd say, go give it a go. And he
+comes back and says, it was really, really hard. I'm glad we used something else. I'm like, yes, you
+know, but those kinds of experiences, I think are part of what makes you understand like where the
+boundaries are. And all you need to do is be able to look, see beyond that boundary and then be
+aware of the boundary beyond that. So like we all work on a convenient level of abstraction, right?
+The floor will not fall underneath me. I don't have to understand exactly why, but I take it as read
+that I'm not going to fall down anytime soon. And when you're working in software, it's so
+convenient to be able to say like, I'm just going to call this function and it does the thing that
+it says it's going to do and nothing more, nothing less. And I don't have to look at it anymore. I
+don't have to understand any more than like string copy or printf. How does printf work? I've never
+stopped to think, but it doesn't matter because it works, right? So you live at that abstraction and
+it gives you so much power because it frees up brain space to do loads of other things that are
+important. But what I would like to, this is my thesis now, is that like, while it's, you should
+have a layer of abstraction you're familiar with and you're comfortable with, you should also have a
+decent understanding of the layer beneath you. So if you're a C programmer, you should probably
+understand how the C runtime works to some level. And you should understand how the operating system
+interaction works. You don't have to know exactly, but like have some knowledge because one day
+printf will not work. And then you'll be like, what? And if it's a complete mystery to you, you
+won't know how to take the first level off and look at it. So I think you should know one level
+well, have a working knowledge of the level beneath you. And then fundamentally, this is like the,
+probably the strongest thing is be aware of the shape of the layer beneath that. That was the show.
+Matt's story is a good reminder that real progress happens when you stay curious. Because if you're
+curious, you can dig into tough problems and you won't be afraid to relearn when you get things
+wrong. Because if you really understand the layer you work in, and if you understand what's below,
+you can turn these limits into skills. So let's call that Matt Godbolt's rule. You should know your
+layer well, but you should also know one layer below it a little bit, and you definitely need to
+know the shape of the layer that's beneath that. So yeah, write that down. That's Godbolt's rule.
+Probably also something to be said for paying attention to what's exciting to you. For Matt, it's
+this digging into the layers below. For you, maybe it's something different. Thank you to everybody
+who's been sending me emails lately. I do very much appreciate that. Emails, LinkedIn messages,
+Twitter messages, or Blue Sky, I appreciate it all. Sometimes I'm super motivated, and sometimes I'm
+not motivated at all. And definitely somebody telling me that they appreciate what I do raises the
+bar. So seriously, thank you. And thank you so much to my supporters. You can go to corecursive.com
+slash supporters if you want to join them. And thank you to Matt. And until next time, thank you so
+much for listening.

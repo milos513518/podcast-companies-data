@@ -1,0 +1,291 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2025/07/SED1848-Microsoft-TypeScript.txt
+EPISODE: TypeScript with Jake Bailey
+DATE: 2025-07-15
+SED: 1848
+HOSTS: Josh Goldberg
+PAGE: https://softwareengineeringdaily.com/podcasts/typescript-with-jake-bailey/
+----------------------------------------------------------------------
+
+EPISODE 1848
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: TypeScript is a statically typed superset of JavaScript that adds optional type annotations and modern language features to improve developer productivity and code safety. The TypeScript compiler performs type checking at compile time, catching errors before code is run, and also transforms TypeScript code into clean, standards-compliant JavaScript. 
+
+Jake Bailey is a Senior Software Engineer at Microsoft, where he works on TypeScript and has made major contributions to the TypeScript compiler. Jake joins the podcast with Josh Goldberg to talk about TypeScript and his work. 
+
+This episode is hosted by Josh Goldberg, an independent full-time open-source developer. Josh works on projects in the TypeScript ecosystem, most notably TypeScript ESLint, the tooling that enables ESLint and prettier to run on TypeScript code. Josh is also the author of the O'Reilly Learning TypeScript book, a Microsoft MVP for developer technologies, and a live code streamer on Twitch. Find Josh on Bluesky, Mastodon, Twitter, Twitch, YouTube, and .com as Joshua K. Goldberg. 
+
+[INTERVIEW]
+
+[0:01:21] JG: Jake Bailey, welcome to Software Engineering Daily. 
+
+[0:01:22] JB: Hello. How is it going? 
+
+[0:01:24] JG: Hi. It's good. I'm so excited to talk to you, Jake. We've done so much work, and you've done so much work on TypeScript and its tooling. 
+
+[0:01:30] JB: Oh, you know. Everyone says that. 
+
+[0:01:35] JG: What is your Bluesky description? Your profile say? 
+
+[0:01:39] JB: I think my profile says, according to git blame, I wrote the TypeScript compiler, which is like not true, but it is true if you don't bother to ignore all the migrations I've made. Yes. But then I guess if you look at the new repo, then it'll probably also say something similar, but less so. 
+
+[0:01:54] JG: There we go. The one and only author of TypeScript. 
+
+[0:01:57] JB: No, no, no, no. Absolutely not. I'm new, okay?
+
+[0:02:01] JG: Well, we're going to get into that. But before we go through all the tooling stuff you've done with TypeScript and the work on TypeScript and Go, which is incredibly exciting, let's start with you. How did you get into coding, Jake? 
+
+[0:02:12] CA: Ooh. A long time ago, I was a child in elementary school and I had a TI-73. And by some coincidence, the teacher assigned an assignment, which was basically, "I want you to tell the class about a button on the calculator." And I'm pretty sure I got assigned the program button. And so I had TI-Basic. And so my first program language was TI-Basic in like, I don't know, the third grade, fourth grade. I don't know, one of those. But a lot of time, obviously. 
+
+And then it's one of those things where it's like I kind of think I knew what I was going to do from the beginning. And I think, like, in middle school, I'm like, "I'm going to check out the book on C," and I just learned to see. And then I was like, "Man, I'd really like to work on RuneScape private servers." So that I'm just like modifying Java and trying to convince my friends to install Hamachi so they can play in my private server and never succeeding. And then, you know, bubbles from there all the way up, right? So yeah. 
+
+And then I went to Illinois for computer science. Did that. It was great. And lots of work otherwise. And I've been at Microsoft for - oh my gosh. What? Six years now? Something like that. I don't remember how old I am most days. Remembering when I did something is always a challenge. 
+
+[0:03:35] JG: Do you remember what it was that drew you to programming in the first place? 
+
+[0:03:38] CA: I have no idea, honestly. I just always been the basement computer guy, I think. Quite literally, that's where the computer that I had was located. I just spent all the end of my days sitting, fuzzing around on the computer doing stuff. 
+
+[0:03:51] JG: When you went into Microsoft, it wasn't originally for TypeScript, was it? 
+
+[0:03:55] JB: No, actually. Not at all. In fact, it's funny. I'd worked there the year before as an intern, doing something completely different. Everything I did beforehand was like SRE work. I'm not sure if you're familiar with what an SRE is. 
+
+[0:04:08] JG: Let's say I'm not. 
+
+[0:04:09] JB: It's like a site reliability engineer. It's kind of like people that work on infrastructure and like support other teams and do all that kind of stuff. And I did that at basically three different companies at that point. But then I was at Microsoft and then I was like, "You know, I'd like to try to interview to see if I want to move over to DevDiv to do some programming language stuff." Because at that point, I was in the middle of my grad degree and I was taking so many programming language classes and I was like, "This is awesome." And I'm like, "Let me go see if they'll hire me." 
+
+And then I'm going to tell a longer story, version of this. But they interviewed me, and it was terrible because I got put through all the rounds. And it was such a long day. I was so tired at the end of the day. And then I found out afterwards that because I did SRE work, my title was service engineer, not software engineer. They thought I had no programming experience. And so they put me through extra steps that I didn't need to do and then they apologized afterwards and they're like, "Oh, we're sorry. We didn't realize you were in a software engineering role." And I'm like, "Yeah. Yes, I am. What the heck?" 
+
+So then I got hired, and I was actually going to be on the C++ team working on the C++ compiler. And the last minute I get an email and it says, "Hey, you're gonna work on Python." And so I'm like, "Okay." And so I spent the first couple years working on Python. Working on Python language server, editor stuff. Later on, Pylance, Pyright. Pyright is a type checker for Python. And I worked on that. And then, eventually, I switched over to TypeScript, trying something new. And I've been on that for the past three years? Something like that. I don't know. I don't have a calendar in front of me to tell me what I did. But thinking, maybe three years now. 
+
+[0:05:47] JG: One of the nice things about open source is that it's all in the public. After this, we can go and see exactly when you started. 
+
+[0:05:52] JB: Yeah, yeah, yeah. Absolutely. 
+
+[0:05:54] JG: Do you remember what you were doing when you first joined the TypeScript team? 
+
+[0:05:57] JB: Ryan, our engineering manager, he assigned me a bunch of bugs. This is pretty common when people join the team, is that he'll sign them a bunch of bugs that are sort of get you started. And Pyright, if you're not aware, Pyright is a type checker for Python. And Pyright was inspired by the design of TypeScript. It improves on it in some ways. It doesn't improve it on some ways as well. 
+
+And so I was actually really familiar when I stepped over the line to the other side and I started working on stuff. And so I think my first bug fixes were fixing something with omit, the helper type, to do with private properties and protected properties. That was one of the things. And then working on parser bugs. I think one of the first parser bugs that took me three PR iterations was the parsing of arrow functions mixed with conditional expressions mixed with type annotations. Where if you think about it, it's like arrows, but then there's also colons, but there's also type annotations. And it's like really ambiguous like what you're supposed to do with these. And that took a lot of time. And it's been the same ever since I've modified it three years ago. And so I'm assuming it's correct now. 
+
+But I always get anxious when someone reports something or I saw - I think I saw Nicolau from Babbel post something about these conditional expressions. I'm like, "Oh my God. Please don't make me fix this another time." Because I was such at pain the last time to get it correct. Just like you take one TypeScript expression, you shove it in a JavaScript. It does something completely different than what you expect. Like, "Ah, right. The languages are different." Right? And so that was one of the first things that I fixed. 
+
+And then soon after I worked on the whole module migration stuff, that was pretty soon after I started on the team actually. A couple of months in is when I said, "Hey, Ryan, can I work on that?" And I took over the work and we switched the whole codebase to modules, which was the first time that I modified every line in the codebase, right? 
+
+[0:07:55] JG: Let's pause there actually. Not all of our listeners are deeply familiar as you and I, unfortunately, are with CommonJS versus ESM. When you say convert TypeScript to modules, first of all, what does that even mean? What's the context here? 
+
+[0:08:08] JB: Back in the days, in the past, there was not ES modules. There was no specific syntax blessed by the committee that was like, "Here's what's in the language, and this was you, parse." And so there were lots of competing formats for modules out there. I'll put out some acronyms, AMD, SystemJS, blah, blah, blah. And the one that Node used, something called the CommonJS. I say did use. It still uses. Called CommonJS, where you basically build your module, the file up, but you put all your exports onto one object, and that's what you export, and then everyone else consumes, right? That's CJS. 
+
+CommonJS is like import, export the syntax written out. It's different. Works differently. Has different considerations. And it turns out that TypeScript use none of these. TypeScript predates ESM, for sure. It predates many things. And so TypeScript was written in terms of namespaces, which by the way were never called namespaces at the start. They were called modules. And in fact, they were called internal modules. Internal modules, meaning that you wrote your code inside of modules, which are namespaces, kind of like C# or something. And you wrote your code on those. And then the TypeScript compiler would just take all those things and jam them together into one file, and that was the output. It was like that for a decade. Something like that. Like eight years or something. 
+
+But what that meant was that we were stuck on old syntax. Things turned out to be a lot slower because of it, and we had no idea actually. And we wanted to change over to modules, which required a big changeover. We had to change everything that was implicit into an explicit import. Take all the code unintended. We had to rewrite a whole bunch of stuff, make it work, then add a bundler because now we aren't using TypeScript to put everything together again, stuff like that. That was basically the big transform that I had done in that step, which was multi-month process to finally one day run the script that does it, because it was fully automated. And just rip through it and then send a line up here that's like three million lines of code or something, right? And it worked out. 
+
+[0:10:14] JG: I actually want to ask you a question on this. In the general context and framing of migrations of code or doing code mods and changes, because there are a lot of teams out there who have changes like this where their code base was written in year X with module or some style Y. And then X plus 5, or 10, or even 20 years later, Y is outdated and now they want to move into Z. What are the kinds of strategies or mental framings that you use when considering how to or whether to migrate a codebase in that way? 
+
+[0:10:43] JB: So, step zero. The thing to consider the best is just - let's speak JavaScript. JavaScript is changing so much all the time, it's like that's the thing, right? And so the best way to solve this is to be pre-emptive and, unfortunately, keep up with it, and like try to make modifications in time as fast as you can, and keep up to date so that you don't have to do a big migration. But that's obviously not possible for everyone, right? You need to have people dedicated to doing that. 
+
+And so I think that the most important thing is to try and write tooling to do it. Because if you don't, you're going to have a really hard time. And so the migration that I did, that was entirely using ts-morph, which it's a project by David Sherret that wraps around TypeScript and allows you to modify code and turn it from one step into another. And so I basically was able to automate every single step of the entire process. And then if TypeScript changes, I would rebase the codebase on top of the old one, right? 
+
+And so the automation is really the reason that it was possible. The only way is to do brute force, which that works for me sometimes, but not when I had to redo the whole thing over and over and over again, trying to keep up with it. There's tons of interesting stuff inside that whole process, but I'm not sure you want - there's little tiny details of that whole process. There's a whole talk about that somewhere. 
+
+[0:11:59] JG: I think there's a lot of utility and understanding, maybe the high-level concepts. You mentioned ts-morph. And because you work on TypeScript, you're well equipped to answer, what does it mean to morph TS? Or I guess in this context, what is an AST? 
+
+[0:12:11] JB: AST is abstract syntax tree. Every language has this. It's like, "Here's your code. It's parsed out." And it turns into a tree of like, "Okay, that file is the top node. And then all the different statements inside the file are the next nodes down the list." And then you set up those, you say, "Ah, well, this is an if statement." And then you walk down and you have more stuff inside of those. It's like, "Oh, here's the condition. Here's the body of the if statement. Here's a call to another function. Here's the name that you're calling. Here's the parameters for that call. Oh, those parameters, those are also calls." It's a big tree that goes downward. 
+
+And so when you're trying to write code mods, ts-morph, all these different bits, transformations, everyone has a different name for the same thing, you're taking the AST and you're just turning it into something else. You're doing like a rewrite from one thing into a different thing and making the code work the way you want it to work. 
+
+[0:13:01] JG: And this is such a powerful technique for application migrations, right? If you have whatever, thousands, hundreds of thousands of lines or files, there's no way you're going to be able to brute force a large migration, such as CJS to ESM. This seems like the only real way to do it, oftentimes. 
+
+[0:13:15] JB: It depends how much resolve you have. But yes, I would say automation. Sometimes you spend so much time doing the automation, it's not worth it. But usually not. 
+
+[0:13:25] JG: You accomplished one of the very fun migrations of TypeScript from CJS to ESM. What were the benefits? Or what were the results of that? 
+
+[0:13:33] JB: Well, the headlining thing was that the whole thing got 30% to 40% faster. That comes down to really weird details to do with JavaScript. In short, because of those namespaces, everything was inside of an object. If one file wanted to talk to another file's contents, it was actually a property access. It was doing a full object access to do those things. And so the entire time, even though everything looked like it was local, you never wrote those out by hand, you actually were spending 30% of the time just doing that. 
+
+And so we ran the transformation. And then I ran the code, and I'm like, "Whoa. What the heck? This thing is way faster. That doesn't make any sense. Oh, wait, no, actually, this makes a lot of sense. Crap." And so once we turned into modules now, yes, they're separate files. They import each other. But a thing like esbuild, or name your bundler, can understand that. And so when they put that into a single file, it rewrites all the references to reference things locally. And then the engine is just like, "Well, that's just a static lookup. That's right here in scope." And so that's really fast, right? We gained a whole bunch of performance that way. That's performance. That's what matters, I think, to the end user, right? 
+
+But for us, it was kind of like, "Well, instead of running a full 30-second compile or something, just to get an output JavaScript file, we could run esbuild. And that took like a hundred milliseconds, right? So now anytime we start our test, it was like instant versus waiting 20 to 30 seconds to actually get it to start. That and other tooling that we're able to use that we weren't able to use before because no one used namespaces except for us, basically. No one used the weird features that allowed TSC to merge the files together. 
+
+TSC secretly was a bundler the whole time, and no one actually used it except for us. And so we dropped that feature straight out of like 5.0 or something because we're like, "Yeah, no, this is an anti-goal for us. We only preserved it for our own use. And now we absolutely do not. We need it, right?" 
+
+[0:15:24] JG: This portends things to come in two ways. One, the native code speedup and also the improvements to TypeScript internally enabling end user benefits such as performance, such as dropping deprecated features. But I want to switch topics ever so slightly for a bit before we go back to TypeScript. Because TypeScript isn't the only large repo managed by the TypeScript team. What is Definitely Typed? 
+
+[0:15:46] JB: Definitely Typed is a collection of type definitions for libraries that don't have them. If you NPM install, I don't know, React, great package, right? It doesn't include any type definitions at all. TypeScript cannot read that and go, "Oh yeah, there's an export called use state." Right? It doesn't have that ability. It can't analyze into the JavaScript code, look past their bundling and minification to figure that out. And if it did, it wouldn't really be very useful. If React were written in TypeScript, they would emit DTS files and then have it, but they're not written in TypeScript, right? 
+
+And so, Definitely Typed contains some 8,000 packages worth of declarations that say, "Hey, this package exists. It has these exports. They have these types. And this is how you can use them." Right? So when you install @type/react, suddenly you have all the types that make React work. And so you say import React, and now you are off to the races, right? You could see everything in there. 
+
+[0:16:46] JG: And how is this set up so that the packages are defined and then published? 
+
+[0:16:50] JB: Well, since it's inception, which is, again, also 10 years ago, it was like thousands of individual folders with TS configs and basically a script that would scan them and see if anything changed and then package them up and publish them off to NPM. I'm assuming what you're getting at here is the new form that I introduced maybe a year or two ago, which is maybe more familiar to people that have been worked around in JavaScript. 
+
+And so instead of having a whole bunch of loose things with like a couple of package JSON files and then really weird TS config options to sort of map them together, which then broke things and other weird subtle ways, I made an effort to convert the entire thing to a PNPM monorepo. And so now all the packages link to each other as though they're actual packages, right? 
+
+And so you PNPM install. It takes a while in the current state. But you'll link 8,000 packages together or whatever subset you want. And so now they're all linking to each other, declaring dependencies properly. We used to scan the files and figure out like, "Well, you mentioned nodes. So we're going to put node as a dependency of you," even though that maybe wasn't required at all. And so the new form is basically a bunch of packages. And then we take out the files that we want to publish, declaration files, put everything else behind, generate a package and publish it up to NPM whenever it changes. 
+
+[0:18:12] JG: Let's pause there a little bit. And I'd like to go through a similar exercise as the migration before. Let's say that I'm on a team that has a large existing app that's not set up as a strict modern monorepo, and let's say that I really did want to migrate it over. What are the kind of techniques or tips you would give me in trying to migrate my existing app to a monorepo? 
+
+[0:18:31] JB: I think it really depends. The main thing is that it depends on your repo layout. There's a lot of people that have what is effectively a monorepo, but it's not broken apart strictly. And so they have imports that are like relative paths that are really long, and you're actually supposed to split the mark. You want to split them out into different packages, right? 
+
+And so if you have the structure of different folders, you can create package JSON files in there. And then most of the package manager out there are totally fine figuring out where to find those things and map them together. I'll use PNPM as an example since that's what DT does. You just make package JSON files and you put them in your glob and then it finds them and puts them together. 
+
+And the real challenge is just breaking apart things so that the imports are no longer relative to somewhere else. You're actually working in a world where all their packages are kind of like they exist on NPM and they're already there. And so you want to refer to everything by their public names because that's what people are going to import them as. Or if it's an internal app, it doesn't matter quite as much, but now you can split up your packages into multiple pieces, build only certain parts of them. That's like a whole different monorepo set up configuration thing with TypeScript or something, right? 
+
+But splitting them up lets you declare the dependencies, and you can better see what's in use by different parts of your application. Mainly, the big transform is just the import stuff. That's the hardest bit, right? If you get them in the right folders as is, you can pretty much figure it out. And for TypeScript, that's a different thing where we can pretty much figure it out no matter what you're doing, as long as you have the configuration file set up. We're happy to do that. But there's like a whole bunch of stuff to talk about there in terms of like project references and bits and bobs. But not sure what - 
+
+[0:20:08] JG: Can we actually talk about that? Could you give us a primer? What are TypeScript project references, since you bring it up? 
+
+[0:20:14] JB: Sure. In TypeScript, everything is in a project. We'll start off with that. You make a TS config. You say, "Hey, here's the files in this project." When you call TSC with no arguments, it automatically finds tsconfig.json, but you can pass a fly that says, "Here's the project." And so it used to be that you'd have TS configs. You'd build them. If you split your program apart, you could do that. But it sort of doesn't scale really well for, like, I want to modify one part of my repo and then not rebuild all the other ones at the same time. 
+
+And so a while ago, project references were added to TypeScript where you can split your application up into different blocks that define, "Okay, here is the front end," which depends on the common bit. Or like, "Here's my application," it might depend on the component library, but also the API types. And also, those can be different bits and pieces across, where when I rebuild my actual front, I don't need to rebuild all this stuff to do with the API. I mean, that's just always there, right? Or maybe I don't need to rebuild the components that I'm just really building the main frontend or something. 
+
+And so references allow you to split up your code into multiple pieces that declare different sets of files. And then you can say TSC-B, so build mode. And then it will remember, "Oh, well, this TS config doesn't need to be updated. It already built it." And it will just skip it. And so that's a speed up in one way. But also, it allows typescript to figure out like, "Oh, when you go to def on something, how do I map that to the actual source file and not declaration output files or something?" It's all about granularity and sort of editor use makes things better. Although, there's another limit where like if some people try to make like 2000 project references, and then you have a real problem, because it doesn't scale well that way, direction. But they're pretty good for breaking apart your codebase into different bits and pieces. 
+
+[0:22:09] JG: Yeah, when people think of TypeScript performance, very often they think of the type system because it's incredibly rich. Someone got Doom running in it. Congratulations again to Dimitri from Michigan. But really, another aspect of TypeScript performance is splitting things up and setting up your project references so that it only has to rebuild some of the application parts that have changed when you save. I'm curious, do you find in production that when people come to you or the team with performance issues, it tends to be, let's say, more in the type system or more with the project configuration side of things? 
+
+[0:22:39] JB: Honestly, it's mostly configuration. There are people out there who have real type performance problems, whether or not they are just doing something wrong or if they're intentionally trying to do something that is really bad performance. Lots of really crazy type libraries out there that try to parse everything out of a string or something like that, which don't work very well in terms of performance sometimes. 
+
+But most of the time, it's kind of like, "Oh, whoops. I accidentally didn't configure the types property of my TS config. And therefore, I tried to load 1,000 @types packages," because, unfortunately, the default behavior of TypeScript is to load all those by default. And like, "Oops, that fixed 90% of our problem." That's a real example that happened. Talking to a team about that. 
+
+There's other places where it's like, "We have one project and it's massive, and we just compile with once." "Oh, you should probably try using references and see if that helps because it makes things incremental." There's other teams that they have gone so far with references, they have 2,000 of them. And so now the fixed cost of having a reference is the dominator on the amount of time you're taking. And so it's like, "Uh, maybe have fewer projects. Do you really need one TS config per React component?" Right? No. You don't need to do that hard, right? 
+
+But it's usually stuff like that. Or they'll misconfigure stuff with like paths, or they'll have a big paths array with like path remappings that's like a hundred lines long. And then we're like, "Oh, man. We never thought anyone would ever have a hundred of these things." And so the code base is just this linear loop that loops over everything trying to find them for every single file, right? And so it's like, "Oops, did I make a little N squared or whatever? Whatever terrible algorithm? Oops, that wasn't intentional." Right? That's like partially on us, but also like, well, maybe don't use paths or don't use the remappings or something. There's other better features to that same thing. 
+
+A lot of the cases are just like the TS configs were completely different between all of our projects. And therefore, TypeScript couldn't reuse ASTs. Ooops. Didn't mean to do that. That's not good. Okay, we shouldn't even them out. Use a shared base config or something between some of our projects to help with that. 
+
+Other bits. There's lots of stuff. This isn't a big contributor, but people will set their target to like ES5. Okay, so you're just spending a whole bunch of your mid-time transforming your code to move iterators or something, or like async/await. Yeah, it's 2025. Maybe you consider raising it because everything ever can run better stuff. That's a minuscule portion, but there's lots of little paper cuts, right? Where it just keeps coming. It just keeps coming, right? 
+
+[0:25:12] JG: When we talk about TypeScript performance, there is, of course, the massive gopher in the room switching the bell. And I feel viewers would rebel if we didn't address it soon. Jake, please tell us, what's going on with TypeScript and Go? 
+
+[0:25:26] JB: For the past six months, we have been porting TypeScript over to a new language. TypeScript is written in TypeScript. And we were hitting some performance walls that it doesn't seem it's likely they're going to be fixed in a short period of time, or they may be just inherent to the engine and just how the language works. And we were like, "Okay, everyone wants us to read everything in a different language." Okay, well, we should try out and try porting some stuff over and see how it goes. 
+
+And we did lots of trial and error, trying different languages out. And so we ended up in a position where we've ported all of our code over to Go. And so we've published, I think, what, two days ago, the big announcement in the repo that has pretty much the entire checker ported? A lot of it ported. Obviously, parsing and binding is ported. A lot of the CLI is ported. We have a language server implementation that does a couple things. But the biggest thing is just that through the port, through us using concurrency, parallelism, different perf tricks that were available to us in native code, we now have a TypeScript which is seemingly, I say seemingly, it is, 10 times faster than just running TSC straight up. 
+
+And there's people that they tested it on day of and they're like, "Hey, my company has this 3.5-million-line codebase. It takes us seven minutes to build their code. And now it builds in 30 seconds." And we're like, "Aha. That's a good speed up." Right? Someone else was like, "I have a 30-minute build," which what the heck? But a 30-minute build and now it's only a couple of like few minutes. It's like seven minutes or something. Well, that's pretty good. I mean, 30 minutes to seven minutes is incredible. But also, what the heck are you doing? You have a 30-minute build. 
+
+But I've seen projects. I have my personal project on the side where it's like I've been testing on them just to see what it looks like. And it can do the full compile from end to end, parse, spine, check the whole thing, emit all the files, in less time than it takes our current TypeScript compiler to run the help command. It's pretty insane. It's pretty great. And I'm having a great time working on it. 
+
+[0:27:25] JG: That's incredible. 10 times faster. Just think of the CI builds that are going to be reduced by people spending less machine time running on this. 
+
+[0:27:33] JB: Oh, yeah. And I think most of all, we come at end-to-end time. How often do you run a build? Actually, honestly, most of the time in the world on TypeScript is not spent running a build. It's in the editor, right? And so there's repos out there like VS Code where it takes 20 seconds when you open up to the VS Code repo to load their code before we actually able to start giving you like hovers. 
+
+And because we're in native code, because we're doing parallelism, we are massively concurrent to parsing out files and everything. And so now that thing loads a couple seconds tops, right? That's like a big deal. We have people that it takes them like a 30-second or a minute just for their editor to start, like on a ridiculously sized projects, like giant monorepos. And if we can do the same thing in a few seconds, that's a big deal. You can start opening up your editor and actually get feedback instantly. That's pretty good. 
+
+Yes, checking, it's faster, obviously. Emitting is faster. But it's pretty great to actually be able to load your code in the first place. That's one of the biggest things. I think that's in the blog post. It's one of the first things we mentioned. 
+
+[0:28:35] JG: Now, there are some FAQs that have been popping up a lot, and there are great answers already in previous interviews and the live streams in the discussions on the new repo. But for the sake of completeness, I'd like to ask you some of the common ones now just to get the high-level overviews. Why can't you just make JavaScript faster? 
+
+[0:28:54] JG: Why can't we just make JavaScript faster? First off, they are making JavaScript faster. There's lots of proposals out and people working on things that will make the language faster and add certain features that could enable people to write faster code instead of JavaScript. There are just some things about the language itself, which are inherent. This is the design choice, right? But one of the things that JavaScript has is that there is concurrency, async/await, right? But in JavaScript, you're only doing one thing at a time. You're switching between maybe multiple tasks if you're using async/await, but you're only doing one thing at a time. 
+
+And so if we wanted to write a parser that's fully parallel, we can spawn up a bunch of web workers or something to like parse a bunch of files at once. But all of those ASTs are often different threads. And so we can't actually talk to other threads directly. And so we'd have to pull that data into one runtime and then use it. We can't make parsing parallel. 
+
+If you're in native language where you have shared memory concurrency, which is like the big phrase, that's many languages out there, then you are able to parse in parallel and actually get all the results out, right? And so like that, JavaScript, there's proposals working on to do like shared structs, there are shared array buffers, right? Those are ways to share memory. But none of them are quite exactly the kind of thing that you would want to just like massively parse a whole bunch of stuff in parallel and access it directly. All of them require some sort of serialization kind of. Shared structs I think is the most one to actually help with that kind of a thing. 
+
+[0:30:34] JG: But it's not here. And people are loading time for that. 
+
+[0:30:37] JB: Unfortunately, it is not here. 
+
+[0:30:37] JG: For years until it is. 
+
+[0:30:39] JB: Right. And that comes down to engine optimizations and how that's going to work out. 
+
+[0:30:44] JG: Okay. You mentioned quite a few other languages. The last couple of years, everyone has been seemingly writing all the new projects in Rust or the rewrites in Rust. You are not writing in Rust. Why Go over Rust? 
+
+[0:30:56] JB: This is going to be a long list. I'll preface it by saying I really wanted Rust to work. I tried really hard to prototype stuff. I think we all wanted to make something work, right? And there's lots of challenges with Rust. There's the obvious ones that people think about immediately of like, "I have to deal with the barrow checker now." Okay, you have to build the borrow checker. Yeah, that's inherent to the language, right? Which adds an element of friction. But there are some fundamental things that are really challenging if you're working in Rust, which would really hamper our progress in trying to port code. And that's the main thing is that we were trying to port the code. 
+
+All in all, TypeScript is a language without like a raw - a specific specification of how it works. And so if we don't take this code and we don't port it one-to-one, it will behave differently, and then some project will break and we'll be like, "Ah, crap, we don't know how to fix that because our structure isn't completely different and broken in some different way." Right? And so we wanted to port. That was the main thing, right? 
+
+The prospect of like one-to-one, side-by-side, having exactly the same code for both of them didn't seem like it was very possible using Rust. And it comes down to stuff like cyclic data structures. We mentioned before, our ASTs have things called parent pointers, where you can walk down the tree and then look up, and then walk back up the tree. You can go up and around, right? And so that's a challenge. That's technically solvable. 
+
+The DynoAST has a way to map those things by basically duplicating the AST a second time, so you have parent pointers, but extends further from that because you'll have like an AST with symbols. And those symbols will point to other symbols, and those will point back to other declarations. And so you have multiple files that have multiple decorations. And then you're in the checker and now you're building a type, and the type is recursive in the case. So now the type needs to reference itself. And so it's like there are absolutely ways that you can tease out a different representation entirely and how to re-implement these things. But it would fundamentally be like our re-implementation. And so the behavior would probably change in ways that we don't know how it would go. But also, it would take us a really long time, I think, to like suss out all those details and get it complete. And so that really guided the way that we chose the language and prototype stuff. 
+
+[0:33:16] JG: Sure. One last FAQ on this area. Anders also was a big designer and lead creator of C#. Quite a few Microsoft and .NET area folks were surprised, perhaps more than surprised, that C# was not the language. Why not C#? 
+
+[0:33:33] JB: C# is great. We have no problem with C#. We love C#. Obviously, Anders made C#. There's no question about that. Period. There's so much code in Microsoft that C# is a whole bunch of great people working on that kind of thing. Absolutely. I think it just comes down to specific language details. 
+
+And so I'll give an example. TypeScript is written synchronously that we actually don't have any async/await at all in the entire thing. Maybe at the fringes to do communication with like an editor or something, but it's all synchronous. And so if we wanted to make our code concurrent, how would we go across that? How do we approach that? 
+
+In C#, the way to gain concurrency is to use async/await. This is the same for - I mean, JavaScript has async/await I think because C# had async/await, right? And so our code is written synchronously. But to put it in async/await code, it'd be like a very different kind of transformation. 
+
+In Go, the concurrency model is completely different, where you write your code - it looks synchronous, but you can be pre-empted. And so you sort of gain the concurrency for free just by orchestrating your code in a different matter, right? And so porting the code one-to-one like that is like a little bit different and may not have worked well as we might have expected it to work. That's a language example, right? 
+
+There are other things. Nick Anders talks about the differences in the way that like structs work. In the Go code base, we have lots of self pointers. We have self interior pointers. We take the address of a random property inside of a struct and you're able to do that. I'm not sure that C# was able to do something like that. That could be changed in C#, of course. But fundamentally, C#, their object model is different. There's lots of differences. And I don't know if I could list out all the different positives and negatives for this. It's obviously positives, like in C#. Obviously, positives. And Go in other aspects, right? 
+
+[0:35:26] JG: It's a fascinating study into even though a team might be more familiar with a particular language, the Microsoft folks are generally quite familiar with C#. The project itself is fundamentally not built for that paradigm. It's a relatively lower level target. It's a compiler. It's a low-level framework and area that just so happens to be quite well-suited to Go. 
+
+[0:35:46] JB: I'd say that's true. C# certainly has lots of AOT work going on as well. They're pretty different. And I think that there's also the aspect of like Go is a somewhat established player instead of JavaScript because of esbuild, right? Rust is a big thing. Go is less of a big thing, but like esbuild is written in that. And so that's sort of also an important factor in like how we choose a language, right? 
+
+[0:36:12] JG: Sure. Now that we've decided that you were correct to choose Go. And no one should be yelling on the internet about this. I want to talk about the transition a bit because you've mentioned you like doing large transitions at scale with semi-automated tools. How has that transition been implemented internally? 
+
+[0:36:28] JB: I mean, it's been going pretty well. There's a tool that allows you to take the code from the TypeScript codebase, syntactically transform it into Go, and then you're able to copy and paste functions at a time, and they're mostly correct. They look about the same. And then you just fix up the data structures so that they match what the actual limitation was. 
+
+[0:36:49] JG: Why not use AI? 
+
+[0:36:51] JB: I tried AI. It works kind of. I think it's really a challenge because of the amount of training data out there on compilers written in Go is limited to very few, and especially training on code that is the TypeScript compiler. And so it works pretty well if you like. I definitely side-by-side the code and my editor with Copilot. And because it gives both files as context or something, it sort of figured out what I was doing, and that helped me port some code, absolutely. 
+
+This was also six months ago, right? And things are always changing. And the syntactic form was the easiest way to get there, in my opinion, at least. To actually transform the stuff raw one-to-one. There are tons of little tiny special cases that happen in our codebase only. They wouldn't work elsewhere. The tool is not for people to use at all. It's sort of like an example The code is really bad, right? But it works. 
+
+[0:37:46] JG: You said this code is open source, TS to Go, on your GitHub? 
+
+[0:37:50] JB: Yes, but don't look in the box too much. 
+
+[0:37:53] JG: Understood. 
+
+[0:37:54] JB: It's a really long script. There's lots of little special cases that transforms the whole thing from one to the other using ts-morph to walk the thing, although it doesn't output using ts-morph, since obviously it's running to Go code. 
+
+[0:38:07] JG: Let's say, yet again, that I am a general team who has a similar problem where I have a codebase in one style or framework or language, and want to output a similar or equivalent code base in another style or framework, language. Are there Any general tips or tricks you'd suggest that I look into before I embark on that journey? 
+
+[0:38:24] JB: Well, the first step is to think if you could not do that. I don't know if I wish this on anyone. It's like a big deal to change from one entire language into a different kind of language. And so I've heard a suggestion would be there are lots of performance tools out there to help you find things instead of languages that you're already in. Avoid if you possibly can. 
+
+I think that it comes down to sort of are you able to port code incrementally? If you're using JavaScript and you want Rust, for example, there's lots of tools out there to allow you to piecemeal transform code bit by bit using napi-rs or something, right? That's one mechanism to do it. 
+
+Now, is there an easy syntactic transform that you can make in that? I don't think that there's really is. JavaScript is very different than a lot of other languages. And so many things that are possible in languages are pretty difficult for, say JavaScript, right? And so the transform that we made for like JavaScript to go, sure, it's like automated kind of, but it required a lot of thinking about how to structure things and how to fix things in Go, "Ah, we need nil checks here." And how to update data structures to be the right format and add the visitors and all the different bits and pieces? And so that kind of transform is really challenging on, say, JavaScript. Between native languages, it's a little bit less scary. Because you don't have to worry about like, "Oh, JavaScript has optional properties." What compiled language has optional prop - none of them. That's how it works. Memory is laid out in a specific way. You put the things there or you don't. It's more challenging to deal with going from an interpreted language like JavaScript to something else. Between native languages, that's much more reasonable because you already sort of laid things out already in-memory. 
+
+[0:40:09] JG: That's actually an interesting point. For TypeScript, back to it specifically, there are optional properties in the TypeScript language's internal and external representations of, say, AST nodes or options types. How does that work when you transform it over to Go? 
+
+[0:40:24] JB: There's a couple methods. you can either make different structs entirely for the different data structures. This thing has something this one doesn't. And then you can put an interface or something to distinguish between them. Go doesn't have unions. It's really difficult to put those things in the same box. But most of the time, you just end up with a field that's actually real there and it's just nil. It's like null or something like that, right? It's like spending the memory. 
+
+And it's interesting because JavaScript is faster if you do it that way, because then the runtime can understand to produce the same code for both cases, and you get faster. And those are transforms that we made in TypeScript a while ago as well, to fill out all the objects in identical formats, even if they contain undefined as properties, because the engines like that better. Because people don't really want to deal with multiple different kinds of objects with different properties on them or not on them. The runtimes really like code to be really even with the same objects, with the same data, the same offsets inside of objects. 
+
+Inside the Go codebase, it's kind of just like if things are optional, there'll be a pointer." And sometimes, maybe it's like there's three things that all are set together or not set at all. Will you just make another struct for that thing? You just make a pointer to that struct instead. That's sort of been the strategy for those. 
+
+[0:41:35] JG: It's interesting that so few JavaScript projects have to deal with that kind of data normalization, avoiding the polymorphism in that way, that it almost feels like a hint that, "Hey, if you're a JavaScript project dealing with that, perhaps you are more better represented as a Go or other lower level language project." 
+
+[0:41:51] JB: Yeah. Depending, for sure. Most applications to this doesn't matter for at all. it's just that, obviously, we're running a compiler. We are extremely CPU-bound, and we want to go as fast as we possibly can because it matters to a lot of people, right? I think it's a little bit more forgiving if you're working in a browser where you're waiting for a render to happen or you're working on like a server where it's like, "Oh yeah, I really optimized this thing, but then I waited 100 milliseconds for Postgres." It's kind of like, "Well, how much did you really achieve on that front?" Right? It's really difficult. We're in a bad position to try to write a CPU-powered - a really CPU-heavy piece of code. 
+
+[0:42:29] JG: We don't have too much time left, but I want to spend most of the rest of it talking about what you think is coming up next. Let's say that we got TypeScript into Go. It all works. Everyone's happy. 10x performance boost. Have you started thinking about what the implications of that are or what's coming after? 
+
+[0:42:45] JB: I'm really focused on making it happen. Past that, I don't really know. We have lots of plans on the horizon of getting it into WASM because it's important for the browser. I mean, that's part of the job already. Maybe that's not something in the future per se. But the other thing that people are talking about is like, "Oh, well, you're faster, so you can do more stuff. Right? And so, can you add this feature? Can you add that feature?" It's like, "Maybe." 
+
+There's some features that we are thinking about, for sure. But it's sort of induced demand is the phrase that I've heard. If you make it four times faster, people will start doing four times more things in them, and then you're back to the square one where you were. And so I don't know what all we're going to add or what all we're not going to add. But there's some stuff I think that may occur. 
+
+I think a lot of the time is just going to be spent getting it right, because there's just so many users out there who need lots of different things. And I think we're getting the core stuff really well done. But there's lots of stuff out there, like dealing with the API, dealing with the editor integration, dealing with browser stuff that has yet to be seen how it's going to progress. But we're pretty optimistic about getting that stuff done well. 
+
+[0:43:53] JG: There are a lot of open source projects out there who are waiting with bated breath to be able to use native speed type information. 
+
+[0:44:00] JB: Oh, really? I wonder who. 
+
+[0:44:03] JG: Well, that's great. Jake, I have no more technical questions for you, but just one or two left. I'm going to ask you a question and you're going to correct me. What do you think is the greatest Weird Al Yankovic song? 
+
+[0:44:14] JB: Yankovic. I feel like it's like Yankovic is when it's the year 2006 and you're downloading a song off LimeWire or something, right? And then they'll spell the name. But I have to choose Albuquerque, right? You got to choose Albuquerque. 
+
+[0:44:29] JG: Why? 
+
+[0:44:30] JB: I don't know if I can explain that. It's so long. It's got lots of lyrics to get to memorize. It's just a good one. I don't know. That's a good one. 
+
+[0:44:38] JG: What for you defines a good Weird Al Yankovic song? Or rather, what for you is the appeal of Weird Al Yankovic? 
+
+[0:44:45] JB: What's the appeal? Oh, God, I don't even know. What I'd say what makes a good song is when I don't know the original song at all. If the entire thing has been wiped from my brain because his version is better, there you go, right? That's memorable for me. The original song is Albuquerque, the original one. Obviously, that's not a parody of something. So, you know.
+
+[0:45:06] JG: Well, Jake, you've been a trooper. Thank you so much for hanging out tolerating the Weird Al Yankovic question and diving so much into the world of TypeScript. We talked about how you got started, what TypeScript looked like internally before you got around to switching to modules, and now as part of the big migration, switching to Go. There's all sorts of great stuff happening, and it's really exciting to be a web developer these days. 
+
+
+[0:45:28] JG: Last question, if there was anywhere on the internet you'd want people to go to find out more about you, your work, TypeScript, are there URLs you'd suggest they look into? 
+
+[0:45:36] JB: Jakebailey.dev. That's the main thing. It links to everything else. It's also the same username on Bluesky if you want to see me there. That links to everything. If you go there, you'll find everything else, my GitHub, everything else. It's all JakeBailey, one word. 
+
+[0:45:49] JG: Excellent. Well, thanks so much, Jake. This has been fantastic. For Software Engineering Daily, Jake Bailey and Josh Goldberg. Thanks for listening, everyone. Cheers. 
+
+[0:45:56] JB: Cheers. 
+
+[END]

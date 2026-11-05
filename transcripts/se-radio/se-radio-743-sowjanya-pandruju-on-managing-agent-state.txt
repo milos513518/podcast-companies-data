@@ -1,0 +1,618 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 743: Sowjanya Pandruju on Managing Agent State
+DATE: 2026-10-21
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/10/se-radio-743-sowjanya-pandruju-on-managing-agent-state/
+AUDIO: https://traffic.libsyn.com/secure/seradio/743-sowjanya-pandruju-agent-state.mp3?dest-id=23379
+DURATION_SECONDS: 4139
+TRANSCRIBED_AT: 2026-11-04T02:42:56Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Gavin
+Henry. And today my guest is Soljania Pandruju. I think I probably pronounced that wrong. Would you
+like to correct me on that, please? Hi, Gavin. I'm Soljania Pandruju. Perfect. Thank you. You're a
+cloud application architect with Amazon Web Services, and you're also an IEEE senior member, and you
+serve as the vice chair of the IEEE Computer Society and chair of the Women in Engineering R4
+Madison section. You also have published peer-reviewed technical work on AI and cloud architecture
+in IEEE conferences and computer magazines, and you've spoken at industry and technical conferences.
+Welcome to Software Engineering Radio. Is there anything I missed in your very impressive bio? No,
+thank you so much for the wonderful intro. Excellent. Well, today we're going to be talking about
+managing agent state. So I'd like to lay some foundations because it would be a good way to start,
+and I'm not too up to speed on these things easier. That's why I really look forward to speaking to
+you. So let's start with an overview of AI agents, and then we're going to chat after that about
+agent state, why agents need state, where agent state is stored, and then some of the challenges and
+how they're solved. So what is an AI agent and what is not an AI agent? So I think the simplest way
+to define AI agent is a system that can take a goal. It can reason about what needs to happen. It
+can interact with tools. It can observe results, and then it can decide what to do next. For
+example, if I have to plan a trip, let's say I want to say I want to go to New York, and this is my
+budget, a typical traditional app, it might have a predefined workflow. Like, you know, it could
+look at searching for flights or searching hotels, and then it can present me those results. With AI
+agents, it can have more flexibility. It can think about, it will ask me, hey, when are your travel
+dates? Do you have any flexibility? I can also search for flights, but also compare options. And
+also, if I give a travel time constraint, it can search again, and it can decide what's the next
+appropriate action, I would say. So there is this loop that I want to highlight with AI agent, is
+that it can observe, it can reason, it can act, and then observe again until it finally reaches the
+goal, or, you know, until it determines that it needs more input, or things like that. So in your
+example, it's much more than just a search tool. Right, yes. In your example, could you break down
+what that AI agent could possibly be? Is it like a binary that runs on a server somewhere, or is it
+one component of a bigger thing, or how would you define an AI agent in the general terms? Because I
+know there's different ways to do one. Right. It can be any of those things. I think it helps to
+separate the logical concept of an agent from how we actually deploy it. So at implementation level,
+an agent is really software. It could be a Python application that could be running in a server or a
+container or some serverless application, or it could be inside a very big, larger enterprise
+system. So there isn't like a necessarily a special executable that would say, this makes an agent.
+What makes an agent is the behavior, or it's the architecture around it. So you have some kind of
+orchestration code or agent runtime. That code have a goal and constructs for an LLM. So this model
+helps determine what should happen next. Like the runtime may invoke a tool, then maybe an API, or
+maybe a database, a search service, and things like that. So you can picture this loop, right? Like
+there's applications and context to the model. The model would propose an action. The application
+would execute that action, get an observation back, and that cycle continues. You mentioned LLM,
+just for anyone that's not familiar. What does that stand for? It's large language model. Thank you.
+And an AI, something that isn't an agent, would just be something that doesn't have that
+adaptability and that feedback loop. Is that correct? Yes, exactly. So a traditional application, we
+would have to say, first do A, then B. And if B returns this, then do C. So the developer has
+essentially encoded those possible paths into the application. But with an agent, we are giving the
+system more flexibility to determine the next step based on what it observes. It can take an action,
+look at the result, and then adapt its next action rather than simply following a completely
+predetermined sequence. The first way you describe it would be like a rules-based program or system.
+And then the way you've described it as an agent there, what it would do next would be based on the
+large language model is learned as for what the next probable outcome would be, or is it access that
+agent has to various things to answer the next step? I'm trying to not say, put words in your mouth
+of things I've heard like skills or when you're using an agent and an IDE or something like that.
+I've seen it pop up and say, you know, once you've asked something, it's like, oh, how would I
+architect this? You can see it saying, oh, using skill file read or something like that. Where do
+those types of things fit in with the agent? Are they things that can be good for what the agent's
+allowed to do or should be doing to answer your question? Or how does that work? I think there are
+two different things happening that are useful to separate. So the large language model provides the
+reasoning capability. So based on the goal, the context it has and what it learned during training,
+it can determine that a particular next step is appropriate. But that doesn't mean the model itself
+can actually perform that step. So the agent runtime gives the model capabilities it can act
+through. So the IDE example you mentioned, right? Maybe the agent has access to a tool for reading a
+file, another for searching like the code base, another for running tests. Those tools are exposed
+to the model along with information describing what they can do and how they can be used. Let's say,
+if I ask, why is this test failing? The model might reason, first, I need to inspect this file. It
+selects the file reading tool. The surrounding application actually executes that tool and returns
+the result to the model and things like that. And also, yes, as you mentioned, the capabilities can
+and should be constrained. The application determines which tools the agent has access to, what
+permissions those tools have, and potentially whether certain actions require approval. And then
+things like skills, they can add another layer. I tend to think of skill as instructions or
+specialized knowledge. So a skill might tell the agent the preferred process for reviewing code or a
+file reading tool actually lets it read the file. So I wouldn't say the large language model simply
+predicts the next outcome. I'd say it uses the information available to select or propose an
+appropriate next action. While the framework, the agent framework, determines what actions are
+actually available and the application and security boundaries determine what it's allowed to
+execute and things like that. Yeah, that's helped me really understand the LLM side of things
+because I wasn't sure what part that played because everyone talks about, oh, the next version of
+this out is really powerful. But the way you explained it makes much more sense as to how it can
+supply reasoning, but there's still things that need to be actually called in to act upon those
+things. Thank you. Going back to permissions, in my example of the IDE, it would then go, oh, can I
+read your files? And you have to click yes or no or click something that says, just do everything
+for this session or you've got full permission. So I do understand that bit as well. So I'm going to
+move us on. I think that was a fairly high level coverage of what an AI agent is and what it is not,
+but not going too deep at this stage. I'm going to move us on to agent state. So let's define state.
+What is agent state? Okay. So the simplest way I would define agent state is it's the information
+the agent needs to carry forward so it can continue working correctly. Let's use the IDE example we
+were just discussing. Suppose I ask an agent, find out why this test is failing and fix it. The
+agent could read a file. It could discover something. It could search another file, run a test, get
+an error and decide what to do next. So at each step, it needs some awareness of what has already
+happened. What was my original goal? Which files did I look at? What did my test return? What
+changes did I make? Where am I in this task? So all of that is part of the state of that agent's
+work. And one thing or one distinction I would say is that state is broader than just conversation
+history or memory. We tend to hear agent memory a lot, but that's really only one type of state. It
+could have conversation state, which is what we've been discussing. You could have a task or
+workflow state, like which steps have completed. You could have tool state, such as whether an
+action has already been performed. You might have longer term memory, like something an agent
+learned from an earlier session. And also you would have security context, who's making the request
+and whether they are authorized to do so. So when I think about agent state, so I don't think of it
+as one big piece of memory that is attached to an LLM. So I think of it as, I would say, collection
+of information, the overall agent system needs to maintain so that it can maintain continuity, make
+the next decision correctly, and know what has already happened. What sort of resources would, just
+to go back to my ID example, because that's what I've experienced, I've seen when it's going through
+using tools and responding to my question, it can be quite a delay. I'm specifically talking about
+the co-pilot local agent. I can see it saying, oh, patching session log. So to me, that looks as if
+it's updating a text file, or sometimes I've seen it's doing an SQL update or something. So it's
+either my understanding writing to a text file log or updating a database to keep that state
+updated. Is that correct? Yes. Conceptually, that's correct. I am not looking at that specific co-
+pilot implementation. So I wouldn't want to say exactly what patching session log means, but what we
+are observing is a good example of, I would say, externalizing state. So the agent can't rely on LLM
+itself to permanently remember everything that's happened. So the surrounding application needs some
+mechanism to persist information outside the model. So that could be a file, a database, a session
+store, and some other durable storage mechanism, right? So I would say, yeah, a text file or SQL
+database could absolutely be mechanisms for storing state, but I wouldn't equate a log specifically
+with the complete state of the agent. A log may simply record what happened or recovery or
+observability while another store holds the current state. So it could just be stored in memory or
+written to disk. It just depends on the actual implementation. Yes. It depends on the implementation
+and also importantly how durable that state needs to be for something very temporary, say
+information that I only need for current execution. It could simply be held in memory. That's fast,
+simple, and if that process terminates, the state is gone. But if the, let's say, the agent, it
+needs to survive a restart or it has to continue a long-running task later, that would generally
+externalize that state somewhere more durable, like a file, a database, or some system, there are so
+many possibilities there. Yeah, and you got me thinking about when it goes back to the LLM, so I'm
+just being a bit naive here. So if the agent state, and I think we'll get onto this in the next
+couple of sections, the agent's saving its state of different things it has access to, and then it
+goes back to the LLM saying, oh, right, we've done this, I've got this new information, can you give
+me the next recommended type step? Is there a danger that it's summarized or recorded its state
+incorrectly, and it's giving the next step of the process the wrong initial information? Because
+obviously you said the LLM can't remember anything. Have I misunderstood this? It's a very good
+question, and it's actually one of the important challenges in managing agent state as well. So I
+would make this distinction between the authoritative state and the state that we give back to LLM.
+So let's use a coding agent example. You have the agent that runs tests and three of them fail. The
+actual test results are information produced by the testing tool, but perhaps to avoid sending
+thousands and thousands of lines back to the LLM. The application itself could summarize those
+results. So if that summary incorrectly says only two tests failed, then the next model invocation
+is reasoning from incomplete or incorrect information. So the model might make a perfectly
+reasonable decision based on the context it received, but the point here is that the context itself
+was wrong. And you are correct about the LLM not remembering in a traditional application sense too.
+On the next invocation, the application essentially has to provide the relevant context again.
+Here's the goal. Here's where we are. Here's what happened. And here's the information you need to
+decide what comes next. So that's why I wouldn't want a generated summary to become the only source
+of truth for important state. We can use summarization information to make context manageable, but
+ideally we preserve the underlying authoritative information separately. Then when something is
+important, like say whether a deployment actually succeeded or whether a payment actually occurred,
+we can go back to that authoritative system rather than trusting a potentially lossy summary. So
+agent state is absolutely critical really, isn't it? Yes. Perfect. So just to finish off this
+section, can we decide what things an agent remembers? For example, are we configuring a framework
+here? And if so, how do teams decide that? How do you sit down and decide this is what an agent
+needs to decide if you're not using an off-the-shelf tool? Yes. And I think this is where we move
+from the concept of state into actually designing the state model for an agent? I would say if I
+were building an agent from scratch, I wouldn't start by saying let's remember everything. I would
+start with the job the agent is expected to perform and I would work backwards from that. For each
+piece of information, I'd ask, does the agent need this information for a future decision? How long
+does it need it? What happens if this information is lost or wrong? Let's say, for example, a
+customer support agent. So during the current interaction, it probably needs the customer's question
+what troubleshooting steps have already been attempted and the results of those steps. And that's a
+short-term state. If the customer decides to come back tomorrow, maybe we want to remember that
+there's an open support case and what was already tied, and that's durable state. But we probably
+don't need to preserve every intermediate thought or every piece of information the model has
+encountered. And yes, frameworks can provide mechanisms for things like checkpoints, conversation
+history, and all that, but framework shouldn't really make the business decision about what deserves
+to remember. That's an app design decision, I would say. Perfect. Thank you. That brings us nicely
+onto the next section to close that one off. So I want to talk about why agents need states. Kind of
+gone over it a little bit, but we need to talk about the different things an AI agent needs to
+remember. And you very nicely touched on the scenario there of an AI chatbot. There's nothing worse
+than getting through to another one the next day and you have to repeat yourself. So I understand
+that. In my notes here, I've got a few bullet points of the usual types of state. If I could just
+read those out to you and then if we could think of an example that might contain all those
+different things, that would be great. And then we could go through it as a small case study as it
+were. So I've got the types of state would be the user goals, potentially conversation history, task
+progress, the tools results like we were talking about in the ID example, if any permissions are
+needed, whether they need to ask for them or they've already been given, any intermediate decisions
+and prior actions. So maybe the AI chatbot is a good example to use and break down what these
+different types of state would be or if there's one that you usually like to discuss, have a go.
+That would be great. Or if I've missed any, let me know. I think the customer support agent is
+actually a great example because we can fit all of those types of state into one scenario without
+making it artificial. Let's more be specific. I want to say I contact an aid line support agent and
+I say my flight tomorrow has been cancelled. I need to get to New York before 2pm and I'd like you
+to rebook me. So that would be you're the user and that's your goal. That's exactly right. The first
+piece of my state is goal. The agent needs to carry forward that I'm not simply asking why the
+flight was cancelled. My goal is to get to New York before 2pm. So that would be the LMM's job to
+pull apart that sentence and recognise the key parts. Right. And then there's the conversation
+history you mentioned. Maybe the agent asks are you willing to fly from a nearby airport? And I say
+yes but I don't want a flight with more than one connection. So those constraints now become
+relevant context for subsequent decisions. Yeah and the next two are task progress and tool result.
+Exactly. So we have the task progress. Maybe the agent has identified my cancelled reservation. It
+verified which flights I'm eligible to switch to and is now searching for alternatives. If something
+interrupts the process, we don't necessarily want to start all over again. We also have tool results
+that you brought up. So the agent might call the airlines the reservation system and discover let's
+say two or three available flights. So those results become information it used to determine what to
+do next. And this is when the permissions become really interesting. Searching flights might not
+require any additional approval on me. It already has that but changing my reservation is an action
+with a side effect. The system might say I found this flight do you want me to rebook it for you? My
+approval becomes part of the state. Importantly the application should still be enforcing what the
+agent is actually authorized to do. This is where there are these intermediate decisions. Maybe
+there were three flights but the agent eliminated one because it arrived after 2pm and another
+because it had two connections. So we may want to retain enough information to understand why it
+selected that remaining option. And let me think. That's almost prior actions. Yeah, they're
+extremely important too. Let's say the reservation has actually been changed. The system needs
+authoritative record that says this action already happened, we don't want the agent to lose
+context, retry the workflow and accidentally attempt to rebook me again. So all of these pieces of
+state work together but they are not necessarily stored or in the same place or treated the same
+way. So I've got two questions that have popped into my head as you were explaining those. You
+mentioned side effects. Is that a type of state or is that a prior action? How would that work? The
+side effect would be in this example, you might have to pay a little bit more because you've changed
+your flight. Is that correct? That would be a side effect or is that just an outcome? I would say it
+would be like side effect isn't really a type of state, it's a change the agent causes in the
+outside world. Okay. And then we often need to record that change happens. So in our airline
+example, right, if the agent searches for available flights, that's mostly a read operation, it
+hasn't changed anything. But when it actually rebooks my flight, that's a side effect because it has
+changed the reservation in the airline system. And if that rebooking also charges me an additional
+$50, the charge would be another side effect. The result, the state might now be reservation
+changed, new flight number, payment of $50, it completed, confirmation issue. So this distinction
+becomes really important for reliability. Especially with payment involved. Yeah. Yeah. I was
+thinking there, when you're configuring this airline support agent chatbot, can it figure out what
+state it needs to save if you haven't told it what state to save? Is there facilities there to say,
+hold on, this is something that I'm not being told I should keep a record of, but in order to do the
+next thing, I need to save this? Is that a thing or is that not? Yeah. It can be a thing, but I
+would also separate working state. The agent discovers it needs during execution from, I would say,
+durable state that we are deliberately designing the system to persist. So in our airline agent, it
+searches for flights and discovers three options that we talked about. Nobody necessarily had to
+configure a field saying, remember flight option number two. The agent can recognize that those
+search results are relevant to completing the current task and keep them in its working context. It
+might use those results on the next step to compare arrival times or the prices. So some agent
+frameworks also allow us the model to interact with memory or state management tools. So the agent
+could effectively decide this information will be useful later and write something to a memory or
+create a checkpoint. That's possible. Where I'd be more cautious is allowing the model to
+independently decide everything that becomes durable or authoritative state. So if I have to go back
+to the airline example, I wouldn't want the agent deciding on its own. I think I'll remember that
+this customer paid $50. So the airline's payment system should be the authoritative source for
+whether that payment occurred. Similarly, the application should explicitly define important things
+like the customer authorization, reservation status, or the complete transactions. So I think it's
+really two layers. We can give the agent flexibility to manage its working state, like things it
+discovers and needs while solving the problem. But for business critical state, the engineering team
+should define the ownership source of truth. I would say the persistence rules. Yeah, that's a good
+point with deciding and configuring the authoritative place to get that information. I've
+experienced that in the ID agents or when you're speaking to some chat systems and it totally
+forgets completely where it is because it's run out of working state or it's not gone back to the
+source of truth to validate something. Maybe that's not correct in this example, but that's just how
+I feel when I use them sometimes. Would that be working state or is that the context or when things
+forget things? So I think what you're experiencing could be different layers, why it can feel like
+agent forgot. I can think of two possibilities. One is the context window. The application may have
+a lot of history stored but it can't send all of it to the LLM on every call. So as the interaction
+is getting longer it might draw up older information. You might see prompts where it says it has
+gotten a log so I'm going to summarize and save it or only retrieve what it thinks is relevant. If
+something important gets left out or badly summarized, the model effectively doesn't know it
+anymore. even though the application may still have it stored somewhere. And the other one is the
+working state. Imagine our coding agent discovered 10 steps ago that a particular configuration
+while the file was causing the problem. If that information was temporary, like maintained only
+temporarily and wasn't carried forward or checkpointed later, then the agent may start investigating
+something it has already solved. that's a state management problem rather than the LLM literally
+forgetting. So when an agent appears and says we get that, it appears to forget something, I usually
+wouldn't immediately say the model forgot. I'd ask was this included or retrieved into the current
+context? Was it summarized correctly? And that's one of the interesting things about agent state
+too, having the information somewhere and having the right information available. to the model at
+the right moment are two different problems. Yeah, that's helped me understand it a lot actually
+because the way you've described it goes back and forth. It's still got the original question, the
+user, you know, the user goal, but it's constantly getting more information and more context and
+different steps it's done and they all need to be re-included, don't they? And the state needs to be
+valid and up-to-date. It feels like it could be really brittle at any one of those stages, like you
+said, 10 steps back. If it makes an assumption, then what you get out of the end is nowhere near
+what to get achieved in the first place. Yeah, that's one of the reasons agent systems can become
+surprisingly brittle as tasks get longer. We all experience that the agent, you know, it starts with
+original goal, but every step is adding new information. There's tool results, there's decisions,
+maybe even the user might start giving new instructions. So the application then has to decide what
+from all of that should be carried forward into the next call to the model. And, you know, the
+important thing is also it usually doesn't just resend everything forever. That would become way too
+expensive. It could make it too slow and potentially exceed the model's context limits as well. So
+the system may summarize older information, retrieve only selected piece of state, or reconstruct
+the current situation, but that's where errors can compound. So, yeah, I think of this like, and
+your intuition is right, the longer and more autonomous the workflow becomes, the more important
+stage management becomes. So the model can reason very well, but if we give it the wrong or
+incomplete representation of where the system is, it can confidently reason from a bad starting
+point. Yeah, I've experienced probably what most people have experienced like you were saying, where
+it gets lost or I think it's done something or it's lost a bit of context, but I personally feel
+like I have to give it a break and come back the next day to see if it's refreshed itself sometimes.
+Yeah, that might be just me. Like I had one the other day. I think I had two different IDs open.
+From JetBrains I had IntelliJ and RustRover and I was working on a Kotlin project in one using
+Copilot and then in the other one I was using Copilot to make some changes, but only one of them was
+actually interacting with the system and doing things I asked. The other one said, oh yeah, I've
+made that change for you. And I'm like, hold on a minute, you haven't touched any of the code. So,
+oh no, yeah, I've done it now. Thanks for pointing that out. I'm like, you still haven't done
+anything. So, oh yeah, yeah, I see that. I haven't done anything. I'll do that now for you. But I
+actually had to restart the system because it obviously either lost the connection or some context
+or I'm not sure how that happened, but it's happened a couple of times. Yeah, what you're telling me
+is an experience that we are going through. And it's a really good real world example just because
+we are all experiencing that. And there are two different realities to that situation too. There's
+the model representation of what it believes has happened. And then there's the actual state of your
+development environment. So we could think like the model may have reasoned. The next action is to
+modify this file and perhaps even generated such modification. But somewhere between that decision
+and the tool actually executing it, something failed. Maybe the tool connection wasn't available or
+the result wasn't correctly returned to the agent or without, I mean, knowing the implementation, we
+can't say where, but the interesting failure is when the agent telling you I've made the change. And
+at that point, it's treating intended action, I would say, as though it were a completed action. And
+that's exactly why I think prior actions and tool results are such important pieces of state. a
+robust agent shouldn't update its state from I intend to modify the file to the file was modified
+simply because the model generated some tool call. So ideally, I would say the tool executes the
+operation, returns evidence that it succeeded, and only then does the system record the transition
+as completed. Yeah, I think it plays nicely with the example of taking payment that you said. the
+agent would keep insisting that it's taken £50 or $50, but because it's not going back to the
+payment authoritative system to confirm that, it's in the same situation that I just explained where
+I've made the change on the file. It was like, we haven't gone and checked the file, so you're just
+making things up. You know? Yeah, exactly. And I think that connection between the two examples is
+really useful because it shows that it's not specific to payments or coding agents or it's a general
+reliability problem, right? Payment example, the model believed I submitted a $50 payment, therefore
+the payment happened and it didn't check. In your IDE, it believed I generated the file change,
+therefore the file was changed. So those are two separate things, the intention and the resulting
+state of the external system. So, yeah. A new benchmark for software excellence is here. The IEEE
+Computer Society created the software professional certifications to help you evaluate candidates
+and encourage growth across your teams. Find out how to turn your individual contributors into a
+unified team that delivers excellence at computer.org slash certification. Well, that brings us on
+nicely to my next section, which is about where agent state is stored. So where is this stored and
+what sort of volume of data are we talking about when we're thinking of state data? It can be stored
+in a few different places like we touched upon previously. And the right choice really depends on
+what kind of state it is and how durable or I would say queryable it needs to be. So some state may
+just live in memory while the agent is running. That could be the current goal or some temporary
+scratch information. That's fast. But if the process dies, the state disappears, right? For anything
+that needs to survive beyond that process, we usually externalize it. This might be a relational
+database or a NoSQL database or a key value store or it could be an object store, a file, or
+sometimes you need semantic memory. you have semantic memory, so with the database. So in a
+production system, it's common to use more than one of those because different states have different
+access patterns, I would say. So let's take our airlines case. So the current task status might live
+in a structured database. The customer's long-term preferences might be memory store. The actual
+reservation is in the airline's authoritative booking system, right? And the execution history is
+all recorded in logs or events so that it has that information for auditing and debugging. And you
+brought up a very interesting point, the volume. On the volume side, it can vary enormously too. The
+core structured state for one task is often small, like goal, status, identifiers. That might be in
+kb or kilobytes. But the thing is, the volume grows quickly when you start storing conversation
+transcripts or code or documents, embeddings or long histories across thousands of users. So at that
+point, the issue is not just raw storage size. It's also about how much of that state can you
+effectively retrieve and put back into the model's context at the right time. So I think the
+distinction would be storage capacity might not be the hardest problem. Selecting the right state to
+retrieve and present to the model is also a big one. So you got me thinking there about the data
+storage and retrieving it. The context that the AI agent has access to or is configured to use, I
+guess it's configurable, that would be like the buffer it has to store the intermediate data. needs
+to go fetched to sort of refresh the context for the next step. Would that be a correct
+understanding of that? Yeah, that's I would say the right mental model. I would just separate the
+storage from context because they're related but not quite the same thing. So your idea of a buffer
+is very useful but I wouldn't necessarily call it a literal buffer because implementations vary. I
+would describe an agent's working context or a working state. It's similar to how we work as humans,
+right? I might have thousands of documents sitting on my computer but I don't need all of them open
+in front of me to answer one question. I retrieve the few that are relevant to what I'm doing and
+that's essentially I think what good context management is. Yeah, I wasn't sure if the context was
+the size of information that could act on at that point. Okay, cool. So I've got a few lists of
+existing approaches to handle the state data and you've mentioned a few ones. So I'm just going to
+read out a few others if you could confirm whether or how they would be used in the AI airline agent
+for the type of data that it's designed to use. So we've got in-memory state which is the working
+state I think you mentioned. We've got vector stores, databases, the traditional ones. Something I'm
+not too familiar on it's all workflow engines and we've got event logs which I think we can
+understand what that is and then external state stores. So in our example of the airline, does that
+fit nicely with these six types of storage approaches or is there anything I've missed that would be
+critical? I think the airline example is still really good so let's use that. So and we want to talk
+about the different places or mechanisms for different kinds of states, right? So I would start with
+the in-memory state. That would be the temporary working state. So in our airlines example, that
+might be the fact that we are currently comparing three replacement flights or the most recent tool
+response we just got back. It's useful because it's fast but if the process disappears, that state
+may disappear too. And then let's bring up the vector stores. They're more appropriate for semantic
+memory. Maybe the customer has a long-term preference for aisle seats or I prefer non-stop flights
+or things like that. If we want to retrieve relevant information based on meaning rather than an
+exact key, a vector store can help. But I wouldn't use that to determine whether the customer's
+reservation was actually changed. That's where traditional database comes in. Very important. we
+might store structured task state there like the current case ID, the current workflow status, which
+replacement flight was finally selected or whether user approval was received. And to store such
+structured information, traditional database fits very well. And let's also bring up that workflow
+engine. It's a little different. I think of that as the component that helps manage a very long-
+running sequence in a reliable fashion. So maybe agent needs to identify the cancel flight, find
+alternatives, or they might have to rebook or, you know, send confirmation, things like that. So a
+workflow engine can persist where we are in that sequence. It can handle retries, let's say, if we
+are having or seeing some sort of connectivity issues with that. It can wait for events and you can
+resume after failures. So that process is not just storing data. It is mostly helping manage the
+lifecycle of the process, I would say. Is that engine a completely different system that might have
+other backends and you speak to an API or something? Or how would you define the makeup of that
+workflow engine? So it could be a scheduler or an executor, right, that knows when to run the next
+step and whatnot. So it could be a compute that you would leverage. Okay. And event logs, that's
+just logging to files, I guess. Yes. So let's get back to that. Event logs are extremely important,
+especially I work in enterprise systems and ability to debug and audit are extremely important
+because they tell you what happened over time, like search requested, three flights returned,
+customer approved it, rebooking attempted. And that's valuable for observability, for debugging, or
+sometimes if you want to reconstruct what happens. So event logs are extremely important. And you
+also did mention, I think, about external state stores. I would interpret that as systems outside
+the agent that already have important information, like in our airline use case that we are working
+with. The reservation system is the authoritative source of actual booking and the payment system is
+the authoritative source for whether the fair difference was charged. So the agent shouldn't try to
+recreate those truths in its own memory. I see. I was a bit confused as to what that might be, the
+external state. Is there anything that you deal with or have come across that we've missed in those
+six different things? And just to summarize again, it was in memory state, vector stores, which is
+what you described to ask more question-based information rather than just concrete information,
+traditional databases, workflow engines, event logs, and the external state. Yeah, I think those six
+cover the major concepts quite well. And external state, it could be very confusing terminology.
+Like, I wouldn't necessarily treat external state as another storage technology like a database or a
+vector store. I think it more as a state that is owned by another system completely outside the
+agent. So, yeah. Yeah, I wasn't sure if it was a service that you'd be subscribing to. Yeah. Didn't
+realize it was a concrete existing thing. Yeah. If I have to summarize this, like, you know, we were
+talking about, so I would say in memory for temporary working state, vector stores for semantic
+retrieval or, you know, similar searches, databases for any structure durable state. What did we
+talk about? Workflow engines. Workflow engines for durable process execution. Event logs for
+auditing the whole history. And then the external systems for authoritative business state. That's
+how I would summarize the whole landscape. Yeah, so it's clicked now. So workflow engines are what
+stage in the process of maybe running a tool and how to store that. Yeah, okay. I was a bit unsure
+of that. Okay, so that brings us nicely on to the last section, which I think we might have covered
+quite a bit of it already here and there. So what are the challenges and how are they solved with
+agent state? I've got a few questions here. So how do we avoid stale context? I think that was
+something we touched upon initially, but if you could have a go at that one, please. Yeah, I think
+the key thing here is stale context can happen anytime, even when the agent remembers something
+perfectly. The information itself may simply no longer be true. So going back to the airline example
+we've been using, let's say the agent searched 10 minutes ago and found three seats available on a
+specific flight. It stored that results in its state and 10 minutes later, the customer could come
+back and say, yeah, book that one. The agent still remembers perfectly that there were three seats,
+but there's been 10 minutes between this and somebody else may have booked them in the meantime. So
+for the agent still remember great, but things are not the same anymore, right? So information that
+can change, we need to, I think, distinguish between remembered state and current truth. So there
+are a few ways to handle that. One is to attach like expiration time so that the state knows we have
+to refresh it. Another is to define certain information as something that must be refreshed before a
+consequential action. So before you actually rebook that flight, the agent goes back to the airline
+system and checks the availability again. And also there's stale context about the task itself. So
+let's say through repeated summarization, the agent has lost the fact that I must arrive before 2pm.
+That's a slightly different problem. For important constraints like that, I prefer keeping them
+explicitly in structured state rather than relying on them to survive several rounds of generated
+summaries. So I think there are two complementary strategies I could think of like preserve
+important task variants explicitly and also refresh dynamic information from its authoritative
+source when freshness matters. Thank you. And I'm not sure if this is the same question. I'll leave
+this to you to decide. But so how do we avoid inconsistent memory that's different from stale
+context? Yeah. So let's say stale context means the information was correct when we captured it but
+the reality has changed, right? So we said that in the airlines example we correctly recorded three
+seats were available but then 10 minutes later those seats were gone. And inconsistent memory means
+that agent has two or more pieces of state that disagree with each other and now it has to know
+which one to trust. That's how I would think of it. So let's say in our example, right? In our
+airline conversation I said I need to arrive before 2 p.m. Later maybe another part of the state
+says customer prefers cheapest flight regardless of arrival time. Or perhaps the agent's memory says
+my reservation has been changed while the booking system, airline actual booking system is still
+showing the original flight. Now you just don't have old information. you have conflicting
+information. So that's the problem. I believe the way to handle that would be establishing ownership
+and maybe precedence as well. Yeah. So not every piece of state should have equal authority. The
+reservation system owns the booking status. The payment system, it owns that payment status. So
+explicit user instructions should generally take precedence over an older inferred preference. So an
+important structured constraints shouldn't be overwritten casually by a generated ceremony. So
+versioning can help as well, but if two agents processes are working on the same task, we can attach
+a version to the state. So if they both read version 5 and one is updating to version 6, the other
+shouldn't blindly override with its own. So it needs to detect that change and either reload or
+resolve the conflict. Are you kind of looking for some type of convergence algorithm or Boolean to
+say, right, if this, then that. The reservation system says that, so that's got priority, or we've
+got four reservation systems and three of them are correct, four of them one of them isn't, and
+you're not, so they're correct. So it's kind of like, I forget the term, like the raft protocol or
+something where they're trying to... come to a consistent decision. Yeah, I completely agree with
+that. So I think we've covered still context and inconsistent memory to make the decision, but how
+do we avoid... They made a decision and they go off and act, and then they do it again and again.
+How do we avoid repeated actions? So I think this is where I think I'm not sure if this is the right
+term, but in my mind, idempotency becomes really important. And, you know, let's go back to the
+airline example. I think we got a really good example with the airlines. So I need to charge the
+customer $50 for this rebooking. Okay, it sends the payment request, but before it gets the
+response, there's a timeout. So now the agent doesn't know whether the charge succeeded. If it
+decides to retry the action, there is a danger that the customer could be charged twice. So a common
+way that I have seen implemented is to assign a logical action or a unique ID, which is in some of
+the terms we call it an idempotency key. So instead of saying charge $2 each time as though it's a
+new action, the system says something like execute payment operation 12345. So if the request is
+retried with that same identifier, the payment system recognizes that it already processed that
+operation and returns the existing result instead of charging again. So we'd also want to keep a
+durable state around the action itself, something like the stream proposed, then executing, then
+succeeded or failed. Then the agent can check what actually happened. before deciding to execute
+again. And for important, the broader principle would be like don't depend on the LLM, remembering
+not to repeat an action, make repeated execution safe at the system level. Yeah, that's a good point
+about the simple solution of using IDs. But I guess it would depend on another step of who assigns
+the ID. You don't want the agent to make up the ID. It needs to be given by somewhere that's going
+to save the original one. So they know it's been retried or reused. That's a really important and
+good question that you brought up. I was going through my experience on how, because these are some
+of the things that we have been handling these days. So the important thing is that this ID or, you
+know, it needs to represent the same logical business operation across Retrize, right? So ideally,
+the surrounding application or workflow layer creates and persists that identifier when action is
+first initiated. Then if the network times out or the agent retries later, it reuses the same key.
+So in the airline example, the workflow might create something like a rebooking operation ID when
+the customer approves the change. that ID gets stored with the task. So the payment call, the
+reservation update, and any retries that we're talking about, it can reference that same operation.
+So I think that's how I would put it. Thank you. So I've got a few points, a few questions to ask
+left before we have to start wrapping up. So we've spoken about avoiding repeated actions, and I
+think we've touched upon hidden side effects already. For example, a summary gets mis-summarized, if
+that's a word, mis-summarized, and then would that be a hidden side effect, that something's
+happened, or how do you define hidden side effects, and how do we deal with it? A really interesting
+question. So I define hidden side effects a little different from a bad summary. If you think about
+it, a bad summary is a state quality problem. It can certainly lead to an incorrect side effect, but
+the side effect itself is some change the agent causes in the outside world that may not be obvious
+from its internal state. So in our airline example, it is calling a rebooking API. That API changes
+the reservation, it charges a fee, it releases the old seat, maybe it is sending a confirmation
+email. So from agent's perspective, it may look like one tool call, a very simple one at that. But
+several things in the real world have changed, and those are the side effects. So the problem
+becomes especially serious with failures. Imagine the rebooking succeeds, but the agent response was
+a timeout. The agent state might still say rebooking in progress, while in the real world, the
+passenger has already been rebooked. So if the agent is retrying blindly, we create additional
+intended effects. So I think the first solution is making side effects explicit in the design.
+That's how I would put it. So we should know which tools are read-only, which ones mutate external
+systems, or consequential actions. We want durable operation IDs like we talked about, or the
+idempotency where it's possible, and verification against the authoritative system like we talked
+about. Yeah, it seems like if you take the term agent state out of the conversation, these are all
+common problems that you have to deal with when you're building web systems, online systems, you
+know, things that have decisions made that has an impact to make sure it's actually followed
+through. It's just a new frontier that we're trying to solve existing problems through. Okay, so
+what is session affinity? How do we deal with it? So session affinity, I sometimes call it a sticky
+session. It's when a particular user's request needs to keep going back to the same server or worker
+because that server is holding some state locally. And even with AI, without AI session affinity has
+been a long-standing thing going on. So imagine you have three instances running our airline agent.
+Now I'm talking about the application of the compute behind it, right? So the first request goes to
+instance A. Here I'm talking about the actual servers that are running my airline agent. I'm just
+using three as an example. It could have many more, whatnot. So let's imagine we have three
+instances running our airline agent. The first request is going to instance A. And instance A keeps
+my conversation and the task state in its local memory. if my next request gets, because requests
+are often balanced through a load balancer to the backend server. So that's where the whole session
+affinity is coming into the picture as well. So if my next request is getting load balanced to
+instance B, and instance B may have no idea what we've already discussed. So this is where
+situations like this is where session affinity becomes important. This way you configure session
+affinity. So the requests may continue going to instance A. So that can work. But the problem is
+that it creates a dependency on that instance. So if any requests that are going to one system, like
+one instance, and with session affinity, until you have the timeout, it keeps going there. So it
+could get overloaded. The load balancing wouldn't work the same way. So it would have those problems
+on the instances. It could crash. will have a scaling issue with the application, whatnot. So for
+production systems, particularly for important long-running tasks, I prefer to externalize the state
+that needs to survive. Because session affinity really helps so that you don't have to repeat
+yourself and the context is not getting lost every time you're speaking to it. But for long-running
+tasks, I always prefer to externalize the state that needs to survive. instance A can handle one
+request, instance B can handle the next and both can retrieve the necessary state from a durable
+storage. But that doesn't mean we can't keep anything locally. Caches and temporary working state
+can absolutely stay in memory. It's just I was also addressing what happens if that particular
+process disappears or crashes or whatnot. Perfect. I've got two things left before we wrap up. I'll
+try and squeeze them. I think we might have covered this one. So what about decisions that are
+difficult to trace or reverse? For example, with the airline, we booked something and the seat's
+been taken. So that would be authorization mistakes potentially. The things that have poor
+observability, how do we deal with those? And that's the second last question before we wrap up
+this, just so you know. And I think we have touched a little bit on pieces of this. Yeah, you've
+talked about the IDs and the timeouts and identifying what state is authoritative. Right. So yeah,
+for decisions that are difficult to trace or reverse, I think about three things coming into my
+mind. Prevention, observability, and recovery. That's how I would put it. So first is prevention. So
+before anything an agent performs, like booking a flight, issuing a refund, whatnot, I'd distinguish
+authorization from approval. So authorization answers things like, is this user or agent permitted
+to perform this action? Approval answers has the user actually agreed to this particular action? So
+the model shouldn't be the component that ultimately enforces either of those guarantees. The second
+is observability. So we want to record the meaningful parts of the execution, like what goal or
+request led to the action, what tool was called, what operation ID was used, what did the tool
+return, what state transition happened, was it approval in any of this? So this gives us a trace we
+can follow later without needing to capture every internal reasoning step of the model. So that's
+why observability is tremendously important. And third, I would say, is recovery. Some actions can
+always be reversed, others can't. So if we book the wrong flight, maybe we can cancel or rebook it.
+In a distributed system, I would say, I call this a compensating action rather than a true rollback.
+So if the agent sends an email or submits something externally, we may not be able to undo it at
+all. In those cases, prevention becomes much more important and we might deliver it. So it really
+depends on the decision that's being made. If it's a permanent decision like payment, it's not too
+scary because you can issue a refund. Yeah. The principle would be harder an action needs to
+reverse, the stronger the control should be before it happens. Okay. So finally, before we wrap up,
+in your example there of things to reverse, I could use if it's an IDE, we'd have Git for that type
+of thing. But I've only got one agent running. So if we're using multi-agents, how big a difference
+or change does that make to everything we've spoken about so far? First of all, what is multi-agent
+and does that make state more complex when we're dealing with more than one thing doing stuff? Very
+interesting question. And this is something I have thought about a lot and you know, that's what
+makes this thought process much more complex too. Yeah, definitely it makes state more complex
+because now we are moving from one decision-making component, maintaining continuity, to several
+components that may be working independently and concurrently as well. First, by a multi-agent
+system, I mean a system where multiple agents have different responsibilities, but they all
+collaborate towards some larger goal. Let's say a real-line example. Rather than having one agent do
+everything, we might have one agent that is responsible for finding an alternative flight. Another
+could be dealing with payments, one could be dealing with customer communication. So there might
+also be a coordinating agent that delegates work to these specialized agents. So the advantage is
+specialization and separation of responsibilities, but from a state perspective, we've now
+introduced so many questions. What state does each agent own? What state do they share? how do they
+communicate changes? What happens if agents act on same information at the same time? So I wouldn't
+solve the communication between agents becomes really important. And for example, in our redline
+case, so flight search agent, it could find a seat and pass that information to the booking agent.
+By the time booking agent acts, that seat may be gone. Perhaps two agents both believe they are
+responsible for, let's say, a refund, and they both try to execute it. So these are very familiar
+distributed systems problems, but now they are occurring between autonomous components also. So I
+generally wouldn't solve that by giving statements like every agent access to every piece of state.
+I say clear ownership and minimum necessary sharing. So each agent gets the context it needs for
+what it's responsible for, while also sharing important facts like task status, the IDs that we
+talked about like a transaction ID, completed actions, approvals, and things like that. Perfect,
+thank you. So that's us. I think we've covered everything I set out to learn, and hopefully the
+listeners have learned too, and you've enjoyed yourself. Very happy with the things that you shared
+with us. So I've really enjoyed chatting with you about AI State, but it's a question I always like
+to ask my guests. If there was one thing you would like a software engineer to remember from our
+show, what would you like that to be? Oh, there's so much I would be excited about. I love how
+conversational these chats are. So I don't know if this is what you're looking for, but lately I've
+enjoyed listening to this show. there are so many perspectives, unique ways of looking at things. So
+I started going through at least three podcasts each month. I mean, it's not a lot, but it has
+improved the amount of exposure I have on topics that I wouldn't usually touch. So, you know,
+switching from listening to just music to at least one podcast a week has made me much happier and
+much smarter. So that is something I would encourage everybody to do. Excellent. Thank you. I was
+kind of meaning something you'd discussed in the show that you'd like them to remember. But no,
+that's a good bit of advice in general. I like it. So yeah, let's rephrase it. If there's something,
+if someone said, right, what was the number one thing to remember from this episode? What would you
+personally like that to be? That's my question. So one thing I'd like to take away is that agent
+state is really application state because we've been talking about managing state. So when we talk
+about agents as the model itself remembers, decides, and acts, but in a production system, the model
+is really one component within a much larger software architecture. So application still has to
+decide what information is authoritative, where it lives, how long it lives, who can access it, and
+things like that. So I would say, given the agent flexibility in reasoning, but keep important
+guarantees deterministic, let agent decide that we talked about the flight being rebooked, things
+like that. So because if we approach agents that way, not as magical autonomous systems, but as
+components within a well-engineered systems, I think we can build the systems much more reliably. I
+think that's the point I was going for. Yeah, that's what I've taken away. I should have used the
+word takeaway rather than remember. That seems to be more common. But yeah, for me, finally
+understanding that the LMM is just a component of an agent system really hit home for me. So that
+was good. So is there anything we missed that you thought might come up that you'd like to mention
+before we finish there, or were you happy? No, I'm extremely happy with the way you conducted.
+That's the level of, it's a well rounded session, I would say. We've covered almost everything that
+I could even think of. Thank you. So if people want to get in touch with you to discuss anything
+that's come up, how can they reach out? They can reach out to me on LinkedIn. I don't know if I have
+shared that. Yeah, I'll put that, I've got that in the show notes for when it comes out. Yeah, and
+my email address is public, so anybody can reach out to me through email as well. Cool. So Janya,
+thank you for coming on the show. It's been a real pleasure. This is Gavin Henry for Software
+Engineering Radio, and thank you for listening. Thanks for listening to SE Radio, an educational
+program brought to you by IEEE Software Magazine. For more about the podcast, including other
+episodes, visit our website at se-radio.net. To provide feedback, you can comment on each episode on
+the website, or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening. and

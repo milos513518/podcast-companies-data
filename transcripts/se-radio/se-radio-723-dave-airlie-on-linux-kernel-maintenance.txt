@@ -1,0 +1,838 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 723: Dave Airlie on Linux Kernel Maintenance
+DATE: 2026-06-03
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/06/se-radio-723-dave-airlie-on-linux-kernel-maintenance/
+AUDIO: https://traffic.libsyn.com/secure/seradio/723-dave-arlie-linux-kernel-maintenance.mp3?dest-id=23379
+DURATION_SECONDS: 4154
+TRANSCRIBED_AT: 2026-11-04T10:24:09Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Gregory
+Kapphammer. Today's guest is Dave Airely. Dave is a longtime Linux kernel maintainer and a
+distinguished engineer at Red Hat. Dave, welcome to Software Engineering Radio. Hi, Greg. Thanks for
+having me on. I'm delighted to talk to you today about Linux kernel maintenance. Dave, you're the
+direct rendering manager subsystem maintainer in the Linux kernel, and you have nearly two decades
+of kernel maintenance experience, and I'm super happy to learn from you throughout the episode. Are
+you ready to dive in? Yes, let's go. Okay. So at the very start, I mentioned a moment ago that
+you're the maintainer of something that's called DRM. Can you just tell us quickly, what is DRM so
+we know the kind of work you do on the Linux kernel? Well, since DRM is a bit of an overloaded term,
+it's not the bad one, I suppose, is the best way to describe it. It's, I think, called the direct
+rendering manager, which is a legacy name for what was really just the GPU or graphics support
+subsystem in the Linux kernel. The name was given to a small component maybe 20 years ago, and we
+have expanded on it, but we just kept the name. So I think the name is DRM. I don't think direct
+rendering manager even really makes sense for what it does anymore. So stick with the acronym. But
+pretty much when you hear DRM, just think GPU graphics accelerators. Okay. So we're going to use DRM
+and your experience with maintaining it throughout the episode. But to get us started, we want to
+talk a little bit about some of the scale and structure issues associated with the Linux kernel. And
+we're going to talk about subsystem workflows and how you do release engineering. And we'll use DRM
+as concrete examples throughout the episode. So with that in mind, can you tell us a little bit
+about the scope and the architecture of the Linux kernel? How many maintainers are there? How many
+subsystems are there? Please give us a few initial insights. Yeah, the Linux kernel is, well, we
+consider it's probably the biggest software engineering project in the world. That's what we like to
+say. In terms of maintainers, the number is very changeable. I would say on average, it's between
+80, 100, 150. The varying levels of what a maintainer is and where they sit in the hierarchy moves a
+lot. We have every year maintainer summit where Linux invites like the top 30 maintainers to that.
+So that's a number of the top level people that Linux needs to talk to. But that scales out then
+into a hierarchy that can expand to up to 100, I would say, in the kernel at the moment. In terms of
+subsystems, again, there's no strict definition of what exactly a subsystem. A subsystem is
+something that a maintainer maintains usually. So in the same sense of there is the number of
+subsystems that there are the number of maintainers. And so maybe not one is to one, but it's pretty
+close. But there are a number of major subsystems would probably be like the graphic subsystem, the
+networking subsystem, the CPU, like x86 support, ARM 64 support. And those are the major areas.
+Storage, file systems, memory management. So they're probably the biggest groupings that we have.
+Okay, so we've got DRM as one subsystem and CPU scheduling or memory management or file systems.
+Those are all examples of subsystems. So if we take DRM as an example, how many people are actually
+working with you as the maintainer of the DRM subsystem? If you'd asked me this yesterday, I would
+have said 100, but I actually ran the numbers last night. And apparently we have over 300 people
+contributing every kernel release to the DRM subsystem, which actually surprised me just as much. So
+they don't all work directly with me. Again, we have a hierarchical system. I probably work on a
+weekly to fortnightly basis with maybe 20 people in that range, 15 to 20. And then they work in the
+hierarchy with the other grouping. But yes, I was surprised that we have up to 300 contributors per
+kernel for the DRM subsystem. Okay, so there's 300 people and they're somehow reporting to you and
+you're managing their work and you're reviewing their pull requests. Can you give us at a high level
+a rough idea? What are those 300 people doing? And then what are you doing when it comes to managing
+the infrastructure for DRM in the Linux kernel? So this is probably an area where the DRM subsystem
+is a little bit different to a lot of the other subsystems in that I actually have quite a large
+hierarchy. I would think more like a corporate style of there is two co-maintainers, myself and
+Simone Evetter. And then below us, we have a range of maybe six or seven more feeding into us. And
+then they have a range of people feeding into them. And then there's all of the frontline developers
+probably feeding into that. So the hierarchy is, depending where you sit on it, just like in a
+corporate structure, is very different for what your job is. So my role, a lot of it is, I suppose I
+would call facilitating and creating an environment for people to be able to work in and be happy to
+work in. My main weekly task is I deal with Linus. I submit a pull request to Linus on a weekly
+basis. I gather all the pull requests from the people below me and I send them up to Linus. The
+amount of review I personally do on those pull requests is very limited at this point because they
+are so large already that I have to trust that the maintainers below me have done appropriate
+review. And they have to trust that the maintainers below them have done appropriate review. The
+review all happens in public on the mailing list, so we can always go back and reference it. But for
+me personally, on a daily, weekly basis, I don't often review the pull request at that much. I do a
+set of standard builds on them. I make sure there's no obvious. They don't build. That's a big
+problem. But mostly it's a maintenance role for me is very different than a standard maintainer. A
+lot of the standard maintainers will be applying the patches to our trees, checking the quality of
+the work and making sure that it's suitable for going upstream to me. Thanks. That's really helpful.
+So I have the understanding that people are, in a way, working for or reporting to you. And you
+mentioned a moment ago that you're reporting to Linus Torvalds as well. Can you tell us a little bit
+more about how you report to Linus and what type of work you do on behalf of this core leader for
+the Linux kernel? Yeah. So one thing about the kernel is Linus is very delegating. He delegates a
+lot of trust to the top-level maintainers. And it is kind of like, I hate to use the word fiefdom,
+but you own your garden. You're in charge of maintaining that section of the kernel. And he trusts
+you until you give him a reason not to, I suppose. I've worked with him now for 20 years. I've had a
+few public falling outs with him. They're easy to find on the internet. But overall, we don't have a
+huge amount of interaction. Most of my interactions with Linus are at the Maintainer Summit once a
+year. We'll meet up and we'll just talk about life. But mostly, it's about normal things. We both
+like scuba diving. So there's a cool, you know, things like that. But in terms of the kernel, every
+week, I send him an official pull request with the list of all of the fixes for that week from all
+of the people in my group. And he then will process that. If he processes that, the system will send
+an automatic reply telling me that Linus has taken the request. If you get a reply from Linus
+himself, that's usually only if you've done something wrong. He is not really good at giving
+positive feedback. He is much better at giving something wrong feedback. He's known for not giving
+the positive side. So you generally look for the Linus on the reply and hope you don't see it. And
+then things go along swimmingly. Once every, like we'll go into the release cycle later, but once
+every nine or 10 weeks, you have to send the big pull request, which is all of the work that is due
+for the next kernel. That's the one that often upsets him because that's the one where you will have
+a lot of change and there's always regression with change. And you just have to hope that he doesn't
+catch a really bad regression or you haven't messed up some other part of the kernel. But in
+general, my attractions to Linus are purely on the, I send him a weekly email. I hope he doesn't
+have a problem with it. If he has a problem with it, I delegate that down to the people who cause
+the problem. And I generally accept that I'm an umbrella, I suppose, as well. You know, I need to
+protect the people under me from his rot. And he's calmed down over the years, but I'm used to it at
+this stage. So I sometimes have to take an hour or two to breathe and then I'm good. Okay. So that's
+really giving us a nice sense in the day of the life of a Linux kernel maintainer. And we're going
+to do a deep dive into all those topics in a moment. But before we do that, can you tell us a little
+bit about some of the specific challenges that you face when it comes to maintaining DRM in the
+Linux kernel? I think the biggest challenge I've faced over the years, and Simone, my co-maintainer,
+has been great at helping with this, is that the scale of things when you get to being this big is
+quite hard to both communicate to other maintainers and to have interesting topics with other
+maintainers who are dealing at the 10 people level or the 40 people level. They don't quite
+understand why the scale changes when you get to our level. Like even when I was thinking we have
+100 people going through it, the scale problem is different. But now that I'm thinking 300, I'm
+like, okay, no, our scale problems are definitely valid and different than theirs. So, for example,
+we have to have a hierarchy. We have a common tree where everyone has commit access for a bunch of
+things. And we try to have a group maintainership model, which isn't something as standard in the
+kernel. X86 subsystem kind of did it with three people. We've done it now with maybe 30 to 40
+people, I think, in our group maintainers. There's probably more than three maintainers, but there's
+a group of committers. So that system is different than everyone else's. So that's probably one of
+the biggest challenges. I think scaling the standard kernel development processes up to our size of
+the subsystem has been the biggest challenge we've faced over the last years. And in my world, a lot
+of my job has been to just sort of step away and not let my, I suppose, ego or my own niched
+workflows drive everything else. And I need to accept that, okay, this is something that makes the
+community better. And maybe it makes my life a bit harder, but I need to use these scripts or just
+develop methodology because it makes it easier for everyone else. And often we have a problem where
+over the years we get our little niche of how we develop things and we stay in it. And being able to
+not do that has been very good for me in helping the subsystem to grow, I think, because scale is
+hard. So you've talked about scale from the perspective of the number of humans, and you mentioned
+there are like 300 people who are developing various types of patches or change sets. Can you tell
+our listeners a little bit about the size and the scope and the scale of your part of the Linux
+kernel when it comes to things like lines of code or size of a change set? Other details that you
+can share there? Yeah, the lines of code is a bit of an outlier for us because we have a huge amount
+of auto-generated headers, which both piss people off and are very valuable for us for a few
+drivers. But I think we're talking in at least a million lines of code under my purview in that
+subsystem. The headers are probably add another million or half a million onto that. But so, yeah,
+you're probably talking at least in the 1 million to 2 million lines of code. I don't have accurate
+numbers on the number of change sets I process, but I would say it's in the 2,000 to 3,000 every
+kernel cycle. So every three months, I'd say we put in about 2,000 to 3,000. Of that, I would say I
+probably process maybe 50 to 60 pull requests from sub-maintainers in that cycle as well. On
+average, on a week, I'd say I process maybe five to six pull requests from sub-maintainers. And they
+normally, at this day, of the fixed stages of the kernel, probably only have 10 to 15 patches in
+them. But everything in the big part of the merge request, that's where the majority of things come
+through. That makes a lot of sense. Now, I know many people who use Linux, they have heard of this
+idea of an RC build or a release candidate build. And so in this next phase of our show, I'm hoping
+that we can give the listeners a sense of your workflow or the cadence or the processes that you
+follow in Linux kernel maintenance. So can you tell us a little bit about how many weeks you work
+for until you get to a release candidate? Can you give us a few details about that process as we
+dive in? Yeah, I'll probably give the general overview of how the kernel works and probably a bit
+more into what we do. So overall, the kernel has what we call a nine to 10 week release cycle.
+Depending on how happy Linus is, it can go nine weeks, it can go 10 weeks if he feels there's been a
+reason. Mostly, we've been doing nine weeks daily. We had one 10 week last time. The way that works
+is the first two weeks of every new kernel development cycle are called the merge window. So that's
+where Linus takes all of the pull requests from all of the others, all of the maintainers under him,
+and he puts them all together and stabilizes that for two weeks. And we hope in that two weeks that
+that's a runnable kernel. At the end of that two weeks, he'll release what's called RC1. And then on
+a weekly basis, usually on a Sunday afternoon Pacific time, he will release RC2, RC3, up until RC7
+usually. And then from RC7, he will release the final one the following week. Occasionally, it'll be
+an RC8. Maybe there's been an RC9 once. But it goes through that cycle every week after the merge
+window is just fixes. And everything should be stable. There should be no new regressions.
+Everything should be no new code. Linus comes down very heavily if you try to sneak things in during
+those weeks. He's very specific that the merge window is where you drop new stuff and all after that
+should just be fixes for... It technically should just be fixes for regressions. But we often add
+just fixes for general things that we need to backport or we need to stabilize. But in saying that,
+a lot of people have a misconception about the merge window. The merge window is for Linus to merge
+the trees that other people have prepared prior to the merge window. The merge window is not when
+you should be preparing your tree for Linus. The merge window is not when you should be doing
+development that needs to go to Linus. All that stuff should generally have been ready for Linus
+prior to the merge window. And it will have been in a tree we call Linux Next, where somebody will
+gather all those disparate trees across the internet and just does merges every day. That's their
+job, just to sit there merging every day and find all the conflicting problems and make sure we
+understand that building the tree is hard and that merging... All these conflicts will happen and
+that we know about them in advance. So when Linus gets to do all that final merges into his tree, he
+has a history of all of the conflicts and he knows what's going to cause problems. He will accept
+things that haven't been in Linux Next, but he will be often very unhappy about that or he will
+sometimes just say no. It's generally preferred that we have stuff ready in advance. Again, that's
+very subsystem dependent on how that happens. We do it in the graphics subsystem. We have a
+hierarchy of trees that come from vendors. So we have an AMD GPU tree, a tree from Intel. We have a
+tree for Qualcomm. And then we also have a Miskit tree where all of the smaller drivers will
+cohabitate and they will all push their changes through that. We have a hierarchy called a Next tree
+that we have open all the time. And when Linus releases RC6, we will generally shut our Next tree
+down. If your stuff isn't in our Next tree by RC6, which gives us usually a two-week window for us
+to stabilize, we will leave it for the next kernel cycle. You can push it into the Next tree, but it
+won't get merged until the next kernel cycle. And that's how we've done that over the years. We
+initially were a lot worse at that, but we've stabilized in the last four or five years onto that
+system. And it seems to be working quite well for us. Pushing in stuff after RC6 is at my discretion
+usually. And occasionally I will do it if it's something either personally interested or a piece of
+hardware that we need to get working. We try to maintain that because we found for stability that
+allowing a free-for-all after RC6, it hasn't led to quality results, put it that way. So yeah, so
+generally that's how we were, is that we set everything up in advance by RC6. Linus opens his tree
+two weeks later. I will send the big, huge pull request of everything that was there at the previous
+RC6 to Linus. He will accept that. He will pull everyone else's in. When he hits RC1, we will pull
+that into our tree and then start generating the fixes trees based on that. And then start the next,
+bring all the work that happened between RC6 and that point into a next tree and go again for the
+next window. Okay, so that's really helpful. And you're giving us some insights into release
+candidates and how they're actually built and the cycle that you go through. Just to make sure all
+of our listeners are on the same page, you mentioned the words regression and then also the word
+tree. Can you concretely define a regression and the tree and give us some other insights into how
+those work in kernel maintenance? I'll start with tree because it's probably easier. Now is a git
+tree. What we call the kernel tree is really just the kernel checkout. But now with git, it's the
+git tree, the git checkout, the git repos. So we have like a number of git repositories that we use
+that are, we then have some for DRM. We've got multiple of them for DRM. And then there's what we
+build the hierarchy from. So when I say tree, that's it. It's just those git flows of tops into
+Linus to me. And for regression, well, I'd love to define it properly. But yeah, regression is meant
+to be something that broke in RC1. If something is merged during RC1 that causes anything to go be
+worse than it was before RC1, then it's considered a regression. The standard method of dealing with
+regressions is to revert first, ask questions later. So we should remove the patch that caused the
+problem and then work out what the problem was and fix it in the next cycle. That doesn't always
+happen. Engineers are not brilliant at dealing with regressions in that way. Often their instinct is
+to try and fix it first. And that often causes a lot of discussion. What is a regression? Is this
+considered a regression? If it's an regression two kernels ago, is it something that should be fixed
+urgently now? And sometimes that should be more urgent. So there's a lot of scope for what actually
+regression is, but Linus's technical definition has always been something that broke in RC1 and made
+life worse for a user. Okay, that's really helpful. So is a regression something that's connected to
+performance or correctness? I'm guessing that it could be both of those. Is that right? Yes, it'd
+need anything, to be honest. His definition is if it made something worse for a user, whether that
+user is having a performance difference or that user is seeing a functional break in their hardware.
+But his thing is, if nobody notices, it's the old, if your tree falls in the wood, if a regression
+happens and nobody notices, it's not considered a regression until someone notices. We don't
+urgently find them, but yeah, it generally has to be a user driving the caller. So in the context of
+the graphics subsystem and accelerators, can you give us a few concrete examples of what a
+regression would look like? Quite often, a regression actually looks like your laptop screen not
+turning on for us. That's the easiest one to give is like, my laptop screen is now flickering or not
+doing what it used to do when I had the last kernel and I got the new kernel. Often, it's some of
+the rendering on the screen might have an issue. There may be my hot plug stopped working. My
+suspend and resume stopped working. Like in the old days, the more common ones were like, yeah,
+suspend, resume stops working. Or your laptop just doesn't light up anymore, which are fairly
+obvious regressions. In other cases, more like on the data center and accelerators phase, it's like,
+yeah, our workload has gotten slower. Like I have this standard workload I test for, I've upgraded
+to a new kernel, and suddenly it's not working as well. Or say you have some device like a Steam
+Deck, and you're trying to move from an older kernel to a newer kernel. And all of a sudden, the
+newer kernel device isn't cooling as well, or it's not scheduling as well. You're not seeing the
+same frame numbers you were. Those are all considered regressions. And when they're reported, the
+generi will try to be hunted down and fixed. And normally, those regressions are reported to you and
+your team by users, that is, people who are actually using the Linux kernel on your devices. Is that
+the right way to think about it? Yes. Often, there will be engineers who are embedded in those
+situations. So like, for example, if the Steam Deck has a regression, it will come from a Valve
+engineer through AMD, and it will be reported by that method. It won't necessarily come to us. But
+often, you will just get an email on the list from someone randomly testing an RC on their laptop
+and saying, hey, this RC doesn't work. Another layer is distributions. We'll often take the RC
+kernels and package them. And people will be running the bleeding edge distribution. And then they
+will see it. And the distribution will say, oh, this kernel seems to have broken a bunch of
+workloads or a bunch of laptops. And sometimes it will just be me sitting here booting it on my
+laptop going, hey, my laptop stopped working. Those are rare. And Linus's often are. Linus will have
+a specific graphics card from 10 years ago, and that graphics card broke. And Linus is the first
+person to find it because he just happens to be the one person that's in that line that has that
+card. So it's, yeah, they come from a lot of places. Looking for a way to stand out in a competitive
+job market? Whether you're trying to land your first contributor role or prove you can deliver, take
+the next step in your career with the new software professional certification from the IEEE Computer
+Society. Sign up today at computer.org slash certification. So in a minute, we're going to talk
+about many of the tools you use and a few more of the development and maintenance processes that you
+follow. But before we go into that phase of our conversation, I wanted to read a quote from your
+blog that I thought was really thought-provoking. So you wrote, A warning then to anyone wishing for
+more vendor code sharing between operating systems. It generally doesn't end with Linux being better
+off. That's really thought-provoking. Can you share a little bit more about what you meant by that,
+Dave? The thing about what people often don't understand is the incentives for companies to do
+things cause results that are probably not what you expected. So you pushing a company to say, we
+want Linux support for this device. In your mind, it produces a Linux driver for this device that is
+well written, upstream, maintained piece of code that merges well with the kernel. But when you pass
+that into a company that is writing Windows drivers, their first instinct is, how can we share the
+code between our Windows drive and our Linux driver to cut the cost of doing this? In their mind,
+that's cutting the cost. In the real world, it probably doesn't. But companies work like companies
+do. So often what will happen is they will try to put a hardware abstraction layer in. They will try
+and port their Windows driver to Linux. They won't start a rewrite. So the results you will get will
+either be a very second-class driver or a driver that can't go upstream or a driver that needs
+another impedance layer between the actual vendor and the upstream. So you don't always get the
+results you envision when you say, I want more Linux code or I want to use more Windows alignment.
+So it's often good to make sure you don't just let the company run free with that idea because the
+results you'll get six months or a year later won't be what you wanted. So it sounds like what
+you're saying is that in some way, the Linux kernel itself might become more fragmented or even
+harder to support when you start bringing in this vendored code. Is that the right way to think
+about it? Yeah, and it just becomes harder for us to extract commonality from the code. In the
+kernel, one of the big advantages of the Linux kernel, I suppose, is that because everything is in
+the same tree, we do extract commonality quite often. The commonality we extract is from our group
+of drivers, but when you're working in a world where you've got your commonalities between your
+Windows and your Linux drivers, you have a different vector for extracting that commonality. You
+want to abstract the Linux stuff away and keep the common stuff between your Linux and Windows code.
+But when the kernel, we want to extract the common stuff out of all the drivers to be in Linux and
+not in the drivers. And if there's a mismatch between your Linux and Windows, that often gets very
+difficult for companies to resolve. So, yeah, we tend to try to say we want a Linux driver because
+we want to be able to have it optimal in Linux. And if we see commonalities, we can extract them. I
+think the best example I could give you was wireless. Years ago, there was a big thing with 802.11
+layer and every driver was bringing their own 802.11 layer to the party. And someone said, well, why
+isn't the operating system providing an 802.11 layer? And they did. But still, for years, we got
+wireless drivers, which were written with the old 802.11 in mind. So those things, we see different
+vectors for commonality than Windows Linux vendors do. Okay, thanks. That was a really good example.
+Now, again, in a moment, we're going to talk about patching and backporting and things of that
+nature. But you also have just hinted at some of the counterintuitive aspects of maintaining the
+Linux kernel. And I know that many of our listeners may know mostly about open source software
+through GitHub or GitLab or other systems of that nature. Before we go into the next phase of our
+show, can you say anything about how Linux kernel maintenance might not work well with the existing
+model that you would have on GitHub? I think it just comes down to what I said earlier. Scale, I
+think the kernel process is just so vast and has so many people that scaling it up through a single
+tree would be close to impossible. So the GitForge model of like there's a single central tree that
+you send pull requests to just doesn't scale well for us. And that's, I think, what comes down to
+it. There is also another side to it. We have a strong resistance against using proprietary tooling
+at all in the Linux development process. That isn't a top-down Linux-driven thing. Linux is very
+flexible on this, but a lot of the maintainers have personal strong feelings on these things. So we
+tend to shy away from using anything proprietary in the development process. So GitHub, for example,
+although it uses Git, it is still quite a proprietary system. In the DRM subsystem, we started to
+use GitLab more extensively. We use GitLab for hosting a lot of our trees and stuff like that. So,
+yeah, I think the scale is generally the biggest problem and the tooling. But we're seeing problems
+with our tooling as well. Email and stuff doesn't work like it did 20 years ago. Gmail holds all. If
+Gmail doesn't want to talk to you, your email server is no use. So there's a lot of problems we have
+to solve ourselves that just because the Gitforges don't solve them doesn't mean we don't have to
+solve them. And we're working on that with a bunch of tooling at the moment. So it's a different
+aspect to it. Okay, that makes sense. Now, before you mentioned the idea of a release candidate, and
+we talked about RC1 through RC6, I have the understanding that there's also something called a
+stable kernel. What's a stable kernel and how does that connect to an RC? So the stable kernel was
+something Greg Crowe Hartman decided to work on. I can't remember. Maybe 10 years ago. He'll correct
+me if I'm wrong someday. But the idea was that Linux's releases are all very well and good, but
+people want to stay on an older release for longer and still get security fixes and regression fixes
+and possibly hardware fixes and improvements. Maybe not major functionality improvements, but quite
+often they want a good baseline so they can build things on. A lot of this comes from Android world
+and devices where you don't want to be upgrading the kernel for fear of being sideswiped by
+regression in some other area. So you just want to keep going on the same kernel but build out on
+it. So the idea of the stable kernel was shipped. No one said it would be a great idea, but Greg
+pushed through and shipped it. It comes out. I'm not sure what Greg's release schedules are. I think
+he does one every week or two as well. And there's a maintenance of about maybe four or five
+different stable kernels over the range of the last maybe 10 or 20. Every so often, Greg picks a
+kernel as the LTS, which is the long-term stable release. And that kernel will get maintained by
+Greg or someone else. Often someone else gets handed that job. One of the initial things of the
+stable kernel that was kind of announced was that maintainers should not be required to add to their
+process to enable the stable kernel, that the stable kernel should try to not force maintainers to
+support it so that we have an option. I can't say that was good or bad in the graphic subsystem. We
+are both good and bad at helping the stable kernel. Some parts of us are really good and some parts
+are not. We don't have a great system. We don't do bespoke work for stable in our group generally.
+We let the stable maintainers take care of it as much as possible. And occasionally, if we see a
+patch that we know should go into stable, we will tag it for that. And people in the hierarchy know
+to tag certain things for stable if it's a regression from two kernels ago. And often we will
+automatically add fixes, lines, and tag stable on things we think and then let them decide whether
+there's something that should go into it or not. But the rules around stable patches are pretty
+strict, but they're not that flexible. They usually should be less than 100 lines and should be
+quite self-contained. So we don't like to get series into the stable kernel. So you just mentioned
+the next word that I wanted to talk a little bit more. You talked about the word patches. Can you
+say precisely what is a patch and how do you manage a patch when you're doing Linux kernel
+maintenance? Yeah, that's a good question. Years ago, I don't think I thought what I had to answer.
+But in the merge request world, it's a different way of working. As in the kernel, we treat a patch
+as the smallest unit of work to make it change, but be very self-contained. We put a lot of effort
+into our patch summary, like our text in the patch, because the commit message is actually very
+important from the kernel. A lot of other merger flow people put a lot of work into their merge
+requests. We put that work as much as possible into the commit messages for each patch. Each patch
+should be very self-contained. It should do a single thing. There should not be, if your commit
+message starts having and, and, but, then you're like, okay, maybe there should be two patches. So
+you get the instincts for what a patch should be over years of writing patches. You should not drop
+a whole new driver in one patch. You should try and drop infrastructure changes needed for your
+driver, then the core of the driver, then features for the driver. And they should all be well
+explained. I suppose the other way to think of a patch is it's the unit for review. This is
+something that should be digestible by a reviewer, and they should be able to make a decision on a
+patch-by-patch basis whether there's something that we should accept into the kernel or something we
+shouldn't accept in the kernel. And there are some problems we need to iterate on again. And then a
+patch series is a gathering of those patches with a cover letter that describes the overall idea of
+where you're trying to go with the series. And then each patch then will take you on the journey to
+the result that you want. Okay. That makes sense. Can you tell us, are there some tools that you
+specifically use when it comes to managing a patch or a series of patches? And then how do you use
+those tools? Like everything, there's a lot of tools and they're all different ones. And every
+kernel maintainer probably has their own set. I think the current core is Git. Everyone nearly has
+agreed. Like years ago, we had other systems, but Git is the current core. You generally will
+develop all of your changes in a Git tree on your local machine. You will, when you're finished with
+the development, you will have to go back and probably make a patch series out of that development
+that is linear and sane, because often development is not linear and sane. So you have to go back
+and redistill your patch series into something linear and sane, then go through the process of
+making sure it's submittable, making sure you're following the rules. That actually has patch series
+you want to send out. And then you go to the process of sending it to the mailing list. That's what
+you use that through email. We have a new tool called B4. We have a set tool for sending patch
+series out. There are also other patch management systems. So Git isn't always the best thing to
+manage patches with. So there's a number of things. There's a series that is called Quilt. There's a
+thing called stgit. So depending on how you want to manage your patches, there are other alternate
+tools. I personally, when I'm writing patch series, and I don't write a lot of patch series for the
+kernel these days, will use just Git trees. And I will keep the cover letter just to a side, but
+that's only because I'm probably only ever working on one major patch series at a time anymore. I'm
+not doing a lot of streams of work at that level. Okay. So you have patches and you have patch
+series, and I'm glad you defined each of those terms. I also quickly wanted to talk about the
+concept of a backport. What is a backport and how does it connect to the topics we've discussed so
+far? So a backport is probably many aspects of what constitutes a backport. So you can consider a
+patch going into stable being a backport, as in that the simplest term, a backport is something that
+you have to maybe adapt to an older kernel as opposed to just apply to an older kernel. So if you
+have a patch that goes into like the latest kernel and you want to apply it to a kernel that's five
+kernels old, sometimes that patch will just apply and it's fine. And that's technically a backport,
+but it's not really done anything. But if you actually have to modify that patch to make it adapted
+to the older kernel API or just the owner state of the driver back then, that's more getting to what
+an actual backport is. Because say you have a security fix for something in the new kernel and the
+same security problem exists in the older kernel, but it's in a very different state. Like the code
+that causes it has been changed substantially, but there's still underlying security problems there.
+Well, then you need to adapt that fix for that kernel. And sometimes it's a full rewrite. Sometimes
+it's just the concept you're applying back, but you still need to do it. You then have to scale that
+up again. If you look into, and I'll talk about Red Hat works. So Red Hat has a rel kernel. We
+backport subsystems. So like we will take the full DRM subsystem, which is like thousands of lines
+of code and patches and backport that whole en masse to a kernel that was maybe eight kernels old.
+That's like, that's extreme backporting. And you see Ubuntu do the same. You'll see a lot of stable
+kernels for devices. Android do a bunch of it. So backporting is kind of like, I won't say the dirty
+secret, but if you're actually releasing a product of something using the Linux kernel, you would
+generally be in the market for having to backport things to that kernel and need your engineers to
+do that. How does backporting connect to the idea of doing a revert? What's a revert then? So a
+revert is simply just, I found a regression. We need to get rid of that patch out of the tree, but
+git doesn't allow you to change history. So you just revert the patch. You take the patch that's in
+the tree and you apply the reverse patch and that's gone from that tree. Then you have to make sure
+that the revert is also treated just like any other patch. It goes into the stable cycle that makes
+sure it gets removed from the older stable trees. Backport should pick up the revert. So generally
+reverts have to have, like, we'll have a tagline for what they're reverting. So you know exactly
+dispatch reverses dispatch. Okay, that was awesome. So now we've covered a lot of the key details
+and terms. And if listeners want to know more, they're welcome to check in the show notes and we'll
+provide links to kernel.org articles and handbooks and things of that nature. What I wanted to pick
+up on next was something that you mentioned just a moment ago, which were issues about security
+concerns. Can you tell us a little bit about how you do security reviews or maybe talk a little bit
+about how you do performance or stability reviews in the Linux kernel maintenance process? I'll deal
+with security first because it's kind of a special case in some ways. So we have a dedicated kernel
+security team. I'm not on that team. It's Greg is probably one of the leaders on that. I know Linus
+is involved. There's an embargo process, but it's very quick. I think seven days is all Linus likes
+to give people. Linus is very vocal about security fixes just being fixes. He believes there's a lot
+of theater in security. So he's very pushy on just getting fixes into history as quickly as
+possible. And it's a fix for a bug. We need to get it upstream and send it out. But we've built up
+more, like Greg is building up, like a CVE sort of handling system for the kernel. We're our own CVE
+handler. But we have a lot of potential security fixes in the kernel. And over the last year, you
+may have seen some news articles and discussion about that. And we can never really say a lot of
+things for sure if they're a security problem. Because it's a security problem in the kernel, it may
+not be your security problem in your kernel. And you need to be in charge of that. So if you're a
+downstream of the kernel, packaging it up in your operating system, you probably need to be more on
+top of this. The upstream kernel is used in so many different ways that every specific CVE that we
+issue for the kernel may not apply to your use case. But the subtlety in the security industry isn't
+quite there yet. I mean, there's a lot of CVE scanners that just take blanket approaches. There's a
+lot of, you know, so security area is definitely a tricky one. In terms of process, generally
+there's a security milling list. If it's in your area, you'll get CC'd on the report. You're
+expected to bring in the other people in your area who are responsible. So, you know, I can get the
+top level CC. If it's not something I directly could fix or know about, I'll have to bring in people
+from the people involved. And, you know, and then we'll keep it secret for seven days. If we can't,
+if we can get a patch out, we'll get a patch out. But yeah, generally, lately I think AI generated
+reports of sort of saturating the bandwidth as well. Some of them are good, some of them are bad.
+But the problem is it's bandwidth saturation problem. You know, the bad ones will still cause you to
+waste time. In terms of dealing with other types of regression, like performance issues and things
+like that, quite often they just sort of come up over time. Like we do try to do, in the last few
+years, we've moved into CI a lot more. But one of the biggest challenges of the Linux development
+process is it doesn't really integrate well with how CI works. And it's where I quite like having, I
+also work on some other projects where we have full GitLab CI processes where every merge request
+goes through a full CI run before being merged. I like that. It makes life so much easier. But the
+Linux kernel is not designed for that because of our workflow. There's no like central point to pick
+these patches up and push them through a centralized CI system. And everyone has built bespoke CI.
+And again, a central CI wouldn't scale. Like one of the problems with CI is it needs resourcing. And
+if we had a Linux central, the scaling is going to kill it. So having them per subsystem and having
+them more bespoke is probably a good thing. We have a graphics sort of CI pipeline. And it's not
+quite there yet. It's been worked on over the last few years. Some of the Qualcomm have been quite
+pushing on it. The idea is that I would love to see a pre-merged CI system that I would know that
+when a patch set gets to me, it's gone through some sort of CI. But quite often, that's not true
+today. A lot of Intel have done a sort of a CI integration with the mailing list, which is janky,
+but it works. As in, they get patches on the mailing list. They apply them to a tree and they push
+them through their CI and they report out through a tool called Patchwork. I know AMD have some
+internal CI that they will push their next kernels through as well. And it's kind of very patchy,
+the coverage in that area. But often, that's how we initially will find regressions and things like
+that are through that. But then Valve will tell us if they updated the new Steam Deck and it's
+suddenly slower. Things like that will come through. Also, a lot of regressions in performance and
+stuff can be, it can look like it's a graphics problem, but it's actually a power management
+problem. Because, yeah, they're so tightly integrated now, all the pieces of your SOCs and your
+GPUs, is that there's so many pieces to them. Yeah, you can suddenly have a clock change and, yeah,
+that can cause some problems. So it's also you have to know the architecture of the whole system to
+track those down. Thanks. That's helpful. I wanted to pick up on two phrases that you used. You
+mentioned CI, and I know there's something called kernelci.org. And before that, you mentioned B4.
+Can you tell our listeners very specifically, like, what are the things you run in CI? And then how
+do tools like B4 help you? Do you run them in CI or do you run them on your developer workstations?
+What's the process there, Dave? Yeah, there's no good central standard here at all. So B4 is a tool
+that replaces email for getting patches from you to the mailing lists. We've the two kernel tools
+group. Constantine is the main guy there. I have developed a thing called Public Inbox, which is a
+mailing list archiver hoster that we use as kind of a repository of a database of all of the patches
+ever kind of sent to any mailing list. Everything is in this public inbox sort of hierarchy. And B4
+is a tool then that lets you submit things to those inboxes. In reverse, there's a tool called LEI,
+which is for pulling things out and lets you query those inboxes. So I use an example to query for
+all the pull requests in the last week, get them into a local mailbox, and then I process them
+locally. So there's tooling that avoids using SMTP as an email server and lets you go beyond that.
+But in terms of projects like kernel CI and we have a GitLab CI project on Free Desktop, there's not
+much sort of coherence there, I suppose. That's why different subsystems kind of use them in vague
+ways. There's a little bit more like it's generally after the fact CI as well. It's generally stuff
+goes through CI after it's been merged to Linux's tree, after it's been put in next. There's very
+rarely we have CI in advance of the patches going into someone's tree. And that's something I'd like
+to change. I encourage people in my area to try and develop things to help me change that. I
+probably am not the person to do that, but I definitely encouraged and opened to workflows that
+allow that to happen because I see the value in it. But yeah, in terms of overall, kernel CI has the
+name, but in terms of whether all of the kernel goes through it, that doesn't really actually
+happen. And again, we also had a number of robots over the year. Intel had a, I think it was called
+Zero Day, which was something that would apply patches. But sometimes Zero Day would be, you never
+knew when Zero Day was going to respond to you. Zero Day could tell you about your patch a week
+later. It could tell you an hour later. It could tell you a month later. A lot of these, again, are
+after the fact things. You send something to the mailing list and maybe you get a response. Trying
+to bring the window of time in on those and trying to constrain those, again, it's hard because
+there's so many kernel patches and scaling is hard. So the Intel CI is probably one of the, has
+lasted quite a while in that they get patches on the mailing list. I see them apply. I see the runs
+and it just, it works. But it's very strung together with, you know, baling twine and stuff. It's
+not a very coherent system. Thanks for those clarifying comments about how you're using tools and
+how you're using CI. I did want to follow up with one final question in this area. Do you use
+various types of fuzzing techniques when it comes to the DRM subsystem? Or is fuzzing used in any
+other parts of reviewing patches in the Linux kernel? Fuzzing seems to go through like the
+popularity phases, I suppose. It becomes popular for a while. They find all the fuzzing bugs and
+then it stops. We don't have anything specific in our subsystem for it, but there's an upstream
+project called Sysbot. Sysbot is notorious for finding the weirdest race conditions in the weirdest
+places in that, and then providing you with very little information on how it did that. It literally
+intelligently spams all of the kernel APIs in various orders with various random things. So it's not
+fuzzing in the sense of it's sending complete garbage to things. It knows the structure of the
+Ioptal interfaces. It knows the structure of the system call interfaces. So it knows it needs to
+pass in valid file descriptors to get passed, because otherwise 99% of your fuzzing stops at the
+first block. So it's intelligent enough to try and get down into the kernel depths. It's quite a
+cool project, but yeah, we don't specifically use that, but we respond to reports of that. But
+again, it comes down to you can get overwhelmed with auto-generated reports of syscaller problems,
+because some of them are so deep and so niche that no user is ever going to hit these. They can
+often get pushed to the background. They can be that one in a million problem. And that's good to
+know, but sometimes we have to over-prioritize them, and that's often a bad thing. Okay, that was
+really helpful. Struggling to advance in the software industry? As an experienced professional ready
+to lead, pull ahead of your competition with the new software professional certification from IEEE
+Computer Society. Your expertise, certified by the most trusted professional organization in
+computing. Take the lead in your career. Sign up at computer.org slash certification today. So I
+wanted to talk briefly about how people get involved with the Linux kernel maintenance process. I
+know you have this idea of new people submitting a patch or making a suggestion for a change. How
+does it work if one of our listeners finds what they think is a bug or has an idea for a performance
+improvement? Can you give us a few insights on what that process might look like? The world has
+changed over the years. I think the best way to get involved now is to get a job or to tell you to
+get involved. But secondly, if you have personal itches are generally the best way to start on
+something. If it's a problem you have on your laptop or in your system that you're seeing, then
+yeah, you have an incentive to want to go down that road and dig into it. And the code's all there.
+I encourage people to go at it, look into it. Use your chat GPT or whatever. Use Gemini. Use those
+to even interrogate what you think about the code or trying to figure it out. Work through. So if
+you find the area of the kernel the problem is in, well, then find the community attached to that
+area. There is no single Linux kernel community. There is the Linux kernel mailing list. That is not
+the place you start. The Linux kernel mailing list is where you drop patches that kind of aren't
+sure what to do with it. And very often it will get ignored. It's more of a, it's not a central
+place for development. You have to find your community. So if you want to work in the graphics, you
+go, okay, well, this is a DRM subsystem. Where are those developers? Are they on, they're on their
+DRM GitLab or they're on, you know, can I find them on IRC maybe? Can I find them on Discord? Are
+they, is there a community of people I can actually talk to and say, is this a good idea? You could
+send a mail to the maintainer. Quite often you might get a reply, maintainer dependent because some
+of us just get so many emails that they don't all, we don't get to them all. I try to get to a lot
+of the new one, new people asking questions by diverting them to the person who could better answer
+that question in the area. But not always. It's a steady thing, but yeah, find the community, find
+out how they work. Lurk for a while, like maybe watch their workflows a bit. Maybe read a few
+patches, maybe get like, get an idea of how the patches in that subsystem are reviewed. Maybe review
+a few patches if you're feeling that you know enough C and you've learned enough about the area, you
+know. So like you can start by, you can always do a drive-by patch. That's why you just drop the
+patch and hope someone applies it and never look at it again. And that's often for small things,
+that's probably fine. But if something you're actually interested in getting into kernel
+development, that's often the best way to start is find your personal itch that you want to scratch
+and then work with the community to figure out how to do that. I do get often asked, like, can you
+give me a project to work on or something to start me off? And that's a tough question because
+without knowing your level of ability and skill, without having mentored you on something, I can't
+really give you that. We've tried to construct to-do lists and they work in some ways. We've had
+some success with keeping to-do lists upstream as long as we maintain those and give sort of levels
+of easy versus hard. But quite often you find, like, if an experienced developer hits a roadblock
+that is just a simple to-do list item, they're going to go straight through it. It'll be a patch 10
+minutes later. So you have to have things that core developers don't want to fix right now because
+otherwise they would just fix them right now because they're important. So it's like it's hard to
+find that balance of tasks. And, you know, we often have new projects that are up and coming where
+there's like the project has started, like our Nova project, which is a GPU driver that started.
+It's like people want to get involved. But it's like it's kind of at a problem stage where we can't
+get people involved because we haven't opened up the window where it's parallelizable. Right now
+it's very serial. We need to get certain things done and we need to get to a baseline and we haven't
+got there yet. So it's hard to get people to join until that baseline is achieved unless they know
+some of the deeper parts of it are working on a full time. Thanks. That's really helpful. Now, a
+while ago, you mentioned the idea of a patch series as having like a cover letter. So what goes
+along with a patch series beyond the cover letter? How do you show like what its tags are, how it
+was tested, how it was verified, what fuzzing it went through? Can you give us a little bit more of
+a sense of what a patch series looks like for the Linux kernel? Honestly, essentially a patch of
+letter, none of that generally goes into them, unfortunately. I think we would like that to happen
+more. But often the cover letter is just often it has like the list of the same version. So say you
+sent a patch series out once, it's been reviewed, it's probably hit a few fuzzers, somebody may have
+gone through a CI system. The second time you send it out, you may include some of that feedback
+into the cover letter. You may say changes since the previous version are because I got this
+feedback from a reviewer, I got this feedback from an AI reviewer, I got this feedback from the CI
+system, the syscaller found a problem. You know, something like that is often in there, but it's not
+essential. It's not, we don't have to put in that it went through a CI. I often, as I say, the CI is
+after the fact, so we review the patch for more like aesthetic and functionality. And then when it's
+merged, we figure out whether it's actually a major regression we didn't spot. And to be honest, we
+don't spot them all. One of the advantages we're seeing with AI reviewers is that they find some of
+these things that we humans just aren't. We might spot them one day and the next day we might not.
+And, you know, we're not, the consistency isn't always there. So yeah, it just goes down to,
+ideally, I would have all the information that's pertinent to the person applying the series to make
+it easier for them to apply your series. But in practice, it varies between two lines and essays.
+Okay, that's helpful. I remember before you mentioned the idea of long-term support or LTS, and
+we've already talked about things like backporting, but we haven't yet defined the word downstream
+kernel. What does downstream mean? So from the kernel's point of view, downstream is any kernel that
+isn't Linus's, I suppose. And maybe I can pull that out to being any kernel that isn't stable. So
+Linus and Greg's trees, anything that's not theirs and isn't feeding into them. So I wouldn't
+consider like the DRM tree being a downstream because we are going to feed our tree into Linus. But
+if you're a consumer of Linus's tree, like Red Hat is through RHEL, through Fedora, or Android has,
+like Chrome OS has, Ubuntu. So any of those sort of kernels that are not just taking Linus's kernel
+and packaging them up, those are what we would consider downstream trees. Any trees that diverge
+from the Linux core and added backports of their own, drivers of their own, things that haven't gone
+upstream of their own. So yeah, a bespoke kernel is for some use case. Okay, that's really helpful.
+Now, one of the other things that I remember you talking about before is what I might call a cross-
+subsystem change. So like, for example, you mentioned how power management could influence things
+that are related to DRM. And as a longtime Linux user myself, I have had that happen. So can you
+talk a little bit about cross-subsystem changes in the Linux kernel? And how do you manage that? It
+seems incredibly complicated. It's one of the more difficult aspects, I suppose, in some ways to
+handle because you often get a bug report in through your handling system. And you're then going,
+okay, well, now, is this my problem? And you go looking for it and you dig through the kernel and
+you decide it's not your problem. But how do you then tell the person who submitted that bug report,
+you need to go annoy these other people. All subsystems will go and bring that other subsystem in
+and try and talk to them. Like, we have good relations between the power management people and the
+GPU people because we know we need to have those problems worked out. But like, you know, we don't,
+if somebody comes in and says my network card suddenly broke my graphics card, then that's another
+level up of how do we figure that out? Like, you know, those sort of problems. Quite a lot of that,
+though, is often mitigated through the core kernel, as in like you try to use standard kernel APIs.
+You don't try to make cross dependencies between your areas without having them go through some sort
+of standard core kernel piece. And often the core kernel piece is then maintained by people on both
+sides of that sort of divide. So we have things like we call the DMA buff subsystem, which is like a
+way of sharing memory between devices. We have that. So graphics people will use that, but also RDMA
+people will use that. But we will talk through the DMA buff layer and when we have issues or bugs,
+we resolve them around that sort of. The community around DMA buff will be a slightly different
+community than the community around the core graphics or the mode setting team. So it's, you know,
+I'd say, but power management has often got a little community around it of people who are both GPU
+people and power management people. So again, it's mostly like a social aspect of trying to get the
+people to actually talk to each other and trust each other. That when they say they have a problem,
+they believe each other. So can you tell a story or give a concrete example of like some type of
+cross subsystem change and then how you as maintainers actually decided, quote unquote, whose fault
+it was and who actually had to make the fix? Quite often, we don't hit that many at that level.
+Quite often, like big subsystem cross subsystem changes are well planned out. We will talk about
+them for maybe a year, could be six months out. Like, you know, we want to make a big change to a
+kernel API. It's either something that's very automatic and I don't ever see it. It happens
+completely in someone else's tree. It goes to Linux and all I get is the fallout when I have to fix
+the conflicts and stuff. But that's just part of the job. At a more core level, a lot of the time
+producing core functionality in the kernel that is cross subsystem is where it gets tricky. Getting
+that like thing like DMA buff into the kernel and then making it usable for everyone, those
+discussions are harder because you often have very opposing views on how these things should work.
+And some people will take very strident positions and not want to move. And how do your negotiation
+on those topics is actually quite a lot of my job is impedance mismatching. You know, engineers who
+are very focused on how they think something should work and engineers who think other things should
+work. And it's like, yeah, you're both right, but that doesn't solve the problem. It's like, I need
+you to come together and work out how it's going to work between you. And you get personality issues
+there. And again, part of my job and I think part of why I like doing a lot of maintenance work is
+dealing with the people and just solving those problems between them. But that's quite a lot of it.
+It's just that social trust aspect is very important. And again, you find if you build one of us,
+well, that's come up and Simona talks about this quite often, is that when we have developers build
+things inside companies and then upstream them, we often don't get that commonality. But it's not
+even often about the commonality of the code as much as about having the community of the people who
+understand the problem talking to each other. So we've had this problem with, I suppose, one of our
+graphics drivers went a bit rogue a few years ago and did a whole load of development work
+internally in the company and then decided they were going to upstream that work. And when they
+started upstreaming that work, we started seeing major structural problems with some of the other
+work they'd been doing leading to that work. And the driver had diverged maybe by a year or two.
+We're not closely monitoring. The trust system is there for a good reason. But the problem that came
+out of that is they literally didn't understand the problems that other people were solving. And
+again, we often have a case where someone will go, okay, well, I've got this problem. Oh, we tried
+that five years ago and we couldn't do it. It's like, well, where did you try it? Oh, we did it
+internally. And it's like, well, if you'd done that in public, we'd have that evidence that you
+tried it so that a person wouldn't waste their time. So it's building up that sort of community
+infrastructure, especially with new technologies are coming along, like memory management, things
+have changed on GPUs and stuff. And building up that knowledge base and that core of people that
+understand the problem in the industry is that in each company, there's like one or two of these
+people. But you want all of the industry experts in the same place to solve that for Linux. And
+that's getting those five or 10 people to talk and trust each other is the tricky part. Yeah, thank
+you for saying that. You've used the word trust several times and you've talked about how this is as
+much a technical issue as it is a human issue as well. And that makes me think of perhaps like a
+bigger picture question. You know, as you're going through an RC, I'm guessing you must have some
+rough idea of, hey, this RC is really healthy. It's going well. Or, oh, this RC is really
+struggling. We're going to have to go to five or six or beyond. Can you take a big step back and
+give us a sense of how you're gauging like the overall health of a release cycle? Linus is really
+good at this. I'm not as good. Linus is this one thing you'll see in all of his weekly RC emails. He
+will always give a sort of a feeling health warning of, oh, there's a lot more patches in this than
+I expect. Like he does a lot of trend watching. So he'll watch the trends in the last like five, 10
+kernels. And he'll have an innate knowledge of this feels big. This feels like there's too many
+patches. Some of these fixes are big fixes. Like, oh, so he'll often look at the tree and say, oh,
+there's like way too many patches here. But then he'll look at sampling of those patches and say,
+oh, they're all quite small. They're all quite self-contained. They're fixing one small bug. It just
+happens we're fixing a lot of small bugs. But if he does that and he sees large changes, like, you
+know, modifying multiple things in the subsystem that aren't reverts, like will generate reverts are
+fine. But something that's doing a pretty intricate change to fix a bug, he will get a bit antsy.
+And he'll be like, OK, no, I'm not too comfortable releasing RC7 straight to final. I might think we
+should do an RC8. Quite often security issues can cause things like that, like Spectre meltdown,
+things like the big ones. Those cause that problem. For me personally, yeah, I keep an eye on sizing
+as well because I generate my weekly requests to Linux. I'll keep an eye on sizing. Generally, I
+also keep an eye on each. So every week I generally get maybe four standard pull requests. I get our
+miscellaneous tree. I get the AMD folks, the Intel, and two trees from different Intel teams. And
+those are like my baseline. If those don't come in by Friday, I'm like something's gone wrong. But
+then there'll always be maybe one other. Like so maybe MSM will come in with like the Qualcomm fixes
+for the, they don't do weekly. So it's like there might be two or three weeks. I'll get a big bunch
+of those. And sometimes those ones are like, OK, there's a lot of changes in here. Could we have
+broken this up or is there some other things? And that's sort of like I go down that gauge that. But
+for me, yeah, generally I find by RC4 or 5, things do taper off. We do generally get a sort of like
+a shorter things drop down to like the whole pull request being in less than 100 lines or 200 lines.
+If I start seeing pull requests where I'm thinking five or 600 lines change that after RC5, 6, I
+will dig in a bit and look into it. But yeah, it's kind of an instinct built over time that you
+just, you know, comfort levels. We usually find the really big problems early. And it then comes
+down to, you know, with graphics, there's so many, like, you know, if you break something central,
+it's very obvious, but laptops are so diverse. There's so many different ways laptops can break and
+panels. Like it's not even one laptop. It's like every model of your laptop could have a different
+panel and the panel, you know, so it's like those things are always going to be on a bit more of a
+long tail, but they're not showstoppers. Like I generally treat a regression where somebody has a
+black screen as kind of a showstopper because it's like, yeah, having a black screen means I can't
+install Linux. I generally try to get those fixed as quickly as possible by reverting or moving up,
+you know, pushing people. But yeah, it's quite hard to describe a showstopper when you're in the
+area of like, yeah, if it mostly works. And it applies to the kernel as a whole. The kernel, even at
+RC1, mostly works pretty well. It's very rare, even at RC1, that it's a complete, like what we call
+a dumpster fire. But the potential is still there, but the process is built quite well now that
+that's a lot rarer than it used to be. Like it used to be installing RC1 on your laptop was like,
+well, I have a file system tomorrow. Okay. That's really helpful. And I think it gives us a good
+intuitive sense of what we mean by the health of an RC. In a moment, I want to talk a little bit
+about how AI is changing your landscape. And I also want to talk briefly about Rust in the Linux
+kernel. But before we move to that phase of our show and then draw the episode to a conclusion, is
+there anything that we haven't covered that you thought we should cover? No, I think we've gotten
+sort of the basic level topics. Okay. And if listeners are curious and wanting to know more, I'll
+pass along some links in the show notes, both to other episodes of Software Engineering Radio and in
+many of the resources that Dave and I have gathered. Now, quickly, Dave, I wanted to talk about
+using AI because you've mentioned that several times. You talked about how you could have a coding
+agent do a review of part of the Linux kernel for you and then maybe point out a potential
+regression or a security concern. Can you tell our listeners a little bit more about how you're
+integrating AI into your maintenance workflow? Well, over the last sort of year, this has become a
+topic of both interest and contention, I suppose, in the community. But the way I personally got
+involved was at the last Maintainer Summit, Linus said like, oh, I'm actually seeing good reviews
+coming out of some of the... He had access to some people at Google and some people at Meta who had
+been doing some of this work and they've been showing him some of the reviews. And he was sort of,
+I'm quite impressed. And he says, one thing that happens every year at Maintainer Summit is we
+complain about not having enough reviewer bandwidth, not having enough reviewers. It's like it's a
+common refrain. And he's like, if this can help or find problems, that's a good place. We should
+probably start looking into this. It's like, okay, that's a pretty good that he's interested. I
+talked to Chris Mason at Meta has been leading their work on this. He actually wrote a framework for
+regression finding for using AI. So it was very specifically focused on prompting the AI to sort of
+find regressions. And how he tested it was by running it on older kernel patches and then finding
+fixes for those older kernel patches. And if those fixes were for a regret, and if the AI identified
+the initial problem in the initial patch review, then obviously the system is useful. And he's found
+that it was catching regressions. I can't remember what the false positive is, but it's in the 50%.
+So that's interesting because if we can avoid having to put fixes patches in by having an automated
+reviewer and give you feedback, then why wouldn't we? Even if there's noise in that system, it's
+still better. Like the signal, 50% is a pretty good signal noise. Even if it's not that, finding
+those regressions is still a lot of work. It's expensive. Like when a regression actually gets into
+the Linux kernel and gets out into the world, that costs like actual money in the world, even if the
+process isn't seeing that. And having an AI find those, yeah, there should be value in that. We need
+to work on it. What I personally did, and this is due to it, like we also have a lot of AI stuff
+dealing with in Red Hat. So I was like, well, I was like, I'll take that mandate I have from Red Hat
+and Linux and sort of put it together. So I wrote it. I used Claude to write a Claude reviewer where
+it just passes the patch series to Claude, Opus 4.6, and then gives a good like patch by patch
+review. I didn't concentrate on regressions as much. I just wanted more of an overall review of the
+series and a patch by patch review gives a basic set of problems. Now, I haven't enforced this. I
+haven't pushed this onto the community. I built side public inbox infrastructure that was there on
+free desktop. So you could actually use the same tools to pull the patch reviews as you could pull
+patches with using an alternate server. All the treading should still work. So there's an option
+right now. I'm also kind of using it as a reference. I'm running it manually at the moment and
+generating it every day or two. But it's like if I see regressions and then I can go back and look
+at this reference and say, look, look, it spotted that problem. And now we have this problem months
+later. I'll get that feeling that maybe we should be pushing on this more. But even last week or
+two, Google unveiled, I'm going to say it was Shashkiko or something I think it's called, that patch
+review system. So I need to catch up on that and maybe get them to start reviewing the DRM patches
+using that system if they're interested, because my one is a bit janky, but it was doing the job for
+me for what I want to figure out. I think the value at the moment, people are definitely seeing
+value in AI patch review. Code generation, I still, there's potential. And I think I've seen a few
+patches generated with the help of Cloud and they haven't been horrible. So again, I still, I'm
+quite open to see where that goes. I definitely think there will be potential for doing it. And
+we'll pick up, I would guess, in the next year. I think Opus and Gemini are starting to get to the
+level where you can actually do some actually decent stuff with them. So I think it will develop
+heavily in the next year. I know that we could do an entire episode just about using AI to do code
+review in the Linux kernel. And I hope you'll continue to write blog posts on this topic because I'm
+sure our listeners will be excited to learn more. Before we end the show, I did want to talk about
+one other thing that I remember reading on your blog, which is the integration of the Rust
+programming language in the Linux kernel. Once more, I know that we could do a full episode on this
+topic, but can you give our listeners a little sense of how Rust is playing a role in the Linux
+kernel? Yeah, actually my reasoning for using, getting behind the Rust effort is actually not
+probably what people would expect. And I think you could probably do a really good episode with some
+people I know about Rust in the Linux kernel from a technical standpoint. My push for getting behind
+the Rust effort was actually more social and community focused. I was at, I think it was Linux
+Plumbers Conference maybe two years, three years ago. Can't remember the exact timelines. So
+Maintainer Summit, the Linux 30 People Summit is co-located usually with Plumbers Conference. And we
+have our private meeting and the conference. One of the big complaints in the private meeting over
+the years is we're all getting older. There's, you know, we've got a lot more graybeards, like
+people are in their 50s now that were in their 20s when they started this journey. So it's
+definitely the community is aging. And simultaneously people complaining about that conference, I
+met some people from the graphics subsystem just chatting, talking to people in the hallway tracks.
+And one guy came up to me and said, oh, I really like working in the graphics subsystem. There's a
+young group of people working here. They're all very interesting, excited. I like going to
+conference and meeting them. And I didn't know this existed really because I don't work down at the
+level. But she said, there's this good community that she likes to be a part of. And I was like, OK,
+I didn't create that. But we facilitated that in the DRM subsystem by being open to different things
+and not being so strict in our methods of developing the kernel. But then as well, the next time I
+was talking to a few of the Rust people and I was like, these are very young people. These are,
+again, a group of people who are maybe in their 20s, some in their 30s. But they're a younger cohort
+of developers than the people I'm normally used to dealing with. And I was like, look, I think
+there's a good way we can bring these together. I think having young people come into the kernel
+using Rust as a mechanism is valuable and having that different perspective and having a different
+way of doing it. And so I was like, well, I'm getting feedback that there's young people in the DRM
+subsystem and it's an interesting area to develop that in. And well, I think I should be supportive
+of putting Rust in the kernel. I see it going to happen. I'll help accelerate it. I'll facilitate
+it. And I stood up at the Rust mini conference and said, yeah, I'm open to doing this. Let's do it.
+Now, in terms of when I say that of me doing anything about it, I didn't do anything about it. I
+just said I was happy to have people do something about it. And that's been my, I suppose, my
+working model over the years is like, just say you're open to the idea. You don't have to do it.
+It's like, I'm willing to make space for this to happen and facilitate it. And what I actually ended
+up doing was going back inside Red Hat, finding one of my engineers who was working on stuff in
+Nouveau at the time. And he was a really good C developer and suggesting to them, like, they don't
+work for me. They're on one of my teams, but I'm not a manager. I was like, would you be interested
+in Rust? And they went through the cycle of, I don't really like this. I don't really like it. Now
+they're, I really love it. Now they're one of the Rust core maintainers. So it's like encouraging,
+building that group. Like, you know, if you wanted to talk about the technical aspects of Rust and
+the kernel, talk to someone like Danilo or Miguel would be ideal because they really know the
+details of it. For me, it is just about bringing in new people into the community and expanding the
+Linux kernel community. And like, I see the safety aspects and I see those aspects of it. And I
+actually see good value in them, especially we have a graphic subsystem. We have a very wide API to
+the user space. It's often exploited. So I would rather we don't have that. I'd rather that's a safe
+API as much as possible. And same with the hardware that we keep that safety concerns with the
+hardware interfaces as much as possible. I see Rust accelerating the ability to deliver GPU drivers.
+I see it being much faster that we can build a lot more common infrastructure. We can avoid making a
+lot of the C mistakes we've repeatedly make. You know, a long time C developers will say, we could
+do that in C. And I'm like, yes, we can, but we've repeatedly not. You know, yeah, review can catch
+this, but we've repeatedly failed. It's like, yes, like these are all the fact that, yes, if you
+have the best C program in the world on a bad day, we'll still make that mistake. Rust gives you a
+lot more. You can't do that. The compiler stops you. You can build into your type system. The fact
+that the compiler will stop you doing, you know, let you do stupid things, especially with
+lifetimes. Lifetimes are one of the hardest things to get right in the Linux kernel. The lifetime,
+we've made this like 20 years of lifetime mistakes. It would describe a lot of the kernel
+development process. Like we have made every lifetime mistake over the years, you know, in terms of,
+you know, from when we moved from single processor to S&P, but even moving now to treaded like
+interrupts and all these things, all these changes over the years, find new ways that we've messed
+up our lifetimes. Hot plugging devices, lifetimes messed up. They've all involved designing new
+things and, you know, getting that right and embedding that in your type system is quite valuable to
+stop making those mistakes. Yeah, thanks for all of these insights. It's really been a lot of fun to
+have this conversation as we've been focusing on Linux kernel maintenance. And I recognize there's
+many technical details that we didn't really cover, but I'm now interested in you taking a big step
+back as we conclude our episode. So you've been working on kernel maintenance for more than two
+decades. Can you tell us a little bit briefly what has stayed the same and what has changed? Give
+our listeners a little bit of a picture as we conclude the episode. Yeah, it's an interesting
+question. I think the essentials of it have stayed the same. I think the basic, you write a patch,
+you fix a problem, goes through the tree, that has, the core of it has remained the same. There's
+like, yeah, there's a mailing list, there was people, but the scale of it has so much changed. And
+the level for, yes, you have a patch to, it has gone from like, yo, yeah, you have a patch, but now
+you should probably a lot more. You need to do more with that patch to get it to a quality standard
+that's acceptable for the kernel. I think the quality of the kernel has changed substantially in
+that 20 years. The quality of our process for producing it has solidified into an actual process as
+opposed to what it was 10, 20 years ago, where it was just like randomly just, you know, there was
+no timelines. There was no process. It was very shoot from the hip, I suppose. So now it's like,
+yeah, it's very formalized. It's very structured. I would say it's like, can be less fun, but less
+fun is important in that like, yeah, you can't make suddenly wide ranging memory management changes
+that destabilizes half the world's computers. That's probably not a good thing to be doing anymore.
+So, you know, it's like, you know, you definitely have, it's matured a lot, but I still think the
+core aspect of hacking on hardware devices and stuff is still, at least for me, very appealing. Like
+I still, yesterday I was writing code for NVIDIA GPU drivers, even though it's, you know, just stuff
+to do. And it's like, I still like having a hardware device. I just got an NVIDIA Spark box and I
+just getting that lit up with open source Linux drivers is like something that still appeals to me
+even 20 years later, like that whole aspect of it. So thank you very much for your enthusiasm. It's
+really contagious. And if I could say on a personal note, for someone who's been using Linux for
+decades myself, thank you for all of the work you and your many colleagues have done. Because for
+me, using Linux has been a genuine source of joy in the same way that this has been a joy filled and
+awesome conversation. Dave, is there anything that we haven't covered that you think we should
+conclude on? No, I think just people, if you're interested in Linux kernel, just get out there and
+find a niche, scratch it, submit some patches, you know, the community is out there. We're always
+happy to have new people join it. Okay. Thanks for all these insights, Dave. This is Gregory
+Kephammer signing off for Software Engineering Radio. Thanks for listening to SE Radio, an
+educational program brought to you by IEEE Software Magazine. For more about the podcast, including
+other episodes, visit our website at se-radio.net. To provide feedback, you can comment on each
+episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening.

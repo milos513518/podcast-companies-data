@@ -1,0 +1,451 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Chasing Efficient Java Development: From 1BRC to Developing Hardwood AI Natively
+DATE: 2026-05-25
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/chasing-efficient-java
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2324231417-infoq-channel-chasing-efficient-java.mp3
+DURATION_SECONDS: 2461
+TRANSCRIBED_AT: 2026-11-04T09:40:07Z
+----------------------------------------------------------------------
+The decisions you're making right now about AI adoption, architecture trade-offs, and how your team
+works together will shape your systems for years. Getting those calls right when the landscape is
+shifting this fast is hard. QCon San Francisco has spent 20 years connecting senior engineers with
+practitioners who are a few steps ahead on the same problems. This November 16th through the 20th,
+60 plus speakers across 12 tracks will share what's actually working in production and what isn't.
+No hidden product pitches, just senior practitioners helping senior practitioners. Learn more at
+QConSF.com. Hello everybody, I'm Olympio Poppen InfoQ Editor, and I have in front of me Kunar
+Morling. He's one of the guys that probably knows the best what Java does with data, because he
+seems to have an eye and an interest for these kind of things. So, without any further ado, Kunar,
+can you please give us an introduction of yourself? Yes, Olympio, thank you so much for having me.
+Yes, what you said describes my interest pretty much. I'm very much interested in the intersection
+between Java and the data space. I've been, you know, around for quite a bit. For instance, I used
+to work on the Hibernate project, the Bean Validation. I used to be the spec lead for Bean
+Validation 2.0 back in the day, you know, which is definitely a data story in the Java space. Then
+later on, I used to work on Debezium, which is a tool for change data capture, which is about taking
+data out of a database such as Postgres or MySQL and putting it into Kafka. And then, for instance,
+enable real-time data flows from a database into your data warehouse or search index. It allows you
+to do microservices, data exchanges, and so on. These days, I work as what we call a technologist at
+Confluent. It's a wide mixture of different things. There's an internally phasing part of it. So I
+do investigations into technologies. Should we invest into certain projects or maybe certain
+acquisitions we should do? So I would do some research in that space. Sometimes I'm answering
+questions to our leadership team. Somebody might ask, hey, can somebody explain Flink Watermarks to
+me? And so I would write a one-page about that. And then publicly, I focus a lot on writing on my
+blog. I go out to conferences and, yeah, I also try to do some prototyping, some open-source
+projects. I'm still involved with Debezium. I work on a new project, which we are going to talk
+about today. So, yeah, it's a bit all of that. That sounds fun. It is fun. Yes, absolutely. I
+definitely enjoy doing it. And, yeah, I've been around, but still every day I kind of enjoy it.
+Well, a lot of things change with you. You're not in terms of company and projects, but the gist of
+it remains the same. Passion for technology and all things and being curious and stuff like that. So
+happy to see that you're the old self. So there are two things that I remember when people are
+talking about you, and both of them are hobby-related. One of them is the one billion row challenge
+that exploded and you just gathered the whole Java community. And that started like, okay, I think
+Java can be really fast in comparison, going against everything that is going. How do you feel? I
+think it's almost three years since that happened. Yes. It's very interesting that you ask because
+it has been two years on a bit. So this happened in January, two years ago. And people still ask
+about it. And people still do a pull request against the GitHub repo. I mean, it's long closed,
+actually. There's like a readme which says project or this challenge, it has been concluded. But
+still people are curious. Every now and then somebody would talk about it, maybe to do a podcast or
+something. So, yeah, it still interests people. And most people ask, will there be like a new
+challenge? And I'm still thinking about it. For the first year, I definitely didn't feel ready to do
+it again because it was like immensely stressful. I spent the entire January of 2024 running the
+challenge and I didn't feel like ever doing it again. And then later on, I kind of recovered. And,
+you know, I'm open-minded. If there's a good idea, which would interest people, I'm happy to do it.
+The thing is, and I believe this is why this blew up back then. It hit the sweet spot of being very
+easy to explain. So, you have this file with one billion rows and you have to aggregate the values.
+Everybody understands it like in a minute. And still, it allowed for lots of potential. And people
+were busy with optimizing for an entire month. They would have kept going had I not stopped them at
+the end of January. And so, I'm still looking for another problem which kind of combines those two
+characteristics. And then, yeah, I would be open to doing it. But then also, you know, I would want
+to automate it much more back then. It was very much manual labor. I just didn't really anticipate
+that. And so, yeah, I would spend more time to, you know, automate it, set it up. But yes, if
+anybody has a good idea, I'm all for it. Great. Thank you. Good luck with your future idea. And the
+other thing is, how do you feel Java evolved in this time span? Because I know that some people went
+old-fashioned and they just used things that were the old way of doing stuff that people in the
+mechanical sympathy space were using at some point. And then there were the other guys that were
+exploring the new stuff that was just getting started. Now, the new stuff at that point, it's
+already part of the JDK. It's part of the LTA. So it's now used in production, probably. How do you
+feel in the last three years, the Java ecosystem changed? Yeah, I mean, not all of that actually is
+stable, right? So there is the Vector API, which people heavily used in the challenge. And I don't
+even know. It's like in the 11th incubator version or something like that. So it's still
+progressing. But yes, things like the Foreign Memory API, this has been finalized and people are
+using this. So yes, I would say Java has come quite a bit since then. I still think if you want to
+go to that super advanced level of performance, you probably would have to pull quite a few of those
+tricks which people employed. And then there is new and additional APIs which did even exist back
+then. So for instance, there's what I'm really interested in is this compact object headers, JEP,
+which essentially reduces the size of each object on the Java heap. And this allows just for your
+JVM to use less memory and to spend less cycles on GC because there's a smaller total amount of
+memory to manage. And this is what I think is one of the really cool things about the JVM. So you
+essentially can keep your application as is. And just by upgrading to a new Java version, you would
+get better performance. And you would, for instance, also benefit from those new concurrent GC
+algorithms like ZGC, which also has improved substantially since the challenge. That's why I always
+recommend everybody don't stay on those ancient versions. I know some people are still in Java 8 or
+whatever it is. Definitely go and upgrade to the latest versions. It gives you all those performance
+improvements. And also, once you have made that leap to a relatively current version, let's say 17,
+then actually upgrading is also like really easy. So after 17, pretty much everything is like a drop
+and replacement and it doesn't take long to upgrade to the latest one. Okay, so it seems that Java
+17 is the new Java 8. I remember that back in the day when I started with Java and it was 1.4 at
+that point. And then the Java 8 was like an explosion and that was the epoch moment. And now it's
+like it seems that 17 is the new... Kind of baseline? Yeah, I don't want to talk about Titans, but I
+have to say it is so it seems that the Java 17 is the Java 8 of the Oracle era of Java. Right.
+Between 8 and 17, there were quite a few of disruptive changes. Like there were like reflection was
+locked down, APIs were removed, stuff like the JaxB API and so on. The module system was introduced,
+of course. So all those things gave a bit of friction, I would say. But once you are on 17, then
+it's, I think, pretty smooth, right? And going to the latest is not a lot of work. I had a debate
+several times with people and they said, okay, well, if you change the Java runtime environment,
+you're not taking advantage of the whole change. But even if you change the JVM itself that you're
+running on, it will just bring in improvements. And that's a good first step. And then you can just
+look at the features and what you can encapsulate in the code so that you can make it even better.
+So that very much hits at home, I would say. When people are looking into those upgrades and maybe
+they want to make the case with their management team to do it, I would always recommend them don't
+focus on language features. Because, I mean, yes, it's nice if you can express certain things in a
+more concise way or maybe more safe way and so on. But in the end of the day, those people in charge
+probably, they would care more about hard things like saving money, for instance. And so that's why
+I think making the case in terms of performance, making the case in terms of observability, there's
+like this entire topic of the flight recorder, right? And all the options it enables. So I think
+that's the better avenue to make the case for doing upgrades. And then, well, kind of for free, you
+get to also use all those nice language improvements. You do like to play around, let's say like
+that. And luckily for us, the community, whenever you play around, you also share some things on
+your blog. And the other thing that you played around not long ago was about a durable execution
+engine written in Java. And there are a couple of things that people consider that Java is not. And
+one of them was Java is not fast. You busted that. Hopefully. And some people are saying that if you
+need something real, I feel like in Pinocchio, but I'm a real database engine. And now you worked on
+that and you're working on that again about building stuff in Java. Tell us a bit about the durable
+execution engine. What was the motivation and what you wanted to achieve? And what did you achieve
+actually? I mean, I should start with a disclaimer that the actual state stores for that one, it's
+actually in SQLite. So in C, it's integrated into Java and the engine itself in Java. But yeah,
+maybe to set the scene. So for the benefit of everybody, what is durable execution? And what's the
+problem if it solves? So when we work on enterprise applications, there's always this problem of
+what we could call workflows or long-running business transactions, right? So there is a certain
+activity you need to do over here. Maybe I need to send a message over to another service. Maybe
+there's like a batch job, which is, for instance, processing your purchase orders and moves them to
+their lifecycle from one state to another. So we have those long-running activities in our
+applications. That's a very common situation. The problem is reasoning about those processes can be
+very hard if it's implemented in different systems, different components, different jobs. So it's
+just very hard to understand what's the end-to-end flow. So what happens if I receive a purchase
+order in my system? What actually happens? It gets sent over to the shipment service and some
+component is processing it over there. Maybe something goes wrong. How do I have insight into where
+is this order stuck? And why does it not get shipped to the customer? All those kinds of questions,
+right? The idea of this durable execution is to essentially take a very different look at that
+problem. And the idea is, okay, let's define our processes essentially as a plain program, which we
+write from start to finish. It could be Java. It could be anything really. But I mean, I'm active in
+the Java space, right? So that's what interests me. So we write our program end-to-end in plain
+code. Then the special twist is that those individual steps in that flow, they are essentially units
+of persisting state and units of making things resumable. So let's say I have this example with my
+e-commerce scenario. So I want to persist an incoming purchase order, then maybe I need to do some
+sort of customer check. Do they have the right credit worthiness? I need to fulfill the shipment. I
+need to send it out to the customer. I need to assign stock and so on. And all these steps, they
+should happen, of course, in the exact sequence. And they also should happen only once, right? So
+you don't want to assign stock twice to the same purchase order if something goes wrong. And so the
+idea here is write those things as a plain Java program, but then have some sort of engine around
+it. Which takes those steps and which essentially materializes their progress. So for instance, we
+could call out to another system to, I don't know, assign stock. And then we take the result of that
+and we store it in a local state store. And this is where SQLite comes into the picture. If this
+flow then continues and later on it fails, so maybe I know something goes wrong with processing the
+shipment later on, then we could restart that flow. And now our durable execution engine would
+figure out, okay, I have already done those first two steps out of five. And so we don't need to run
+them itself and we don't need to run them again. And then our flow would only continue to resume
+from the first step, which hasn't been run before. So that's essentially the idea of durable
+execution. Give you a representation of your end-to-end flows and make them resumable and make them
+recoverable in case of failures. Thank you. That sounds like more or less a distributed transaction,
+but brought to the next level? In a way, yes. It might use distributed transactions under the hood.
+But really the cool thing is that for you as an application programmer, you don't really have to
+think too much about all those complexities. It's just define your flow. And then this engine,
+whatever it would be, it takes care of making those guarantees a reality. It's not a new idea. This
+has been around for quite a while. I mean, you could also think about like traditional workflow
+engines, they kind of are in the same space, but they tended to have like maybe less convenient
+representations of the flow. So with durable execution, the idea really is, okay, it's plain code,
+which you write and developers love that. So it's not like an XML representation or whatever. I was
+curious about it. And also sometimes, you know, there's this sort of complexity consideration around
+it. And people wonder, hey, how does this actually work? So I have this program. How does it achieve
+that? That it can resume from like a method invocation somewhere down the line in my program. And so
+I was curious, how could I do this? And also, could we take away the complexity? And could we
+actually come to a point where we don't need a lot of infrastructure for that? It's a plain Java
+program. There's the state store and SQLite, but really, it's not a lot of complexity which is
+needed here. And that was kind of the idea to get an understanding and then also to share it with
+other people. Well, you know, it doesn't have to be complex. This sort of concept, actually, it's
+relatively easy to be implemented. And just to close the loop on things that Java is not capable of
+doing, that's something that you didn't target or from my knowledge, you didn't. That's TEYs, the
+textual user interfaces. And that's a topic to discuss with Max Anderson, because it seems that he
+was very keen on proving that Java is able to do it. Absolutely. I'll leave that for a conversation
+with Max. You should have him on. Yes, absolutely. Great. But coming back to your current
+playground, I spoke about Parquet and the whole stack. The guys from Influx Data are calling it
+FDAP. And what that stands for Apache Flight Data Fusion, Parquet and Arrow. That's what they use
+for their Influx Data rewrite in Rust. And I'm very happy to hear that this is happening in Java as
+well, because I'm also looking into the model. And it's nice to have the matching Apache Arrow for
+the memory model. And then you can just have it on disk with Parquet. Given that it's a professional
+project, I would expect that this came from somebody else. Or actually, it's not the case. And you
+came with the idea, and then you got it started. What's the story of Parquet? And, well, actually,
+Hardwood. So Apache Parquet, it's a widely used file format for storing data in a columnar way. So
+if you think about maybe a CSV file, they store data essentially in a row-based fashion, right? So
+each record which you want to process in your CSV file, it's like a new line. And this is good for
+some use cases, but it's not so good for other use cases. So think about a situation where you, for
+instance, want to aggregate all the values from a given field of your data. So let's say you want to
+aggregate the entire value of all your purchase orders. So with a CSV file or a row-based file like
+that, you would have to kind of go through all the files, find, purchase order, field, and sum up
+those values. So it wouldn't be very fast. And exactly for those kinds of use cases, there's this
+idea, okay, let's store data not row-based, but column-based. So all the values from one column,
+like all the value, we store all those subsequently. And we do that for all the columns of our data
+set. And now this has a few advantages. So we can very selectively query that data. So if you are
+interested in just aggregating all the value from the purchase order value column, we just can
+sequentially read the data, all the purchase order values of each order. So it's very fast to read.
+We don't even have to do the I.O. for all the other columns because we are not interested. So that's
+very efficient. And then also storing the data becomes very efficient that way. Because if you think
+about, for instance, timestamps, maybe your data set is ordered. So what you could do is instead of
+storing each timestamp as its own fully self-contained value, you could just persist the first one.
+And then for the next one, you just store the delta. Maybe it's just like two milliseconds later. So
+you just store a two instead of a full timestamp. So it's very space efficient. Then also it lends
+itself very well towards compression. So essentially, that's the reasons why those columnar file
+formats are so interesting. In particular, in the context of data analytics, Apache Parquet is like
+the default file format, I would say, in data lakes and is heavily used by those open table formats
+like Apache Iceberg, Delta Lake, it's heavily used there. And now the thing is, Parquet has been
+around for quite some time. And there is a widely used parser and writer, I should say, for that in
+Java. But also it's very dependency heavy. So if you use that existing parser, which again, it's
+great work by the community, but you pull in essentially the entire Hadoop stack and you have like a
+huge footprint of dependencies. And so this is where this project, Hardwood, in terms of the name,
+like Parquet Hardwood. So it's a play on like different kinds of flooring. So the idea for Hardwood
+is two things. First, let's see whether we can build a new parser for Apache Parquet without any
+mandatory dependencies. So it's all written from scratch. There are no mandatory dependencies. And
+also, I want to make it very fast. And this is actually where we can come back to the One Bill and
+Row challenge, because many of the learnings from the challenge I'm able to apply for building this
+real-world system. I want to make this multi-threaded, and it is multi-threaded. I want to take
+advantage of all the CPU cores I have. So that's the idea. Building a parser for Apache Parquet in
+Java, optimized for minimal dependencies, and very fast. So that's the high-level gist for it. That
+sounds great. So it should have a very short boom, right? Because now with the CRA Act, we have to
+look into that as well. I mean, that's very real. Like all this supply chain attack situation, like
+all those dependencies, they're a liability, essentially, right? And you don't want to have them.
+And, you know, even not talking about things like class path conflicts, you might have different
+versions. So really here, the idea is to minimize dependency set as much as possible. So for
+instance, and this is where you actually can come back to newer Java versions. There's no logging
+dependency because, well, since version 9, Java has a minimal yet good enough logging abstraction.
+So I'm using that. And then people can just, as a runtime dependency, they can add like a binding to
+whatever logging infrastructure they want to use. And then there's a couple of optional
+dependencies. So for instance, Parquet can utilize different kinds of compression algorithms like
+LZ4 and Gsup and so on. And now I didn't want to be in the business of re-implementing all those
+compression algorithms. So I'm integrating those as optional dependencies. So if you want to parse a
+given Parquet file with a certain compression algorithm, then you would pull in that compression
+dependency for that. And it's the same, for instance, for object storage support. So you now can
+also parse files which are stored in an S3 bucket. So in that case, there's like an extra module as
+part of the hardwood project which you would pull in. And now this just has the dependency to the S3
+SDK. You mentioned that you put a lot of effort with two main goals. One is having a small footprint
+and the other one is being fast. What are the tricks? Looking back, what would be the recommendation
+if somebody else is going and, hey, what should I take in mind if I'm building a parcel and I want
+to have this attribute? What are the architectural takes on that? Right. Right. So, I mean, the
+first thing coming to mind is parallelization. So as I mentioned, we have all our machines. They
+have so many CPU cores, right? So on my MacBook, I don't even know. There's like 16 cores or
+something like that. And if I'm single threaded, I leave like 15 cores unused and it's a huge waste
+of time, right? So the idea here is to utilize all the CPU cores. And now the problem is what I
+learned actually is, well, parallelizing the parsing of a Parquet file is surprisingly tricky
+because when you could think, okay, you know, I could, for instance, start and just say for each of
+my columns in my file, I just use different threads, right? One thread by column. This sounds good.
+And that's how I started. But then the problem is, so maybe your data set just doesn't have that
+many columns. So maybe you just have like three columns. So then you would be just using three CPU
+cores out of 16. So, you know, it's better than before, but it's still not really good. The idea
+then was, okay, let's go one step further down and Parquet actually stores files in what it calls
+pages. So now the engine actually has this page level parallelism. So we can utilize essentially all
+the CPU resources we have, all the pages in our file, they are distributed across our worker
+threads. And now the challenge for that one was, well, depending, for instance, on the kind of
+encoding a column has, they might take a different CPU time to decode. So essentially I could have
+like slow columns and fast columns. Well, if I have a fixed amount of threads, which I use to decode
+the pages of a given column, again, I would leave resources unutilized or underutilized. So here the
+idea is to, and this is what's implemented to have some sort of adaptive balancing. So essentially,
+you know, slower columns, they get more worker threads assigned, faster columns get less worker
+threads assigned. And that way, again, I'm using essentially as much CPU as I can. So that's the
+entire topic of parallelization. There is this idea of prefetching. If I work on multiple files,
+which together form a dataset, if I'm getting towards the end of my first file, I'm already starting
+to preload contents from the next file. So, you know, just to avoid any sort of cold start scenario.
+There's the idea of avoiding the boxing overhead as much as possible. So, you know, as much as I
+can, I have data in primitive arrays, int arrays, double arrays. And this ties a little bit back to
+an earlier question you had. So now I have to actually, you know, let's say I have this page
+representation in the half of the code base. And now I need to have like an int page and a float
+page and a double page because I cannot have a generic kind of representation, which would be backed
+then by those primitive arrays. Right. So currently, if I use generics, I would then have an array
+list, let's say, of integer and not of int. Right. So I would pay the boxing overhead. Whereas
+hopefully with the project Valhalla, whenever we will get it, then we would hopefully be able to
+have that. Right. So then I could say a generic data structure, which then still doesn't pay the
+object overhead. Virtual threads or old style threads? Virtual threads. Actually, I don't think it
+makes a huge difference for the particular workload. But yeah, I felt, you know, why not? And so
+that's what I ended up using. Thank you. When should I look at hardwood? When should you use it?
+Well, I would say hopefully everybody who wants to parse Parquet files in Java, I would love it for
+them to be the option they choose. Right now, I mean, we are still very early. I started the project
+at the beginning of the year. I did a first release, Alpha 1, a few weeks ago. I'm going to do like
+a beta 1 release very soon. Functionally, I would say it's pretty complete for the reading side of
+things. We support all the encodings. We support all the physical, logical types. We support both a
+row-based and a column-based way for reading through the data. We support data mapping into Avro. As
+I mentioned, we support reading data from an S3 bucket. And there's this entire notion then again
+of, you know, just fetching the data which we need. So for instance, if you only are interested in a
+specific column, well, we would only get those bytes from the remote bucket for that column. There's
+also this notion of predicate pushdown. So you can say, I want to have only data which satisfies a
+certain filter criteria. I don't know, only purchase over 100. We can take that predicate and
+Parquet supports also statistics. So essentially, it also allows you to cut down on the chunks you
+even read. So we support all that. It's pretty complete read-wise, I would say. And then very soon,
+hopefully, we can have like a stable 1.0 release. And soon after that, for 1.1 release, I also would
+want to have write support and then make it like a fully comprehensive Parquet library for both
+reading and writing. So let's say I'm just reading a line or whatever. Right. What will I get back?
+There's two modes, essentially. So there's what we call the row reader API. And this essentially
+allows you to iterate through your data set. You know, it's like an iterator kind of pattern. And
+you can access all the columns of your rows. Parquet supports nested data. So you could have like
+substructures or you could have lists. And then this row-based format, it would, for instance, give
+you like an array of, I don't know, the tags of your blog posts or whatever your data is about. So
+there's that, which is nice if you want to work with this data in some sort of object-based way.
+Right. And also there is just merge this earlier this week. There's the support to give you this as
+an Avro record. So many people in the Parquet space, they use Apache Avro as some sort of binding
+format. So we also support that. And this is good if you want to access complexly structured data in
+an object-based way, let's say. And the other alternative is this column reader API, as we call it.
+And this essentially gives you arrays of data just from a specific column. And this is very
+interesting because it allows it to be very fast. Because then, for instance, you could take an
+entire array of data and feed it into the vector API and process it very efficiently. So we have
+those two APIs. Depending on the use case, we would use one or the other. Okay. Cool. So any
+integration with Apache Avro? Because it seems to be the memory cousin from Parquet. Yeah. So at
+this point, not. I thought about using it. But then, well, it comes back a little bit to this
+question of avoiding the dependencies. And so far, we don't use Avro. It's something which maybe you
+should explore at some point. I also should say, actually, your memory mapped the files and quite a
+bit happens off heap. So, yeah, I don't know. Avro could be interesting. It's just not something
+which we have explored yet. Well, I suppose it's about the community and who uses it. And then I
+suppose that question will come around if it actually makes sense. Absolutely. The other thing that
+I think you underlined in the post is that you were an AI native developer. Hardwood is probably one
+of the first AI native projects of the year. How does it feel? What are the lessons learned from
+that? Because obviously everybody needs to do it if they are not doing it. Absolutely. Absolutely.
+And also, it actually touches on one of the motivations for starting that project. I mean, yes, I
+generally felt there is a need for this project parquet parlor with minimal dependencies and very
+fast. So it just needs to exist. I want to build it. But then also, I was looking for something.
+Yes, I want to get real world experience with using AI for building this kind of tool. And I was
+just curious, how far can AI take me in doing this? It's built AI first. So I use cloud code
+extensively for building it. People in the community use it for their contributions. But what I want
+to really emphasize, we don't wipe code. You know, the idea is not I go off and come back with
+whatever it does and just take it. No, the idea really is we want to understand the code. We want to
+guide it. And we want to establish certain structures. We want to have a code base which is well
+maintainable. So it's pretty prescriptive in terms of how we are using AI. It's still evolving. But
+so, I don't know, in my cloud MD5, for instance, I tell it very explicitly, always start with a
+design document. There are certain things we want to keep in mind when developing our project. So we
+want to have like a minimal public API. And as much as possible should not be in publicly phasing
+packages. All those rules, we want to avoid, you know, duplication. Maybe we need to refactor
+things. So all of those things are in my cloud file. And as much as possible, it adheres to that. Or
+if it doesn't, well, then I ask it. So, hey, now we have some redundancy here. Let's clean it up and
+let's extract some sort of helper method or whatever it is, right? And I mean, in particular, I
+think for Parquet, it's actually a very good problem to be solved with AI. Because A, there's a very
+well-written spec. It's very clear what we need to build. There's specifications of all the
+different parts of the file and so on. And so it's very clearly defined. And also, there's a very
+extensive test suite provided by the Parquet community. So there's like, I don't know, hundreds of
+Parquet files. And so what we are doing is essentially we take the existing Parquet parser, have it
+parse all those files, and then compare the output to whatever Hardwood gives us. And if there's a
+difference, well, it's a bug we need to fix, right? And AI is great for that. So I can tell it for
+that file from the test suite, there's a difference to the upstream parser. So why is it and can you
+go fix it? And by now, actually, we have achieved like full parity. So the outcome is exactly the
+same. I'm still really excited about all that stuff. For instance, I think it doesn't have this
+idea. Code needs to be maintainable. So very often it would say, okay, let me add another if-else
+over here. And let me, I don't know, duplicate some stuff over there. So you still need to, you
+know, be on top of things and guide it and make sure what it produces is like meaningful and good
+quality. But it's a massive productivity booster. We would be nearer at the point where we are at
+without using those tools. Okay. I like your approach about using a design document before
+implementing something bigger. Are you using any kind of standard? Because I know that, as you
+mentioned, having something that is documented publicly, it's a lot easier with these new models. Is
+it something that you gave it a template or is it something that you just pointed, okay, do the ADR,
+whatever? No, it's not. We don't have a template. Maybe we should actually add one. When we started
+that, it kind of came up with a good structure by itself. Like, you know, setting a context. What's
+the problem we want to achieve? What do we have already? So I felt it kind of makes sense. But yes,
+I totally agree. It could make sense to establish actually a template. Okay. Well, there is
+obviously a GitHub repo for that. It's on the ADR side. And what I like, there are a lot of
+templates. And it's depending on the size. So I really enjoyed reading through those. And maybe it
+helps. Funny enough, because you mentioned that Parquet has a lot of tests and it's very well
+documented. I had two different conversations with two co-nationals of yours. With Birgitta Böckler
+from Datworks and Adam Beam, the Airhacks master of Java. And both of them had the similar points.
+Adam was mentioning that he's using the BC pattern a lot, which is quite old. And what he was
+mentioning is that Java is quite good at being generated by models, given that all the process, all
+the community process is very well documented. You have this interface. You have the JSRs and then
+you have the implementation. And that allowed the community to build around it. And the other point
+was there were three experiments from the guys that are making Cursor, from Entropic, and then from
+OpenAI. All of them built something and they wanted to push longer running projects. And some of
+them built a C compiler. The other ones built a simple tool internally to go more in the enterprise
+space. And actually the underlying point was that when you are building on tools that are highly
+specified and you have a lot of tests, it's a lot easier. For instance, for the compiler or for the
+browser itself, because you have things that are built already. So I think that's something that is
+worth being noted. I mean, it's a good safety net against regressions, right? So if we do changes,
+then we would figure out if something which used to work suddenly stops working. The one question
+which still is a bit open to me is how do we go about performance regressions? Because for me, you
+know, performance is like a top consideration, top concern. And I spend lots of time with Async
+Profiler, JFR, all those tools to minimize the allocations. By the way, you know, we also, for
+instance, pool those object arrays and reuse them. So, you know, this is top of mind. But then also
+I'm concerned about regressions, right? And so I'm having some conversations. There's an Apache
+project called Otawa. It's about continuous performance tracking and identifying regressions in your
+performance metrics. So that's something which I also want to set up to identify if we made a change
+and actually made things slower so that we can prevent those early on. It's something that I'm
+looking into as well, but from a different angle. For us, it's about performance translate to
+battery life. Because in my current role, it's IoT, but it's highly mobile. And that means battery.
+And if you have a regression in terms of performance, that means battery lock is draining. And that
+means higher costs and all these kind of things that are coming. And now I remember about a point
+that Luca Metzalera had. He was mentioning that at the point when he started building and he was
+implementing micro frontends, he had a container. A simple container that was limited in terms of
+performance, memory, and so on and so forth. Obviously, it was about the size of the package at that
+point. And that's what I'm trying to see whether I can create a restraint, something like a digital
+twin for our devices that allows us to see it virtually. But it's still a long way because it's, you
+know, custom builds. It's more and more complex. But nevertheless, I'm very curious to see what the
+solution that you'll reach because that was also on my mind. Because you have all these things that
+are very superficial, but then at a given point of time, you had this whole mastery of how to tweak
+JVM and how to make it work. And then if you're really pushing into that, then you discuss about
+mechanical sympathy. And you saw that also in your 1B LRO challenge because those people that really
+wanted to go deep, they really went for the gold, optimizing it for the given machine. Right. I
+think that's where AI also is interesting, right? Because, I mean, it can help us with the things.
+But right now, I also feel, yeah, you cannot just let it go by itself, right? I couldn't say, go off
+and build a parquet puzzle for me. I don't think this would work very well. So you have to guide it.
+You have to stay on top of things. Because oftentimes people are also concerned about, so what's the
+impact on developers and what does it mean for us? Maybe we all lose our jobs. And, I mean,
+obviously, I don't have the answer to that. But I think right now, my feeling is it's kind of
+bimodal. If you are new in the field and maybe you do relatively easy work, it definitely is
+probably impactful. But then also, if you are experienced and you have been around for a while, you
+know what to build. It's a massive productivity booster and you can get things done, which you just
+couldn't get done before because you just didn't have the capacity. Yeah, I feel like it's having
+different effects at different ends of the developer spectrum in terms of, like, experiences. For a
+lot of our age developers, because some time passed since we started writing code, it's bringing the
+fun back. Because senior positions, you were stuck in bureaucracy and then you were frustrated that
+the younger folks don't really get it. And then there was the gap between the way how we would
+expect things and how the newer generations are doing it. But now you have the ability to actually
+do those kind of things together with other points and to have that high standard. My only concern,
+and that's something that I still don't have a true response to it and not even a path, is how are
+we bringing new folks in? Absolutely, yes. That's a massive concern. Because I see that there are
+two different trends. Some of them are just, well, I need somebody that has at least four or five
+years of experience. They build some stuff. And then there are the other ones that are saying, okay,
+we don't need developers now because I know how to discuss with the AI and then we have everything.
+And then you see that there are holes as big as ourselves into that. These are the points where I
+think we need to close the gap and really think for the long run. But all in all, I think it's an
+excellent stepstone towards the evolution of programming. Even though I still have a curiosity, and
+I'll just say it out loud, is what we're currently doing. We spend a lot of time as an industry to
+build higher level languages that make things a lot easier. Now it's even better than that. You just
+generate. So now what we currently do is that we are going, let's think about Java. We are just
+writing higher level code that is best practices and so on and so forth that gets compiled and then
+that gets interpreted and so on and so forth. You have so many layers until you actually reach the
+bare metal. So I would expect probably at some point of time where we are just having constructs
+that are ahead of time compiling, where you're just taking bits and pieces of the construct and
+probably either circumvent the whole code. But time will tell. I mean, it's all, I think, still up
+in the air, right? Right now, nothing of that is deterministic, right? So if you don't have like an
+intermediary step where you at least can see what is going on, it's going to be very hard to evolve
+those things and, you know, debug them and so on. So I know right now I don't see a world where we
+would just like skip that source generation step. But yeah, I mean, it's all so fast and quickly
+evolving. So, you know, it might look very different in 12 months from now. I didn't even want to
+touch on the cost side of things because for me, the cost is multifaceted. More than the material
+cost, more than the money that we're paying for. It's about the infrastructure cost. It's about the
+water that we are using. It's about electricity and the pollution that comes with that, with the
+CO2. I think that those are the hard problems to solve. And that's all about us as an industry to go
+in the right direction. I keep catching myself. So, you know, as I mentioned, I use Cloud Code like
+all day long. And sometimes I ask, so, hey, can you make that change? And then I feel like I just
+can write it myself. It will be obviously more efficient in terms of CPU cycles spent. But it's so
+easy once you are like in that mode where you essentially always work with the coding assistant. So,
+yeah, I know it's definitely a lot on my mind. Will we lose the skill of doing stuff ourselves? And
+the other day I was sitting in the airplane and I didn't have access to Cloud Code. And then I
+thought, okay, you know, what should I do? I could start to code some stuff, but I feel it would
+just be so slow. There's no point in doing it. Exactly. So, you know, then I ended up reading
+something. So, yeah, it has all those dynamics and it's all evolving so much. Well, at some point I
+read the book and it was called The Glass Box. And it was mentioning similar things, but driving
+stick or driving an automatic gearbox. And it was like at a given moment of time, it's about you
+just taking you out of the comfort zone and try to do different things. Because in this particular
+case, and I think that's about discipline and how to do this stuff. But that's a whole different
+conversation. Right. I want to mention just one thing because it's an important thing. And this is,
+you spoke about building hardwood, but also actually a community is forming around it. So I just
+want to give a big shout out to Orion and a couple of other people who contributed and rest to the
+project. You know, without those people, it would just A, be much less fun. And also we wouldn't
+just be where we are at. So, you know, big kudos to that community. And of course, I hope it
+continues to grow and we will have like an even more diverse community around hardwood. Great. You
+mean Andres Almire? Absolutely. Yeah. So he helped a lot. This guy is in all important projects. I
+was telling him the other week when we had the recording, it's like he's probably one of the most
+literate in the open source community in the Java space. Yes, yes. Thank you for your time, David.
+Thank you for putting together hardwood and best of luck. We're looking forward for having the
+number one release. Awesome. Yes. Thank you so much for having me. This was fun. Thank you.

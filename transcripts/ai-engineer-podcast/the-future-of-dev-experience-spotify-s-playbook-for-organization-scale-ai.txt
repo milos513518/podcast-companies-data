@@ -1,0 +1,596 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: The Future of Dev Experience: Spotify’s Playbook for Organization‑Scale AI
+DATE: 2026-01-20
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/spotify-agentic-developer-experience-episode-74
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63904461444220660207ac8867-ee66-4197-b6ba-e3100f87f4c3.mp3
+DURATION_SECONDS: 3377
+TRANSCRIBED_AT: 2026-09-17T03:33:40Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering Podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Unlock the full potential of your AI workloads with a seamless
+and composable data infrastructure. Bruin is an open source framework that streamlines integration
+from the command line, allowing you to focus on what matters most, building intelligent systems.
+Write Python code for your business logic and let Bruin handle the heavy lifting of data movement,
+lineage tracking, data quality monitoring, and governance enforcement. With native support for ML
+and AI workloads, Bruin empowers data teams to deliver faster, more reliable, and scalable AI
+solutions. Harness Bruin's connectors for hundreds of platforms, including popular machine learning
+frameworks like TensorFlow and PyTorch. Build end to end AI workflows that integrate seamlessly with
+your existing tech stack. Join the ranks of forward thinking organizations that are revolutionizing
+their data engineering with Bruin. Get started today at aiengineeringpodcast.com/bruin. And for dbt
+cloud customers, enjoy a $1,000 credit to migrate to Bruin Cloud. Your host is Tobias Maci, and
+today I'm interviewing Niklas Gustavsson about how Spotify is scaling AI usage and engineering and
+product work. So, Niklas, can you start by introducing yourself? Yes. Thanks for having me. Yes. I'm
+Niklas. I'm a chief architect at Spotify. I've been here for, I guess, coming up on fifteen years in
+in the summer, so quite a while. And one of the areas that I've been focused on for the last few
+years is very much around our developer experience and how we leverage AI in our development
+workflows. And do you remember how you first got started working in the ML and AI space? Yeah. My
+background is actually not in in ML. I my primary background before Spotify was in back end and the
+distributor systems and and things like that. But, of course, as I joined Spotify and we started
+heavily investing into machine learning, it's more than a decade now. It's always been close to what
+we do. It's deeply integrated into all our product development and so on. So it's always always been
+very close to me. But then, of course, as transformers and LLMs came about a few years ago, that got
+much closer to everything we do. So that's where I where I really got deep into our AI strategy and
+and has ever since been spending a lot of my time on that. And digging into the main topic here
+before we get too deep in the weeds, can you just start by giving a bit of an overview about the
+general engineering structure and some of the developer experience investments that you've made
+independent of any AI tooling, you know, maybe in the years before GPT came onto the scenes? Yeah.
+Absolutely. So it it might be good to know as I think we'll probably come back to some of this as
+well. Spotify, we run a highly distributed architecture. So we have many thousands of production
+components that might be, you know, back end services, mobile components, machine learning,
+pipelines, and models, and so on. And these are designed and owned and operated by a fairly large
+number of development teams, something like 800 development teams. So in a sense, like, it's this,
+like, very there's both both a lot of intention about our our architecture and the way that we work,
+but it's also highly distributed. So there's some level of, you know, chaos to it, which is both fun
+and challenging. It is a very collaborative environment. We do a lot of back and forth between
+teams. Something like 40% of our pull requests are from a nonowning team. So if I own a back end
+service, a lot of the changes to that back end service is actually gonna come from some some other
+team. And this is always going on in between teams. So, like, there's, you know, lots and lots and
+lots of collaboration. And a few years ago, we shifted a little bit. So it used to be that we were a
+super autonomous company. Like, every team had a very high flexibility around how what they built
+and how they built the things, and we just didn't see that this worked very well with the scale that
+we were at. So a few years ago, we started efforts around an increasing standardization of our code
+and practices and also made an investment into better ways of managing our entire fleet of software.
+So it used to be that every team would own their own components. And when we, let's say, needed to
+upgrade some language version or library or whatever, we would tell each team that, hey. You need to
+move to the latest version of Python or Java or whatever it would be. That just didn't scale very
+well. So we made all of these investments into instead of being able to manage our entire fleet of
+software as one thing that we could sort of mutate. And I'm mentioning this because this will come
+back in terms of where we where we're also focusing when it comes to AI at the moment. So so that's
+roughly the backstory for us, like a few or number of thousands of production components, 800 teams,
+very high scale for what we do, at least compared to my previous experiences. Like, we have millions
+and millions of users connected at any given point of time. We have lots and lots of traffic. So
+it's it's a lot of fun and always been very fast paced over here. And one of the key aspects of
+developer experience is that you're trying to keep engineers in that flow state, keep them focused
+on the problem at hand, and not get bogged down by all of the various roadblocks and things that are
+technically necessary but don't really contribute to the actual product goals. So things like making
+sure that your linter checks passed, make sure that your CI runs in a timely fashion, make sure that
+you have good test coverage. And I'm just wondering as you were investing in that developer
+experience, what are some of the main pain points or struggles that you were dealing with prior to
+the introduction of AI? And then we can get into some of the things that you're trying to use AI to
+solve for. Yeah. So I think one of the main challenges that we saw was just a fragmentation of
+tooling for our developers. So it used to be as as a developer at Spotify, you have to jump in
+between many, many different tools that either we had, you know, some open source tool we were using
+or we had built internal tooling, but in a very fragmented. So that was how we came about investing
+into what we now call Backstage that we've also made available outside of Spotify, and it's it's
+it's this, like, single pane of glass that developers interact with, and it's very, very present as
+a developer at Spotify. You do a lot of your tasks every day within within Backstage. And that's
+been I think if I would point out, like, a single productivity unblock that we've done maybe prior
+to AI, that's gonna be the one. Like, that that was the one that really simplified the life of a
+developer. Now I can go in within in Backstage. I can look at any of our thousands of software
+components, and I can see all the actions that I can take on them and all the data and information
+that is available around them. And that was, for us, very, very different from the fragmented state
+we were in before that. And I think this is true for many other companies as well, but it's been a
+particularly particular focus for us. And now digging into the introduction of AI in the engineering
+workflow, there are various shapes that that can take. There is a never ending set of tools with new
+ones being introduced every day. And I'm wondering as you were starting to see some of the potential
+for using AI to accelerate software development, what was the overall process for determining how
+and where and why to apply some of those technologies? Was it more of a bottom up and organic growth
+situation? Was it more of a top down mandate or, you know, maybe some hybrid structure? I'm just
+wondering kind of some of the ways that you thought through that overall process and investment. It
+has been, I'm gonna say, largely a bottoms up driver within Fortify. We started out with a very
+strong internal demand for Copilot back in the days, and we went through the journey of being able
+to clear that so we could use it. It was a bit of a early days, so there was a lot of legal
+questions and security questions and things like that that we had to figure out, but we were pretty
+early on on jumping on Copilot, and then the journey has just continued from there. Like, people we
+had a incredibly fast adoption of of Copilot within the company, and then Cursor came along and then
+CloudCode came along, and we've continued to seeing these, like, extremely rapid adoption, not like,
+nothing I've seen for any other tool that we've introduced. So there's been a incredible bottoms up
+demand. We are, of course, trying to balance that with our being somewhat intentional and strategic
+about this. But I'm gonna say we have gone very heavy on experimentation and sharing learnings and
+being pretty humble about that. We don't know exactly what's gonna happen tomorrow to your point of
+new tools being released all the time. So we've been pretty open and allowing for a pretty broad set
+of tools and then encouraging our engineers to experiment and share as much as they can. And we have
+some very, very active internal Slack channels and repositories with Claude skills and things like
+that where people are experimenting every day. So it's it is amazing to see at the moment, and I
+imagine that this will continue. Like, if the pace has only been increasing. And to that point of
+the rapid pace of change, the rapid introduction of new tools, the evolution of existing tools,
+particularly from the perspective of developer experience and investing in the aggregate velocity of
+the organization, that variance can allow some people to move faster, but maybe at the expense of
+the broader organizational velocity, whereas standardization, such as what you were mentioning with
+the backstage investment of this is the way that you get to the thing, can make sure that everybody
+is moving in the same direction and at, you know, roughly the same multiplier of pace. And I'm
+wondering how you're thinking about some of that tension of wanting to standardize the tool chain
+builds around some of those capabilities and share those best practices while at the same time
+enabling people to do that pioneering exploration of figuring out what are the capabilities, what
+are the boundaries, and how do we determine what best practices to bring to the rest of the
+organization? Yeah. It's it's a great question. I think that's that's putting the the point very
+clearly on some of the trade offs that we were having to make. So much like you described, like, we
+are betting on standardizing a lot of our underlying foundational pieces. So that will be the the
+infrastructure that we have in place, like the tools that we make available to our coding agents and
+so on and on the code level. So as I mentioned before, we've been on a multiyear journey to drive
+that standardization, and we're continuing that now and accelerating that. And we're doing that
+through various means, like, where you one of the investments that we we currently have ongoing is
+to move all our code into mono repos, which allows us to have a much, much higher degree of
+standardization than we have before, like, where our code lived in thousands of small repositories
+owned by each and every team. So we were kind of lucky to make these, like, standardization, the
+fleet management, and the monorepo investments as AI happened to us. But so we're, in that sense,
+like, feel that we're relatively well set up, but it is also moving incredibly fast. So we'll we're
+we're trying to adjust as we go along. And to your point of some of the tools that are available to
+the agents, some of the coding standards that can be enforced using things like linters, CICD,
+etcetera, that is definitely one of those core engineering disciplines. And I'm wondering what are
+some of the other foundational kind of first principles that are effective regardless of the
+specific harness that you're using for a given LLM and some of the ways that you are investing in
+that kind of platform layer of enabling the agents to be able to get the context, understand the
+understand the tasks, and maybe just some of the ways that the introduction of those agentic coding
+capabilities even shifts the focus of the people who are guiding and, responsible for that work.
+Yeah. It it comes in many shapes and forms. So one that you mentioned in there was we need to guide
+those agents. So we're spending quite a bit of time at the moment to make sure that we have the
+right skills and and and rules set up for the agents so they are able to to follow those and that we
+have the right where we needed the right sandboxing as well. So we're doing it in a secure way.
+We're also investing into improving the verification loop. So one thing that we've seen is that the
+better testing we have in place, the better both agents and, in particular, these, like, fleet wide
+agents that we haven't really talked about, but I'll come back to work. So let let me dive down that
+rabbit hole a little bit. So I mentioned before that we made this investment a few years ago on on
+what we call fleet management, which is all about, like, managing our entire fleet of software as
+one thing that we can make changes to. The challenge with that was that the type of changes that we
+could make were fairly simplistic because as it turns out, code is very complex to change. Like, it
+has a very wide API surface in in a way. And so we could make code changes, but they were fairly
+simplistic and shallow in a way. So one thing that has fundamentally changed now is that we can use
+AI agents to make those changes for us and then orchestrate and roll those out across our fleet. And
+that means that we can significantly raise the bar for how complex changes we can make to our fleet.
+But that means that we really need to have a good test automation, a way to verify that those
+changes are correct and safe. Again, luckily, we did some of those improvements as we started
+rolling out a fleet management stuff a bunch of years ago, but we think that we need to improve that
+further now. So that is one of the investments we're doing. We're both revisiting our practices
+around how we do tests and also our test coverage in the fleet. Luckily, agents are actually an
+excellent tool to also write some of those tests for us, so we think we can get some benefits from
+that. So those are some examples of these, like, more found foundational capabilities that we're
+building out, but there's lots more of those. Like, we built out an MCP infrastructure internally as
+well, for example, to make sure that we can provide many different MCP tools and do that in a in a
+secure way. Your comment on fleet management also brings up an interesting nuance to the overall
+engineering challenges that there are different styles of engineering within an organization where
+you have your application engineers who are focused on writing the features, making sure that the
+end user experience is fulfilling the overall organizational product goals. And then you also have
+data engineers, ML operations engineers, platform engineers, and all of those roles are going to
+have some set of code that they are interacting with that they're responsible for that they're going
+to be managing. But all of that also has to be deployed and maintained and monitored in the
+production environments, which is its own set of engineering challenges that has its own set of
+agentic capabilities that are being developed across the ecosystem. And I'm wondering how you're
+seeing the adoption and application of these agentic capabilities differ of across those different
+styles of engineering or domains of responsibility. So I agree with the sort of classification of
+different disciplines that you outlined, but I think they've started to meld together a little bit
+both as we've been, again, like, doing these investments in in thinking about our entire fleet. So
+it used to be that as a developer, you were at Spotify, you were very close to the code that you
+owned or your team owned. But now we're more in a mode of, like, yeah, you still own some piece of
+or some number of components within your team, but many other teams, in particular, are more
+platform teams. We'll also make changes to that code. So code has gone from being this thing that,
+like, I own to Spotify owns and in in a sense, like, everyone can make changes to them. There are
+still access rules and and ownership around them, but but the principle has changed quite a bit
+here. So so I feel that some of those like, the the distinction between a what we would call a
+feature engineer, like the app engineer and a platform engineer used to be very distinct, but it's
+much less so today. That being said, I I still think that the way that we apply AI tooling into
+this, there's sorry. Lots of similarities, but also a few differences. So, again, the typical
+feature engineer, like, working on one of our mobile apps or, let's say, on our playlist systems,
+they will be fairly focused on those systems and, like, building new features and rolling those out
+to our users and and then operating those serve those components. And that tends to be that then
+you're focused on, like, a smallish set of code and you're very, like, deep expertise on that
+particular domain. And that me means that you will use AI agents typically, like, I would say in the
+sort of mode that they were primarily developed towards, like what most engineers would do. And then
+if you look at our platform engineers, they are very focused around, again, like, managing our
+entire fleet of software. So they will then use more scheduled jobs and and things like that. So one
+of the things that we built out as part of our AI agents is something we call home. It's just kind
+of silly name, but it's it's really way for us to and, again, using this management infrastructure
+that I I mentioned before, really way to take, like, a AI agent in currently clawed code under the
+hood to apply that to our entire, like, millions and millions of lines of of software. And that's
+been incredibly powerful in terms of being able to drive changes to our software and, you know, do
+code mononize modernization and things like that. So and that's really something that, like, I'm
+gonna say mostly our platform engineer mostly, but not exclusively our platform engineers are are
+focused on. So under the hood, they're using the same tools and the same many of the same practices.
+It's the same way of prompting. It's the same way of working with agentic tools and whatnot, but the
+focus for their efforts tend to be a little bit different. So that's the main distinction that we
+have. We don't have you mentioned, like, operations engineers. We don't have separate operations
+engineers. Like, it's the same teams that build and own our software that also operates it. So we
+don't have some of those categories that you mentioned. But I would say that's the big distinction
+that we have. And then in terms of the shape of the engineering work, I'm wondering how you're
+seeing the distribution of work change as far as what stage of the software life cycle more of the
+time goes into now where for most of the history of writing software, you had maybe a product
+manager or an architect who would be responsible for saying, this is how everything is going to fit
+together. These are the features that the end users are going to be delivered, and then I'm going to
+write all of the tickets, and then I'm gonna hand that off to an engineer who's going to write all
+the code and test it and make sure that it gets deployed effectively and monitored. And with agentic
+coding in the mix, it changes that equation a bit where the writing of the code part can sometimes
+move from taking weeks down to minutes depending on exactly what you're doing. But making sure that
+it's generating the right code is really the challenge now, and I'm just wondering how you're seeing
+that change in dynamics shift the time investments where maybe rather than it being that middle
+point that takes up most of the work of actually writing the different lines of code, you spend more
+time instead making sure that you understand the problem and the specification. And then it also
+puts a higher burden on the review and deployment stage because you need to make sure that the code
+that was generated is actually accurate and correct in doing what it was designed to do and just how
+that's changing the dynamics of the engineering org at Spotify? Yeah. It's it's a great question,
+and many of the things you mentioned there really rings through. So so let let me talk through some
+of them. So first of all, I I I think our product development process always been a little bit more
+collaborative than what you described. So it hasn't been those, like, clear handovers of, like, the
+product manager writes down a a spec and hands it over to a developer. That's always been very
+iterative within Spotify, but we do have those roles. We have, like, product managers that will
+think deeply about our product strategy and then engineers to your point who will then design and
+build and operate the the software to to manage that. And, yeah, and and like you said, like, that
+part of turning those ideas into code, is obviously dramatically changing now. Like, it it is just
+like you said going from potentially weeks to to hours, and and the work for the work for for us and
+me as a developer has changed dramatically as well. Like, I used to be someone that loved the, you
+know, hands on keyboard, solving problems through code type of challenge. And I haven't literally
+haven't written a line of code now in, like, two months because all of that is being done for me
+with the agents that I use. And that is a very, very different way of thinking about it. And I me,
+personally, I really enjoyed that transition, actually. It it turned out that it wasn't that handled
+keyboard thing that I enjoyed. I enjoyed being able to solve problems and shipping those to users
+more than the the hands on keyboard. This is obviously gonna be personal and different for diff
+different people. But for me, it's been a a pretty fun fun experience in in so many ways. And it is
+shifting some of the dynamics that you mentioned. Like, it is shifting the work for us as developers
+more towards how do we effectively translate these ideas of things we want to do into input for the
+agents that we use, and then to your point, then reviewing the output from those agents. And we are
+leaning heavily on applying human judgment in in both of those cases, like being a making sure that
+we provide the right set of inputs for the agents so they do a good job together with all the stuff
+that we've talked about before with making sure that we have the right foundations in place. Like,
+the agents, just like humans, knows what code standards we expect and what levels of conventions and
+security and so on that we expect. And then we put a lot of accountability on the developer to then
+review the output of the agent, both in terms of me sitting in front of the agent, but also as part
+of our peer code review. So that is remains super important to us. But it is also challenging.
+Right? Because now we're able to produce much more code changes, and we and a lot of that happens
+purely, like, in this agent loop and much, much more quickly than before. But we still need humans
+to review all of those code changes. So it's putting a lot of pressure on the code review stage
+before things goes into production. And that is something that we're working on figuring out right
+now. So putting more we already have, but we're we need to improve the AI assistance that we provide
+for code reviewing, and we're gonna change a little bit the policies that we have around how we do
+code reviews so more people can contribute to those reviews than is the case today, for example. And
+then the last reflection I'll I'll I'll add in is that you mentioned the again, like, going back to
+those different roles that we have with, like, product managers, designers, engineers, the similar
+to what I said before in in between the different disciplines within in within engineering, we're
+also seeing that those boundaries between what it means to be a product manager and an engineer are
+loosening up as well. Like, we see a lot of PMs spending time in cursor and Claude code and, you
+know, building prototypes, contributing to our code in a completely different way that was the that
+was the case before. So I don't necessarily expect that these different disciplines will completely
+disappear because there are different expertise there. But these, like, handover boundaries that
+that you started with, like, those, I think, gonna look very, very different in the future. And I
+fully expect that where we have congestion points today within that process, like you mentioned,
+like, the code part having taken a lot of time historically and that now moving away, that's just
+gonna create new congestion points. So one of the things that we're preparing for is being able to
+detect those quickly and then being able to make decisions so we can iterate our way out of that. I
+think this is gonna be a big part for us in the next few years just to transition through this, and
+we don't have a perfect, you know, view of the future of what this is gonna look like. But yeah. I
+mean, everyone are using these tools today. We have a ton of adoption outside of the engineering
+cohort for both cursor and claw to code, and, like, everyone's trying to use them to for many
+different things that you would be surprised about. That, like, wasn't necessarily what the tools
+were intended to from from the beginning, but people are having a lot of good luck in in, like,
+using them for for other things as well. And the the world of just like the world of an engineer has
+has been completely revamped in the last few months, I expect that to happen with all disciplines
+within Spotify in the next year or two. There are a couple of different things I wanna touch on
+here, and I'll just note them now before we get too far down the path. But I think that one of the
+things I really wanna dig into is some of those other ways that you're seeing some of these agentic
+utilities being applied. But before we explore that, in terms of the validation and review stage,
+I'm wondering how this speed of code generation and the need for context queues and rapid feedback
+for the agents is changing some of the ways that you think about what languages to use, how to
+invest in things like type annotations, and just some of the overall tooling that you're investing
+in for linting, testing, validation, canary deploys, etcetera, just some of the ways that it's
+shifting your thinking about which languages and which tool chains are best now that you don't
+necessarily have to spend all of those extra keystrokes on putting in those type annotations and
+just because you don't have the benefit of engineers being lazy, but but also the the potential,
+downsides that that can have as far as not wanting to put in the extra work of, oh, well, I don't
+need that type annotation right now. I know what I'm trying to do, but maybe the LLM doesn't, just
+some of those trade offs. Yeah. I'm I'm gonna say that as as as a company with lots and lots and
+lots of code, as I mentioned before, and many, many different teams, and we have a fair I didn't
+touch on this before, but we also have a fairly it's very often that that, like, ownership of
+components will move around within the company. Like, I built something, but it's now closer to the
+business problem that you are trying to solve, so I will hand over those back end services or
+whatever it might be to you. So given this, and this has been the the case for many, many years at
+Spotify, and given this, we have always been pretty, pretty strict around, like, what languages do
+we use, what conventions do we have in place. And so a lot of these things we had to solve many
+years ago prior to AI taking over, and it I think it has turned out that a lot of those things that
+were good things at scale when you have thousands of engineers also turns out to be good for AI
+agents. At least that's with the current generation of those agents. So I'm not seeing us making it
+ask me again in six months and maybe maybe my view has changed. But at the moment, I'm not seeing us
+making a ton of changes in those, like, very foundational decisions on what languages we use or or
+whatnot. What we are doing is that one of the big shifts that we're going through at the moment is a
+lot of the standards that we've used like, the the way that we've used to promote the standards
+within Spotify has largely been guidance towards engineers. So we've had TechRadar and various
+documents that tells you how to build a ML pipeline within Spotify, and that's been reasonably
+effective, but we don't think it works very well for for agents. So one of the things we're doing
+now is really to put more of those, like, closer into our code bases rather than being guide
+guidelines, they're gonna be links instead. So that is one of the changes that we're doing at the
+moment, and we're shifting a lot of those things into into our actual code base. And this also goes
+hand in hand with the investments that that I mentioned before in of of, like, moving to more of a
+mono repo structure because one of the things that have been really hard for us historically has
+been I mentioned having thousands and thousands of production components. They lived in thousands
+and thousands of git repos and trying to manage that and, like, reasonably enforce our standards in
+in all of those tiny repositories with hundreds of teams owning them has been very hard. So one of
+the things one of the there's many challenges for us to move to mono repos, but one of the benefits
+we're getting is, like, we have this one place where we can put all of these standards in place and
+all of the linking rules in place. We've done this for our clients for many, many years. They've
+always been in in mono repos, but not the rest of our software. So we're sort of catching up with
+that now. So that gives us much better tooling for doing some of these things as well. And, also,
+one of the things that you mentioned is identifying what are the points where you are hitting
+bottlenecks in the path to delivery. And that's definitely an area where the overall industry has
+been investing time recently as in figuring out how do you identify those bottlenecks using things
+like DoraMetrics, I think is the most widely adopted one. But just wondering what are some of the
+ways that you are quantifying some of those aspects of the engineering life cycle and I in order to
+be able to identify those bottlenecks and hotspots. Yeah. So we have very, I'm gonna say, very good
+instrumentation of our developer workflows. So we capture data from our production systems and
+whatnot, then that goes into BigQuery in our case, and and you can go in there and and make queries
+around pretty much everything that goes into our developer workflow. So in that space, we're in a
+pretty good state to and we have lots and lots of metrics that we track, like Dora metrics, but also
+much more fine grained metrics that we that we catch and track all the time. So we're in a pretty
+good state there. Unfortunately, that is not true for the broader production sorry, product
+development process that we have. So we do have pretty significant gaps around being able to measure
+and quantify, let's say, how our PMs are working or how our designers are working. So as we're
+seeing these congestion points shifting around, I'm reasonably confident that we'll be able to see
+them within what our engineers do. So I mentioned before the code review. We're starting to see some
+of that popping up in code review, and we could clearly see that in our metrics. It's not as obvious
+how we're gonna see that in a quantifiable way when it comes to the broader product development
+process. I think we're gonna have to rely much more on, you know, user research and surveying and
+those types of things to to capture some of those. I I I honestly think that's gonna be a bit of a
+challenge for us over the next few years to to really detect those early enough before you know, as
+they become a real problem for people, then it's obviously gonna bubble up and we'll be very aware
+of them, but I would not love to be able to identify them earlier than that. And but that, I think,
+is gonna be a challenge for us in some cases. And so digging now into some of the broader, I guess,
+side effects of introducing agentic capabilities into the engineering life cycle. I'm curious some
+of the ways that you're seeing those capabilities applied beyond just the stage of I can generate a
+boatload of code as fast as I want and just some of the ways that it's leaking into other aspects of
+engineering work, product work, and just some of the maybe new code that it enables because of the
+fact that it is so fast and easy and also maybe some of the ways that it changes some of your
+patterns around documentation and diagramming. Yeah. So so let let me actually go a little bit
+broader than that to to start out. So one of the very eager set of users that user group that we've
+seen has been our our product managers that we've been talking about a little bit before here. And
+they are real like, many of them are really picking up these tools. And, again, like, they are using
+the same tools that our engineers are doing. So they're trying to figure out their ways around,
+like, how to how to bend the cursor and clawed clawed code, and it's, you know, many different ways
+of improving how we write PRDs or how we evaluate experiments and doing insights analysis and, like,
+many, many different things. And we've had a a number of internal tools and websites pop up for for
+that target audience of, you know, again, managing, like, the life of being a product manager at
+Spotify in in in a better way. So so that is one one way that I've been particularly impressed with
+some of the innovation that's come out of come out of that group. And I think we haven't talked
+about vibe coding yet, but I think that's been one of the things that they've really leaned into.
+And compared to before where they would need to go to like, they might have had some of these ideas
+around, like, these tools before, but they weren't really able to build them because they would have
+to go to an engineer and convince them to spend time on building out some web tool for that idea
+they had. And now that's, you know, a few prompts away. So we have a lot of these experimental tools
+popping up and people having ideas around how to, again, like, improve the nonengineering parts of
+of how we build products. Within engineering, what we've seen is, like, we see this sort of coding
+part of this, which we've been talking about. One of the interesting parts with coding is that it's
+actually a fairly small part of what engineers spend their time on. So it's roughly out of your
+eight days sorry. Eight hours a day, it is roughly one hour that engineers spend, like, hands on
+keyboard writing code. This seems to be fairly consistent across companies, so it's not unique for
+us. But, like, there's been a bunch of companies sharing that research, and it's true for us as
+well. Like, we're able to measure that. And then there's a broader set of development tasks. So this
+will be, you know, debugging, operational duties, code review, those types of things. That builds up
+to roughly three or four hours of the day, and then the rest is spent on planning, coordinating with
+other teams, reading, writing documentation, those types of things. So it is easy to, like, I think,
+overly focus on this, like, one hour a day and trying to make that as quickly as possible, which,
+like, the tools that we've been talking about today has been amazing at. But we're really even if
+we're 10 x ing that share of the work that engineers do to the previous points of just, like,
+finding new congestion points, we're we won't actually make Spotify a ton faster by just optimizing
+that. So we've been focusing on, like, what are other use cases outside of that one hour where we
+can apply AI early on. And it used to be that, like, if you would have if we would have talked a few
+months ago, you would have heard me talk about, like, the various strategies that we had for that
+of, like, how are we bringing AI into being on call or managing incidents or whatever it might be.
+And that is still very much something that we think about and have strategies for, but also where
+we've been out innovated by our employees. So there are now all of those tools available internally.
+People have, like, multiple tools that has that's been built for how to, for example, help people
+managing incidents. And we've taken one of those and made them, like, the sort of canonical tool
+that we now provide to the company, but other people are, like, still experimenting with other ways
+of doing that, which is amazing. So I think, like, we're seeing this spread out. So, like, what I
+imagine, again, if you would've we would've talked a few months ago, what I would imagine was, like,
+we had this, like, the coding cost at one hour a day, and then we would gradually spread the word
+the use of agents out from that because that was really what they were optimized for. I think what
+we're seeing in practice is that they're now being used for everything people do during their full
+workdays. Like, everyone will use them for I mean, I'm I use quote code to write documents today or,
+like, prepare for hiring interviews or whatever it might be. Like, it is it is something where it's
+become these tools have become ever present in every task that we do as as not just engineers, but
+more broadly as well. Yeah. And speaking as a technical manager, I was very pleased the first time
+that I realized that I could use things like Copilot or Cloud or whatever to take the fuzzy sketch
+of these are the things that I need to do and then stick them into the issue template so I could
+actually write comprehensive and useful issues for being able to assign to team members. Yeah. Yeah.
+It is it is amazing. And I think, again, like, the the amount of experimentation innovation that
+we're seeing from people just being able to take these tools, which, again, like, were built for a
+kind of different purpose, but being able to reuse them for every problem they're faced with has
+been amazing to see and continues being amazing to see. And one of the aspects of these agents being
+a double edged sword is that while they are immensely powerful and can allow people to move much
+faster, they can also amplify problems where if you have somebody who doesn't properly understand
+the problem domain or doesn't properly understand the code base, they can guide the agent in a
+direction that is counterproductive. And then the other aspect of challenge in terms of the
+deployment of agentic capabilities is the cost factor of how do you make sure that you don't
+accidentally end up spending the entire company's budget on a question and answer session that
+ultimately does not provide any actual return on investment? Yeah. So the the first part, I think
+honestly, I think the first part of that is is is the most important, and that is really to create a
+culture and and practices where you have that human judgment in the loop so you don't blindly trust
+whatever is coming out of of the agent. One good and recent example on that that we've that we've
+done is we have an internal tool for for essentially essentially being able to prompt our data. So I
+mentioned before that we have, for example, data on the the engineer the developer process, and
+there's a bunch of datasets for that. That can be pretty daunting if you're not super familiar with
+SQL or our internal datasets and whatnot. So one of the ways that we're trying to bring that
+capability to more folks within Spotify is is to allow you to prompt for that instead of prompt the
+type of problem you want to solve, and that tool will generate the SQL for you to try to answer that
+question. That is great, but it's also pretty prone to introducing errors into those SQL queries
+that will be very hard for a less experienced user to detect. So that's a tool where we have spent a
+ton of work to make sure that we have the right validation in place of those queries before we show
+them to the user. One of the this could otherwise lead to, you know, us taking decisions on
+incorrect data and and things like that. So we really want to be careful about that. So that's one
+of the cases where we've spent a lot of effort to make sure that we do the validation before we,
+again, like, show it back to the user. And we're trying to do the same in all of these tools. And
+like I said, we're trying to make sure that we have places within the processes where we make sure
+where we still have that human in the loop remaining. I'm sure that will change long term, and there
+will be more of these cases where quality of the output of the agents are of high quality enough
+that we can remove some of those. But at the moment, like, we're still very aware of that and and
+and trying to be very careful about. On the cost side of things, we've certainly seen cases where
+things goes a little bit haywire. But generally speaking, in most cases, the ROI of using these
+tools have been very strong for us. So we're not trying to constrain people too much by putting cost
+guardrails in their face. We do have those guardrails in place behind the scene to make sure that,
+yeah, you know, what you said, like, in terms of some single use case going completely haywire, but
+we've seen very few cases of that in practice. Another interesting aspect of Spotify as an
+organization and the incorporation of these AI and ML capabilities in the engineering life cycle is
+that as an organization, you've been investing very heavily in various ML features and capabilities
+in terms of your core product. And I'm wondering how some of the expertise and lessons learned in
+the process process of developing that operational capacity has fed into some of your overall
+adoption process for these AI utilities broadly in the organization, in engineering and otherwise,
+and also some of the ways that the lessons learned through that experimentation within the
+engineering team and across the different organizational areas has fed back into some of either the
+operational excellence of the ML features that you provide as well as some of the maybe more
+generative capabilities that are being introduced in the product? Yeah. I it's gone both ways just
+like you say. So like like I said early on, like, we have more than a decade of experience of
+building machine learning products at scale, and there's been quite a few of those things that we've
+been able to bring over to to our to the productivity side of things. So one such case is, for
+example, how we do evals of LLM based products. So to to take a very concrete example, we have this
+internal chat agent called Aika, and it's it's all about providing our internal Spotify knowledge to
+our employees. And very much based on how we had experience working with our traditional machine
+learning consumer facing products, we reused a lot of that eval practices and infrastructure for how
+to build that chat agent. And the same is true for many other things like how we run experiments and
+a b testing for internal tools is very we're reusing the same tools that we use for our consumer
+facing products, for example. I think it also, to be honest, allowed us to not do some things. So
+one decision that we were faced with, I don't know, two years ago maybe was, do we need to train our
+own model on our code or will the rest of the world sort of catch up and be able to do that well
+enough without us having to make that investment? And I think that was one of the case where we had
+a fair amount of experience from training both our own traditional machine learning model models and
+transformer based models where we could better predict the future, and we actually avoided making
+that investment. And I know some of our friends in the industry went down that journey of trying to
+do that and then had to back out of it because the tools we've been talking about today just became
+better than what they had internally. And then thinking about it in the other direction. So you
+mentioned this, but one of the one of the, I think, interesting examples there has been we've now
+started talking externally about how we're moving towards the future with more control for the user
+over the recommendations that you get. And that has been very much informed by, like, how we're able
+to prompt these types of tools that we're using every day now. And then imagining, like, what would
+that look like in the Spotify consumer experience. And you can imagine that many of those things
+that you're able to do with, let's say, Claude Coat today would be as applicable to be able to do
+within the Spotify experience. So we already like I said, we already started shipping some of those
+products, and you'll see us talk more about this in the future. Yeah. I know that as a user of
+Spotify, I was pretty happy when I saw the natural language prompt to generate a playlist and being
+able to experiment with that. And I think your point of being able to inform the type of
+recommendations that you want versus it just being a black box that I as a user get whatever comes
+out of it is an interesting way of exposing more of these AI capabilities beyond the typical you
+know, the the the trope that was first introduced when ChatGPT came on the scenes of, hey. Here's a
+chat box where you can talk to whatever, but it's not actually useful as an end user. It's just a
+gimmick. Yeah. We think there's lots and lots of opportunity in that space, so we're very excited
+about what that will look like for for Spotify as well. And as you have been introducing these
+capabilities, investing in them, building some core tooling around that overall life cycle? What are
+some of the most interesting or innovative or unexpected ways that you've seen your team bringing
+these agentic and AI capabilities to bear? Yeah. There's been many, many, many ways. We talked about
+a few before, like how people are using these tools now to build strategies. Like, one of the things
+that I if you would ask me a year ago that I would imagine being, like, one of the things where it
+would be hardest to apply these types of tools, but turns out that they're incredibly good at, like,
+you know, spitballing and working with you and brainstorming back and forth. And then in the end,
+you have a a product strategy that is as strong or stronger than we could produce before, for
+example. We talked about incident management and how we're able to apply it there. And in our our
+designers has been incredibly what's the word I'm looking for? Creative in terms of, like, how
+they're able to use we have a bunch of designers who spent time to, like, figure out how to use
+cursor and ended up building these tools for other designers for, like, how to prototype things or
+how to one very concrete example. If you go into a Spotify app and you go into our DJ feature, which
+is another one of these, like, more agentic features. That is like this visualization, and it's
+actually, like, driven by a bunch of parameters on on how that behaves. And we actually had a
+designer again, like, vibe coding something with cursor where you can go in and, like, play with
+those parameters and make new visualizations based on that. So we've seen ton of those examples,
+including, like, people using these tools for making their taxes or whatever problems they're faced
+with. So people are innovative around how to use these tools. And in your own journey of
+understanding the use cases and capabilities and best practices around how to integrate these
+agentic workflows into your engineering organization, what are some of the most interesting or
+unexpected or challenging lessons that you learned in the process? Yeah. There's been a lot of lot
+around what we've been covering before in terms of having better verification both in our in our
+code basis in terms of testing and so on, but also in that agentic loop. So we mentioned before this
+tool that we call honk, which is this agent that we use to manage our entire manage changes to our
+entire code base. And one of the real breakthroughs we had in developing honk was really when we
+added in LLM as a judge loop into that. So you can imagine, like, if you would be using Cloud Code
+to make some changes, but but but before those changes are shown to you as users, there's there's
+another sort of independent LLM that takes a look at those and takes a look at the prompt you were
+using and saying, like, is this a good change or not? So you're like, you have that review loop
+always being built in, and that dramatically improved the performance of of that tool. When you're
+using Claude, like, interactively, that's not a big problem because if Claude does does something
+wonky, you will just tell it, like, change this thing. Like, I do that a 100 times every day. But
+when you're authoring changes that is gonna be sent out, so that's pull request to, like, a thousand
+different repositories, You don't want people to then have to iterate on those in 90% of those
+repositories. You want to catch those most much earlier. So having 80 or 90% good output is just not
+enough in that scenario. You really need to get to that, like, 99% plus. And that was one of those
+cases where we were able to do that and really, like, make that jump in in quality that was
+transformational for that particular tool for us. And I think to one of the key things in the
+adoption of these agentic capabilities that we've touched on throughout is the challenge of a lot of
+these tools being very much designed around a single user interacting with it directly. So it's more
+of the single player mode, but it has broader ramifications at the team and organization level. And
+I'm just wondering what are some of the key ways that you have found effective in terms of being
+able to break out of that siloed mode of interacting with these utilities and turn it into more of a
+collaborative experience and making sure that some of those useful patterns get captured without
+necessarily the engineer having to click the button to say, yes. This is the right thing or just
+maybe figuring out what are some of those implicit signals around, oh, this is a useful prompting
+style. This one let us down a dead end, things like that. Yeah. I'm gonna say that I think we're
+still very early in that journey, both as an industry and and and at Spotify. Today, like, the
+patterns that we're able to use for that are I I find, like, still pretty manual in many ways, so
+making sure that we update the skills or, like, what MD calls files or whatever that we I would love
+to be in a in a place in the in the future where just like you said, like, these tools are much more
+collaborative. So if you and I are are working in in one of these agents, like, the things that you
+do and, like, the the agent can learn from that and then reuse that when I work on the same code
+base, for example, so that we build out that build up that collective memory in the agent without
+that having to be in this very explicit way that we'd what that we do today. I very much imagine
+that this is something that we'll see coming in the tools in the in the in the near term future. I'm
+very excited about that because I think that's gonna make often often, we talk about these agents as
+being like another human in the team, and that's not what they feel like today to me. Like, they're
+incredibly powerful. Don't get me wrong, but they don't get that collective learning unless we
+encode that into into skills or whatever. So I that seems to me like one of the things that will be
+coming. I know that there's projects out there where people where people are experimenting with with
+exactly those things today, and and I imagine a lot of that will be coming in the near term future.
+I think it will be pretty powerful. And when you're working with your engineering team and you are
+tackling a given problem, what are the situations where you decide that a human is the better
+operator and you issue agentic utilities entirely? I don't know if there's gonna be a lot of cases
+where we completely not use agents. There's definitely gonna continue being cases where the human
+will be in the loop and pretty closely so. Again, like I mentioned, code reviews before, which we
+think is are those one of those important things. Other things will be, like, working with working
+with our production data and and things like that, but that is not something that, like much of that
+has been automated since many years ago prior to to AI, so it's not a very frequent task that we do.
+So I I don't think there's gonna be a ton of cases where we don't use agents at all. I think there's
+gonna be cases where we still want the human to be in the loop. And And then there's gonna be cases
+that I think increasingly over time, we feel more and more comfortable, more or less fully
+outsourcing to to agents. And as you continue to build the Spotify product, work with your
+engineers, grow your capabilities around these agentic utilities, and make investments in leveling
+up the broad capacity for bringing AI to bear on your engineering challenges, what are some of the
+things you have planned for the near to medium term or any particular projects that you're excited
+to explore? So I I really want as I'm as we we were talking about before, I want to broaden the set
+of use cases where we get that, like, deep genetic impact that we have for coding today. I would
+love to for that to be deeply integrated into how we manage incidents because, in particular, I
+think that's gonna lower the time to recovery for for those incidents, which is gonna be important
+from user experience point of view. I think it's like I said before, it's gonna integrate a lot of
+the work that we do within our product development process. So, like, bring together more of our
+disciplines, working more closely together. So as a PM, I can visualize more clearly through
+prototyping what I what I want us to build, and then as developer, I can pick up from there. Like,
+those types of things, I'm I'm pretty excited about. And really to zoom out and look at that full
+product development workflow rather than, like, only be looking at the coding tasks where we've been
+primarily focused historically here. So I'm super excited about that world. And, of course, there
+are a million things we we need to get right on the foundational layer that we talked about before,
+and a lot of that we're working on at the moment. Are there any other aspects of your work that
+you're doing in the investment for your engineering teams and sharing best practices and investing
+in platform capabilities for agentic coding that we didn't discuss yet that you'd like to cover
+before we close out the show? I don't think so. This was a broad and and fun discussion. We went
+into many, many different areas. There are surely other things that we're doing, but I think we
+covered most of the most of the ground on the interesting stuff we've been focused on. Well, anybody
+who wants to get in touch with you and follow along with the work that you're doing, I'll have you
+add your preferred contact information to the show notes. And as the final question, I'd like to get
+your perspective on what you see as being the biggest gaps in the tooling or technology or human
+training that's available for AI systems today? That's a big question. But so so but continuing
+within the scope that we've been talking about here today, like, I would love to see these tools
+getting broader into more of the that full, like, development life cycle and product life cycle.
+Even though we're able to use them for many of those purposes today, I think there are still a fair
+amount of gaps that would make them much more impact within companies like Spotify going forward. So
+and I a 100% think 100% believe that that's gonna be happening. I would just love to have that today
+rather than tomorrow. Alright. Well, thank you very much for taking the time today to join me and
+sharing the work that you're doing at Spotify to make sure that everybody is able to take advantage
+of these new and exciting capabilities and all of the investment that you're putting into that and
+some of the lessons learned. It's definitely a very interesting problem space that all of us are
+trying to come to grips with, so I appreciate the time and effort you're putting into that. And I
+hope you enjoy the rest of your day. Thanks. Thanks for having me. This was great fun. Thank you for
+listening. Don't forget to check out our other shows. The data engineering podcast covers the latest
+on modern data management, and podcast dot in it covers the Python language, its community, and the
+innovative ways it is being Visit the site to subscribe to the show, sign up for the mailing list,
+and read the show notes. And if you've learned something or tried out a project from the show, then
+tell us about it. Email hosts@aiengineeringpodcast.com with your story.

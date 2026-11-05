@@ -1,0 +1,618 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Expert Insights On Retrieval Augmented Generation And How To Build It
+DATE: 2024-07-28
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/retrieval-augmented-generation-implementation-episode-34
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/6385754419563965321c5152b9-c566-4436-97d8-b27753298092v1.mp3
+DURATION_SECONDS: 3801
+TRANSCRIBED_AT: 2026-09-17T03:33:29Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macy, and today, I'm interviewing Matt
+Zieler, founder and CEO of Clarify, about the technical aspects of retrieval augmented generation,
+including the architectural requirements, edge cases, and evolutionary characteristics. So, Matt,
+can you start by introducing yourself? Hey. Yeah. Thanks for having me. So I'm Matt Zilar, founder
+and CEO of Clarify. I founded Clarify about 10 years ago at this point, one of the first true deep
+learning AI companies. And even before starting Clarify, I was diving deep into neural networks and
+deep learning all the way back at underground at University of Toronto. Very fortunate to work with
+Jeff Hinton there, who people consider the godfather of AI. And that really was a little bit of luck
+stumbling across AI there. But once I did come across it, I was really hooked and so decided to do
+my PhD, which brought me to New York University and got to work with people like Rob Fergus and Yan
+Lakan, more pioneers in this field. So that was kind of the the background and learning I was able
+to do before starting Clarify and, lots of lessons learned over the years running the company and
+and being a a pioneer in this space. You mentioned that you kind of fell into machine learning and
+AI. You've been in it for a while now. Obviously, the thing that has sucked all of the air out of
+the room when anybody says AI is generative models, in particular, large language models. And I'm
+wondering, given your history in the space and the fact that you've been working in it for a while,
+what your perspective is on the utility and the lasting power of large language models and
+generative AI and the role that so called traditional AI or more statistical models plays in this
+current landscape? Yeah. Absolutely. At the end of the day, all of these models for for the last
+kind of 15 years that have been showing promise are neural networks, including generative or what
+people are now calling generative AI. It's all neural network based, which is kind of algorithms
+meant to simulate how your brain works. And even back at that, University of Toronto days, I was
+doing generative models, for motion capture data. It was, an interesting project about understanding
+pigeons, walking, and, filling in missing motion capture recordings. And so it was actually
+generating data just like these large language models generate text, it was generating motion
+capture. And so this is not new technology. I think what has really changed over the last, you know,
+15 years is the size of the models, the amount of data they're trained on, and both of those things
+require a significant increase in compute. And so that's why all of a sudden it's at the the
+capabilities are are understanding enough about the world that they're doing a lot of interesting
+properties. And so I think it's opening we're still in the early days of, you know, exploring those,
+those possibilities or these models, and there's new ones every day. And, I think it's gonna be this
+way for for many years to come. Continue to grow with on training size, algorithm size, and, and
+compute. We'll just keep unlocking more and more capability. With the rise in popularity and at
+least potential application, if not actual real world application for these large language models.
+One of the topic areas that has gained a lot of interest is the idea of retrieval augmented
+generation or being able to build your own context corpus for the model to feed on to be able to
+actually complete the task that you want it to complete versus the general task that it was
+originally trained for. And I'm wondering if you can just start by giving your definition of
+retrieval augmented generation and some of the requirements that it brings to the architecture.
+Yeah. Absolutely. So I think most people are familiar with how LLMs are used today. You have a
+context window, which you pass in input tokens, and then you ask the model to continue generating
+output tokens, and all that has to fit in the context window. And the generations occur based on
+whatever went into the training of those large language models. And so there's a lot of problems
+with that. Like, it gets stale, whenever you last trained as all the information it has. And so, and
+it can hallucinate a lot of stuff. The it's not there's not that much control in how it generates,
+what it's gonna generate. And so, retrieval augmented generation came around a few years ago to help
+address some of those problems of giving it more dynamic access to information and improving
+hallucinations. And retrieval augmented generation is kind of explicit in how it actually works. So
+it first starts with retrieving out of a large corpus of information, more fine grained, information
+that it can stuff into that context window so that the LLM has more facts that it can use in
+addition to the prompt that is provided in order to augment its generation. So that's how you get
+the word retrieval augmented generation. So it first takes your input prompt queries, usually a
+vector database to retrieve most similar chunks of documents that can help the LLM augment its
+generation. As you mentioned, vector databases have taken off alongside the growth of retrieval
+augmented generation. Another thing that is maybe worth touching on is that at the beginning of this
+upswing in popularity of these AI models was the idea of prompt engineering, which pretty rapidly
+gave way to retrieval augmented generation. And I'm wondering what you see as the overlap of prompt
+engineering and retrieval augmented generation, and what are the cases where prompt engineering is
+actually still a viable utility in the application of these AI models? Yeah. There's kind of this,
+spectrum of prompt engineering is the quickest, easiest thing you can try first. RAG is the second
+one, retrieval augmented generation. The third being fine tuning models. So taking these, you know,
+popular open source models, customizing them on your data. And then 4th is kinda training new models
+from scratch. And the the spectrum kinda gets into a question of how much compute and data you have
+access to. You if you don't have much data, you can't really pretrain a model at all. Fine tuning is
+unlikely to work very well. You can prompt engineer an existing model, but it's only gonna get you
+as far as whatever that model understands. And so RAG becomes a really good choice where you can
+have limited sets, or small dataset sizes, but still customize the outputs of the model to be more
+specific for your particular task and your dataset. And that helps it, you know, kinda ground these
+models or I've heard the the term tame these models. I like that because if you don't tame them,
+they can go off the rails and generate a lot of stuff that you wouldn't wanna put in front of your
+customers. And it and it can also help these models kind of adapt to new things that have never been
+seen or different domains of data that they've never seen. So for example, they maybe weren't
+trained on legal documents or finance documents or, you know, classified documents. We do a lot of
+work with the government and, intelligence community. And so there's a lot of things that simply
+these models have never been trained to see. And so RAG can help you, adapt to those, whereas prompt
+engineering would help in those scenarios. And then if you really want to, you know, get the models
+to perform better and continue that trend of reducing hallucination, customizing on your data,
+that's when getting it to fine tuning. And and at the biggest scale, training your own specific
+model can come into play. But for most part, you can get it away with prompt engineering and and
+fine tuning for a lot of applications. Circling back on the vector database aspect of it, there's
+definitely utility in having the data that you're trying to stuff into your context already
+formatted in the same data structure or the same language that the model understands. But I'm
+wondering what you see as vector databases being a requirement retrieval augmented generation versus
+just an optimization of the functionality? Yeah. It's a good question. The in today's most popular
+rag systems, they are kind of a core component to it, but I have this feeling that it's kind of
+stitching together a bunch of components very loosely, and there's gonna be improvements to that in
+the future. So stitching on a vector database to stuff text into the context, helps. And there's
+even papers. I was just reading one this week about kinda provability that it does help with
+hallucinations and and grounding these models. There's some theorems around that, which is exciting.
+So these things do the the rag approach does work, but it just still feels like it's a bunch of, you
+know, independent components, bolted on to each other. I think what we're gonna see is more end to
+end training, and we're already starting to see kind of that in the research community. And once you
+have that, the vector database is just one type of thing that you can query information from. You're
+seeing a lot of other usage of these large language models that just, you know, generally can query
+information from tools. It doesn't have to be a vector database. It could be an API to get the
+weather. It could be, you know, your Salesforce account to get your CRM data. It could be a lot of
+different integrations. And so I think the vector database is just one simple one that people can
+get started started with. But long term, I think we're gonna see a lot more, flexibility and a lot
+more kinda unified understanding, not less kinda stitching things together. Digging further into
+that collection of tools that are being stitched together, can you give an overview of what you see
+as the typical architecture and the technical components for being able to actually bring RAG to
+bear and some of the operational considerations around that? Yeah. Absolutely. And this is kinda
+where Clarify fits in. I realized I didn't really give an overview of what Clarify does, but, we are
+that AI workflow orchestration platform. So we have all the tools in one place to get you from
+prototype to production as quickly as possible. We often talk about it as being AI in 5 minutes.
+Because literally with, workflows like RAG, you can actually be set up and running in about 4 or 5
+lines of code using our SDKs. And we have vector databases built in. We have all the embedding
+models you need to retrieve and index your data. Popular large language models, all the third party
+ones like OpenAI, Anthropic, Google, etcetera, and all the open source ones like Mistral, LAMA 3.
+And within hours of new ones being announced, we're importing them into our platform so that they're
+ready to go for your use cases. And stitching together, you know, a RAG has a lot of these
+components. You have to think about the, vector database, how you want to, run that at production
+scale. How do you want to actually like index your, your data? There's like the data pipelines of
+chunking up large documents like PDFs or or large text files into small chunks before going into the
+embedding model. Once you get embeddings out of those, you have to decide, do you want to keep them
+in full precision? Do you want to quantize those embeddings, which is popular for saving memory in
+your factory database? How do you wanna index the embeddings in your database? There's a lot of
+configurations there. And then once you have that kind of indexing sorted out, you have to think
+through how do you actually reindex when you have an one more document to add or or, maybe you want
+to, change the embedding model, like a new one comes out on a regular basis. How do you think
+through the reindexing process? So there's a whole, you know, can of worms on doing production
+quality on the embedding and and vector DB side, and that's even before you start doing RAG. Once
+you start doing RAG, you have to think about now the LLM or LMM if you wanna go into multimodal type
+of models. You have to make a choice on which one's suitable from a size perspective, a cost
+perspective, latency perspective, and accuracy perspective. There's lots of dimensions to choosing
+the the appropriate large model for your use case, and and then you have to test it out. Typically,
+the there's evaluations for the large language models, and there's less evaluations for this end to
+end process of having embedding vectors to retrieve, having, the right indexing for that, having the
+right LM, etcetera. And then that's kinda getting you to an MVP. Now when you think about running in
+production, you have to think about monitoring, tracing. How do you collect feedback so that system
+gets better? The best data for any kinda AI system is feedback from real world usage. And so do you
+have pipelines to collect that and incorporate that into fine tuning your models, fine tuning your
+prompts, etcetera? And then when you think about kinda enterprise grade, you have to think about
+what permissions does an employee have to access the data that goes into feeding this rag pipeline?
+What permissions do they have to the models? How do you scale up replicas of the vector database,
+the embedders, the LLMs? How do you do failover? How do you upgrade when, you know, whenever GPT 5
+comes out or Claude 4 or Gemini 2, how do you actually or lam a 4, like, there's always gonna be new
+models. How do you think about the upgrade process? It becomes really, really complicated. Very easy
+to get started with a proof of concept for reg, but very difficult to run it in production. And
+having a platform like Clarify that has all these components and these workflows of feedback, access
+control, auto scaling, etcetera, helps people go from that prototype phase to production. The other
+aspect of operating at scale is the question of what are the edge cases, what are the failure modes,
+and in particular, how do you fail gracefully where maybe your vector database goes down, but you
+don't want your AI product to just completely fail. Maybe you just wanna be able to let it operate
+in a slightly degraded capacity. What does that look like? And I'm curious how you are seeing people
+address those aspects of the failure modes, recovery modes, and how to fail gracefully. Yeah. I
+mean, that's the big problem with taking the approach of stitching together a bunch of different
+vendors, like a a vendor for embeddings, a vendor for vector database, a vendor for LLMs, a vendor
+for monitoring. Like, if any one of those vendors goes down or their API just changes, like maybe
+they made a breaking change, you missed, an announcement on it, your system falls apart. And that
+makes your, your experience for your customers so much less reliable. And and then the other
+dimension you mentioned is kinda, other faults that can happen in production or just the the models
+are still even with reg and and helping ground them, you can run into issues where they still
+hallucinate. And how do you get feedback quickly from your users, to catch those cases and tune
+things. Sometimes it may be an automated tuning, like active learning pipelines. But other times, it
+might just be thinking about, you know, changing your prompts, changing the context, parameters, or
+what's indexed into the database, to help improve the experience for your users, over time. So
+getting that feedback loop is is really, really important to to help catch these edge cases because
+it's not just something you would see on a typical, like, monitoring dashboard or tracing dashboard.
+You you need the actual qualitative feedback as well. One of the terms that keeps coming up as we're
+talking about this is the idea of the context window, and each of these models has different sizes
+of context windows or the number of tokens that they can accept as context. We're talking about
+using these vector embeddings as additions to the context for the request, and I'm wondering how
+that sizing of the context window influences the ways that you think about the embedding generation,
+what size the chunking should be, how many records to retrieve for augmenting that generation
+request, and some of the ways that that context window acts as a limiting factor and a forcing
+function to the way that you design the rest of your overall pipelines and the data flows? Yeah.
+Yeah. It's a good question. Like, the and this is something that really surprises me in the last,
+you know, kinda 18 to whatever we're at now, 20 months since Chat GPT came out. How many people talk
+about the different models that are available and details about them, like context window size. And
+these are like I've had conversations with people that are not technical at all, but they're they
+have this, in their vocabulary now. It's a it's a crazy moment in time. And I don't know if that
+will will stay true forever, but it is really interesting. The the context window is important for
+Rag because the more context you can stuff with all the retrieved documents, the more facts and more
+grounding that it can do. So there's some models like Gemini. It's, like a million or 2,000,000, I
+forget what it is, tokens that you can fit in. There's even new algorithms that are not just
+transformer based, but variants of transformers that kinda have infinite windows. They get away from
+having this this attention mechanism that has to look at every token every time to something that's
+more more like recurrent networks or convolutional networks, which kinda just continually process as
+you go. And that opens up really long context windows and doing that processing efficiently. So I
+think the trend is gonna be that these context windows continue to to grow. But when it is limited,
+one component I I might have missed in, describing all the different possible components for RAG is
+a re ranker, which can come in really useful when the context window is small. So it kinda comes
+into play when the query goes and retrieves documents from a vector store. It can rerank the
+shortlist of documents to get the final subset that is stuffed into the context window. And so that
+re ranker can be another AI model, and it's an additional step on top of the embedding model and on
+top of the, large language model that can help improve the accuracy of the the retrieval process.
+And that helps kinda when you are on a small context window to make sure that whatever you're
+stuffing in there is the best possible, chunks of documents. And another part of your question was
+that chunking process, and this is, I don't know if there I haven't seen any good, like, you know,
+solution or perfect solution for this. It's kinda a lot of heuristics of how large you wanna chunk
+your documents, kinda relates to how good your embedding model is at understanding the whole chunk.
+Some embedding models are trained kind of at the word level, at the sentence level, at the, the
+paragraph level and at the document level. So depending on which embedding model you wanna, use,
+it'll impact your chunk size. And then it also factors into the LLM's context window size. If you
+have really big chunk size but a smaller context window, you might only get one chunk. And so you
+better get the right chunk in that scenario. Otherwise, it's not gonna it it may actually hurt your
+generation performance. So there's lots of kinda parameters in that decision. I haven't seen, like,
+a a perfect solution to that, but that that could be an interesting area for researchers to come up
+with a a more audit made way of deciding on these chunks. On that context of the embeddings too, I'm
+wondering if there's any utility in applying dimensionality reduction to be able to reduce the size
+or the the amount of space in that context window that a single document is taking up without
+necessarily changing the chunking pattern or, like, how big of a chunk of the document you're
+retrieving? So, yeah, I think so so just to clarify one important part for the listeners. The
+embeddings aren't used directly in the in a typical RAG system. It's not the embeddings that are put
+into the context window. It's the text itself. There are some approaches that kinda factor in
+embeddings as as tokens, but, typically, you just retrieve the documents using an embedder and a
+vector database to get the text, and then you stuff the text into the context window. I have seen
+some approaches that take that text and apply things like summarization on it so that it's reducing
+the amount of words. Because typically, any language model, whether it's these large models or, you
+know, the first transformers like BERT style models, etcetera, that are still incredibly well suited
+for most use cases, they don't care about the stop words, you know, the of, you know, throwing all
+that stuff out is gonna save you tokens in your context window and probably not affect the, the
+generation that much. It'll have some educations with that because obviously there's important words
+like not that could change completely the, the meaning of a sentence. So you have to be careful in
+that, but summarizes can are are good enough that they can keep the important parts and, and get the
+meaning, and that can save you on the, the chunk size fitting into the context window. The other
+piece of chunk size and to your point of these models that have either much larger or potentially
+unlimited context windows that brings up the question of what impacts does it have on the overall
+latency of the experience where I can put the entirety of War and Peace into my talk context window,
+but now maybe it's gonna take an hour for the model to actually give me a response. And I'm
+wondering how that affects the balance and the ways that you think about how large of a document to
+put into the request given the fact that it may impact the end user experience. Yeah. Yeah. That's
+where these newer style attention mechanisms become a, really important. There's a lot of work in
+this area because everybody knows that as the context window increases, the speed, the the latency
+increases. And so these attention mechanisms that get away from looking at every token in the
+context window and comparing it to every other token, which is kind of an n squared, operation, and
+there's there's other overhead on top of that. These, these these new attention know, know, even
+32,000 context window or a 128,000, like, the latency gets significantly slower. So that's why you
+see most context windows are, like, 4000, 8000 typically, especially for these small models.
+Otherwise, the, the attention just, makes the models not really useful at that point. Now getting
+into the practical elements of I have an application, I want to use a large language model or some
+other modality of generative model. I'm going to use retrieval augmented generation. So now the
+first step is I have to generate those embeddings to put into my vector database. You mentioned the
+consideration around which embedding model to use, the fact that they're constantly changing, what
+are the strategies for chunking, and how often to reindex or how to append to the indexes. I'm
+wondering if you can talk through some of the ways that somebody needs to think through that
+planning and design step of selecting the embedding model, selecting the chunk sizes, etcetera.
+Yeah. So, I mean, it all starts with your use case and the data that you have available for that use
+case. And then everything should fall kinda backwards from there. Because if you're dealing with,
+you know, inherently small snippets of text, like emails are are pretty small compared to PDFs or,
+you know, 10 k financial reports, which are really large PDFs. There's it it all depends on your
+your data. And that will dictate a lot of how you decide to chunk it, how you which embedding models
+you want to use, which large language models you wanna use, maybe even the vector database. But that
+typically won't change depending on the on the type of data or the use case. There'll be other
+considerations when choosing your vector DB. For the embedding vector, there's some, kinda open
+benchmarks, like the massive text embedding benchmark, MTEB, that has become popular. And you can
+see typically these these types of things on leaderboards on the Internet if you just search for,
+you know, embedding benchmark. And that gives you a good overview for some general purpose use
+cases, and those will cover things like emails, chat experiences, documentation, that kind of stuff.
+If you get into a domain that, you know, these models likely have not seen before. I always like to
+talk about, you know, these classified documents because clearly, they wouldn't have been trained on
+that data. So in those scenarios, you may have to run your own evaluation benchmarks on your own
+dataset. And we provide tools that clarify to help you evaluate models very easily, and, actually,
+you can create your own leaderboards. So using tools like that is really valuable because, you know,
+the general purpose benchmarks are good to to understand which models you should probably evaluate,
+but then actually evaluating them on your ground truth datasets becomes really, really important. So
+then you can so that'll give you kinda your embedding model from that process. And then you have to
+think about kinda, another factor actually in the in the embedding model choice is gonna be your
+compute. Do you have GPUs available that are big enough for that model? How are you gonna auto scale
+that model? Do you have a service that's already doing that, etcetera? That becomes an important
+choice. Another consideration for both the embedding and the the compute is also true about the
+large language models, both for embeddings and for the large language models is is understanding, is
+your data all in one language as well? You know, English is trained into most of these models, but,
+other languages, you'll get get mixed results depending on which model you choose. We're seeing a
+trend obviously that these models are training on the whole Internet, and that includes lots of
+languages. So, multilanguage support is becoming more of a standard, but the way each model treats
+different languages is not the same. So if multilanguage support is important for your use case,
+then you have to factor in, evaluating in different languages as well, beyond just, English or your
+or your native language. And then, yeah, the chunking stuff we talked about, thinking through how do
+you actually parse documents of different types, There's different tools to help you, you know,
+handle PDFs, convert them into text, and then, the embedding model will take that text and convert
+it into embeddings. There's all the chunk size considerations, etcetera, based on your context
+window and and, again, your your use case. Ultimately, all these decisions, you can use kinda
+heuristics and, like we talked about. But the most important thing is evaluating the end to end
+system once you're done. Once you build your your RAG system, is it actually improving the
+generation quality and having evaluation metrics for that, especially as you iterate on these
+things, is really important so that you can compare for each of your settings of chunk size, of
+embedding model, of LLM model, of do I go multi language or not, etcetera. You wanna see
+quantitative results for your given use case. And so being able to evaluate the end to end solution,
+I think, is the most important thing to think through how you're gonna do that. And we can provide
+some tools to help our our customers do that, which is really exciting because it gets complicated
+fast as you as you heard us talk about all the different components you need to think through when
+thinking about solutions like RAG. The majority of our conversation and the majority of the
+conversation across the ecosystem right now is focused on text and natural language, but there has
+also been an increase in the desire and application of multimodal models or models of different
+modalities than just text. And I'm wondering how that impacts the ways that you even can do chunking
+where it doesn't necessarily make sense to chunk an image because the image is kind of the entirety
+of the thing that you're asking for, and maybe then you have to go to downscaling the image to
+reduce the size and quality. Or if you're dealing with audio or video data, how does that influence
+the applicability of RAG and the ways that you think about that context retrieval? Yeah. Absolutely.
+I think the trend is definitely going multimodal. And I I think in the next kinda year or 2, it'll
+be rare that we have a unimodal model. I think every model's gonna end up being multimodal just
+because the more different types of data that these models can learn from, the smarter they can get.
+And when you think about it, it's kinda how humans learn. Like, I have, a young child, and just
+seeing him learn every single day is is really interesting because he can't speak yet. He
+understands some words, but, he can see, he can hear, he can feel, like, it's all different
+modalities of data that that he's clearly learning from. And my older daughter has has gone through
+that stage, and she's still learning in in a variety of different ways from multiple different, data
+types. And so it's very obvious that these models are only gonna get smarter because they learn from
+multiple modalities. And how that affects RAG is that you gotta think about the the chunking as you
+mentioned. Typically, the way these transformers work beyond text is that, everything gets
+tokenized. So text is tokenized, by taking a few characters and converting it into a token. In
+images, you take patches of pixels and convert them into tokens. Similar for audio, you chunk up the
+audio. And so all of it becomes tokens, and then they're just fed into this giant transformer model
+that can understand the context and attention amongst all these this kind of soup of of different
+modalities of tokens. That's what allows different multimodal models to take in not just one image
+and text, but it could be just a list of multiple different data types, like and and you can do cool
+use cases like what's going on between the what what what are the differences between these two
+images or, you know, give me an audio clip that, like, represents this picture. You know, you can do
+really cool, multimodal stuff, with on the generation side and and the the q and a side. And, and
+that has to factor into all the different components within the reg system, because you have to
+embed all the different data types ideally into one common embedding space so that when you get a
+query, you can retrieve in all the different types of data that are relevant, and then they get
+tokenized and fed into the the large multimodal model. And then the same process that we walked
+through with text only reg of evaluating the end to end system is really crucial. We're starting to
+see more and more benchmarks for multimodal, but I think it's it's definitely, like, a year and a
+half or so behind the the text, large language model benchmarks. And so I think that's gonna be a
+trend we'll all benefit from and see is just much more, high quality datasets to give you the
+general purpose kind of evaluation benchmarks and then more tools to help you evaluate multimodal
+flows like reg on your particular, datasets. So we have talked through the embedding piece, thinking
+about how to strategize that, the considerations that go into it. The next layer of RAG is the
+vector database as we've already discussed. For the purposes of retrieval augmented generation, what
+are the features of a vector store that are most critical and some of the evaluation criteria for
+figuring out which one of these vector databases versus vector indexes, etcetera, you actually want
+to include in your architecture. Yeah. This is, another place where there's lots of different
+choices. I think in the last 20 months, there's, like, 50 different vector databases you could
+choose from. I don't think that's gonna continue. I think there's gonna be a lot of consolidation,
+which is gonna be easier to, to stand up a a vector DB in the future. But you have choices like, do
+you want to use the vector store that's already in the database you're using? So, I was just looking
+at this. It's a really good report that I think your your viewers would love flipping through from
+Retool. It's the state of AI report that I think just came out, and they have, like, a list of the
+most popular vector databases. And it was, like, PG vector, which is an extension to Postgres, is
+most popular. MongoDB is up there. Pinecones up there, etcetera. And with Postgres, Elastic's up
+there as well. So, like, with Postgres, MongoDB, and Elastic, it's kinda obvious why they're up
+there. It's because it's just a feature on your existing database. And that's just a huge
+convenience rather than having a place where you store your data today and then having a completely
+different, vector store. And that's actually honestly how Clarify always looked at it. We may be the
+1st production vector database. We launched it in 2016, and it was always built natively with all
+the other data that you're storing in our platform so that you can and this is a a criteria that you
+should evaluate vector stores with. Can you do the queries that you want to do in addition and kinda
+joining with the vector queries? So filtering by metadata, we let people do, searching by AI labels,
+by, what the AI is predicting, as well as, combining with vector stores all in one kinda query. And
+most vector DVs kinda focus just on the the vector part, making that good, and not doing the the
+joins with other queries that would be, really useful for the overall query that you wanna make. And
+that even in the rag situation, that becomes really important because back to kind of what we talked
+about earlier about access control, how would you actually filter by what permissions a user has to
+the data without having that additional kinda join? You you could do kind of, you know, joins in
+memory and all that stuff between different data sources, but that's prone to bugs and inefficiency.
+So having a vector store that has all the filtering you need in one place is really important. And
+then for vector store specific features, you know, latency is obviously important. For use cases
+like RAG, though, it's not I I would argue it's not, like, the most important thing because at the
+end of the day, these large language models and large multimodal models are slow. And especially
+when you have all the retrieved context that you're gonna stuff their context window with, it's
+pretty slow to generate. And so having a a little bit slower latency won't actually impact the
+overall system latency that much because it's not gonna really dominate compared to the the
+generation. Obviously, faster is is better, but it's I think when people are choosing vector stores,
+that can take, a lower priority. I think how does it handle scale is important. Can you stuff in
+lots of data? And when that happens, does it kinda get distributed beyond a single node to handle,
+fail over and and scale? Those become really important. How does it handle the different
+dimensionality of your embedding vectors? We talked to so some of them have limits on, like, you
+know, it only handles a 1024 dimensions. It can't do 2,048. Stuff like that can actually cap you on
+reg because your embedding model that you want to use might not actually be able to fit its
+embeddings into the vector store. And then there's all the different kinda indexing. How does it
+index? Is it accurate on retrieval and and precision? Is it efficient to do that retrieval? Can it
+quantize the embeddings and still keep that index performance, high? When people think about a
+vector store quantization, this is actually, like, seeing this whole, market of vector stores come
+out and quantization is like a a hot new feature. We literally had that in in 2016, and, me and a
+couple of engineers actually wrote that code. And it's the same techniques that people are kinda
+inventing now, today. But it we did it because it saves a ton of memory in your vector store. Taking
+a 32 bit precision floating point number, which is typically what these models will output, and
+crushing it down to 8 bits or 4 bits because the the range of these numbers isn't that big. And
+sometimes you don't even care about negative numbers because the the models, often output only
+positive numbers in their layers. So you can actually get rid of lots of bits by thinking about the
+data and and looking at kind of distributions of these these values. And so the quantization can
+take a 32 bit number down to, you know, just a few bits. There's even results where you can actually
+do binary just zeros and ones for all the values in the embedding vector. So you can get a 32 times
+reduction in the memory used with a trade off on how accurate those binary vectors are gonna be be
+at the end of the day. And not every vector database supports that kind of binary, embeddings. They
+don't all support, you know, 4 bit, 8 bit. Many would support all of them would support 32 bit, but
+many of them would support 16 bit floats. So that quantization becomes really important because it's
+memory and the retrieval latency and the accuracy all get affected by that quantization process. And
+there's there's also, like, benchmarks for these vector stores. It's another area where you can look
+at a lot of these metrics. I haven't seen that many good independent benchmarks, unfortunately. What
+you when you search for this I was actually just literally doing this this morning. When you search
+for, like, benchmarks of PG vector versus Pinecone or Quadrant or Milvus, there's lots of these
+vector DBs. They're often written by one of those providers. And so it's a little bit like, the the
+provider of any tool is gonna know their tool better than anyone else, and so they're gonna make
+sure the benchmarks are really optimized, really working well, and then they're gonna use kinda
+default settings for all the other providers. And so I haven't seen a good, like, ground truth
+independent benchmark. If anybody knows, I'd love to to see that. But I think that would really help
+the vector store decision process. The maybe not the final decision, but I think the next large
+decision to be made in your rag stack is what model you're actually going to use to do the
+generation. Obviously, this is a very fast moving target. It seems like there's a new model every
+week or at least tweaked versions of the same set of models that are coming out on a day to day
+basis. What are the foundational aspects of a model that you look to when you're deciding which one
+you actually want to, apply to a given problem domain? Yeah. Again, it comes down to some of these
+open benchmarks. There's, you know, open LM benchmark and a lot of these leaderboards you'll see,
+online. So that's a good place to start because it those are typically where any model provider is
+gonna want to showcase their model, on these standard general purpose benchmarks. But, again, those
+are typically good for the general purpose use cases, which will cover a lot around, like writing
+emails or chatbots. And we're starting to see kind of leaderboards and evaluation benchmarks that
+are becoming more specific. I think I just saw one about CRMs. So if you're wanting to, you know,
+interact with your your Salesforce, HubSpot, Pipedrive, etcetera, CRM, And that data is very
+specific to sales and marketing activities. An LLM that's trained on that data is likely gonna
+perform much better. And so, again, it starts with your use case, decide on what you wanted to to be
+good at, and then find the most appropriate, benchmark. And it'll give you an idea of accuracy. Then
+there's the, notion of how big the the generative model is and where you're gonna host that thing.
+Is it gonna fit into compute that you already have? Does that compute auto scale? All the production
+grade inference becomes really, really, important with with this model. Because, typically, the
+embedding models are are smaller than the the, generation models that are used in a RAG system. And
+you don't always need the biggest model. I think people kinda default to, you know, the the big
+third party models. And for most use cases, they're likely overkill. And for reg use cases in
+particular, because you're getting that additional help from the retrieval to augment the
+generation, It doesn't need the best model that has, you know, a trillion parameters and has
+memorized the entire Internet because you're actually getting the data that you need to generate
+with, stuffed into your context window. So a smaller model can actually get those facts that are
+stuffed in, and pretty much all the small models are really good at writing English and many other
+languages at this point. And so the task of RAG is much more, well defined and constrained so a
+smaller model can perform well. And that'll give you, improvements not just, how costly it is to run
+these things, but also the latency. The bigger the model, typically, the slower it's gonna be. And,
+and it also kinda limits a little bit the ability for the models to kinda hallucinate and go off the
+rails. So that trust and safety and and evaluating the whole end to end, comes into play again. And,
+then it's another dimension to choosing the the generative model. Hopefully, the RAG pipeline is
+going to end up kinda addressing the hallucination then and the trust and safety concerns. But, some
+models that have never been trained on, you know, offensive words are just not gonna be able to, you
+know, generate that kind of content as an example. And so depending on your use case, you may want
+that or you may not want that, And that can be another dimension of of trust and safety you have to
+think through in choosing your your generative model. One of the interesting side effects of all of
+this interest in generative AI, RAG, is that growth in vector databases, vector indexes, and those
+have started to be repurposed towards semantic search. I'm wondering what are some of the other ways
+that this investment in rack capabilities is able to be repurposed for other use cases? Yeah. And
+this is actually why when we launched vector, database in Clarify, we never actually called it a
+vector database. We never marketed at that. We never actually anticipated the world to have this
+vocabulary of talking about embeddings and quantization of them and all these LM choices. Like, that
+kinda changed overnight when chat gpt happened. So when we created it, our vector database, it was
+never for reg. It was for things like visual similarity search. So you have an example of a, you
+know, a product in front of you that you wanna buy, like a nice chair or something, and you use that
+image to query a product catalog to find the, the most similar looking chairs to buy online. So
+that's a great kinda use case for similarity search. Same thing happens with text. It's the exact
+same process that happens in the retrieval step of rag, just stopping there. I have a snippet of
+text. Do I have any similar, snippets of text? This is useful in in general for content
+organization. So we work a lot with marketing teams as an example. They have all their visual
+content. They have all their text content indexed and to clarify, And people can very easily, in the
+search bar, type in a query and find similar content to that query automatically without kinda
+writing code and and all that and stitching all these components together. That's a huge value add,
+and that come into play in all these kind of intelligence community applications as well, lots of
+use cases for similarity search, like, you know, a vehicle, for example. You think you've seen that
+in security camera footage before and, you want to check. So you can use the query being the vehicle
+and match it in a in a large database. And then the other kinda bucket of use cases beyond the
+similarity search is just deduplicating data. So this happens, and this can be done like, think of,
+duplicate images. You can one technique is to just match the pixels, but then it has to be exactly
+the same image, and that's not, very reliable. Even just changing the compression, settings on an
+image will change the pixels even though they look visually the same to our eyes. And so, having,
+the images embedded and then comparing at a high level understanding of the images is very effective
+at deduplicating data because you can actually find similarities in clusters and say all all these
+are, you know, derived from the same image or they're duplicates. And when you do these these
+matches in in vector stores, you actually get a score typically of how similar things are. You can
+use that score to get the how confident you are that these are exact duplicates, near duplicates, or
+or not duplicates at all. And so, you know, going back to some of the business use cases for that,
+it's like the marketing team buy stock photos all the time, And now a lot of those are generative.
+Or do they already have one that looks like this? Do they need to go buy a new one? That
+deduplication has a real kinda dollar, value directly attached to it. So it becomes really powerful,
+having a vector store for these other use cases, and and reg just kinda came about as as one
+additional newer use case, for these these generative models. In your experience of working in this
+space, supporting these RAG use cases, building the functionality in your platform to manage that
+end to end flow, what is up in the most interesting or innovative or unexpected ways that you've
+seen those techniques used? Yeah. I mean, there's so many, I don't know. I I maybe I'll start with
+the least innovative, I guess. I'm seeing just so many, like, chat experiences added to products,
+and I think that's gonna be a a fad and baby's already fading away. But I think those types of use
+cases are are suitable when you already have a chat experience, like a customer service bot on your
+website. Like, that totally makes sense. But just injecting a chat window to have people, like,
+interact with things that are never meant to be, interacted with in a single box is a is a decrease
+in in user experience. So I'm actually, like, not a a big fan of those types of rag use cases. When
+it is a scenario where you already have a search bar and that is a natural thing, whether it's, you
+know, Internet search, whether it's, you know, we use Confluence for our internal documentation and
+Google Drive. Those types of searches can all be improved very, very significantly with these
+components that you need for for RAG. And then the next step of just retrieving the documents off
+the search is to start summarizing them. And, we're starting to see that kind of even internally.
+You you see it obviously when you search on on Google and I believe Bing as well at this point.
+They're all kinda summarizing depending on your query, of course. Ones that are already indexed,
+they're summarizing, a a a good summary so you don't have to click through all the results, and
+that's just a huge productivity gain for everybody. When I think of kinda some of the most
+interesting applications of this, or or the highest value applications maybe, it's where the people
+having to do those, traditional search and read and and summarize tasks are in high demand. They're
+kinda domain experts in their field. That might be, you know, intelligence analysts in the
+intelligence community, doctors in the medical community, lawyers in the in the legal space,
+financial analysts, etcetera. That's where these productivity gains are really unlocking business
+value. And when when you think of some of these domains, that's the the ones I listed. They're kind
+of the the domains that are least likely to have been trained into the model in the first place. And
+so solutions like reg where you can ground it with, you know, factual stuff like medical textbooks
+or, you know, all the financial 10 k's of the quarter, etcetera, all the classified documents in an
+archive, that's when RAG really unlocks the the biggest ROI beyond having a a generative model
+alone. So I think, those are the most exciting use cases I've seen RAG for. And in your experience
+of working in this space, being in the ML community for so long as generative AI has really started
+to take all of the attention away from other applications of machine learning? What are some of the
+most interesting or unexpected or challenging lessons you've learned personally? Yeah. I mean, the
+gap between prototype and production, I think, is just surprising, and almost feel like it's getting
+bigger kinda as the the field continues to have lots of new things every day, lots of continued
+innovation. People can get up and running easier, so the prototype is becoming faster, but getting
+into production is is, a huge undertaking. And I think people often underestimate that. We like to
+talk about that as the false finish line. People, like, get a use case in their company, up and
+running. It might be on your laptop. It's pretty easy to do that even with solutions like reg. But
+then thinking about those day 2 operations of running in production, not just getting to production,
+but how do you keep it up 247 with many nines uptime? How do you do that cost effectively? How do
+you have those access controls scaling up, scaling down, etcetera? How do you keep that up to date
+with state of the art? How do you do that in a way that you're not, you know, constantly in a
+procurement mode and reviewing security posture of every vendor you're choosing because they're all
+different for the stack. How do you have tests if you're cobbling together the stack? How do you
+have tests that make sure it's gonna maintain its, its its kinda stitched together state over time
+as vendors change their APIs or, new things come out. It becomes a huge undertaking going from
+prototype to production, and that just continues to be surprising. Because when we talk to a lot of
+different customers, they they have this default, mindset that they need to build the stack
+themselves, And everybody's spending, like, 75 to 80% of their time building tools for AI rather
+than building AI into their their business. And I think that's just a huge mistake and something
+that we've seen before, with the cloud transformation. People like HashiCorp, built a bunch of great
+developer tools that helped with the cloud transformation. And the the companies that adopted those
+tools accelerated and the ones that didn't ended up spending their time reinventing the wheel,
+building tools themselves, and lagged. And the same thing's happening and and repeating itself in
+the AI space. That's actually what kind of excited a bunch of new executives joining Clarify from
+HashiCorp and Cohesity and UiPath and a bunch of other great companies, because they see what we're
+doing here of accelerating developers from prototype to production in enterprises is, is exactly the
+same kind of playbook that was successful in the, cloud transformation and really helped empower,
+users to, to kind of become heroes in their in their business. So we wanna make a lot of developers
+into AI heroes, with our platform. To that point, there's always the there's always a gradient of I
+can throw together a prototype really quickly, but I don't actually understand what's happening to
+I'm a subject matter expert in, in this case, machine learning, but maybe I don't have all the
+operational capabilities. What is the level of domain knowledge and expertise in that context of
+machine learning and AI that's necessary to be able to effectively apply these AI bottles and rag
+stacks to a problem domain and build a product around it. That's such a good point. Yeah. I I think
+the there's a lot of tools like Clarify that abstract away all the complexities and make it really
+easy. And I think that lowers the barrier to entry a lot in adopting AI. And so some concrete
+examples are, in the intelligence community. We actually have intelligence analysts themselves using
+our platform. Our platforms, you know, the APIs that power all the back end, really easy to use SDKs
+for developers to get up and running, doing rag and 5 lines of code, for example. But then on top of
+that is user interfaces that make it literally a few clicks to configure a rag system or do search
+queries over your data, train a model at the click of a button, manage your datasets, etcetera. And
+so that's where you don't have to have a PhD in AI like I do. You don't have to be a developer even.
+You can actually start getting the the benefits of AI, with just a few clicks. And I think that all
+depends on your your stack. If you're going the route of stitching together a bunch of tools, you're
+really the domain experts can't use it. It's too complicated. The developers are spending most of
+their time stitching together tools, maintaining them. Probably never gonna write tests, so it's
+gonna be brittle. And the data scientists may come into play there, kinda just customizing some of
+the the stack, but all of it's not gonna be as customizable as as they really want. So it's kinda
+not good for anybody. So choosing the right set of tools really helps kinda, democratize the, the
+experience around AI. And for people who want to take advantage of all these new AI capabilities,
+what are the cases where RAG is the wrong choice? And maybe you just wanna go with prompt
+engineering or use the out of the box model or you need to go down one of the other roads of fine
+tuning or building your own model from scratch? Yeah. So I think these general purpose use cases are
+pretty effective, like, taking a a bunch of text and summarizing it. Just continuing to generate,
+like, prompt engineer to tell me a bedtime story for my my daughter. Those types of things, like,
+the the information that's trained into the model from the Internet is good enough, and actually
+kinda what you want. So doing rag in those scenarios is gonna be a wrong choice. You really wanna
+use rag when you have custom data and you want to ground, to prevent hallucinations as much as
+possible. When you're actually generate generating, like, a bedtime story, you kinda actually want
+hallucinations. So it's a good example where Rag would actually be, be hurtful to to performance.
+Being doing creative work, like, generating writing samples, generating advertisements, writing your
+emails, those types of things. Rag may not be the, the best choice, unless you really need to get
+something very specific. Like, it has to be advertised in this certain message or, you wanted to
+write emails exactly like you do and not any better than you do, which these models can typically do
+now. So, it's really that that level of customization, that is gonna dictate when you want to use
+RAG or not. And that's also true for fine tuning and and pretraining models as well. Prompt
+engineering should generally be the kind of where you start for a use case, and then you can see if
+it's good enough, or not. As you continue to work in the space, work with your customers, stay
+abreast of the latest trends and developments, what are your predictions or aspects of the ecosystem
+that you're keeping a close eye on and getting most excited by? Yeah. I I think we talked about this
+a little bit. This con notion of consolidation, I think, is gonna happen. There's just too many
+different options at every layer for the stack. Vector database, we we mentioned this. There's,
+like, 50 different vector databases. And it's not just an AI thing. Like, no market can support that
+much variety. So I think a lot of the a a lot of this is gonna be consolidated into offerings that
+provide multiple different components in one place. Right now, it just feels very disjoint in, you
+know, the whole pipeline you need for these more complicated use cases like rag, you know, the data
+prep tools, transformation to data, integrations with your data sources, the prompt engineering
+tools, the vector database, the embedders, the LLMs. Like, there's lots of different components,
+evaluation metrics and leaderboards, etcetera. So consolidating where all that just works out of the
+box as a workflow. That's why we're calling Clarify the AI workflow orchestration platform because
+we actually help people do a use case like RAG very, very quickly. And so I think that's gonna be a
+trend. We talked about the the multimodal as well. I think that's an obvious trend. And models like
+the GPT 4 o are really interesting because they're blending the modalities kind of in real time, and
+I think that's gonna be a continued trend as well. It's gonna open up a lot of experiences that are
+much more natural to communicate with these models than, you know, the chat window we talked about,
+before or kind of high latency experience in, in other approaches. So I think that's gonna be a
+continued trend. And then I think just more and more ease of use. You know, the everybody talked
+about embedding models and getting excited about the next new LLM coming out and all that kind of
+stuff. I think it's gonna be it's gonna move to the background pretty soon, and people are just
+gonna be like, how do I use this? How do I use it in production in the easiest possible way? I don't
+care about all these details. I just want it to work. I think that's gonna be a trend as well. Are
+there any aspects of the overall space of retrieval augmented generation, applications of these
+generative models, the work that you're doing at Clarify that we didn't discuss yet that you'd like
+to cover before we close out the show? No. I think we covered a lot today. It was a it was a great
+overview. Hopefully, that was helpful for everybody listening. Absolutely. And for anybody who wants
+to get in touch with you and follow along with the work that you and your team are doing, I'll have
+you add your preferred contact information to the show notes. And as the final question, I'd like to
+get your perspective on what you see as being the biggest barrier to adoption for machine learning
+and AI today. Yeah. I think it's a lot about what we talked about today. Just how disjoint the the
+ecosystem is, and that's leading to difficulty going beyond that prototype into production. So, I
+hope people test out clarifi.com. You can sign up for free, get started, and you'll see the
+difference of having all the tools in one place can help accelerate you all the way to production.
+Alright. Well, thank you very much for taking the time today to join me and share your experience
+and perspectives on retrieval augmented generation and the considerations that go into the different
+layers of those stacks. It's definitely great to learn a bit more about those concepts, the
+technologies involved, the business questions involved. So I appreciate you taking the time today,
+and, hope you enjoy the rest of your evening. Thank you. Thanks for having me. Thank you for
+listening. Don't forget to check out our other shows. The Data Engineering podcast covers the latest
+on modern data management, and podcast dot init covers the Python language, its community, and the
+innovative ways it is being used. Visit the site to subscribe to the show, sign up for the mailing
+list, and read the show notes. And if you've learned something or tried out a project from the show,
+then tell us about it. Email hosts@aiengineeringpodcast.com with your story.

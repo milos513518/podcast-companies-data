@@ -1,0 +1,482 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Many tokens make all bugs shallow & open source’s new maintainers | Chainguard's Dan Lorenc
+DATE: 2026-03-17
+SHOW: Dev Interrupted
+LINK: 
+AUDIO: https://www.buzzsprout.com/1422892/episodes/18838503-many-tokens-make-all-bugs-shallow-open-source-s-new-maintainers-chainguard-s-dan-lorenc.mp3
+DURATION_SECONDS: 2405
+TRANSCRIBED_AT: 2026-11-04T09:19:18Z
+----------------------------------------------------------------------
+Welcome back to Dev Interrupted. I'm your host, Andrew Ziegler. And here on Dev Interrupted, we've
+been talking about the agentic transformation and how it's been coming for engineering. And there's
+also a darker side to that speed as well. All of the security debt that we rack up underneath all of
+that progress in an internet that frankly just wasn't built for autonomous agents. And joining us
+today is someone who spends his weekend stress testing the Claude Code and all the places that you
+can take agentic engineering, but then also spends his weekday securing the global software supply
+chain. He's the co-founder and CEO of ChainGuard, Dan Lorenc. Dan, welcome to the show. Thanks for
+having me on. Yeah, a lot is changing right now. I think everyone is scrambling to try to figure out
+what that means and where we're going to be a year from now. Everyone's guess is as good as mine.
+I'll start by saying that I've got a lot of guesses, but I've never seen software move and change
+this quickly. So yeah, we got to take guesses and see what turns out to be right. Yeah, taking
+guesses. And I think it's about experimenting all the time. You can't be standing still. And part of
+experimenting and trying new things is maybe throwing away assumptions about how engineering is
+supposed to be done or how it can be achieved. And we've been following a lot of your work, Dan,
+about the way that you've been working with agents and thinking about them in like a parallelized
+way and otherwise getting to like a state of eventual determinism through a series of gates and
+checks that allow like an agent to drive itself forward. And this is something we've actually talked
+about a lot on Dev Interrupted, the idea of like chaos going in and progress going out. And there's
+a lot of our listeners who are all on different stages of this journey still of getting to that
+point of trusting the machine and having the security guidelines and the safety in place to go fast.
+So I want to just start there, Dan, like how do you think about like the multi-clawed philosophy,
+for example, and everything that you've been publishing and releasing to the world? Yeah. So I think
+if we step back to kind of what's happened in the last 18 months, I would say agents and coding
+tools and AI autocomplete and stuff like that aren't new, right? Copilot and VS Code from GitHub is
+actually the first consumer LLM product out there. It predates ChatGPT. A lot of people forgot about
+that because the space has moved so quickly. And it was pretty good for a while. That kind of
+complemented existing development flows, though. It really was a smarter autocomplete. Where we've
+gotten to in the last year, I think it has really started to change the way people are writing code,
+right? It's a change from you in an IDE, writing code yourself, maybe the LLM saving you a little
+bit of typing to that flipping. LLMs are writing the majority of the code that people that are using
+them anyway are shipping today. The quad code tool itself, I think it's one of the best software
+tools or programs ever written and released. It was in a crowded space of all of these IDEs that
+people were using and cranking out, and they kind of inverted it and said, no, no IDE. It's just the
+terminal app that's going to write all the code with bash and grep and said, just like the creators
+of Unix intended, right? No IDs. Your ID is Unix again, and a tool that actually knows all those
+flags to a level no single person does. But it still didn't really change things until probably
+about six or four months ago now, which is like a lifetime in AI speak. But the models actually got
+really good. And the tool calls got really good. And the harness got really good. To the point where
+it was just kind of, the beginning was kind of mesmerizing to watch it slam all these grep flags and
+stuff and write code that way. But it wasn't really any faster and the results went terribly good to
+now when it's better than any person writing code that I've seen. You still have to prompt it. You
+still have to steer it. But you can crank stuff out in hours or days that would have taken weeks or
+months before. And I kind of equate this to like power tools, right? Like imagine that we've all
+been doing, you know, woodworking by hand for decades. Every engineer has some weird fantasy of like
+retiring, turning off all of their electronics and doing hand woodworking or something like that.
+And that's kind of how we've been writing code up until now, even with some of these fancy LOMs and
+IDs like cursor and windsurf and stuff like that. People are still writing every line of code. But
+now it's like we handed the whole industry circular saws and we're like, go try to use these things
+with like no safety course or anything like that. Yeah, it's a lot more powerful. People are going
+to get fingers cut off. You're going to make a lot of mistakes. It's a lot easier to mess something
+up, but you're going so much faster. And so that's sort of the shift everyone has now of like, how
+do we do this safely? And then at the same time, this stuff is also getting good enough where you
+can build entire factories around it. And we're starting to see that a lot more too. Instead of
+people writing and reviewing and shipping code, robots are doing that. And if you go with that same
+analogy of like, you know, handwork, woodworking to power tools. Yeah, this is now full assembly
+line mode that we are either able to create now or just on the cusp of it. And people aren't even
+going to be operating those circular saws. They're just going to be operating this actor itself. I
+like that you go to the metaphor of going from like the handworking tools to suddenly getting power
+tools. I think that's really powerful. When Jeffrey Huntley was on our show, he also made a
+woodworking analogy. But he said, you know, the idea that you have to have, you have to prove your
+worth before you can use the table saw, the idea of understanding the bounds and the constraints of
+the workshop you're in, and how to keep people out of danger. And that becomes the real job now of
+engineers of how do we create these working environments, these working environments, this tooling,
+this process, these rituals that allow us to capture all of these new gains and this new way of
+working, but is also has a fundamental level of like trust and understanding to it. And so in that
+world, you know, they're also you've described it as a factory, I agree with you, you know, that's
+where everyone is going, we're going to be stacking all of this until we get to the idea of a
+assembly line kind of style output, where all we need to do as engineers is align on the intent of
+what we're trying to achieve. And then the rest can happen downstream. But just as well as we can
+use that to create, others can use that to look for weaknesses and to, you know, to deploy maybe bad
+actors as well. And so in this world where you get these like two lanes, I think there's an unfair
+advantage for the attackers, they cannot parallelize a lot of like probing and looking around and
+harm. But when you're on the defense, you don't know where to look to protect yourself. So how do
+you account for the idea of that, that almost like a losing arm race between those two sides of the
+coin? Yeah, so I think we're in a really interesting state. And this is like, we're moving up an
+exponential curve very quickly here with these capabilities. Big enterprises, security teams,
+they're usually the slowest to adopt any new technology, because they should be right. They're not,
+you know, YOLOing every new app into prod where you've got your bank account data and stuff like
+this, or your health records. They let everyone else try things out, see what works, see what
+doesn't, see what broke, see where they got hacked, and then they move it into their environments.
+But when you're on an exponential curve like this one, if you typically adopt things six or nine
+months after everyone else, or one or two years after everyone else, that gets farther and farther
+behind every single year as we move up this curve quicker. Like before you, maybe you were two years
+behind the rest of the industry. Now that's two decades behind with how fast things are moving.
+Attackers don't have that same set of constraints. And so they're now going to be two decades ahead
+of you instead of two years ahead of you. The ways of thinking about how you're going to secure your
+system are wrong, and they're not going to work unless you try to get as close to that as possible.
+And I'm not saying everyone has to go run open claw and prod inside of their, you know, banking
+infrastructure today, because that just came out a month ago. But you do have to consciously try to
+get closer to the bleeding edge. Otherwise, that that gap in that exponential curve is going to make
+it impossible for you to secure anything that you're running today. Yeah, we can't let attackers
+have the fancy new stuff forever. In this idea where they can get that far ahead of you in terms of
+like attack vectors, right? What do you think are some basic ways that maybe a company that is
+typically going to lag on that adoption curve? I think a lot of our listeners are at those kinds of
+companies and their leaders there where they have to grapple with the realities of the bureaucracy
+and slow moving enterprise adoption of these tools. What are the things that they should be doing to
+be proactive and protect themselves in that environment? Yeah, one tactic I've seen work pretty well
+in some of these larger companies is to set up whole sandbox environments, get your developers new
+laptops that don't have access to the same code bases and that kind of thing and carve out time to
+get them playing with stuff. Because if they're not even aware of the state of technology, then
+that's half the problem and they don't even know what they're missing out on. And when you finally
+do bring something in, they're going to have a six to nine month learning curve to get comfortable
+with these tools. Like I'm really, really, really good at cloud code today, right? And that's
+because I've been using it for a year as the tool has gotten better. I've been able to understand
+the capabilities and can kind of press that limit. That learning curve isn't going to go away. And
+the more time and the more ways you can get creative to let people experience that without also
+sacrificing your security posture and opening up, you know, your entire tool chain to open flaw
+overnight. It's better, right? You have these constraints, you're not gonna be able to get rid of
+those, but you need to figure out a way to get your workforce and get your engineering teams and get
+all of your leadership aligned that this is where we're going to go as soon as we can figure out how
+to do it and be ready for that time. I really like that your answer for that was going straight to
+the human element. It wasn't, you know, a lot of people would be obviously leaning into the more of
+a technical way of fortifying yourself. But no, the best way to protect yourself is to upskill your
+employees, make everyone aware of the realities, create that shared space where folks can experiment
+and understand the bounds of it. Because like you said, it's just like a, you know, a daily motion,
+you know, you didn't start riding this bicycle till a few months ago. That's how easy, that's how,
+how convinced we all are that it's teachable because we all learned it, you know, rather so, so
+quickly, this is moving so fast. So in that world, what are the kinds of skills that you think are
+most important for a senior engineer right now? Yeah, I think it's sort of intuition, right? Like, I
+mean, all, you know, engineering is intuition somewhat at the end of the day, but understanding what
+the model capabilities are and what types of tasks it's going to be able to do without supervision,
+which ones are just going to cause it to go on a loop and go crazy and self-destruct and know where
+those limits are and how to scope things and break them down. So they send it to context windows.
+And then when you get a new, bigger context window, see what it can do with that one before things
+start going off the rails again. There's no real concrete skill here because it's changing so fast.
+You know, if somebody were to publish a course of like, become a master of this tool, you know, all
+those, you know, Twitter influencers that were posting, like, here's this magical prompt I built
+that can do anything in one shot that goes out of date a month later when the model changes, right?
+That kind of skill is, is not going to last very long. The real one is just, you know, building up
+that intuition and keep pressing on it and keep testing it. That's what's going to last. Yeah. Uh,
+in that part of the intuition too, is part of it is experimenting with new tools and agentic ways of
+working and operating with the world as they come out. Obviously sometimes this is a little bit like
+taking a sledgehammer to like 30 years of security practices in order to extract some value or maybe
+even in some cases novelty. And something we've been talking about a lot on this show is Open Claw,
+which you just, you know, mentioned prior, uh, and it's a grapple on the world and how it's kind of
+truly left, uh, the original audience and is like very mainstream. Now it's the most widely starred
+GitHub repo. We covered that on our show, uh, just like, uh, the last two weeks. And so you have a
+high visibility point from your perspective at chain guard. What are some like really dangerous or
+scary things that you've seen agents do in these kinds of environments that kind of like keep you
+worried and keep you at trying to solve this problem? Yeah. I think, you know, assume every agent is
+like an intern that you just gave a laptop to. Um, and that intern is going to make a mistake,
+right? Um, no one gives their interns laptops with root keys to production on them because you know,
+if that intern accidentally runs the wrong command and deletes the database, like it's not that
+intern's fault. Yeah. They shouldn't have run that command, but it's your, it's your fault for
+putting them in a situation where they could have run that command. Um, and that's the same way
+people are actually getting results out of these in the positive side. Um, the teams that have these
+amazing CI systems and test frameworks and harnesses and continuous deployment and all of that stuff
+that we've known we should have been doing for a decade anyway. Um, like, you know, if you're
+confident that when those checks come back green, you can press merge and it's going to go to
+production in 10 minutes, then you don't have to worry, right? Uh, you know, these agents are just
+going to push VR. So that repository, no one's touching production, no one's SSH and in and
+debugging things. The agent is not going to be able to do that either. Um, and then you don't really
+have to worry, uh, is the code good, bad? It doesn't really matter at the end of the day. If it's
+bad, just tell the agent to fix it later. Um, you need those automated signals and that a really,
+really, really strong pipeline where you can ship code confidently. Um, and then at that point, the
+code doesn't matter. That's how you can go from, you know, writing 500 times as much code to
+shipping 500 times as much code. Um, the people without that, where they're scared to deploy on a
+Friday because, you know, half of the deployments crash and break things and you don't want to page
+someone. Now you have 500 times as much code, but you can only release things to the same at the
+same rate. So the bottleneck has really just shifted in your process. I love that you call out the
+Friday deploy. We talk about the Friday deploy a lot on the show and the phenomenon of embracing it.
+Um, and so I, I, I really, I really agree with that. I also, the idea of having, uh, going back to
+the basics of like the pipeline, right? Having a really clear, structured system that can gate the
+work that your agents are doing, just like how you said, it should have been gating all the work the
+humans were doing the whole time. Right. So like building that kind of baseline, um, is that like,
+is that where you think, uh, engineering leaders should focus on in order to extract the most value
+from getting started with this kinds of stuff to shipping it, you know, not going from
+experimenting, but to shipping. Yeah, I think so. And especially if you're in one of these regulated
+industries where you can't roll this stuff out yet, the best investment you can make to get ready is
+to get rock solid deployment pipelines that you can trust today. Because once you do have these
+agents, they're going to love them too. Um, and analogy I like is, uh, it's from bowling, right? So
+I'm a terrible bowler. If you go bowling, um, and you put up the bumpers, you can still have fun. If
+you're a terrible bowler, you don't really have to look, you just throw it down and bounces off.
+It'll hit the pins. Um, but now if you take a hundred bowling balls and run up and slam them down as
+fast as you can in every odd direction, right? They're not going to get down any faster. They're
+going to be bouncing off each other. The bumpers are going to crash. You know, um, you're going to
+break the bowling alley. Um, and I think that's sort of how CI systems work, right? Like if half the
+tests flake and you're running 200 tests every time and everyone is just sitting there hitting
+retry, uh, hoping everything gets green and then half the deployments that go out still fail. Um,
+that's kind of where you are. Um, you have these gates, but they're not really helping you get down
+faster or those bumpers. Um, and I think as you start to pull them in, and I think that's really
+going to be the role of engineers in this future is getting those gates rock solid, making sure all
+the intent is captured, making sure all the performance stuff is in there, everything you need to be
+confident. If you can start to pull those bumpers in tighter and, you know, get them to exactly one
+diameter of a bowling ball, then you can throw a hundred of them down that track as fast as you
+want. They kind of turn from a guardrails into guide rails. There's no way for them to get off track
+and start bouncing around and not make it down. Oh, I love that. It's just like they need to be
+self-teaching. They need to teach. Yeah. Yeah. There's only one way things get to prod and if it
+makes it through there, it's good. Yeah. And, and so the idea of, you know, the guardrails is just
+something, stuff bounces off of, or you can't trust is, you know, you can't build off of that, but
+understanding why the guardrail is there and entrusting the guardrail. And then like you said,
+letting it guide you, I think that becomes a natural way where you get to that level of a eventual
+determinism that you've written about, like with multi-clawed and, and, and your article about the
+Brownian ratchet, which is a great read that we're going to include for folks. And so I want to, I
+want to shift here though, to another problem scope that you have a really great view on as leader
+at chain guard. And that's the software supply chain world. And that's something that's been
+fundamentally altered by the arrival of AI and agents and agentic software. And the thing about it
+is that it's an iceberg, like so much is built on top of it, but so much of it is so deep and down
+underneath and the murky depths that, you know, people like you, like me, or a lot of our listeners
+don't have a lot of visibility on what's going on down there. But I know this is something that you
+spend a lot of time and focus on at chain guard. So I want to understand from your perspective, how
+has the software supply chain evolved in this world and how have the stakes changed? Yeah, I think
+it, it's still early, right? Agents are around, they're getting used, their effect on open source as
+a whole, I think it's still early. And it's hard to say too much has changed one way or another.
+People are feeling it, people are complaining, there's stuff happening. It's going to change, but
+it's too early to tell exactly what's going to happen, right? Daniel from the curl project, Daniel
+Stenberg, he's been complaining for years that people are using chat GPT to basically denial of
+service attack, his vulnerability report process. Everyone grabs chat GPT, something like that says,
+find a CV and curl. It's been something back that looks kind of, uh, same before you read into it
+too much. And then the email has private list. So it went from like, you know, a couple hundred
+reports a year to a couple hundred reports a week. And 99% of them are just garbage because the
+people submitting don't know how to review this stuff. And that's a security vulnerability in and of
+itself. If he can't find the real one buried in there with 99 garbage ones each week. Um, and so
+he's, you know, basically shut that off completely. Um, no one is allowed to use AI for security
+vulnerability research and curl anymore, uh, because it caused too much of a problem for him. But at
+the same time, you see things like Google's deep sleep research where they, they found a bunch of
+really good, really valid zero days and open source projects that no security tools were able to
+find before. Um, and disclosed them and got them fixed and all of that, uh, before it was out. Um,
+but agents can do this stuff now and open source is kind of going to be front and center in it
+because it's a lot easier to point an agent that open source code than it is, you know, your, your
+banks, uh, locked down code. Um, so we're kind of just going to see more of everything and some
+things are going to collapse under that and others aren't. Um, and I think I, my, my prediction is
+open source is going to stick around, right? There's a lot of people saying it's gone now. What's
+the value in it anymore? If you can one shot every library you need, why are we reusing libraries? I
+don't think we're going to get to that world. Um, but I do think it's going to bifurcate, right?
+There's going to be a whole group of people that just don't want AI pointing at them. And I
+understand why it's just a whole bunch of noise you have to deal with as an open source maintainer.
+And then there are going to be other projects that embrace it. Um, and we're going to see what
+happens there, but if things go well, the projects that embrace it are going to start moving a lot
+faster and shipping a lot quicker. And, uh, we're going to see that bifurcation happen in real time.
+So it's really like, you think the social contractor on open source will evolve and you'll get these
+two different types of groups who exist for different reasons in the short to medium term. Yeah.
+There's going to be a bunch of projects that just say, no, we can't deal with this. Um, and some
+that say, no, let's go only agents, you know, committing code instead of people and see what
+happens. You mentioned to the idea of, um, just creating your own software. And so then why would I
+use open source? And I've been reading a lot about this too, about the, um, you know, folks doing
+these clean room experimentations where they have an agent implement something with no outsize
+outside resource. Obviously there's a huge grain of salt because the LLM itself is an outside
+resource, but, um, all of that is, all of that is to say it does kind of change the economics for
+why companies would pick up software. But at the same time, it doesn't for certain groups, because a
+lot of parts of adopting software for SAS is, I don't want to maintain it. I want someone else to,
+uh, so how do you think that balances out and what do you think that looks like? Yeah, I think, uh,
+you know, I, I was asking Claude this earlier this week, what it thinks is going to happen to the
+space. Um, and I think no one's going to vibe code a database, right. And ship that to production,
+you know, something like Postgres or MySQL or those layers, right. It makes absolutely no sense.
+Even if it could one shot something like that, it's too much risk, right. There's going to be a bug
+somewhere. All software has bugs. Um, if you point enough agents at it for long enough, yeah, they
+can probably squash most of the bugs, but, um, if people are going to keep using battle tested
+pieces of software down there, and some of those are probably going to adopt this and start moving
+even faster. And then those are kind of at the bottom layer, web servers, databases, that kind of
+thing, where you just need them to be battle tested and solid. And the only way to do that is for
+other people to run them for years and, you know, run into all these edge cases. Um, I can't really
+speed that part up. And then at the top level, right, like open source or agents are amazing at
+front end development, right. You can just tell it you want a website and it builds this amazing
+looking one. Um, and that's because they're trained really well on these DSLs and things like react
+and these high level libraries that deal with all the crazy dom nonsense. And they can, you know,
+keep context windows small and move really quickly. I think there's going to be a lot of innovation
+at that top level too, that let agents go fast libraries and things like that, that they're
+optimized for and trained on and trained around. Um, but that middle section, um, all those little
+middleware libraries and routers and Postgres client libraries and things like that. I can start to
+see people pulling in a lot more of that into their own stacks and maintaining that kind of thing
+yourself where, yeah, you can use this library, but you have to rewrite, you know, 30 other ways in
+your app that you call things and restructure to use that library. Um, and it's not that hard to
+write in the first place. Um, uh, that area I can start to see getting hollowed out a bit as, uh,
+agents get better at doing that glue in the middle. Yeah. There's almost like a math equation for,
+you know, is it more convenient or is it more reliable for me to just use the tool or is it cheaper
+for me to use a tokens to build a replacement for it? And there's probably a threshold there where
+the usefulness of the tool way exceeds what you possibly will to do with the same, the level of
+tokens you can do to get like a baseline version of it. So therefore you keep it. Those are like the
+economics I think that shift. And so, and you're right that projects will fall on different sides of
+them. So it'd be interesting to see how, how that evolves. Yeah. And the stuff where it's really
+hard to get the edge cases, right. And the cost of messing up is really important. Like, like
+databases and web servers, that kind of thing. Um, we're all better off if we point our tokens at
+one solution and make that better over time rather than everyone pointing their own tokens at their
+own solutions. No, I love that. Cause I'm like kind of like an analog to the whole, like, you know,
+eyes make all problems shallow. The idea that everyone's tokens could make those problems shallow
+too. Yeah. It was, uh, I was working on a version of that. Like, yeah, it's Torvalds's law. Many
+eyes make all bugs shallow. It's like many tokens make even more bugs, even shallower. That's
+amazing. And speaking of, you know, this ecosystem is going to evolve and change. It's going to be
+interesting, but the thing about open source is that it, you know, sometimes lacks its guardians,
+its champions, and sometimes that can be hard for it to come by. And that's what can make open
+source and, and all of the gains from it. So tenuous and, and, and something that we take for
+granted a lot of the time as an industry. And so there's like an element of like, how do we sustain
+the development and the proliferation of open source in the future? How do we find, how do we
+discover these new forms that open source is going to take and the value exchange that both sides
+are going to have? But part of that too, is that just like a lot of modern code bases in the world
+that we live in relies on open source. Um, but there's in this world where you're describing like
+long, long standing projects can't even accept contributions or pull requests anymore, get inundated
+with security features. They might spend hours staging up a good first issue, just like for a human
+to never be able to come along and discover it because of the new world they live in. So then how do
+they hand off the project to someone else? How do you develop, uh, like a community around that? I
+think that becomes the real challenge. You know, how, how are you thinking about that at chain
+guard? Yeah, I think there are pros and cons to, you know, the, what agents can do in this world.
+Um, you know, there are a lot of projects, um, that are just plain done. Um, you know, there, no one
+ever wants to call them done because they're always open and you could always come up with something
+new to add, but for the most part, they're feature complete, they're done, they're tested. They
+don't really need much extra work. And we see a big sustainability crisis kind of at that end. Um,
+those also tend to be the most widely deployed projects too, because they've been around and stable
+and haven't changed every six months for the last decade. Um, so they show up in super low levels of
+the stack. They're everywhere, even places you wouldn't expect to see them. And that's hard because
+the maintainers need to be around if there is a security incident or something like that. Um, but
+it's not a ton of steady work. So it's hard to fund that work too, because you know, it's not a
+full-time job, even if you were to try to hire someone and pay them a full-time salary, it's a
+couple hours a month. Um, maybe one month out of the year, it's a whole week. It's kind of hard to
+predict. Uh, but that's exactly the type of work that agents can do a lot more of and for a lot
+cheaper and a lot easier. Um, you can have one person with agentic tooling doing that kind of end of
+life care for hundreds of projects because the work is bursty and doesn't all come at the same time.
+And so you can see some benefits to something like this. A lot easier to maintain projects over
+time. Um, even if you're not going to go add crazy features to it, but you also see the challenges
+in it too. If everybody's chasing the shiny new thing, no one wants to be around to run those agents
+on that software anymore. Um, and projects are going to disappear and, uh, go dormant. But I do
+think the way enterprises use open source software is also going to change a bit here. Yeah, you can
+fork open source software. You can modify it. You can add whatever features you want. It's one of
+the big value propositions of open source software. Um, but the Linux foundation has a bunch of
+awesome research on this and stuff. And like the cost of maintaining a longterm fork is very
+expensive today and it only gets more expensive the longer term your fork is. It's always better and
+cheaper if you can get your changes merged back upstream, which is great and keeps projects moving
+in the same direction. You don't have tons of companies hoarding their own feature work because it's
+really expensive to do that over time. Um, but I think that cost maintaining a fork is actually
+going to drop dramatically too, um, over time because it's, it's messy work. It's rebasing. It's
+fixing merge conflicts. It's that kind of thing. You know, every month when the project doesn't get
+released and no one likes doing, uh, but that's the exact type of work agents are very good at. Um,
+and so I think we're going to, we're going to start seeing a lot more internal force and even a lot
+more public force of open source projects where you can merge and share code and ideas back and
+forth easier without having to sit there and get interactive rebase for hours and hours and hours
+until you go blind. So I think, I think it's probably like, it's going to go fractal is sort of the
+way I think about it. Um, like all of the, the forking and all of these amazing features and get are
+going to allow everyone to start forking code and doing whatever they want. And now there's going to
+be hundreds of versions of all of these things, whether they're internal forks or public ones,
+having agents do that messy updating work. Yeah. I love the idea of it being like a fractal, but
+it's like a, a hyper personalization because the economics, the cost of why before you would never
+maintain that highly specialized internal fork of X, Y, Z, very publicly maintained libraries, like
+the economics of why you wouldn't are just fundamentally gone because the idea of having to keep it
+in sync with, with the upstream and, and, uh, dance that around all of your downstream changes is
+just untenable for most, uh, organizations to consider. But now you get a world where just like how
+on the consumer end with our apps and software that we use now is highly customized, highly
+personalized because you get this, uh, you get this agentic experience inside of so many things
+we're using now on the flip side, you get that there as well. And so it becomes like, uh, I, I also
+really, I also really just like the idea of, uh, them being maintained by agents because it changes
+the, I, the economics for the long-term contributors instead of it, instead of it being literally
+that XKCD comic that we all point to that has the little tiny brick at the bottom of like whatever.
+And it's like the entire internet is built up on top of it. And the little tiny brick is just some
+dude in Wyoming. Like now it's some agent on some dude's laptop in Wyoming. Yeah. Now it's
+precisely. And, and, and then that agent itself could then be, um, that, that itself is, is, uh,
+something that could just take so many different forms. We, we don't know what that agent would
+really look like yet. Although I, I think at chain guard, y'all are certainly exploring this with a
+merit emeritus. Is that right? Yeah. Yeah. Trying to see how much, you know, a small team with AI
+can do and how much we can scale that to maintain these projects that people are done maintaining
+themselves. Also too, behind those projects, like being an open source, uh, maintainer right now is
+always, it has been relatively thankless, but right now it's, it's, it can be feel even more extra
+thankless. And I feel like they're getting the brunt of a lot of the bad, uh, like slop in the, in
+the world of AI engineering, both on the security end, the PR and the issues. And like, I remember,
+uh, when like maybe like a year or two ago when, uh, like it was time for Hacktoberfest and like the
+world was just starting to do like agentic coding. It was, or not even agentic coding yet. It was
+really like we're in like YOLO mode and little pass autocomplete, but like it, it broke
+Hacktoberfest and Hacktoberfest was already something that already had so many fundamental problems
+in its ability to execute because of spam. But then that hit it like a tidal wave. So you know what
+I'm, you know what I'm saying? Yeah. Yeah. Yeah. Yeah. Hacktoberfest has been criticized every year
+since the start. Um, and that's only getting worse. Um, I remember the first, yeah, the first year
+they did it, you'd get a free t-shirt for contributing to an open source project. And everyone
+thought that's a great thing. Oh yeah, you get it. Until those poor maintainers got like thousands
+of PRs. I think everyone dramatically underestimated how much people like t-shirts. I used to, I
+used to work for an open source project and we gave mugs to people who would contribute to our repo.
+And I think we've sent a mug to every country in the world. And so, um, I know exactly what you're
+talking about. And behind that too, I think it speaks to the incredible amount of like enthusiasm
+and eagerness to be in open source. Open source is a stepping stone that many folks use to gain
+entry into tech. It has always made tech more accessible. My backgrounds are in open source as well.
+Um, I don't have an engineering degree, right? I learned to code myself and a large part of that is
+open source. So open source has always been really like dear to me. This world of, you know, it may
+be being threatened by the rise of AI and the way that we consume and use software. It also changes
+to the way software is discovered. And I wanted to ask you about just the discoverability elements
+of, you know, you're building a tool now. It's more likely than not than like an agent is going to
+be looking up that tool for a moment to implement it into something in the, if not now in the very
+near future. So how do you think about like the agentic experience of like, how do I make a tool
+that agents just intuitively want to use? Yeah, that's kind of the, there's a couple, like there's
+agentic, what's it called? I can't remember the EEO or something. It's not search engine
+optimization. Now it's like LL answer engine optimization. Yeah. And like it's crafting your pages
+and doing all of this so agents can index it and know to use you. Um, and I think that's kind of
+like an arms race. Like SEO has always been, they want to find and recommend the best solutions. Uh,
+but sometimes they're hidden and too hard to find. So you have to do some basics. Um, I've loved,
+uh, what Anthropic did. I don't know if they were the first or not, but they were the first I
+noticed it on about a year ago. Like every single doc page they have had a little button called
+export as markdown. Um, right there on the docs page, because that's what agents speak and all the
+HTML stuff just clogs up context windows. And, uh, you can copy, paste it into your ID and hand
+stuff to your agents. And then they get really good at understanding those docs. And then there's
+also this near-term problem where like they don't retrain constantly. You know, you get new training
+data put in every six months or so, or sometimes faster now. Um, where if you have some new, amazing
+tool, it doesn't matter how good it is. The agents aren't going to recommend it because they don't
+know about it until the next time the training window gets up. And so kind of, I like the advent of
+skills. Um, they're a really good way to can this stuff and hand it to agents in a way they can
+understand without having to wait for that training window refresh. Um, but yeah, uh, if they're
+just going to Google and using some web search tool call, uh, who knows what they're going to find.
+I'm really glad you bring up skills too. Yes. And a lot of our conversations today have been
+thinking a lot of open source could not just be a skill. Yeah. Um, could be, it could be a skill
+that, that an agent uses. And I know a lot of people think about their tooling in the same way. You
+don't want to be building something that an AI can replace in a few days or a week, or, and you
+don't want to be something that an AI can replace with a skill, you know? Yeah. Um, those become
+like, I, Jarvie, um, he was one of the original founders of sneak and he has a new starter called
+Tesla. And they've done a bunch of stuff in this space, but one of the things they did, I loved, um,
+was they generated really good doc pages for agents for open source libraries, but at every specific
+version. Um, cause that's something you run into. If you're trying to write an app, the agent was
+trained on a very specific version of that library that might be six or nine months old. And if
+you're trying to use something newer, the agent doesn't know it. And you get into this battle
+because it does know that library incredibly well. It's just not the current that everyone is using.
+Um, and you'll get tons of errors and stuff like this. And it takes a while for the agent to kind of
+break out of those patterns. Um, and so this one had, yeah, really good auto-generated, you know,
+syntax and usage docs for every single dot version. So your agent could always be up to date and
+calling the most up to date version of all of these libraries. There's weird little things like that
+that crop up that you don't think about in the beginning. And those are the things that, you know,
+we have to think about now that we're in this workshop, going back to the beginning about the idea
+of, you know, you have power tools for the first time, a table saw in there and you have all of
+everybody running around in the workshop and there's sawdust everywhere. It's like, you're
+responsible for making sure people don't cut their fingers off. Um, it just in that same way of
+giving that internal laptop where they could delete the production database, you know, you have to
+be able to create these safeguarded environments. Uh, where things can be, uh, like maintained for
+the longterm. And I think that becomes the new, uh, like level that we all play as software
+engineers. Now is like, how do I create the safest and most effective environment for my agents to
+get this work done? From there, the idea of so much of that work goes into cultivating the right
+space, the right guard rails, the right guide rails, as you put them. I loved that. Um, I don't
+think that there's any, there's nothing more important right now than being able to come together
+and share those ideas and, and it really kind of experiment with what one person is doing and share
+it with another team. I think there's so much opportunity for like cross pollination of ideas
+across, not just the tech industry, but across a lot of other industries as well. And, and so in, in
+this world, like, do you think engineering just becomes generally more accessible to people outside
+of, of tech? And then what do you think that that, uh, impacts everything that we've talked about
+today? Yeah. So I, overall I'm bullish on this, right. Um, the tools make it much easier to pick
+things up. You can go much faster. Um, but back to that woodworking analogy. Yeah. If somebody spent
+five years with hand tools and then you give them power tools, they're going to be much better than
+someone that just jumped in straight to power tools. But agents are also amazing at teaching people
+things. Um, if you prompt them a little bit differently, um, chat GPT has like a student mode in it
+now, where, yeah, if you're in high school and you want to finish a paper, you just ask it to write
+that paper for you or solve a physics problem. Uh, but they have a teaching mode too, where you say,
+don't tell me the answer. Help me think about this. Um, here's what I'm thinking. Steer me back to
+correct. Um, everyone kind of could have a super individualized, personalized tutor. Um, that could
+get you through that. Like maybe that five year apprenticeship can be cut to six months or something
+like this, where you get the same value, but only if you're doing it that way and you're, you're not
+just opening up Claude and say, you know, refactor this code base without knowing what a good code
+base looks like, uh, from the start. Um, so if we get both of those, I'm really bullish. It's going
+to become a lot more accessible. You're going to be able to compress learning. You're going to be
+able to get through things faster and get to that good output. Uh, but you do still have to put in
+that work. Yeah. I loved everything that we've talked about, Dan, the way that you think about, um,
+where engineering is going is, is so wise, but also to your perspective from a security standpoint,
+from a software, a supply chain standpoint is really valuable. I think, um, to us because, um, a lot
+of us exist in a world where we are consumers of those tools at scale. Um, and we don't necessarily
+have the time or the ability to understand the, the machinations that go on underneath. And I think
+that this world's going to continue to evolve and change in really interesting, fascinating ways.
+Um, I'm curious now, and you know, just this episode is dropping, uh, right after you or right
+during your assemble conference. Um, you know, what's top of mind for you, uh, right now is you have
+everybody, uh, in, in one place to discuss the future. Yeah. I mean, I'm really excited for the
+stuff we're doing. Like, you know, we, we, as a company, we've been trying to use cloud code and
+every agent out there for a year. And we finally gotten past that stage where now we are shipping
+faster and we're able to do a lot more. Um, it was a painful process. And I think we tried every
+trend in the AI world as they were getting obsoleted, you know, MCPs and rag and all of that stuff
+that no one even thinks about anymore. Um, but yeah, we've really got this stuff in production now
+and I'm excited for what it means for all of our customers and everyone using us. I'm excited to
+share all of that. Amazing. Well, Dan, it's been really great to have you on the show. We'd love to
+have you back in the future to touch back in about how software has continued to evolve. But in the
+meantime, you know, working the folks who've listened today, where can they go to learn more about
+you and your writings and what you're working on at chain guard? Chain guard.dev is our website. Um,
+most of my posting is on LinkedIn. Um, it's D A N L O R E M C. You can look me up. Awesome. Yeah.
+Come back and see, uh, how far off we were in all of our predictions here today. No, that's my
+favorite game to play on the show. And trust me, the listeners, they have their score score sheet.
+So we will come back together. We have a ton of fun. And to those listening today, if you, uh, loved
+our discussion today, please come and find us on LinkedIn on sub stack. Uh, let us know your
+thoughts about today's, uh, conversation, Dan, and I would love to hear from you, especially if you
+want to continue things that we've talked about here on the show. Uh, but in the meantime, uh,
+that's it for this week's Dev Interrupted. I'll see you next time. And Dan, thanks again for coming
+on the show. Awesome. Thank you. AI helps your developers write more code faster, but here's the
+problem. Your review process hasn't sped up. The queue grows, reviewers get burnt out, cycle time
+stalls. Linear B changes that. Our AI reviews every PR the moment it's created, catching bugs,
+security gaps, and performance issues before humans get involved. It even writes the PR description
+automatically. Your reviewers spend less time on first pass problems and more time on architecture
+and business logic. Break the bottleneck. See how linear B accelerates your workflow.

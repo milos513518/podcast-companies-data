@@ -1,0 +1,700 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Understanding The Operational And Organizational Challenges Of Agentic AI
+DATE: 2025-04-21
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/agentic-ai-operational-patterns-episode-49
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638808461098030786ff013f11-7e24-4273-8c44-cccb9dc9008dv1.mp3
+DURATION_SECONDS: 4336
+TRANSCRIBED_AT: 2026-09-17T03:33:33Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Seamless data integration into AI applications often falls
+short, leading many to adopt RAG methods, which come with high costs, complexity, and limited
+scalability. Cogni offers a better solution with its open source semantic memory engine that
+automates data ingestion and storage, creating dynamic knowledge graphs from your data. Cogni
+enables AI agents to understand the meaning of your data, resulting in accurate responses at a lower
+cost. Take full control of your data and LLM apps without unnecessary overhead. Visit
+AIengineeringpodcast.com/cogni, that's c o g n e e, today to learn more and elevate your AI apps and
+agents. Your host is Tobias Macy, and today, I'm interviewing Julian Leneve about how to avoid
+putting the cart before the horse with AI applications. And when do you move from simple LLM apps to
+AgenTic AI, and how do you get there? So, Julian, for, anybody who's not familiar, can you start by
+introducing yourself? Yeah. Of course. Thanks for having me, Tobias. Like you mentioned, my name is
+Julian. I'm the CTO at a company called Astronomer. We work with the open source tool Apache
+Airflow, which is, I mean, the most popular data orchestration tool there is. We've built a business
+over the last six or seven years managing and running Apache Airflow for our customers, but have
+since extended into data observability, cataloging, quality, plus machine learning operations. We
+get to partner with, you know, data engineers around the world, helping them take anything from
+simple ETL workflows to more complex LLM workflows and deploy them in production where they run very
+reliably. And do you remember how you first got started working in data and AI? Yeah. I mean, it's
+it's always been something that's that's interesting to me. I think, like, it was pretty clear to me
+from a younger age that, like, data is here to stay, and you can go do lots of interesting things
+from it. I, as as probably many people who are listening, got started with, like, very simple, like,
+data science and modeling and then eventually learned more about ML and found it exciting because,
+like, you can defer to the the kind of computer, if you will, on, like, how to go structure and find
+patterns in data. And, you know, of course, now everything's about AI and LLM, so I'm excited to to
+talk about that as well. In the context of AI applications, there are so called simple applications,
+which given the nature of the technology involved, I I would say is anything but simple, but
+comparatively. And then there is this broader category of applications that is termed agentic AI.
+And I'm wondering if you can just start by laying the groundwork for the conversation as far as what
+is the juxtaposition there of agentic AI? What does that involve in terms of technologies,
+competencies, as opposed to simpler LLMs and some of those operational characteristics that need to
+be accounted for? Yeah. Of course. I'm actually gonna lean on Anthropic's definition here because,
+you know, they they wrote a great article a couple weeks ago called building effective AI agents.
+I'm sure most of the the listeners here have have seen it. And if not, I I definitely recommend
+reading it. So the way they draw the the distinction is that, you know, these LLM workflows are, you
+you know, these systems where LLMs and tools are orchestrated through, like, very predefined code
+paths. So there's some level of determinism where you can anticipate, what's going to happen, like,
+the general control flow of the application. Agents, on the other hand, are systems where, like, the
+LLM itself decides the full control flow. They kind of direct their own processes, tool usage, and
+you kind of defer everything to the LLM. But, I mean, you make a good point around, like, these
+things are are anything but simple. It's interesting because it it does feel pretty simple to work
+with LLMs, and that's because these Frontier model providers have done a great job of making them
+very simple to work with. Right? They take on all of the complexity of actually building, training,
+and hosting and scaling these models to the point where, like, to consume them, you can go to chat
+gbt and, like, ask a simple question or make a very simple API request. So I'd love to, you know,
+get into that more too. As we move from this idea of straightforward LLM applications where we're
+just doing a single call and getting a single response back and then moving to these more
+orchestrated workflows, whether they're deterministic of just a very straightforward procedural
+calls of take the output from this one, feed it into the next one, or if it's more of the self
+directed, more fully agentic and automated workflows that are starting to grow, what are some of the
+technical challenges that are often underestimated or misunderstood or just completely unknown as
+teams start to try to go straight from I have an engineering team to I'm going to build an agentic
+AI application? Yeah. And so the way I break it down in my mind is, like, there's two types of AI
+applications, and there's two levels of control that that you need to pick from. They're obviously
+synchronous applications. So things like chat gbt, these chat bots, something like cursor where
+you're interacting with it live and you expect a live response. Right? You're gonna sit there and
+wait until the LLM or this, you know, agentic system gives you a response. And then there's also,
+like, these asynchronous or, like, more batch oriented workflows where you might go trigger some
+some set of actions, but you are not actively sitting there waiting for a response, or, like, you
+want something to run on on some cadence. I mean, the most popular example of this today is, like,
+ChatGPT's deep research, where you can ask it a question. It'll kick off kind of a full workflow or
+set of agents. And you can sit there and wait for a response, but, you know, it oftentimes takes a
+couple minutes, you know, up to fifteen, twenty minutes. The the world that I live in is primarily
+in these more, like, batch oriented asynchronous workflows. Again, I mentioned I work with a lot of
+data engineers. They live in the world of, you know, more traditional, like, data engineering
+workflows, data pipelines. And then there's, you know, the two levels of control that we talked
+about, the LLM workflows where you have some, like, predefined code path that's going to get run,
+and you're using an LLM as part of that versus an agent where you're deferring kind of full full
+control to the LLM system. I think where I've seen people have the most success so far is with LLM
+workflows. And the reason for that is is, like, you end up not introducing unneeded complexity. I
+mean, like, the analogy that my head goes to is, like, building an agentic system is like trying to
+build, a microservices architecture. Right? Like, that complexity is definitely needed at times. I
+mean, we have a bunch of microservices here at Astronomer, but you're not gonna go build
+microservices, like, before you've built your first API. And that's what we see teams doing. You
+know, I work with a lot of teams who have kind of stood up these, like, full AI centers of
+excellences that go straight for, let's try to automate an entire human's job with AI. Let's go
+automate all of support with AI. And, you know, you you end up putting the cart before the horse,
+right, as you as you mentioned at the beginning. And it's exciting. Don't get me wrong. Like, I
+definitely believe in kind of the promise that agents bring. I think in the long term, people will
+realize a ton of value from them. And, like, we're building our own agents here at Astronomer. But
+when you go straight for agents, what happens is, like, you miss all of this low hanging fruit,
+these, like, very simple things that you can do. I mean, I'll give a couple examples that, you know,
+we've built out here at Astronomer, and I can talk about more of what we've seen kind of our
+customers and communities do. We're working on a new major release of Airflow right now, Airflow3.o,
+which is something that, you know, myself and and the entire company and community is super excited
+about. I think it'll be the biggest release in in Airflow's ten year history. But as I'm sure you
+can imagine, there's a lot of activity going on in the open source community right now. Right? It's
+a big open source project. There's multiple companies, a ton of individual contributors contributing
+to it. And, like, even things as simple as keeping up with the development is tricky. I used to log
+in to GitHub every day, literally look through the commit log because I get questions all the time
+about what's coming in Airflow three, like, how is it progressing. That's the type of thing that an
+LLM workflow is great at. Right? It's effectively a simple data pipeline at the end of the day. I
+ended up writing something in, like, twenty, thirty minutes that pulls the latest commits from the
+previous day from GitHub's API, feeds it into an LLM to do both filtering and summarization. It's
+like I don't care as much about, you know, bug fixes or, like, kind of the normal activity, but I do
+care about, like, big new features. And And then it sends me an email and a Slack message every day.
+To the earlier point about, like, complexity in these things, like, LLMs themselves are quite
+complex. Like, I'm not gonna pretend to understand them to the level of, you know, researchers at
+OpenAI, but they're super easy to use. Right? The fact that I can go build that LLM workflow in
+twenty, thirty minutes is because the complexity comes from the orchestration tool, right, Airflow,
+in this case. It's doing a lot of heavy lifting And the LLM. Right? All I have to do is make a a
+simple API call. And we've seen customers, I mean, like, transform their entire business with these
+LLM workflows where, like, yeah, that one use case in and of itself takes twenty, thirty minutes to
+build, like, saves me ten minutes a day. But if I go do that a dozen times every week, like, that
+adds up very, very quickly, and you can go scale that across the entire organization. So, know, for
+example, like, we work with a big fintech customer. They're growing very rapidly, scaling their go
+to market organization very quickly. And one of the things that they did was they had an engineer
+sit down with a sales rep for a full day. That engineer looked at everything that sales rep was
+doing, right, taking in all these inbound leads and calls, reaching out to a list of prospects,
+like, getting on customer calls, pitching the products. And that engineer came away with, like, a
+dozen ideas immediately for things that could be automated, not by building, like, a full multi
+agent system that's gonna try to do everything that sales rep is doing, but, like, taking these very
+specific things and doing them very well. So, you know, again, I've I've seen companies approach it
+both ways, like, of let's go build out a bunch of agents and try to automate as much as possible
+immediately, and let's go build out kind of these simpler LLM workflows that, like, might not be as
+exciting as multi agent systems, but are very pragmatic and and make a real difference, especially
+when you add them up. I think that microservices analogy is a great one to build around in this
+context because in microservices, when it first came to the general awareness of the engineering
+community. Everybody said, oh, great. Microservices are the way that you build software no matter
+what. And then everybody who had worked with them a lot really said, actually, it's more of an
+organizational efficiency than a technical efficiency, efficiency, and it can actually cause a lot
+more problems. And so I think that's a good parallel to this idea of agentic versus single LLM use
+cases where the purpose of microservices isn't necessarily to make your architecture great and make
+everything more maintainable. It's more to manage the communication boundaries of the organization,
+of the engineering teams, and they also require a lot more orchestration and overhead of making sure
+that changes are compatible as you release them, making sure that the APIs and the contracts that
+you're building around are stable. And I think that that holds true in this agentic context. And,
+also, people who do eventually build toward microservices are usually starting from a monolith where
+they have one application that does all of the things, and then they'll peel pieces off into smaller
+portions. And I'm wondering what you see as that as a parallel in the engineering and design space
+of these LLM applications as you migrate to these agentic workflows and just building up the
+operational capacity and knowledge of running those single monolithic workloads even if it's just a
+a very small use case and then being able to peel pieces of that into more of this agentic
+architecture. Yeah. I mean, I definitely I definitely do love the the kind of microservices versus
+single API analogy. I think it it it makes it pretty clear what the challenges are. But I also like
+it because if you think through the history, right, of of microservices, there's a lot of excitement
+about them at the beginning to the point where, like, you would use microservices for things that,
+like, probably didn't need to be microservices. But, like, it's a fun technical problem and, like,
+people love solving fun technical problems. We're, like, we're starting to see this wave now of,
+like, people really starting to question whether microservices are are necessary. Right? Because it
+does introduce a lot of operational complexity. And I I anticipate, like, we'll see the same thing
+with these agent systems too, where, like, they're very fun technical problems. It's a very fun
+technology to work with. But, like, usually, you don't wanna take on that complexity unless it's
+it's absolutely necessary. And I think there are also lots of parallels between, like, these
+microservice architectures and these, like, multi agent architectures. Right? Observability, API
+contracts, change managements, monitoring. So I think there's there's definitely plenty there. And,
+again, like, microservices will always have a place in technology. Right? Like, there are a lot of
+cases where that complexity is warranted and it is needed. The same way that I anticipate, like,
+agents will always be around, but that doesn't mean you should ignore the possibility of, like,
+simplifying things as much as possible. Because the other benefit to that too is, like, I've seen
+teams that will go try to build out these multi agent systems. And if it doesn't work as well as
+anticipated, which happens, like, very, very often, I'd even say in the the majority of cases
+because there's so much promise and and hype around agents. The businesses is like, they're not
+gonna want to invest more in agents versus if you take the other approach of, like, build as many
+LLM workflows as possible, like, go after the low hanging fruits, build these kind of simple, more
+pragmatic things, that's what's gonna get the business excited because you'll go introduce
+efficiencies across the entire business. You'll be able to build products and, like, do certain
+things that you wouldn't be able to otherwise. And then, you know, the the business will be excited,
+and you can go justify investments in kind of these full agent architectures After you've built,
+like, some level of operational capabilities around these LLMs, after you've built, like, intuition
+for what they're good and not good at, so that's that's the approach that, I mean, we've started to
+take at Astronomer. That's the approach that has gotten me most excited from how customers have been
+talking about things, and that's generally the approach that I recommend now. In terms of the
+capabilities, the underlying technical systems that are necessary, whether it's for these monolithic
+versus microservices to to extend the analogy, use cases of the single LLM back and forth
+conversation to these agentic capabilities. What are the underlying requirements around data
+infrastructure, operational infrastructure, orchestration, and observability capabilities that
+should be in place before you start to make that migration to the more complicated but potentially
+more fruitful microservices or agentic use case? Yeah. So, I mean, I'm I'm certainly a little bit
+biased here because, again, I I work with airflow and data engineers quite a bit, but I'll I'll try
+to put my bias aside for a second. I think, like, the ability to, I mean, build, test, and deploy
+LLMs in the same way you would build, test, deploy, and obviously kind of monitor and observe
+traditional APIs follows very closely. So on the build side, you know, there are a bunch of kind of
+these open source tools that have gotten very good around building abstractions on top of LLMs to
+make it easy to, you know, build around these LLMs, switch out models when you need to define tools.
+The one that I've I've seen and have enjoyed the most so far is the Pydantic AI library. I've played
+around with, you know, Linkchain, LAMA, Index, OpenAI's libraries, and a bunch of others. I think,
+like, the Pydantic AI approach feels very practical in the sense that, you know, the Pydantic team
+itself obviously has been working with Python for many years now, and they know what good looks like
+and how to build very stable APIs. And you can definitely feel that when you start to use Pydantic
+AI. It's def it it's the right balance between, like, giving you abstractions that make it easy to
+work with LLMs and define tools and think about things like observability. But it also doesn't feel
+like it gets in your way. Like, when we first started using link chain as an example, it was great
+when your use case fit very well into kind of the link chain way of doing things. But if it didn't,
+and we ran into this all the time, like, you were better off just, like, importing the OpenAI
+library and, like, writing the the code yourself. So that's on the on the build side. Again, I think
+it is important to use one of these abstractions because new models come out every month. Right?
+And, like, you want to be able to adopt and test those models without having to go, like, make major
+refactors or, like, switch from the OpenAI client library to, you know, the, like, Anthropic or or
+Gemini one. Testing these models is oftentimes, I mean, pretty tricky. I like, there's no there's no
+science to it right now. In my view, it feels a lot more like art. When you're able to break things
+down into these, like, very specific use cases, these LLM workflows, usually, like, you can just do
+a bunch of manual testing and build some intuition for, like, does this work well or does this not?
+Especially as you start to build more and more of them, like, you can get that sense a lot quicker.
+For example, like, with that, GitHub change log summarization example I was talking about. Like, I
+didn't go and build, like, a very robust evaluation suite. Like, LLMs generally are good at
+summarizing things in my experience. I played around with it a ton. I, like, tweaked the system
+prompt until I was generally happy with the output and then deployed it. And, like, as I get results
+back, you know, it again, it sends me an email every day. Sometimes I'll go back and change things.
+Like, if it's giving me a commit that I actually think is, like, not all that interesting, like,
+I'll just go update the system prompts and kind of tune it over time. Outside of, like, this kind of
+artistic style of evaluation, I think it's tricky because it, like, it becomes a a rigorous academic
+problem very quickly. And, again, it's a it's a fun academic problem for sure, but that can also get
+in the way of, like, you actually building and deploying these things. LLMs, as a judge, feel like a
+a nice way of doing evals where, like, there may be some slight variation in how responses are
+worded, but, like, as long as those generally mean the same thing, LLMs can be good at at
+determining that for you. There are things like the kind of SWE bench benchmark that take a nice
+approach of, like, you generate some code and actually run it through unit tests to validate whether
+that code is correct or not. I think that's great if you have a use case where you can test it very
+well. But in my experience, oftentimes, that's that's not the case. So we talked about build. We
+talked about test. Deploying, again, I think depends on whether you're, like, one of these
+synchronous workloads or asynchronous workloads. I think for these asynchronous workloads, like, the
+traditional data engineering tools actually work quite well because it gives you all of the kind of
+functionality that you need out of the box to kind of build, manage, and monitor these, I mean,
+essentially, data pipelines at the end of the day. Things like scheduling, triggering on events,
+dependency management, retries, like, a UI on top of these things. Like, that's what Airflow gives
+you, and that's why we've seen a ton of success so far with just, like, kind of fitting these LLM
+workflows into a more traditional orchestration tool. And then on kind of the the monitoring side,
+I'm a big fan of I mean, looking at it two ways. One is, like, the same way you'd want to monitor
+any application. Like, you need metrics around, like, is this thing up? Is it low enough latency?
+Can I understand how many tokens I'm processing? Because, like, there's very real cost associated
+with it. But for actual, like, metrics of how the LLM is performing, I like to go to product metrics
+instead of, like, the more academic benchmarks. So, like, the the most simple example is, like,
+we've deployed something called Ask Astro. It's like a simple kind of q and a application over all
+of our airflow and, astronomer knowledge. And, like, I know it's doing well if it's getting a lot of
+usage and people are, like, rating those questions as correct. And, like, that to me is a lot more
+important than, you know, this, like, internal benchmark of 500 questions that we've we've generated
+because, like, we introduce certain biases, like, when we go create that dataset versus, like, how
+it's actually used in in the real world. I think once you do that enough times, like, it actually
+becomes super quick and easy to the point where, like, we've seen customers deploy new LLM
+workflows, like, multiple times a week because, again, like, you come up with this very specific
+problem that you know you can solve well. You couple it with, like, the right orchestration
+technology, in this case, to make it super easy to build and deploy these things, and then you just
+keep going. I I think once you do that enough times, like, that's when it feels like you're ready to
+start thinking about agents because regardless of, like, if that agent or, you know, multi agent
+system performs well or not, like, you're already delivering very real value to the business, and,
+like, that is a win in and of itself. Orchestration piece, I think it's also interesting to talk
+through some of the architectural manifestations of what an agentic workflow would look like, where
+typically you hear the idea agentic AI. You think, oh, this is all one application. It has one kind
+of monolithic runtime where maybe you're using something like lane graph or but as you said, it can
+be an asynchronous workflow where maybe it's not all one chain of calls that exists within one
+process running on a server somewhere. Maybe it is one AI call that's executed by, one of our
+standard data orchestration platforms, whether it's Astronomer, Daxter, Prefect, etcetera. And then
+that generates an output that gets fed into the next stage of the DAG. Maybe there's some standard
+procedural code that gets run on it that gets fed to another another AI call. I think that you could
+technically consider that as agentic AI as well because it is multiple LLMs operating
+collaboratively in a system with some means of orchestration, not necessarily having that
+orchestration all be in process in one executable. And I'm wondering what you're seeing as some of
+the ways that people are starting to explore that architectural principle of agentic AI and agentic
+applications that maybe span beyond the bound of one single Python script or executable that gets
+deployed to a server somewhere. Yeah. I think, like, the the best example I've seen so far is these
+code generation agents. Things like Cursor, WinSurf, GitHub Copilot now is is turning more agentic,
+where there's a lot of ambiguity in what you ask it to do. Right? Like, it's not a very well defined
+problem where you can anticipate what needs to happen before it actually happens. And, like, a lot
+of these elements today are very good at generating code, and so it it also works nicely from that
+regard. Like, if you look at maybe Claude code is a a good example where it is, you know, the kind
+of Claude set of models, but then you couple it with, like, 20 to 25 tools that are, like, you know,
+lists all the files in a directory and read a single file and perform a search and update a file or
+do a search and replace. Those things work very well if you have a human in the loop, I would say,
+is the the big caveat where you need, like, some level of oversight into what's going on because and
+maybe the the right way to look at the math is, like, let's say for every operation the agent does,
+it has, like, a 95% chance of getting it right, which is very, very optimistic, but I think can also
+help illustrate this point. Like, let's say your agent system is, on average, going to do 10
+operations. If you take that 95% to the tenth power, that's, like, 60% or so, if my math serves
+correct. And, like, 10 feels kind of low for, like, when I use cloud code as an example. Like, it's
+doing, you know, twenty, thirty things at a time, and it's pretty impressive, like, what it can do.
+But it compounds very quickly, which is why I think having that human in the loop is important. The
+number of times, like, cursor, for example, has been able to one shot things for me is very low. But
+I also don't mind because it's super easy to reprompt it or, you know, give it some addendum to go,
+like, you you know, fix something. I think where you start to get into trouble is when you do have
+these multi agent systems with no human oversights, which generally, like, aligns to these more
+asynchronous workflows where, like, you don't have a human sitting there, like, actively looking at
+what it's doing. Because then, like, that 95% compounds, and it compounds, and, like, the chances
+that the kind of end result is what you'd expect or what is useful, like, it just goes down the more
+complex these systems get. So, generally, like, what I've seen work well is if you have these, like,
+very synchronous workflows, like, code generation, again, is a great example because, like, if
+you're using Cursor, using Cloud Code or WinSurf, like, there's a human sitting there looking at the
+output and continuing to refine it. That's when these agents work great because the accuracy almost
+doesn't matter quite as much because you can, you know, reprompt it to get the accuracy up to where
+you expect it to be. And, like, you're still saving time at the end of the day, right, because it
+can just write code so much quicker than a human can. But when you start to deploy these things
+asynchronously, it gets very tricky because, you know, the full thing is kind of like a black box.
+Right? You give it some input, and then, like, at some later point in time, it gives you some
+output. You can go back and, like, trace what happens, but you can't take corrective measures, which
+is, again, I think, like, kind of why these LLM workflows are so interesting because they are less
+of these, like, agentic systems where that 95% compounds, there are these, like, more very specific
+use cases, and you can trust them to run asynchronously. Digging more into that compounding error
+rates and the compounding of the confidence windows decreasing as you layer more and more of these
+AI calls, what are some of the observability aspects that need to be in place to be able to mitigate
+some of that where maybe you have some insight into what is the confidence interval for a given
+output and then maybe having some sort of circuit breaker where as soon as that confidence interval
+drops below a certain threshold, you stop or pause the workflow and then maybe page somebody who is
+going to be that human in the loop to intervene or take over the workflow for from the agent because
+it has gone too far off the rails. And in in that context as well, some of the observability around
+the security and risk appetite where maybe you need to incorporate guardrails in combination with
+that confidence threshold? Yeah. That's that's a that's a good question. I mean, I think first off,
+like, if anyone can measure the accuracy of these agents as they're performing, like, that is a many
+billion dollar problem. So I'd love to to talk to you if you have it figured out. I think, like,
+there's the the general observability of, like, can I understand what this agent is doing? The
+Podantic AI approach, which I think is pretty clever, is, like, you just emit every LLM call and
+tool call as, like, an OpenTelemetry span and trace. And, like, that's nice because you can go plug
+it into, like, your more traditional observability tools and understand, like, exactly what's going
+on. That becomes super helpful if, like, you get some output and, like, want to understand how it
+arrived at that answer as an example. It doesn't really help kind of as much with the accuracy
+problem. Like, it helps you understand why accuracy might not be great. You can test, like, the
+agent's ability to reason through certain things. Like, this is where benchmarks might actually be
+interesting and helpful, where instead of benchmarking, like, the kind of full agent system at once
+where, like, given some input, like, does it come up with some output? It is helpful to try to break
+down the problem into very specific things. So, like, with the coding agent as an example, like,
+maybe you wanna benchmark its ability to turn the user's query into, like, a search across the code
+base. Right? And if you like, that's a much easier thing to benchmark than, like, given some input
+prompts, like, can it generate the right code? Because that also helps you, like, build out the
+benchmark over time, where if, for example, like, you get bad user feedback around, like, a certain
+type of problem, you can couple that with, like, the traditional observability methods to say, okay.
+Where did it go wrong? And then you can go build benchmarks for those things in particular and start
+to tune the agent system over time. Ramp also had a a pretty clever talk a couple weeks ago that I
+think they posted on their YouTube or maybe as part of some podcast where, like, one easy but
+expensive thing to do if you care a lot about accuracy is just, like, let the agent run many times
+in parallel and then, like, use an LLM as a judge at the end to try to catch certain patterns or,
+like, draw certain conclusions. Like, for example, this may be a silly example. Like, if I have this
+asynchronous workflow that's, like, doing some let's just take, like, deep research as an example.
+I'm gonna give it some prompt. It's gonna go off for a half hour and, like, come up with some
+answer. Like, you can have that agent run once, and you'll probably get a good answer. Right? Like,
+OpenAI has has proved that this is possible. But if it's something super critical and, like, you
+care about not hallucinating and, you know, it being as accurate as possible and you're willing to
+spend, you can go run that agent a hundred times, right, and come up with a hundred different
+reports and then use an LLM at the end to, like, draw its own conclusions around, like, hey. If, you
+know, 80 of the reports, like, all mentioned this one thing, then, like, probably that thing is
+true. It's, like, kind of similar to what these frontier model providers are doing with chain of
+thought. Right? Like, you just give the LLM more tokens to to think. For organizations that are
+evaluating and investing in these AI capabilities, whether it is a single internal chatbot or people
+who are using it for their development inner loop or evaluating whether to deploy some agentic
+workflow for business process automation, whatever it might be. What are some of the key heuristics
+and questions that they should be asking as they determine which style of AI application they should
+be investing in or evolving towards, and what are some of the key milestones that they should be
+measuring against in that process of implementation and adoption to decide, do I just go with a
+single LLM? Do I incorporate that into a broader application, or do I build some sophisticated,
+orchestrated, agentic AI application? Yeah. I think the most important the two most important things
+that I've seen are the actual experience of how you work with it because that can make or break
+things. And, like, personally, I would see I would love to see a lot fewer chatbots out there. Like,
+that seems to be the kind of de facto standard of of what people build. And I think we can be a lot
+more clever than that. Like, the UX matters a ton because that's what's gonna drive engagement
+outside of, like, the accuracy of the thing. And, also, like, where your unique differentiation for
+this is gonna come from. Right? Like, for most organizations that aren't, like, cursor, where your
+differentiation comes from, like, how accurate the system is, Oftentimes, you're just gonna defer to
+these Frontier model providers. Right? Like, given the velocity of how quickly new models are coming
+out, I think it makes a lot less sense to try to fine tune things unless you have, like, very
+specific use cases or, like, some unknown kind of pattern or set of data that you're working with.
+This is why, you know, I think I've seen so many data engineers build successful examples because,
+like, oftentimes, that differentiation comes not from the models, but from, like, your ability to
+supply data to those models. And then, like, the differentiation comes from the data. And nobody
+knows the data better than the data engineer. Right? And data engineers are also very intrinsically
+curious. Like, they are playing around with LLMs. They're thinking about use cases. So I think
+really thinking about why it makes sense for, like, you as an organization to do this is super
+important. Because, like, vendors will come out with AI driven tools. Like, if you don't have some
+sort of, like, unique data or perspective on the problem, it's a lot cheaper and easier to go, you
+know, use a solution that, you know, someone else with that differentiation is building. But if you
+do have the data, it does become super interesting because it means that what you can do looks very
+different than what anyone else can do. And this is where, like, we're starting to see a lot of
+organizations make the jump from traditional, like, ETL processes, like, go build dashboards. It
+used to be the case that before you even thought about, like, AI or NLP stuff, you'd have to go,
+like, build up an ML team to do some, like, kind of numerical ML models. And, like, that's very
+expensive. Now you can go straight to AI. I think, like, for data teams across the world, there's,
+like, this general notion that they could be doing more with the data. Right? Like, you you make
+this big investment in something like Snowflake or Databricks or, you know, pick your data warehouse
+or data lake house nowadays. You go get all this data nicely formatted. It's clean. It's in the data
+warehouse. And then the game becomes, like, what can you go build on top of that data? It used to be
+the case that it was all, like, reporting dashboards. We're now starting to see a lot of people do,
+like, data powered applications where, like, you're feeding the data directly back into an
+application, and, like, that becomes a production system. Now it's, like, super easy to just throw
+that data to an LLM and get a ton of value out of it. You can think of a ton of clever use cases
+without having to, like, build a 70,000,000,000 parameter, like, LLM yourself. So the fact that,
+like, these frontier model providers are doing all of that work for you, I think, makes it super
+interesting too. Think about it from, like, a unique differentiation perspective, right, where you
+have access to some unique data, you wanna go get more value out of that. There's a bunch of these
+LMM use cases you can think of. Another interesting element of the agentic workflow and the
+implementation that we've already touched on several times is the idea of orchestration, where the
+orchestration typically takes the form of some DAG or directed acyclic graph. And I'm wondering how
+you see the organizational awareness and understanding of the nature of DAGs manifest in terms of
+their ability to effectively implement these agents and maybe some of the ways that we need to
+explicitly call out the differences between a DAG and Boolean control flow for these types of
+workflows and then also the potential for the AI to dynamically manipulate or generate the graph as
+part of that execution. Yeah. I mean, that's probably a good way of thinking about the difference
+between, like, an LLM workflow and a full kind of agent or agentic system is, like, how predictable
+is that DAG? And is it a DAG, or is it a directed cyclic graph? Right? Like, can it go back and and
+repeat certain things? I think if it can be a DAG, that's better because they're more reliable,
+they're easier to observe and understand, and you don't run into as many issues around, like,
+accuracy, right, because it's a lot more predictable. Or the halting problem. Yeah. Yeah. Exactly.
+And you like, even if you're you're kind of sticking with the DAG shape, there's a lot of clever
+things you can do. Right? Like, branching is something that's been around in these orchestration
+systems for a while. It used to be the case that, like, you would have to deterministically come up
+with which branch to go run, but, like, we've seen a lot of people use LLMs to determine which
+branch to run. Like, maybe a classic example is, like, support ticket routing. Right? A new ticket
+comes in. If you want it it was, like, in a pre LLM world, if you wanted to try to automatically
+route that to the right team, like, you are doing topic modeling and, like, other kind of NLP
+things. And, like, those are great, but they're, like, not as easy to do as, like, making an API
+call to an LLM. Now you can just, like, craft a clever system prompt, give it to an LLM with the
+ticket contents, and let it decide, like, is this a p zero? Does this go to this team? And, like,
+that's still a DAG structure, but a very useful business problem. So I like I like that way of
+looking at things. One of the other things that you mentioned as far as the typical evolution of
+technical maturity for teams who are going from building up their data suite and coalescing the data
+to then they have to build out their data science and machine learning team to be able to build
+their custom models and evaluate them and test them and do a bunch of AB testing as they deploy them
+and have the typical MLOps workflow of build, train, deploy, evaluate, repeat. Most people are
+skipping that stage of building out the ML capability internally and, as you said, jumping straight
+to AI because the interfaces are simpler to get started with. But I think that it also introduces a
+certain amount of potential for risk in that they don't have that existing institutional knowledge
+of the probabilistic nature of these systems and how to actually manage and deploy and scale them
+effectively. And, also, in many cases, you might not even have a data team because the LLMs are so
+easy to get started with. You might just be a single engineer or a team of web developers who are
+tasked with here, add AI to it. And so they say, okay. Well, I'll just call OpenAI, or I'll call
+Anthropic and not necessarily understanding the utility of having that data grounding and the
+operational characteristics of data workflows, and I'm wondering what you're seeing as some of the
+ramifications of that leapfrogging as it were straight to these AI capabilities. I mean, to put it
+bluntly, like, that's why a lot of these AI projects fail. Right? Because you get excited about the
+technology. You don't have the intuition for what these models are good or not good at. You don't
+understand how to work with them and deploy them to the level that's necessary to actually rely on
+them in a production setting. So you try to do it. You release it, and, like, you get, you know, bad
+feedback about it, and, like, you end up shutting it down. I think that's the case for majority of
+projects today. And you can draw, like, parallels with data science and ML teams. Right? Like, when
+you go start a new, data science team or ML team, like, if you haven't had one before, you don't go
+straight to the deep end and, like, try to train a very complex model. Like, you start with the
+simple kind of low hanging fruit things, and you build that, like, ML ops practice over time. But it
+always looks a little different from organization to organization because, again, you build it over
+time. Like, you come up with what works for your organization, which might be very different than
+what works for a different organization. I think, like, if you draw parallels to the LLM space, you
+can kind of follow that same model of, like, start with the simplest example possible even if it's,
+like, maybe not as exciting to you. Like, again, I keep going back to this, like, GitHub change log
+example. Incredibly simple, but also valuable enough that it's worth doing. And, like, you don't
+wanna go build these, like, full agent systems unless you trust that you know how to operate them.
+And it's tough to know how to operate them if you can't operate, like, these simpler LLM workflows.
+I mean, maybe if we, like, go back to the API versus, like, microservice analogy for a second. Like,
+there's a lot of things that can go wrong within an API, right, even if you just have one. And if
+you go build and release an API and you're responsible for maintaining it, you build some
+institutional knowledge around what can go wrong with that thing. Right? Like, you end up with a
+runbook that describes, hey. Here are the common things that can go wrong. Here's how you fix them.
+You build up this kind of institutional knowledge and intuition for how to operate that. And then
+when you go introduce multiple APIs and get to this more microservices architecture, like, you still
+have the problems of what can go wrong within an API. But at that point, like, you're very good at
+dealing with those. Right? Like, you know how to build for those from the get go. You know how to
+resolve them much quicker if it goes wrong. And what you're doing is instead introducing more
+complexity on, like, how these things interact with each other, and that becomes the problem that
+you then have to solve. But if I was to go try to build a microservices architecture today, and I
+was not good at writing APIs, and I was trying to solve this, like, distributed problem, like,
+there's gonna be fires all over the place, and, like, probably I will be fired. Like, if if you draw
+the same analogy with, like, these LLM workflows versus, like, multi agent systems, If you try to go
+and build a multi agent system, there's a lot that can go wrong, both, like, within how you interact
+with a single LLM and how those LLMs interact with each other. Like, you wanna get good at solving
+one problem before you move on to the next. Another piece of the technical stack that is typically
+necessary as you move to these more agentic workflows is a more comprehensive and sophisticated data
+layer for the agent to be able to maintain state, particularly as it hands off between these
+different LLM calls where that typically involves more than just a vector database for, like, a rag
+use case. You need something that maybe has more of a graph nature to it for being able to
+understand the relation between these different data elements or some sort of memory system for
+being able to balance between short term context and long term history, especially as the agent
+evolves in capabilities and use cases and runs for a greater period of time and needs to be able to
+recall some of those more historical pieces of data to feedback into more recent requests. And I'm
+wondering how that also impacts the speed of execution and the ability for businesses and teams to
+be able to actually build and sustain these more complicated operational infrastructures? Yeah. It's
+it's it's a it's a good question. So, I mean, the way I think about it is, like, there's probably
+three ways of having these LLMs interact with, like, some sort of data, whether that's, like,
+memory, context, kind of, you know, documents that live in vector databases. So the first is, like,
+the more traditional, like, RAG architecture where you're gonna go build a vector database. You can
+kind of anticipate what the LLM needs to know ahead of time. And you can do, like, you know,
+semantic search, hybrid search to go retrieve documents. And, like, at that point, you're trying to
+solve this, like, context window problem of, hey. I have more documents than can fit in my context
+window, so I need to store them someplace else and, like, let the LMM retrieve from those things. I
+think, like, there's probably gonna be a lot of innovation there. It also becomes super clear, like,
+who's worked on search problems and who hasn't because I think, like, fundamentally, that's just a
+search problem at the end of the day, and these search problems have been around for a while. The
+second, like, piece of data that the LM has to interact with is, like, the context of, like, what
+it's trying to do right now. So, like, you're gonna go kick off this multi agent system in the same
+way, like, with traditional applications, you need to do, like, cross API monitoring and state
+sharing. Like, you have some of the same problems with these multi agent systems. I haven't seen
+candidly, like, too many examples of that because to get to that point, like, you have to have
+successfully deployed agent systems in production before you move to, like, these multi agent
+systems. I think what happens a lot of times is people will get to play a single agent. You run into
+some operational problems with it, and, like, you keep investing more in in that problem before you
+move to these multi agent systems. But I think, like, there are some very well defined patterns of
+sharing state across applications, in kind of the more traditional software engineering world that I
+anticipate will probably be applied here. And then the third is, like, this idea of long term memory
+where, like, you can't anticipate ahead of time what that long term memory is going to be. You want
+the agent system to kind of learn on its own over time. Like, the simplest example of that is, like,
+if you go to chat g p t and ask it to remember something about you, like, you'll get a little toast
+message that says, like, okay. We'll remember that. And then at a later point in time, like, you can
+go into your settings, your profile, and it'll show you, like, the memory that it has about you.
+Like, I think that's a pretty nice and clever way of doing things where you, in some senses, are
+letting the LLM decide what goes into long term memory. ChatGPT seems to do it in real time. I
+anticipate that you can probably do that, like, asynchronously. You can have some, like, data
+pipeline that runs after the interaction that look goes and looks back through kind of the set of
+messages or, like, what happened and let the element pick out, like, oh, this, like, seems important
+for me to remember. Let me go store it someplace. I think, like, how that's stored and how it's
+retrieved is is another question. For things like this, like, chat gbt memory concept, You can just,
+like, store that in plain text and go retrieve it every time and, like, put it in the context
+window. This is, like, similar to cursor rules. Maybe it's another good example where you can
+supply, like, a bunch of markdown files and rules and give it some specificity around, like, this
+rule applies if you're operating on a Python file. Like, that's essentially long term memory. In
+this case, it's like the user defining that memory instead of the agent defining that memory, but
+you can imagine a feedback loop where, like, the agent starts to define that memory as well. And you
+can do that as long as, like, you don't anticipate the memory growing to be too large that it cannot
+fit in the context window. I think for a lot of these multi agent systems, probably, the memory will
+grow to be more than can fit in the context window, in which case, like, you go back to kind of a a
+vector database and search and, like, context retrieval problem just with instead of, like,
+documents that you can kind of load into the vector database on your own and anticipate the LLM
+needing, like, you let the LLM decide what what also makes it into the vector database. From a
+tooling and framework perspective, obviously, you're very familiar with the Airflow community, the
+use cases for it, the people who are building with it. What do you see as the opportunities for that
+orchestration layer to facilitate the development, deployment, and maintenance of these more
+sophisticated AI driven agentic workflows? Yeah. It's it's a good question. So I think of it
+probably in two ways. The first is, like, the agent is the DAG, in which case, like, Airflow and
+these orchestration tools fit in quite nicely because Airflow is, like, is there for building DAGs.
+And you'll want to observe, monitor, retry these agentic workflows in the same way you would want to
+a traditional data engineering pipeline. And that's where, like, if you go use something like
+Airflow that's been solving and learning how to solve these problems for the last ten years, like,
+you're gonna start with a level of operational maturity that no one else has. I've also started to
+see some some cases where, like, you run a full agent as part of a DAG. So, like, one node in the
+DAG, one task in the pipeline is running an agent. So, like, maybe a good example of this is, you
+know, we have customers that are doing support ticket classification and routing, which I think I I
+talked about a bit earlier. That data pipeline gets kicked off whenever a new Zendesk ticket is
+logged. Right? Like, Airflow supports event driven pipelines. When this new, like, Zendesk ticket
+comes in, that triggers an event, which triggers the Airflow pipeline. The first step is, like, go
+retrieve information about that Zendesk ticket itself, the customer, the kind of context that that
+customer has, and then feed that to the second task, which is running a full agent. In this case,
+like, you're kind of prefetching or preloading a lot of the context that you know is going to be
+important for this agent system. The agent's gonna go do some work. It's gonna call some tools. It,
+like, decides its own control flow. Ultimately, it comes out with either, like, a draft response or,
+like, tags or some categorization or, like, some routing logic. And then, like, that gets picked up
+by the third task, which might be writing back to Zendesk. So that's another common pattern that
+we're seeing where, like, you run the agent as one step in the pipeline, but, like, there's always
+some things that happen before the agent, after the agent, maybe even, like, in conjunction with the
+agents that makes it fit into these, like, very classic orchestration systems. And it ends up being,
+like, a a a very nice better together story because when you wanna go build an agent system or an
+LLM workflow, the complexity is gonna come from two places. The first is, like, how do you go
+actually, like, chain this business logic together in a way that's reliable, in a way that you can
+observe and monitor? And, like, that's a data engineering problem. That's what these orchestration
+tools exist for. And how do you go, like, train and get access to an LLM, which all the Frontier
+model providers are doing for you? And that's why it becomes so simple and quick and easy to write
+these LLM workflows because the complexity comes from the orchestration tool, which you're gonna get
+out of the box, and the LLM, which you're gonna get out of the out of the box from these Frontier
+model providers. In terms of your experience of working in this space, working with the airflow
+community, and exploring this constantly evolving space of LLM applications, agentic applications?
+What are some of the most interesting or innovative or unexpected ways that you've seen teams build
+toward those more sophisticated agentic microservice, use cases? I think the simplest answer is the
+just like the sequencing problem of when you start by building out these simpler workflows, you get
+intuition for what works well, what doesn't work well, where the LLMs are good today, where they're
+less reliable. And that's what helps you evolve past LLM workflows into full agent systems. I think
+the most common conversation I have today is someone a customer, community member comes to me and
+they say, hey. I wanna go build an agent for support ticket classification. Like, the conversation
+from there goes to, okay. Why do you think this is an agent versus, like, just making an API call to
+an LLM? And what you oftentimes find is, like, it is just an API call to an LLM. Right? Like, until
+you can prove that simple API calls, even if they, like, give the LLM some tools, until you can
+prove that that doesn't work for your use case, I think going straight to these, like, multi agent
+systems is generally not a great idea. So oftentimes, like, you should start simple and only
+introduce the complexity when it's needed. And there are definitely examples of introducing that
+complexity. The two most common ones that I've seen are, again, these coding agents where, like,
+it's very difficult to try to predict what the LMM needs to do ahead of time. So you give it a bunch
+of tools and a bunch of context, and, like, it kind of figures it out from there. And we're also
+starting to see more on, like, the root cause analysis observability side of things where, like,
+these traditional observability tools are good at trying to identify when there's a problem, but it
+gets very difficult to reason about, like, what that problem is because, like, the universe of
+things that can go wrong in an application is just very high. And so you can use an agent there to
+again, like, you give it the context around, like, hey. Here are the logs. Here's what's gone wrong.
+Here's the code that was running. Here's, like, the ability to go interact with these systems and,
+like, run Splunk queries and chronosphere queries. Like, that that's another place where it feels
+justified. But unless you, like, truly cannot anticipate what the LLM needs to do or what context it
+needs, like, these LLM workflows just become a lot easier to both build, manage, get value from, and
+understand. One other piece that is critical and becoming more important in particularly in the
+current economy, but also as these systems evolve and as they're in such a constant state of flux as
+the idea of cost associated with running these applications. And I'm curious what are some of the
+gotchas that teams should be aware of as they move from, oh, I've got an LLM that I call
+periodically, and the cost isn't that bad. So I'm gonna go ahead and build an agent system, and then
+you have a multiplicative effect of the number of calls, the size of the context, etcetera,
+etcetera, and just some of the ways that that can act as a surprise and also a consideration at the
+organizational level before even investing in building something of that nature. Yeah. This is where
+I think it's actually it it it becomes very simple. It's, to me, it's all about attribution. If you
+can clearly say, I am spending x dollars on this use case, then it becomes very easy to say, okay.
+That's either worth it or that's not worth it. And this is the case for, like, traditional data
+engineering activity too. It's not an easy problem to solve. Like, I I definitely don't want to be
+reductive because oftentimes, like, these systems get very complex. If the agent is, like,
+interacting with multiple tools, then not only do you have to factor in the cost of the agents, but
+also the cost of, like, the compute that, like, you know, of the tools that it's calling. But if you
+can go clearly attribute spend back to specific pipelines, specific agents, specific use cases, and
+couple that with the business context of, hey. This use case is worth, like, you know, this much to
+me as a human or this much to my organization. Like, it it becomes a very simple ROI calculation.
+And as long as that ROI is positive, like, I think it makes sense to to keep building these things.
+And especially, like, with today's economic climate, I think thinking about ROI is is very
+important. With these multi agent systems, it becomes difficult to predict ROI. Like, you don't know
+ahead of time how much each agent is gonna cost, how much the tool calls are gonna cost. You kind of
+have to, like, deploy it and, like, see generally how how long it takes, how many tokens it uses.
+Does it need, like, more expensive reasoning models, or can it use, like, simpler, kind of smaller
+models? But, ultimately, at the end of the day, it's like you calculate the ROI per use case as long
+as there's positive ROI. Like, it's generally worth it to to use a business. And the way I've seen
+this play out, especially with with our customers, is when you go take these simple ideas that
+become very high ROI, support ticket classification, like automatic email generation, like that
+example of the fintech customer where the engineer sat down with the sales rep for the the full day.
+Like, when the use cases are simple, it becomes easy to anticipate how much it's gonna cost, and it
+also becomes simple to kind of build and deploy and monitor how much it costs. And when they are
+quick to deploy, like, you don't have any, like, emotional or kind of sentimental attachment to
+them. If it's not delivering ROI, like, you can just you can just shut it down. I think you can also
+anticipate that, like, model costs will come down over time. So I don't think, like, you should let
+the ROI calculations get in the way of experimentation and prototyping. It may be the case that,
+like, you go build something today, it's too expensive to be worth it in six months. Like, that's
+probably not gonna be the case, right, with kind of the the pace of innovation on the model front.
+So I'd say keep experimentation high. When you're ready to deploy something, do, like, a quick kind
+of back of the napkin ROI calculation. Like, how much is this gonna cost me if I run it every day or
+every hour? And, like, is that worth it to me or to my business? Also, in the engineering too,
+because of the fact that a lot of these models, as they continue to evolve, you're going to need to
+be able to swap them. The costs for the different providers is constantly fluctuating. You wanna
+make sure that you build your system in a way that it's not hard coded to a specific API call or a
+specific model to give you that flexibility and optimizing for speed, accuracy, and cost and being
+able to swap between those different, implementations of the models because at at this point, the
+models themselves are becoming a commodity. Exactly. Exactly. Yeah. And that's why, like, these
+tools like Pydantic AI or Langchain or CrewAI, like, these abstractions on top of the model
+providers become so helpful. Helpful. Because the models are a commodity. Right? Like, you can swap
+one out with another one tomorrow and not have to really change your code. But that also, again,
+calls into question, like, if the models are a commodity and everyone has access to the same models,
+like, how is what you do going to be different than what someone else does? And that's where I get
+excited. I mean, working at astronomers, an example, because, like, we work with data engineers who
+build this very unique and robust set of data that can be fed into these models, to to build that
+differentiation. And for people who are evaluating these use cases, they're excited about all the I
+think I think if you if you can do it without using AI, like, that's always generally a better thing
+because that means you can trust it. It's going to be more deterministic. But, also, just because
+you can do it with AI, like, doesn't mean it's always worth doing it without AI. Like, support
+ticket classification is maybe a great example here where, yes, like, there are very traditional
+ways of doing support ticket classification. You could do topic modeling. You could do
+classification. Like, there's a lot of traditional ways of doing that. But, like, if you don't have
+expertise in, like, NLP and topic modeling, or you do, but it's gonna take you a while to go kind of
+build and deploy a model there, it can be simpler and slightly more expensive from, like, a pure how
+much am I spending on this model perspective. But if it means you can go get something out there
+today instead of three months from now, like, that that can absolutely be worth it. So I'd say,
+like, take a very experimental approach. Like, think of problems that are unique to your business
+that you want to solve with or without AI. And just, like, ask yourself the question, do LLMs make
+this easier for me to solve? And if I solve this, is it, you know, worth it? For people who are
+trying to navigate the current ecosystem, figuring out how best to maintain their relevance as the,
+as as engineering continues to change and evolve and also help to improve the abilities of their
+organization, what are some of the core pieces of advice that you look to and give to your team to
+understand what are the things that I need to know about how to build with AI right now? Yeah. I
+think, I mean, my general expectation is that today and certainly more so in the future, the
+expectation is that, like, everyone should be working with LLMs. Right? Like, these frontier model
+providers, they're building great models. They're much cheaper than if you were to build it in
+house. In some senses, they're, like, subsidizing the cost of intelligence. And, like, if you're not
+taking advantage of that, I think you're gonna fall behind pretty quick. And that comes both in the
+form of, like, how do you use AI tools in your kind of day to day basis, whether it's, like, using
+something like Cursor for writing code or using something like ChatGPT to generate marketing copy.
+Like, regardless of who you are, there there are tools available to you today that make your life a
+lot easier and make you a lot quicker and more productive. And for software engineers and data
+engineers specifically, like, there's a world of opportunity out there if you get it right, if you
+take this kind of simpler approach to building LMM agents. Like, the number one thing that happens
+when I talk to a CTO or CIO or head of data today is they'll say they tried to build LLM agents,
+like, these multi agent systems, but that it fails. And when it fails, like, it's tough to justify
+more spend on agents and, like, more investment in that area. So I think if you can build, like,
+these very real pragmatic use cases that drive value, like, that is an incredibly unique skill set
+today and help solve this pretty big disconnect between, like, the promise of agents and the promise
+of AI with, like, how it's actually playing out in an enterprise today. There's there is this very
+big disconnect. And the way to bridge that is not go straight off the deep end and, like, try to
+build the super complex system as quickly as possible. It's like, start in the shallow end, go build
+things that work very well, and, like, work your way to the deep end. Alright. Are there any other
+aspects of this overall space of building AI applications, the path from simple single LLMs to
+agentic applications, and the engineering and operational systems involved that we didn't discuss
+yet that you'd like to cover before we close out the show? I think I'll just close with, like, I'm
+super excited about this technology. Like, we're already starting to see the effects today. I very
+much believe in kind of the promise that agents come with. I think it's going to be game changing
+for a lot of people, both because it'll make people's jobs easier and because it'll let you build
+things that otherwise would be, I mean, near impossible. But don't let that excitement get in the
+way of, like, the value that you can go deliver today. Right? If you can start simple, build
+intuition for these things, build institutional knowledge for, like, what it looks like to build and
+deploy with LLMs, that's going to, like, position you very, very well for the future. I think, like,
+there's this general sentiment that, like, if you're not building agents today, you're behind. I
+think that's very much not the case. In fact, like, if all you're doing is building agents, you're
+missing out on a world of opportunity to just go use LMs in, like, a very simple manner. So I'm
+super excited. I think it puts data engineers, software engineers, machine learning engineers in a
+really great position to go change how the entire business is run. And, like, that is what every CEO
+in the world cares about and is thinking about today. Alright. Well, for anybody who wants to get in
+touch with you and follow along with the work that you and your team are doing, I'll have you add
+your preferred contact information to the show notes. And as the final question, I'd like to get
+your perspective on what you see as being the biggest gaps in the tooling technology or human
+training that's available for AI systems today? I think deployment methods is probably the big one.
+If you go look at LaneChain's tutorials, Pydantic AI's tutorials, CrewAI's tutorials, like, they'll
+tell you to spin up a Jupyter notebook or some, like, local Python script, and, like, that's great
+for experimentation. But then, like, what happens when you actually wanna deploy it? Like, that that
+to me is not necessarily an open question, but unless you know how to build and deploy more
+traditional applications, like, there's a there's a big gap there. Alright. Well, thank you very
+much for taking the time today to join me and share your experience and insights on the overall
+space of building these agentic applications and the path to get there without just jumping straight
+to the finish line and the risks involved. So I appreciate the time and energy that you're putting
+into that, and I hope you enjoy the rest of your day. Of course. Thanks for having me, Tobias. Thank
+you for listening. Don't forget to check out our other shows. The Data Engineering podcast covers
+the latest on modern data management, and podcast.net covers the Python language, its community, and
+the innovative ways it is being used. Visit the site to subscribe to the show, sign up for the
+mailing list, and read the show notes. And if you've learned something or try out a project from the
+show, then tell us about it. Email hosts@AIengineeringpodcast.com with your story.

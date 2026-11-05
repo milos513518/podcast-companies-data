@@ -1,0 +1,385 @@
+EPISODE 1590
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: SurrealDB is the result of a longtime collaboration between brothers Tobie and Jaime Morgan Hitchcock. The project has modest origins and started merely to support other projects the brothers were working on. However, over time, the project grew. And in 2021, they started working on it full-time. Since then, the project has gained serious adoption. What makes SurrealDB so special? 
+
+Tobie Morgan Hitchcock is the CEO of SurrealDB and he joins the show to talk about his multi-modal database, support for graph and time-series data, why they rewrote the entire project in Rust, and more. 
+
+This episode of Software Engineering Daily is hosted by Jocelyn Byrne Houle. Check the show notes for more information on Jocelyn's work and where to find her. 
+
+[INTERVIEW]
+
+[0:00:56] JH: Hello, everyone. And welcome to Software Engineering Daily. I'm Jocelyn Houle. I'm super excited to have Tobie Morgan Hitchcock of SurrealDB here to interview today. And he's going to tell us a little bit about multi-modal databases and some of the new directions that he's exploring in his open source project and product. 
+
+Welcome, Tobie. 
+
+[0:01:17] TMH: Thanks so much, Jocelyn. Thanks so much for inviting me and having me on the show.
+
+[0:01:21] JH: One of the first questions I had for you is you're a co-creator or the creator of SurrealDB.
+
+[0:01:26] TMH: Actually, I got asked this early on this year when I did my first talk about SurrealDB at Rust Nation UK. I'm the technical creator of SurrealDB. My co-founder and brother, Jamie, he is the designer, the person behind the brand. And also, created the business with me. We're both creators. If it's technical, that would be me.
+
+[0:01:48] JH: Great. That's perfect for our audience. We're going to get into the psychological drama behind doing a project like this with your sibling a little bit later in the show. But to start, why did you take on this project?
+
+[0:02:02] TMH: This has been a long project in the making. We launched it only last year in August 2022. But we were building this internally for ourselves back in 2015, I think is when we started. Over the years, we used to build software as a service applications either for ourselves or for clients. And we were using multiple different databases, MongoDB, InfluxDB, OrientDB, DynamoDB all working together in a single tech stack. 
+
+At the time, this was 2014, 2015, we were running that in CoreOS. Today you'd be running that on Kubernetes or something similar. And we wanted something much simpler. We wanted the power and performance of a database. That query flexibility. That query functionality that you'd expect from something like Postgres or MongoDB. We wanted the simplicity that enabled us to build applications quicker so that we could focus on what we were making our revenue from. 
+
+And out there at the time, there was Firebase and other similar tools like that. Really, we wanted, as I said, something more powerful. And that was when we started thinking how do we go and create this and make it a tool that people can download as a single binary and use as they would a database? 
+
+So, that research started in 2015. And we started building that internally in 2017. Used it internally 2018 and then decided what we've built was far bigger than anything that we were building on top and decided to make that available to the world last year. It's been a long time in the making. And it's great to have it finally out there and people able to see what we're working on.
+
+[0:03:40] JH: Well, that makes sense. You've got a pretty wide set of capabilities described on your website and in your documentation. And I was wondering about that. I think we're going to dig in a little bit more into this idea of multi-modal being very powerful. Because I think that's always been the tradeoff. But I think what I'm hearing you say is the key driver was to make your lives and the lives of developers easy easier overall to get the highly-performant application. Yeah. 
+
+[0:04:03] TMH: Definitely. Yeah. Exactly. 
+
+[0:04:04] JH: For those who aren't familiar, can you just kind of tell us blandly what is SurrealDB?
+
+[0:04:10] TMH: As you said, there's a lot of functionality, and that makes it hard to answer that question. But SurrealDB can be used in two distinct ways. The first way is as a traditional database where you're querying it. You have your back end, your API layer and you're querying it with full access. You choose how you want people to access and do the authentication layer in front of the database. 
+
+With that, you're benefiting from our query model, which I'll come on to in a minute. The other alternative way is you can actually connect directly to the database. It has websockets and HTTP connections. And you can query directly from a browser or from an end-user device and using the authentication and permissions level in the database which gives you granular control all the way down to the row and the field level. You can control exactly what a user can see in their applications. 
+
+Two very different ways that users are using it. And also, two different ways that it's designed to be used. But in terms of the actual query model, which is something you benefit from regardless of how you're using it, that is where SurrealDB and the power of SurrealQL, which is our query language, which is SQL-like but has differences. That's where it really shines through. 
+
+Effectively, underneath the hood, SurrealDB is a document database. Something similar MongoDB. But we have the concept of record IDs, which enable you to query your data in a time-series fashion, in a graph fashion, single crud updates as well. Or as you would typically with a database like Postgres or MongoDB, being able to select, and query and aggregate data from tables and multiple tables through joined related data. 
+
+[0:05:54] JH: It's essentially a document at its core. A document store.
+
+[0:05:58] TMH: Under the hood, it's a document database. That's how we're storing our data. Yeah, absolutely.
+
+[0:06:02] JH: There's two modes direct, which I get. But I don't get the other one.
+
+[0:06:06] TMH: You can either query it directly with a query language. So, SQL. Or you can actually query it using a JSON-like or directly from your programming language using adjacent-like querying. That gives you the ability to, directly from your apps, select records, update records, merge data into records and other simple things like that. But if you want to go further with your data, if you want to do aggregate queries, you can use a very similar traditional SQL language, which we call SurrealQL. And it has support for time-series ranges, and time-series queries and graph queries as well. Yeah, it's designed for people coming from the relational database world. It's designed to be easy for them to understand, but it takes you to another level in terms of how you can model your data.
+
+[0:06:54] JH: Okay. And it's also single node or distributed?
+
+[0:06:58] TMH: Yeah. The biggest aspects of SurrealDB that we probably don't talk about enough on our website actually is the fact that we separate out the storage layer from the compute layer or the query layer. Our storage layer can either be a single node instance, RocksDB or Speedb. It can be run in the browser on top of IndexDB. Or you can use a distributed key value store like FoundationDB, which is the same key value store used in Snowflake and other big data lakes like that. You can use that and then you can have multiple query node sitting on top. SurrealDB, as you said, can be run either in embedded mode within Python, within Node. Or it can be run as a single node server or a distributed cluster. 
+
+[0:07:40] JH: And I can run that inside my own environment? Or I can – 
+
+[0:07:44] TMH: Absolutely. We don't have SurrealDB Cloud yet. We're working on that internally. But at the moment, it's free to use. You can download it. You can do anything you want with it. Running in a large cluster or embed it into your applications. And you can do that already.
+
+[0:07:56] JH: I'm going to come back to that probably because I want to talk about some enterprise use cases. And we can kind of walk through that. But I also, from a concept perspective, wanted you to spend a little time explaining to me why your approach to namespace is different. Because I think it is very different and it really underscores this ability to make it easier.
+
+[0:08:14] TMH: Absolutely. I presume you're talking about the namespace functionality within the database. 
+
+[0:08:18] JH: Yes. 
+
+[0:08:20] TMH: In SurrealDB, just to explain that a little bit, there's – in a traditional database, you have databases. And then in those databases, you have tables. With SurrealDB, we have namespaces. Within the namespaces, we have databases. And in the databases, we have tables as well. 
+
+The namespaces enable us to offer multitenancy. It's a way of enabling users or organizations to create separate collections of databases, whether those databases are used for testing, or development, or for production use cases. They can have those within a separate namespace is how we call it. And that enables them to be completely separate from other clients on SurrealDB Cloud in the future. 
+
+It's definitely designed for running in a cloud multi-tenant environment, but it has many other use cases if you're just running it for yourself. You can have different namespaces for different teams or different namespaces for different projects. And then you can have those separate databases within those, let's say, for production or for development purposes. It's a great way of splitting up your data. It's just another level above databases really.
+
+[0:09:20] JH: Without creating silos and keeping that ability to collaborate.
+
+[0:09:24] TMH: Exactly. It means that instead of managing multiple clusters, even if this is just internal to an organization, instead of managing multiple clusters where each team has access to that particular cluster, you can manage a single large cluster. Obviously, it can be distributed as well. So, you can manage that single large cluster but have teams only access those databases they are allowed to access.
+
+[0:09:46] JH: It's interesting. I'm possibly out of my depth on this, but I will just say from my perspective working in large-scale enterprise data environments for like financials and very big companies, that seems like a huge asset. If I heard about that, I would feel great. Because we have so many teams across different lines of business and then also contractors coming in and out, it can take weeks to just get people into a Dev and QA environment. 
+
+[0:10:09] TMH: Absolutely. I mean, that's just the start. We have an improved authentication access, permissions layer coming soon, which will sync into SAML and OAuth setups in organizations as well. 
+
+[0:10:23] JH: Let's talk more about that.
+
+[0:10:24] TMH: Another exciting feature we're working on is siloed encryption within each of those namespaces and databases, so that each namespace and database has a completely separate level of encryption. 
+
+[0:10:34] JH: Yeah. Let's break that apart. If I have a namespace with siloed encryption, that namespace has its own encryption key? 
+
+[0:10:41] TMH: Yeah. It'll be using its own set of rotating encryption keys. Obviously, as a cluster owner, there are master keys as well. But effectively, the data within that namespace or the data within the databases underneath that namespace as well are all encrypted with different rotating keys. 
+
+[0:10:55] JH: Let me just test that out from a use-case perspective. That would be something like, "Hey, we're all working together with a data science team that has access to like fully in the clear PII and sensitive data for, say, customer behavior." That work could just happen with that data science team then but then later be shared? 
+
+[0:11:13] TMH: Yeah. Exactly. You'd be able to share it with the improved access layer that we're working on at the moment. At the moment, there is an advanced access layer where every single row, every single document, every single field of those documents is passed through that permissions layer to detect whether you are enabled access to that or not. 
+
+We're bringing that even further up the stack so that every user who touches SurrealDB DB in any way gets to go through this permissions and authentication layer as opposed to just the end users. But in addition, that encryption, the separation of that encryption means that it doesn't matter if your team is running on a large cluster. The team is only able to access and decrypt the – 
+
+[0:11:53] JH: So, it's resourced. 
+
+[0:11:55] TMH: Exactly.
+
+[0:11:56] JH: Okay. I get you. I get you. It's a resource side. On the authorization side, this would enable teams internally to an organization. But you could also share externally with certain data contracts? 
+
+[0:12:08] TMH: Yeah. Absolutely. We're working on a new policy framework which will enable you to give exact permissions to certain functions, or tables, or rows of data that you want to share a particular user. It's really – I must stress again, this is something we're working on. Hopefully coming in later this year or the beginning next year. But it will give you really fine-grain control. Whether that's for a team or different departments in an organization just to be able to see and do exactly what they want right down to whether they can run functions against that data or run certain queries against that data for analysis purposes. It's really powerful.
+
+[0:12:45] JH: It's really powerful. It's really ambitious.
+
+[0:12:48] TMH: It's very ambitious. And making that perform well is one of the biggest challenges. But that's what we're here to do.
+
+[0:12:53] JH: Actually, yeah, I fully feel confident that you're going to be able to make it performant operationally too. It can be tricky. Because people want that level of control. But then once they get it, how do they set those policies and figure that part out? 
+
+[0:13:09] TMH: Yeah. I mean, for that, we're going with some – I can't remember the name now. But we're going with a policy framework that is already – I think it's called [inaudible 0:13:17]. It's already widely used. It links in with how Amazon and Amazon Web Services do their policy generation as well. It will enable SurrealDB to sit even more central in the enterprise stack and enable that authentication that larger organizations need.
+
+[0:13:34] JH: Okay. This is like some plain English-declared policy language that regular people can do.
+
+[0:13:40] TMH: Exactly. And it gives you simple control or very fine-tuned, advanced control if you need that.
+
+[0:13:46] JH: Interesting. Dig in on technical topics that you care about at any point. But I'm going to ask some more general questions. You have two audiences, if you ask me, based on reviewing your materials. You've got your developer audience for what I would call bottoms-up adoption. And then it's pretty clear you've really been thoughtful about very large-scale enterprise, which even people who think they understand it once – you don't know until you get in how hard it can be. When you think about those two audiences, what are your top three leading benefits you share with developers? Let's start there.
+
+[0:14:21] TMH: Yeah. And it's always a tricky one, right? Because to aim at both of those groups, you have to cater to the functionality and permissions that both of those want. Whilst we do want to have SurrealDB be this database that developers, indie hackers, users can hack on at a weekend and build their side projects, we also want to make those features work from an enterprise perspective or a larger setup perspective. 
+
+I think one of the greatest things when people come to SurrealDB and they start using it is just the flexibility and the ease of which you can do some querying or some functionality. And when that comes to building that in your application, how much quicker that makes it for you. 
+
+The query language, as I said at the beginning, it starts off simple. You have insert statements. And you have select statements. But it also works using this SQL-like language. It also works with nested objects or embedded arrays. It works by joining two, three, four five tables deep of relations together seamlessly just by using this dot notation. Similar to how you would in JavaScript, let's say. 
+
+But I think that's one of the most powerful things when people come to SurrealDB. It's you can start easy, but you can really do some Advanced querying and advanced functionality with just one line of code. And if you compare that to join statements or other databases where you're having to potentially, as I say, use joins or bring that data down onto the device and aggregate that data together on the device, that makes it a lot harder. And with SurrealDB, it makes that a lot simpler. 
+
+For the enterprise, that's also important. But that's just the first step, right? The enterprise or large organizations, they need to know that it's going in the direction that they need from a perspective of security, stability. And I think that's one of the reasons why we decided to build SurrealDB from scratch and not build it on top of other services, or other libraries, or other layers. And it's because we have control over that. 
+
+We've built SurrealDB entirely in Rust. There are a few C libraries which we're working to remove as we go forward. One of those is RocksDB and Speedb for our key-value storage engine. 
+
+But, really, SurrealDB is a single Rust binary. You can download it. You can do your security auditing on it. You know how you can deploy that in your organization. And that makes it a lot easier comparing that to something which is built on five or six different other services. And you have to understand and analyze all of those different points of entry into those systems. 
+
+From the very beginning – and I guess it does make it a harder journey, a longer journey. Because we're having to build more ourselves. But from the very beginning, we've thought of the larger organization, the larger deployment and the enterprise market definitely.
+
+[0:17:15] JH: Do you think because of the evolution of Rust and cloud data, it's time for more organizations to build from the ground up?
+
+[0:17:23] TMH: It's a good question. I think you see this a lot. People building custom data layers or custom databases. I think there's always a line to be drawn. If you're a database company like us and you're focusing on building a database, you're building a whole team behind building that database well so it has that functionality, it has that performance. Then that would be hard to beat in the long run, you know? 
+
+But going back or looking at Rust as a technology and what you can do with that, it does open up that possibility. And I think embracing technologies like that. And often, a misconceived thought about Rust is that it's harder to build applications with. And actually, once you get past that initial learning curve of the borrow checker or how data is passed around in Rust, you can build some incredibly advanced applications with great performance and with relatively simple code actually, which is surprising. 
+
+For us, Rust has been – we actually built SurrealDB in Go Lang initially and we changed it. We started in 2021. We rewrote the entire codebase into Rust. It took us about a year. And that, looking back, because we did at the beginning, think, "Oh, maybe we should just write the parser in Rust. Maybe we should just write the engine in Rust. That would be quicker. It would enable us to get to market quicker." 
+
+But now that we did the entire thing in Rust before we launched, it means iterating on top of that and building the functionality is so much easier going forward. And I think if we hadn't done that in the beginning, that would have actually made our journey harder.
+
+[0:18:57] JH: That's something I'm always really interested to double click on in this show, is these core architectural decisions and the evolution of getting from the whiteboard to launch. There are some real big decisions that have to be made that affect the rest of your whole life in this company. 
+
+Tell me a little bit about that moment. You're sitting with your brother and a couple of other people around the table and you're like, "This is what we're doing. This is what I'm recommending." What was that process like? 
+
+[0:19:24] TMH: It's a great question. I would say we did it a very different way to what is perhaps the traditional way of doing things. It was just me and my brother. We weren't building this as its own company. We didn't think in the very beginning, "Oh, let's work on this. Let's raise finance to build this tool." 
+
+We built it internally for ourselves for our other projects. And because of that, we were able to, okay, build slower, I guess, over time. Because it wasn't our focus. But at the same time, we were able to build exactly how we wanted it. We were able to reiterate and rethink and do exactly what we wanted in the product. 
+
+But if you go right back to the beginning, this didn't start out with writing code weirdly. It started out by using lots of other database projects. The first step is understanding what you can do and what you can't do. And then, step three, understanding what you want to do. Then I guess the fourth step is understanding or taking what you want to do and then trying to work out how to make that a reality. 
+
+And that was actually a project for my master's thesis, which was looking at embedded key-value stores. RocksDB being one of them. And looking at a new implementation of key-value stores which enable versioning. Being able to either get a key at a particular version or get a range of keys at a particular version historically over time. 
+
+And this is what we're working on internally in SurrealDB. Early next year or sometime next year, we'll be releasing SurrealKV, which will be our replacement for the embedded storage engine in SurrealDB. And that will enable us to apply versioning to the document database as a whole. Whether that's graph querying or time-series. You'll be able to run aggregate queries over time and see how data changes over time in addition to other benefits, especially for large organizations. Such as data auditing or seeing how network or related data changes over time. And this is an area which is incredibly hard to do in any database tool out there. Whether transactional or analytical.
+
+[0:21:31] JH: I have so many things I want to say right now to talk about versioning, first of all. Let's talk about that. But before I get there, I'm just maybe going to get on my soapbox for a minute. But you can comment too since you're the interviewee. I love this, that you really focused on different products and deeply understanding the capabilities.
+
+I think a lot of companies – I mean, the common – I'm getting weary of the common idea or path that's promoted of just ask your customers or co-create with customers. I feel like we've over-indexed on that. And from a technical – we have a lot of technical founders in the audience. I just want to pause to underline that, is that you really started not with just a technical point of view or one customer, but you – it's interesting. This is part of your research. It was truly like a research starting point.
+
+[0:22:19] TMH: Absolutely. I guess we were the customer. We were using all these different tools and these different platforms and putting together in a distributed, microservice-based environment with this complicated API layer in front, which was having to orchestrate changes to and from every single different database. 
+
+Obviously, they all have different characteristics in terms of how they work. Some are ACID. Some are not. And you have to work with that as a developer. And I think that time has gone. I think developers want to focus more on building the functionality they want in their application or that they need to build for the business that they're working in rather than focusing on the backend and the environment that enables them to do that. 
+
+[0:23:03] JH: That's so right. I think that's so right. My husband accuses me of over-nostalgia for the early days of software. And I think I do have nostalgia for wrestling with the concepts. Whereas now, I think most developers, you're right. That time has sort of passed. Or past is strong, hopefully. But most people just want to get stuff done.
+
+[0:23:23] TMH: Yeah. Exactly. Exactly. And I think the other thing is it's not that we didn't like any other database that we used. I personally am a fan of almost every database I've come across. They all bring something new to the world of databases. 
+
+CouchDB has these brilliant things called views that update as you read them. MongoDB introduced document databases really to the world. They made it popular. Graph databases – and if you understand how graph databases work and how they can be used for data analysis, it's so powerful. And I think especially as we look forward to the future, graph is going to be more and more used within organizations. 
+
+And then, obviously, relational databases, there's a reason they're one of the most popular database types in the world. Because they are so simple for doing what you need to do on top of them. But I think – yeah, I think that's the most important point. All of these databases are incredible in terms of the functionality and what they offer. And we wanted to expand on that. And we wanted to rethink how some of these features could come together and be improved, in our opinion. But could come together into a product and do that well in a performant way. 
+
+[0:24:36] JH: When you say that, it comes through very clearly in all your materials that you are a fan of all these different aspects that work well in other types of databases. 
+
+Sometimes when I hear an organization that tries to promote best of all worlds, best of both worlds, I worry about performance. Now I know you've actively identified that as being performant, being scalable as a goal. But architecturally, did you have some core pillars? 
+
+You're sitting at the whiteboard and you're like, "Okay, we're going to combine all these elements that we really like. We've made the decision to move to Rust. How are we going to keep ourselves honest about offering that scalability and those really highly-performant capabilities?" 
+
+[0:25:20] TMH: Yeah. There's two parts of this question. The first is you're only building the functionality that you know can be built in. Even though SurrealDB and SurrealQL, it's query language, are highly flexible and have a lot of functionality, they do limit what you can do. If there's something that we know is not going to perform well, we're not going to build that functionality in. That's a really important point.
+
+[0:25:43] JH: And what are a couple of examples? 
+
+[0:25:45] TMH: For instance, in other database types, you have incrementing integer IDs for rows. In SurrealDB, in order to do that, in a single instance that's fine. But when you then take that to a distributed cluster and you're writing to a particular table or multiple users are writing to a particular table at one time, there's going to be an area on the underlying storage engine, which is always going to be hit. And that is the area that records what the latest integer is and updates it. That would then scale badly for any user wanting to use that. 
+
+Really, the first step is actually saying to users, "This isn't how we do IDs in SurrealDB." You can use integer IDs if you want. There are ways of doing incrementing integer IDs if you want to. But really, you should be using random IDs or sequential IDs based on other properties of the record. That will enable you to scale. 
+
+And we put that power back to the user. The user can choose. But we don't make it the default or make it easy to do things that are going to be bad. I think that's the important point.
+
+[0:26:50] JH: You make it a little harder to do. You don't take away freedom, but you make it clear that you have a point of view.
+
+[0:26:55] TMH: We definitely don't take away freedom. If you jump onto our Discord or GitHub discussions, you can see many different examples of how you can do one particular thing. I think the first step is how you actually model data in SurrealDB. In a relational database, if you're doing relationships, you would have two tables and you'd have a join in between with matching IDs. 
+
+In a document database, you could choose whether you wanted to bring that data and embed it into the record or if you wanted to keep that separate and then join those tables or those collections together later on. 
+
+In SurrealDB, you can do several different things. You can use graph edges. You can use record pointers, which you can then immediately fetch that data and bring it into the record on select. You can embed as well or you can use a combination of all three of those things as in how you want to as a developer. It's very flexible. And there are tradeoffs and benefits to every approach depending on how you're going to want to query your data afterwards. 
+
+I think the thing about SurrealDB, which was one of the most important things we wanted to keep with it from the very beginning when we decided to build it, was you shouldn't have to choose up front how you have to store your data based on the query. 
+
+Yes, you can decide you want to start with method A for storing your data. But transferring or converting to method B as your data grows and as your application develops, that should be easy. There are tools out there where you can choose to have a graph database, or a time-series database, or a relational database. And you have to choose up front that's the model you want to use. With SurrealDB, you can use all three in the same application, in the same database and decide how much of each type you want to use as a developer.
+
+[0:28:38] JH: It's such a powerful concept. I've sat in so many projects and product road maps where those needs do change. And it can cause a delay, let's say, to just – it's not a quick pivot, right? These are fundamental changes.
+
+[0:28:51] TMH: You can try to think of how you'll build your application as much as possible. We're doing that at Surreal here. We're trying to make sure that every change we make is backwards compatible as much as we can. 
+
+[0:29:03] JH: We're going to hold you to that in this conversation. 
+
+[0:29:07] TMH: You can never really understand exactly what you're going to be doing with your application or exactly how users might be using it. And therefore, how you're going to be developing the features against the database is so – it's important to have that flexibility as your data evolves. 
+
+[0:29:22] JH: This open source project, is it popular? Are people adopting? Are developers adopting? 
+
+[0:29:28] TMH: I mean, it's been a wild ride when we launched in August last year, 2022. We've been going a year and two weeks, I think. I think we started with 30 stars in August last year. We're now at 22 – just over 22,000, which has been incredible. 
+
+In a way, the hard bit was not getting people to adopt. It was trying to keep up with the adoption. It was trying to get the team on board to improve the documentation, which there's still so much documentation to write for some of the features that we have in the database. It was building the team so that we could build the features that developers wanted so that we could build out the features that we knew we needed as well. 
+
+It's been an incredible journey. And we've got users using us all the way from indie hackers building us side projects and games on the weekend and things like that. All the way up to large organizations already running us in pre-production. It's been incredible. 
+
+[0:30:19] JH: Can you share any of the organizations that are using Surreal? 
+
+[0:30:23] TMH: Yeah. We're talking with government organizations in the US, in the UK and Canada as well. We're being used in research projects in the NHS for health purposes as well. Large organizations wanting to simplify how they can query graph data. But I think the most important thing that they want to do is actually not just run analytics on that graph data, but actually use it as a central data store. Being able to update that data and run graph analytics on it at the same time. 
+
+The most important thing for us has been actually seeing how people use it. We came out there when we launched with ideas of how SurrealDB could be used. And people are running it in very different ways to how we imagined. People are running it on Raspberry Pis and people are running it in distributed setups. But they're using it for very different use cases to how we would imagine. And it's been great to see that. Obviously, the flexibility allows you to do all of that. But it's also been good to see just how people are interested in the product itself and what it can do.
+
+[0:31:27] JH: That's exciting. I think I mentioned I have nostalgia for the old days of software and getting the early days of Linux and open source. This is the kind of eat-your-lunch trajectory that established players should worry about, especially if it's going into like governmental large-scale organizations. In the early days of Linux, the US Navy adopted and it just kind of blew it out through the whole government here in the US. That's pretty exciting to hear about. 
+
+What is the profile of your core contributors and developers? Are they kind of elite right now? Because you mentioned, you could start out wherever – like it's very simple and then get as complicated as you want. Where are developers entering the system here for these first 22 – first adopters? 
+
+[0:32:13] TMH: For the adopters, it's a hard one, right? Because we've got a big Discord community now. I think we've got over 5,000 users on our Discord. It's a great community. It's incredible. And we're being on there as a team as much as possible to support users in what trying to do. 
+
+But really, the community itself is also helping out and answering questions. It's a very active community. It's incredible to see. The tricky thing is enterprise users don't necessarily join or ask questions on Discord. To understand – a lot of these enterprise users have reached out to us through LinkedIn. And that's great, right? Because we get to talk to those users as well. 
+
+But it does – I guess, it's just another complexity to building the business. You have to try and touch people in as many different ways. Because they interact with products differently. Whether that's on Discord or GitHub. Or more enterprise users use Slack potentially. You have to be present in as many different forms as possible. 
+
+But how are adopters using us? I think we're still pre-production. We've got SurrealDB World, our first conference coming up September the 13th in London. And we'll be launching our version one on that day. Really up until now, as we're beta and pre-production, a lot of enterprise users are looking at us and they're trying us out in in pre-production. But they're waiting for that production-ready version. 
+
+I think as we go towards the end of this year and into next year, it's going to be very different. People are able to then use us and build against us and try us out in projects. And that's going to be – not to say this year hasn't been fun enough. That's going to be even more fun as we see sizeable projects being tested and built on top of this. 
+
+[0:33:58] JH: It will be fun actually. I think it'll be exhausting, but it will be actually I think pretty fun. Because you have a relatively mature – I know it's version one. You may not feel this way. But you put a lot of work into this. It's relatively mature. This isn't just like a spike into the idea of what you want to do. You have a mature offering.
+
+[0:34:17] TMH: Absolutely. And that comes back to what I said earlier in this podcast, which is we didn't just start building this in August last year or when we raised our seed around financing. We started building and conceptualizing this eight years ago. And it's those eight years that really enabled us to build, as you said, a lot of this functionality. 
+
+Now we've got a long way to go, as you say. We want to improve our performance. There are several areas of the codebase we know we can improve on. We want to improve the functionality even more. We're building our own embedded key-value store. And in over a longer period, we're building our own distributed key-value store as well so that we can replace FoundationDB internally. But it's a great start. This is our version one. And we're excited to see how users use it.
+
+[0:35:01] JH: Well, congratulations. That's so exciting. And I didn't get back to versioning, which I will in a second in road map. But before that, let's briefly touch on the topic of filthy lucre. Because you have raised some money and you have some ambitions in the direction of monetizing. Such an overused word. But creating a business around this. Can you share any of your early thoughts around that?
+
+[0:35:22] TMH: Yeah. We raised our seed around from FirstMark Capital in New York. And it's been an incredible year. A lot of users are crying out for us to launch our SurrealDB Cloud. Our hosted version of SurrealDB. And we're working on that. To launch it, we have to make sure we're happy with it. Yes, we could launch it now. But we're waiting and we're building on that approved permissions and authentication layer going into that. 
+
+But it will enable people to just get going with SurrealDB so much easier than it even is now. And I say now because it's just a single one line of code to install and run SurrealDB. But we want it to be even easier than that. We want you to be able to spin up a free cluster in the cloud and get going developing on it and seeing the power and the benefits of what you can do with SurrealDB immediately. We're not launching that this year. But we're launching that very soon hopefully. 
+
+[0:36:12] JH: Okay. And that'll be the core of the pivot point and the discussion around what the commercial component of this would be.
+
+[0:36:17] TMH: Absolutely. I think it's important to note that there are lots of different database tools out there that have a community edition and they have an enterprise edition. The community edition is free and the enterprise edition is paid for and not necessarily open source. 
+
+With SurrealDB, everything you see and every single thing you see in the enterprise product is in our source code. It's available for you to download and to use. Obviously, from a support perspective or from a hosting perspective, SurrealDB cloud will help you out, and it will run, and manage and maintain that for you. 
+
+But if you want to be running this in your own cloud, if you want to be running this off- grid, or in an IoT device, or at massive scale in your own data center, then you can. And it's not separated into a very limited community edition and a closed source enterprise edition.
+
+[0:37:06] JH: I hope all the open source founders out there are thinking about what you're saying. When I read that on your site, it was like a breath of fresh air. Before the job I have today, I was doing investment at Capital One Ventures and talking to a lot of different companies. And it was almost like a surgical, detailed analysis to separate out for every product. What was the open source component? What was the enterprise component? And then evaluate them. It's gotten a little too complicated, especially for a big platform like yours. Bravo. That was a good choice.
+
+[0:37:37] TMH: It is complicated. And every single license, even if you use the same license terms, they can be different. We're using the business source license, which it's technically – according to the OSI initiative, it's technically not open source. But each BSL license has its own set of limitations defined in it. You could say this is a BSL license. And you cannot use this in production. Well, you can't use this if you want to store more than 2 gigabytes. 
+
+There are very different limitations to even that single BSL license. For us, we didn't want to limit it in any way. We didn't think that you could launch a database and get people using that database. But say, "Well, you can't use this in production. Or you can't use this –"
+
+[0:38:18] JH: It's already hard enough. It's already hard enough to start from the ground up. That's right.
+
+[0:38:23] TMH: For us, you can build anything you want in it. You can launch it and – what you can't do, you can't launch a cloud database as a service. That's the only limitation we have on our license. It doesn't limit that many people. There are very few providers in the world who would go and do that. But, ultimately, if you want to run this with terabytes of data in your own cloud privately and never tell us about it, you're able to do that from a licensing perspective. 
+
+[0:38:46] JH: And you're thinking about like a consumption licensing potentially for a cloud? 
+
+[0:38:50] TMH: Yeah. In the cloud, we've got multiple different levels of pricing that we're planning in depending on your needs. 
+
+[0:38:57] JH: Okay. I don't mean to ask you questions if you're not ready to share. I was just curious. 
+
+[0:39:00] TMH: We're going to be based on consumption with a shared storage layer. That will enable us to offer better pricing to our users. The difference being that they'll be on that shared storage layer with other users. There'll be obviously scalable, compute scalable storage. But it will be shared with other users. If you want more than that, if you want dedicated compute or if you want to go up to your own completely dedicated cluster, and the pricing changes obviously slightly differently. With your own cluster, you're paying for the node size, the cluster size. 
+
+But going back to that point at the beginning, which is with the siloed encryption. Even if you're on a shared storage layer, that siloed encryption means that your data is never encrypted in the same way to other people using that same storage layer. 
+
+[0:39:41] JH: Do it from the finance world, right? A lot of finance folks are going to want that.
+
+[0:39:43] TMH: Yeah. 
+
+[0:39:44] JH: All right. Quick question about – the alternative to using Surreal is messing about with a bunch of different databases and navigating as best you can. We know that's the substitute or alternative. Are there any other projects or offerings in the market that are in the same neighborhood of what you're trying to do? 
+
+[0:40:04] TMH: There are. There are different products, I guess. You have Supabase out there, which is sitting on for Postgres. Enables you to build applications directly from the browser. It has the GraphQL and the permissions. And that makes it easy to build those applications. 
+
+If you want the power of the query language, you have to go down to Postgres behind the hood. If you want graph, then, obviously, that's a different discussion altogether. OrientDB was an open source project that was acquired. And that was great. It offered this – 
+
+[0:40:34] JH: They're acquired by SAP, right? 
+
+[0:40:36] TMH: SentryLink, I think first. And then SAP. Yeah. And I think the project's been kind of closed off by SAP now. But that was a great database that enabled you to have document and these concepts of graph as well. And it was one of the projects we were using in the early days back in 2014. 
+
+There are lots of tools out there that you can do this with. But a lot of the time, you have to take or use functionality from those different tools and put it together in your own platform. And that's where the power of SurrealDB comes. it enables you to store your data in SurrealDB in a way that scales, in a way that works for different pieces or different parts of your application as they need the functionality independent of other parts of the application. 
+
+And it enables you to use all of that functionality within a single system, which is bound by ACID transaction. Instead of having to coordinate writes, and reads and synchronization between those different database platforms or those different services, you can rely on a single platform to do all of that for you. 
+
+And I think as a database, we'll always get compared for performance with other tools. How quickly can you read X number of records? And how quickly can you write X number of records? But when you add all of these different pieces in a microservice-based architecture together, I don't think many people are testing the performance of that as a whole. 
+
+When you have to take 10 or 30 microservices or four different database platforms and synchronize that with multiple API platforms and then you test the performance of that and the characteristics of how it works from a data consistency point of view, how much easier is that compared to using a single system, which includes permissions and authentication right into it?
+
+[0:42:17] JH: That's right. And I think there's so much that people want to do that's much more connected and cloud architecture-oriented. But the data is the Achilles heel. 
+
+[0:42:26] TMH: Absolutely. Absolutely.
+
+[0:42:26] JH: Right? Not just the data itself. But also, for lack of a better phrase, context switching between sort of slower analytical databases and your real-time stream. But customers even inside your own organization lines of business don't really care about that. They just want to be able to get that customer data and make an immediate offer and then see the analytics. They're less interested in our commentary on different modalities, right?
+
+[0:42:51] TMH: Absolutely. And people always ask us, "What's the architecture under the hood?" Because they want to build on something that is going to be reliable. But at the end of the day, the big organizations, they want to know that it's stable, secure and it's going to work for their use case. And those are the most important points.
+
+[0:43:04] JH: And visible. I mean, we didn't get into versioning enough. But this visibility component. And there's just a lot of people talking about this right now. But I think they lose the narrative perspective of these use cases within large organizations, right? Because I might have visibility on my lakehouse. And then I really don't know how it's interacting downstream as it's combined with other live data. You don't really have – you should, but you really don't have insight into that.
+
+[0:43:30] TMH: It's a really, really big topic. I could discuss this for hours. Versioning or immutability of data I think is one of the most overlooked areas of databases or platforms. 
+
+[0:43:40] JH: Me too. I'm going to have you come back and talk about it. Because I think we would gain a lot as technologists by making sure our buyers deeply understood immutability. 
+
+[0:43:49] TMH: Yeah. 
+
+[0:43:50] JH: I think it would help.
+
+[0:43:51] TMH: I mean, it's not just immutability from – there are so many benefits to it. Immutability from a perspective of auditing or compliance to see how and who – how data is changed and by whom that data was changed over time. But it's also beneficial from an analytics perspective. 
+
+People are using their central data stores, their transactional data stores to store that data and to query that current data. And then for anything historical, they're moving that into a data lake or an analytical database. And, yes, you can run queries, you can store masses amounts of data in those databases. But what we really want to see is we want to see your central data store being able to analyze queries historically without those historical versions affecting the performance of your latest or current queries. 
+
+And that is where immutability of data and versioning of data comes in and was the main point of my master's thesis, which was looking at how you can do versioning within the graph. And that becomes very powerful. Because more and more organizations are going to be using graph data and graph data analytics over the next 5, 10 years. 
+
+But being able to do that in a very simple way coming from a – a lot of these people are coming from relational backgrounds or document database backgrounds rather than graph database backgrounds. Being able to understand those concepts from the background that you've come from, but being able to apply those queries and that analysis over time, that becomes really, really powerful.
+
+[0:45:21] JH: I'm going to have you come back and talk about that. Because I also love what you're saying about the mindset side of it. I do data all the time. And I even find myself pulled up short a little bit because I learned – I started in that structured world of databases. And now it's just a different way of thinking about it when you think about the size of the data and these new modalities for organizing it.
+
+[0:45:44] TMH: It really is. And even if you forget about versioning or immutability for a minute and you just think about graph, we do not look at the world and think of everything in tables or collections. We look at the world and think of everything in terms of relations and how things relate to each other. This person is a brother of that person. This person works at an organization. This person made a change to this document. And you can definitely describe those in spreadsheets or tables. 
+
+But when you get your head around how you can query that in a graph-based way, that becomes really powerful. It's great to see. Because people come to Discord and they're like, "Oh, how can I do this?" And you show them a simple query and they're like mind blown by how simple you can make some of these queries. And they make sense. They make sense according to how your mind already thinks about the world. 
+
+Now when you add immutability to that and you can then say, "Look, I want to find all people who bought this product. And I want to find the other products that they bought in the last three weeks." And that will give me products that I can recommend to a user with a really simple query. That's just one line of code in SurrealQR. 
+
+But I want to do that same query as of December last year. Because I'm not recommending summer or autumn products. I'm recommending Christmas products. I want to run that same query with the same performance characteristics of the current data. But according to the entire database, as it looked at a particular point in time, and that was last year, and that should be simple to do. And also, being able to compare how related data looks. If I want to analyze, let's say, for fraud or network analysis, let's say. I want to analyze how someone's set of connections or which ATMs they've been using this week. And I want to compare that to six months ago or three months ago and to see how that behavior is changing over time. Those types of queries are incredibly complicated and involve using multiple different data stores to do that.
+
+[0:47:38] JH: I wish we'd started talking about that. I used to work on mortgage finance products and do data for mortgage. And this is exactly the problem. That was a weeks' long effort just to put together your ask.
+
+[0:47:49] TMH: Exactly.
+
+[0:47:50] JH: Before you put it in code. Just to write down for yourself, "What am I even trying to get here?" I really appreciate that use case. You mentioned an example. This person's a brother. How's your relationship with your brother? Have you guys always done complicated, high-stress projects together? Or is this the first one? 
+
+[0:48:07] TMH: This is our first venture-backed business. I'd say our other – all of our other businesses with bootstraps. But I don't think it's possible to build this type of business into what we know it can be. We know the interest for this product is massive. But we also know that you have to build a lot in order to take it out there to the world. Really, as a VC-backed business, is really the only way. 
+
+But we've been working together on projects for I think coming up 16 or 17 years now. We started out building websites and building applications for people before we started launching our own software as a service products. 
+
+I mean, to say we don't fight, I think that would be a lie. But we have a great relationship. I think it's really important that with your co-founders – and you see this a lot. A lot of the failures of startups have to do with falling out of co-founders or co-founders having different directions or belief of which directions should be taken. Trust is so important. I don't think there's anybody I trust more in this world than my brother. It makes it very easy to work with him. 
+
+Yes, you can disagree. Y es, you can argue. But at the end of the day, that trust is still there. And that makes it a great business partner to be with. There's also a lot of stuff we're doing at the moment. This year and these last few weeks especially have been busy. I've barely seen him. But, yeah, it's great.
+
+[0:49:23] JH: That helps with the relationship sometimes. Yeah. And you're working with Matt Turck at FirstMark?
+
+[0:49:29] TMH: Yeah. Definitely. Yeah, Matt's great. I mean, he doesn't tweet about the data. The AI and the ML space I don't think is worth mentioning. Yeah. 
+
+[0:49:37] JH: Yeah. If you're not following Matt, I strongly suggest it. Because he's witty in addition to being a very authentic, invested early VC. 
+
+[0:49:45] TMH: The king of memes.
+
+[0:49:46] JH: Yeah. It's worth it. Worth it. What I always like to just kind of wrap up with, first of all, thank you so much for spending this time with us. We have a lot of technical leaders amongst our audience who might be thinking about starting their thing. Whether it's a project or it's a company. Do you have any specific advice for technical founders as opposed to the rest of the founders? 
+
+[0:50:06] TMH: I'm a technical founder myself in terms of my interest has always been in the code. I think as a technical company, you also always need to think about the brand, the marketing and how to go out to users. Not to say that's – obviously, you have to have great product as well. That's important. But you have to think about both. 
+
+As a technical founder, it's really important to get someone who isn't technical or someone who brings the other pieces to the puzzle to the equation. And vice versa, right? If you're a non-technical founder and you're building a technical product – I've met many teams over the years who have outsourced or they've got it built. It's just so hard to build a business like that. You have to have someone who has the vision for the technical product in your team in order to build a good technical product. 
+
+Yes, there are always edge cases and I'm sure be proved wrong. But I think those two things are really important. If you're building a technical product, you need to have great technical expertise and expertise in other areas as well. And that's what makes it much easier to build a business.
+
+[0:51:11] JH: Find the right partner and don't fight the domain.
+
+[0:51:14] TMH: Absolutely. And you know what? The other thing is just start building. SurrealDB came because I just started hacking and trying to write what I thought would be a great database. I have not – my master's thesis was in databases. But before that, I had not done anything. Any content or courses related to databases. And there's a lot of learning. There's a lot of white paper reading, especially if you're trying to do something new. But it's really important to just to start writing that code, to start hacking, to give it a go and see what happens.
+
+[0:51:46] JH: That's the great theme of the startup world, is no waiting. No need to wait. Just get going.
+
+[0:51:51] TMH: Absolutely. Absolutely.
+
+[0:51:52] JH: Well, it's a pleasure talking with you. We're going to put in the show notes. But just if you want to give a shoutout of places where – the website is great. Discord. And then is the information about your SurrealDB world coming up on September 13th? 
+
+[0:52:05] TMH: Yeah. Surrealdb.world is the website. We'll be live-streaming it online. And it'll be in London if anyone listening is in London. And that's September the 13th. It's going to be a really great day. We've got Kelsey Hightower joining us to talk about the future of data and databases. That'll be really exciting.
+
+[0:52:22] JH: I'll be there virtually. And once again, thanks, Tobie. We will look forward to all the next versions you've shared with us. And congratulations on the success and popularity of Surreal. We're really excited for you. 
+
+[0:52:33] TMH: Excellent. And thank you very much for having me. It's been great.
+
+[END] 
+
+ 

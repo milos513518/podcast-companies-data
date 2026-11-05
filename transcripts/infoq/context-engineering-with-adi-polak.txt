@@ -1,0 +1,318 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Context Engineering with Adi Polak
+DATE: 2026-04-06
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/context-engineering-with-adi
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2295131636-infoq-channel-context-engineering-with-adi.mp3
+DURATION_SECONDS: 1864
+TRANSCRIBED_AT: 2026-11-04T09:44:20Z
+----------------------------------------------------------------------
+In mobile application security, good enough is a vulnerability. GuardSquare delivers the highest
+level of security for your mobile apps without compromise. Discover how GuardSquare provides
+industry-leading security for your Android and iOS apps at GuardSquare.com. Hello and welcome to the
+InfoCube podcast. I'm Thomas Betz. Today I'm talking with Adi Polak. She's a director at Confluent
+and the author of several books including Scaling Machine Learning with Spark and High Performance
+Spark 2nd Edition. She recently spoke at QCon AI about context engineering and what it takes to move
+beyond prompt engineering when building AI systems to scale. So Adi, welcome to the InfoCube
+podcast. Thank you so much for having me, Thomas. So to start the conversation, let's get a
+baseline. What's your definition of what prompt engineering is and how does that differ from context
+engineering? That's a really great question and something that a lot of people are asking
+themselves. It's essentially how do we instruct an existing model or how do we instruct multiple
+models sometimes? So it will give us what we want at the end. Like how do we translate? Where is the
+language that we use? Do we give it code? Do we give it, you know, pure English language that we
+work with? And then it, of course, dives into best practices inside the world of prompt engineering.
+But this is kind of like the high level. Some of the practices becomes outdated really fast. So this
+is another thing to watch as we learn and change the workflows of how we're working with models. For
+example, role assignment for a very, very long time. Role assignment was one of the key patterns of
+how to work with the models. Like you're an experienced backend software engineer specialized in,
+you know, Apache Spark, for example. And now the model assumes it needs to focus more on these
+specific technologies. And the model is now acting as a software engineer. Now that role assignment
+is slightly going away. And now we have like more environment that are specialized for that
+particular thing. Another pattern is a few shot examples. It's kind of like how we think as humans.
+So instead of telling the model what to do, we give it examples that we know are considered good
+examples, maybe bad examples. We classify them and we tell it, hey, this is a good example. This is
+an example that, you know, not good example. And the model learns the patterns. At the end of the
+day, behind the scenes, switching learning statistics, it learns the patterns and it understands
+what we want. Kind of like how, you know, as humans, we learn from patterns that sometimes are not
+100% well defined. So this is another great pattern that exists. And chain of thoughts, the model
+kind of prompt itself and give itself a feedback and think throughout the process that it goes
+through. And that behind the scenes creates multiple calls to the model. And today the models know
+how to do it on their own, which is kind of fascinating, you know, by itself. You can imagine like
+an ML AI pipeline and a loop with the model where it takes feedback for itself and kind of upwards.
+And that is like a chain of thoughts. And another pattern is constrained settings. We give it
+specifications. We tell the model, here's my spec. Here's how I want my software to be built. Here
+are the languages. Here's how I want my software to be built. We figure that out as we were going.
+And because those LLMs keep evolving, how we interact with them keeps evolving. So you mentioned
+instead of just saying you're a role, now you're doing the few shot and saying these are good and
+bad examples. And you said that gives it patterns to follow. We're still talking about not changing
+the LLM at all. Like we're not reprogramming the model and giving it new training data. We're just
+saying in the context of this session, behave this way. Now they have larger sessions. So those
+contexts can grow. But you're still saying just follow this example until I start a new thing and
+tell you to behave something differently. Right? Right. And I want to add some interesting edge
+cases. We know models are really good at spitting up and giving us the next word or, you know, line
+of code and so on. I think in the past, maybe a year ago, there was a rush to create really good
+mathematical models as well. And the idea was that a model could potentially be able to come up with
+the right equation and the right way of taking a spreadsheet and doing all the statistics and
+calculation behind the scenes. And what we're learning now that the more general models, some of
+them should have been good at these things. This is not the case. So software engineers, we're going
+back to prompting the model of the things that we need to build. So instead of, you know, giving it
+a spreadsheet and hoping for the best that it will do what it needs to do, we're taking it back to,
+hey, write me this code that does these things to that spreadsheet or database or anything that we
+need to operate on. And here is the math equation or here's what I want you to implement, like
+sentiment analysis or take this state-of-the-art algorithm and implement it in here. So it becomes
+more specific. And so prompt engineering really shines when we have the domain expertise. So this is
+an important bit that we're learning now that we need to know what we want to achieve. And we need
+to have a rough idea of what are the steps to get there. Yeah. And I think I've seen a lot of my
+coworkers, at least, have started turning to, I'm going to do this one thing and then I'm going to
+create a tool or a skill. And I'm going to save a file that says, here's how to do that. It started
+with just our instructions files, but now it's turned into a lot of different things. Like you said,
+create a Python script or a PowerShell script or Bash script that does the thing I needed to do.
+Because if I go back to, I'm going to ask it the question, it might every time have to go back and
+say, well, maybe today I'm going to solve that with a Python script. And then tomorrow you ask it
+the same question. It's like, I'm just going to call an MCP server and hope for the best. Once you
+figure out what you're actually trying to do is going to do that thing that we need the domain
+knowledge to be able to write good prompts. We can then use that to figure out like, what are the
+best possible tools? Save that so I can repeat that process again. And I don't need to use up my
+tokens coming up with a process every time. Right. And this is how we scale as an engineering team,
+if you think about it. Yeah, the scalability is definitely a factor. And I think that gets to one of
+the things we want to talk about was we have really an agent workflow versus a human centric
+workflow. That a lot of this prompt engineering started with chat GPT came out, Claude, all the
+other tools. I would just type in a prompt and get what I want. And whether that's code or text or
+an image, I just ask for something and I get it. And now I've moved to those tools have either their
+own built-in agentic workflow, like please accomplish this task. And it'll plan out and it'll be,
+let me come up with a plan, show you what the plan is going to be. Check it off as I go through it.
+How is that evolving? Isn't that what you're kind of talking about is context engineering is one way
+that we're watching these things happen in real time in front of us? Yeah, a little bit. It's kind
+of amazing. So just a couple of days ago, we contribute a lot to open source. And so we developed an
+internal system that separates, like every time we do a Git push to an external repository, we have
+a dedicated system that makes sure there's no IP being exposed. You know, this is something that you
+want in engineering, especially with engineering that contributes all the time to both open source
+and also builds the platform. So we want to eliminate mistakes of IP being exposed. And so a couple
+of days, I've been coding a little bit, something small. And some of my very old commits from six
+years ago, you know, in GitHub, you have PR commit log that captures all the SHA and, you know, all
+the information there. Some very, very old commits got picked up because I used a library that was
+open source. But the way I imported that library was the same way we import the same library for
+other things, right? So it wasn't like a real IP is just, you know, importing a library and using a
+line. And our system picked it up. Now, what I would do as an engineer, I was like, I know there's a
+PR commit log. I know how Git operates. I know I need to pick up the SHA, go do like the whole
+surgical experiment around, you know, go figure it out what the files were there. Do we still need
+them? Can I delete that? Can I rebuild, right? Rebase to that state. So delete that line and now
+GitHub behaves as if that doesn't exist. I took it kind of like the old fashioned way. I had my
+notes. I hear all the steps that I need to do and became messy really quick because you have a lot
+of files. You have a lot of changes. And I'm talking about commit from six years ago. I don't really
+remember what happened back then. What exactly I did. I just knew I needed to delete that one line.
+It's kind of like an needle in the high stack. Four hours into that process, I completely messed it
+up. I had, you know, meetings and Slack and so on. So lost train of thoughts and completely messed
+it up. So I was like, okay, revert, right? Let's go back. So I reverted. And then I was like, hey,
+wait, I have cloud code, right? I know what needs to get done. Can I explain to cloud and give it
+the right context, right? Everything that I need to be there and the tool access and what is
+happening with Git. Can he do that for me? And so I did. And within five minutes, I was able to push
+that code to the open source repo because cloud went in, did the surgery, fixed it up for me and
+deleted when needed to be deleted. And that's a game changer, in my opinion, when you think about
+these things, because, you know, it's only one example. But this is where it would take me really
+long time just because I don't do it on a daily basis. And, you know, I think no engineers does it
+on a daily basis. You mentioned that you got distracted. You were trying to do it, but then you had
+to go to meetings and you had to answer other Slack conversations. And so when you said it was four
+hours later, you weren't sitting there typing code for four hours. It was four human hours of your
+day. And you were context switching. You didn't just get to think about that one problem. And I know
+there's a little bit of the yak shaving, if you will. I went down here and then I had to do this
+other step and then I had to do another step before I could do that. And so you've had to remember,
+well, where was I in the stack of things I had to do before I could get to the one thing I actually
+wanted to accomplish? We sometimes struggle as people to remember all that stuff. And sometimes I'll
+open up Notepad and I'll just write down notes of here's what I'm doing. Here's the stuff that I've
+done. It seems like we're seeing the tools. And this isn't the low level LLM. This is, like you
+said, clogged codes. A product has been adding that capability in. And I think as we build more LLM
+products or more products that we're saying have AI in them and they're really LLMs under the
+covers, that's what we as engineers and architects need to think about is how do we manage that
+context within our application so that the user gets a positive experience? They say, I want to
+accomplish this task. Our software figures out here's how I can accomplish this task, but I'm going
+to write down what I'm going to do. I might ask the human, does this sound like a good step or
+should I just go off and do it? So how do we accomplish that? Is it really just like, let me write a
+markdown file and keep referencing it and updating it as I go through? What are some good techniques
+for keeping that context managed? Yeah. So one of my approaches I really like is actually going
+through the process and then asking Cloud to save it as a skill. This way, I don't need to start
+from a blank sheet of, you know, a skill MD. This way I can make sure it's actually what I want, how
+I want things to happen. So we're having a conversation. Sometimes Cloud will give me options. It's
+like, did you mean this or did you mean that? Could you clarify? And similar to speaking with the
+very thoughtful human, if you think about it for a second, it's really think about edge cases and so
+on. Not everything, not all the time, right? It makes mistakes. And sometimes like, no, abort, we
+lost track of, you know, where we were and what I really wanted to happen. But after we do that, we
+have a session and then I can say, hey, save everything you just learned into a skill. And let's add
+that skill to make sure it actually captures what expected. And this has proven itself because now
+we're able to stack skills and create kind of a repository of skills across the team, across the
+company where people can take advantage of, you know, wanting to check it knowledge, essentially.
+And it helps us create better software because then we can use multiple skills. When I'm entering a
+session, a coding session, for example, I can say, here is my skills repository, but I'm not loading
+everything to my context yet. And this is a very important point here. I don't want to load
+everything to my context, but I do want to have the knowledge of what exists there. So it should be
+searchable, right? I want to be able to track it. I want to know what's the level of quality that I
+have for that skill as well. So if I can maintain that, that's really good. And then I can decide
+for a specific session, for a specific task that we want to operate on, is what's the right context
+to bring. Because LLM, if we are overwhelming it with too large of a context, it's going to make
+more mistakes. And it's going to cost more. Because at the end of the day, what happens, the
+mechanics of things, it's just, you know, concatenating everything for every command, right? So it's
+a string concatenation behind the scenes for the most parts, right? Maybe there are more
+sophisticated ways to go about that, that, you know, the big companies are implementing. But at the
+end of the day, that's it. And so we want to be smart about what the context that we're bringing. We
+want to be smart about how we're managing that and not overwhelm the system if we can. Yeah. I like
+the idea of having the skills library. It's not, I have to load up all of these things I know how to
+do, but I know I can go and look at this list that says, here are the things that I know how to do
+and look through those skills and realize, okay, I need that one. Now go look it up. I'm old enough
+that I used to have books on a shelf that had very useful reference before you could just find
+everything on Stack Overflow or ask whatever your LM tool is. And you turn to the index and say, I'm
+looking for this. And you'd find some sample bit of code and you're like, okay, how do I take this
+generic example and use it in my specific case? I can apply the idea that they're showing in this
+book or I find an article online and I apply it. Now we've got software that does that. We almost
+need to start thinking of those same ways. Like how would I, as a human, store this reference
+material that I know how to do? Where would I go look it up? It gets back to the idea that when you
+use these as just a one-shot prompt, like I can ask it anything and it's going to be something. The
+quality is not going to be that good. If you start using the product better, using the tools better
+and using those techniques, like no one was expected to know everything that's on the internet. I
+didn't know everything was in those books. I would go look them up. So set up the tools to be
+successful by saying, here, go look these things up and building that into our systems. That just
+seems like a different way of thinking about software than we've really had to address before. Yeah.
+If you think about it for a second, it's kind of, we're moving from a world of, you know, kind of
+like the developer experience, the DevEx world into an agent experience. Like how do I expose, you
+know, me as a developer, I love books. I wrote books. You know, I want to go there and, you know,
+read and learn and use it as reference. But I know this is today with the tools that I have there,
+there are better options for me out there. But my agents now need access to it, right? So now I
+wanted to know about this great tool that just came out or I wanted to know about, you know, utility
+tool that we developed in-house that I want to use. We still care a lot about developer experience
+and flow state and giving people the right tools to be successful and productive. And we're also
+adding the agent experience. Like how do we build the workflows and the systems and how do we build
+those, you know, sometimes multi-agent systems that goes across our development lifecycle, right?
+The SDLC and CICD and what's happening in production and so on to really be successful with that.
+And those tools needs context. And they're often stateful. So there's a lot of things that goes into
+it. But the first step is we need context and we need to move from a stateless kind of like the
+chatbot era to a stateful and agentic approach. And that's talking about sort of long-term memory.
+I'm going to start this process and it's not I'm going to finish this immediately and I'm done and I
+die and I start up a new process and I run it and it's done. That's the stateless thing you're
+talking about. You're talking about stateful like I might have an agent that's doing a business
+process over days, right? And it's going to pick up different pieces of that or going to your multi-
+agent scenario. I like the idea of the orchestrator agent having all these different sub-agents. How
+do you manage the memory between all of those things? Do they all need to know everything that's
+going on or is there some techniques, you know, to break up the context and say, solve this problem
+with what you need to know and here's the bigger picture so you give a better answer? Sure. It very
+much depends on the workflow that I'm building. So we always think about short-term memory and long-
+term memory. These are always things that we want to know. It's like, what do I need to know that I
+need to pull in? It's like a very high latency. I need it right now and I can forget about it later,
+right? It's only for this specific task or only for this specific sub-task even. So it's not even a
+full task. And then, you know, there are different techniques where we can maintain that context
+throughout the longer session, like summarization and thinking about the hierarchy of that context.
+I think sometimes a model will tell me, hey, I'm working with Python, but then I'll kick it off
+again. It's like, okay, now we're switching to MCP servers and maybe you're a JavaScript developer
+suddenly. And you find yourself with different scripts from different programming language. So we
+don't want that. And we want this context to be already with the session. Now, depending on what
+we're building, depending on what our needs are, it could also be that we need a long-term memory.
+So a long-term memory, it's more about overall, like what exists in my system. What do you call kind
+of like a durable knowledge of where we're operating in that space. And this is where things like
+skills also becomes really, really important. And also maybe we want to start looking at things like
+RAG, right? Kind of like bringing that information from databases or other data systems that exist,
+retrieving that information and augmenting it where we need. Now, this is more of a long-term
+context, long-term memory. It's also an important pillar. So I have my short what's exist in my
+session. And then I have my long-term. I need to always keep it up to date, have a different, maybe
+a data pipeline, maybe an ML pipeline. You know, names are a little bit changing these days. But I
+do know that I need that to exist. Well, I'm glad you brought up RAG because a year ago, that was
+the thing everyone was latching on to. Like, you've got to have RAG, you've got to have RAG. It's
+the fastest, easiest way to just get a better result. And now RAG is just one more tool in the
+toolbox. But it seems like if you're working on the agentic workflow, now it's not like, oh, always
+go look up this one source that I have a RAG model for. It's when I need to get there, go and find
+the relevant answers, bring that into, again, this context of this task I'm trying to solve. We had
+that idea, but it was still, again, a year ago. That's like the ancient past. That was the stateless
+model almost. It was like, go call RAG, come back. But now I want to have this more stateful
+solution where one step of the process went out and looked and found that information, brought that
+in. And then the results of that get passed off to another smaller agent that does something else
+with it, right? Is that kind of how you're envisioning these things fitting together into a multi-
+agent form model? Yes. And I think it very much depends on what's the workforce that we're building.
+If we're building workflows for engineering, sometimes that will look different because now we're
+looking at pure enablement that are based on skills and writing software and, you know, our
+knowledge and experiences and so on. And kind of enriching the model with that thought in mind
+usually means that we have new skills of how we're going to do things. We have best practices. We
+have design patterns that we want the model to follow. We have a testing suite. You know, I have
+kind of like my doctor agent that tests things for me. So I wake up in the morning and I run it and
+I make sure some of the tickets and everything is operating as I expect it to operate. You know,
+this is 100% productivity tool. Now, there is a whole other world of BI, you know, like the business
+intelligence part where we want to enrich existing data. We want to create better SQL that are based
+on, you know, new tables that we have in there. Now, it could be that we work at a large company,
+right? Usually when we have large companies, we have silos of data in places. And I want to be able
+to retrieve and I want to be able to search what happened there, even if I don't necessarily know
+the exact name of the tables. Right. Right. So this is where things like RAG can help enrich my
+queries and enrich my SQL and expand beyond what I know right now can really help because this is
+what it was built for. There is a good indexed database sitting somewhere where we can do that
+retrieval based on semantics that we have. Now, the semantics is really important because the idea
+is we don't know exactly what we're searching. And when we don't know exactly what we're searching,
+we want to be able to use whatever language we're using. And the model will try to give us a couple
+of ideas of, oh, this table exists over there, right? I just pulled it out of my catalog. It's a new
+table. They just created that yesterday, but it's already populated with the latest data. Would you
+be interested in looking into it? Would that make sense for the business question that you're
+asking? And this is a whole different workflow than using AI for improving productivity as
+engineers. Yeah, that discoverability problem is always out there. Like if you don't go out there
+and look for new things, how do you know the new things are coming out? And so we can have different
+tools that are constantly watching for that and letting us know. I know that you, since you work at
+Confluent, you're familiar with Patchy Kafka, Patchy Flink. Where do those products fit into an
+agentic architecture? I know a lot of people are out there using them and wondering, like, what are
+the benefits that those provide if I'm building some of my workflows on top of those tools? And what
+are some of the things that you're hoping that teams will start adopting if they aren't familiar
+with? Yeah. So there's one thing that companies are already adopting and they shared it in, you
+know, some of the largest stages and some of, you know, Kafka Summit and conferences that we have
+around the world around data streaming. So one of them, for example, is OpenAI. They have a very
+large Kafka cluster as well as Flink. And for them, everything that they do with the models that
+people interact with them in real time, they build it through event-driven architecture. So behind
+the scenes, you have Kafka that operates for those, you know, transferring those events in real
+time, very, very low latency. And then they have Flink for enrichment, summarization, real-time
+analytics on top of those in order to improve and give back to the model more context. And I talked
+about before about kind of the models today are already taking steps on their own. As we talked
+about prompt engineering, we touched on the fact that we have chain of thoughts. And that chain of
+thoughts is essentially you can think about as event-driven pattern. You know, one of those probably
+you can define it as a new pattern. And it becomes the infrastructure for when we want to build
+these type of solutions. So even in-house, we're thinking about how we build workflows to support
+some of the engineering work, right? Maybe we don't need a huge Flink cluster, but it definitely
+helps to think event-driven on these things like what triggers what, especially for processes and
+workflows that are, you know, related to maybe our ticketing system, maybe related to code quality
+that we have agents running over, you know, work code. And suggesting new tickets of how we can do
+better, maybe agents that are picking up tickets and already, you know, giving us ideas for
+solutions with code and just waiting for our developer to actually approve those. And because we
+started to see more companies curious about that, we actually developed some, what we call Flink
+streaming agents API and the open source that. And for anyone who wants to use it, try it,
+contribute to it, it's available as part of the Flink repository. I like the idea of those event-
+driven workflows becoming more of the agentic processing as opposed to I'm going to start a process,
+then these things happen. I can have stuff working in the background and then those agents are
+responding to it. And I can see a lot of, again, it's a different paradigm you have to think about
+as opposed to do this work. It's like, when this happens, start that. You mentioned software to SDLC
+stuff, CICD pipelines. I check in a commit, kick off a pull request or run this process and check,
+you know, did I have any IP going out? Or all those different things can happen. And having that
+loop into just the bigger context model. Is that what you were talking about? Flink is for enriching
+the data. So Kafka, as this event happened, then Flink comes in and says, because that happened and
+I also saw these other things happen, here's the bigger picture. Am I understanding that correctly?
+Or is there a better way to explain that? This is one example. The example I had in mind is more of,
+we have an endless backlog of JIRA tickets or not JIRA, you know, whatever your favorite system for
+tickets. And this endless backlog needs to be triaged, sorted, organized, and reached with, you
+know, more information from our internal architecture docs, prioritization that comes from product,
+from customers, and so on. So these are different systems. So imagine that you have a daily routine,
+right, that runs in agents that go there and summarize that for you, prioritize that for you. And
+for the simple things, even suggest coding solution, even creates a pull request and opens a pull
+request for a developer to take action on. This is where we have kind of like the multi-agent
+process kicking in and improving some of the engineering processes, especially given many companies
+would have a huge backlog. We never get to the bottom of the features backlog. And, you know,
+there's always small things that we need to update related to maintenance or related to migration,
+especially that we know we need to do. No, it's not a priority because the customer didn't ask for
+them specifically. But maybe if an LLM could pick it up and suggest a solution, you know, we can
+execute faster on reviewing rather than taking the tickets and doing it ourselves. So these are some
+of the things that, you know, we're building and helping engineers do more meaningful work as well.
+Well, I always like to wrap up our conversations with a look towards the future. And the thing with
+AI, I feel like I can't ask, what do you see one to three years down the road? So maybe it's just
+like six months from now or within the next year. How do you think people will be designing,
+architecting and building software systems differently, specifically around talking about context
+engineering? Yeah, I don't know how things are going to change and, you know, what would be the best
+solutions for us. The only thing I can say is if people listening in the house have the opportunity
+to try new things, bring new ideas, use their creativity. We always say, you know, if you can dream
+it, you can do it, you can build it. I truly believe with the tools that we have today, if you can
+dream it, you can do it and you can execute it much faster than we could have had years back. I
+don't know how things will change. I don't know where we'll be. But if you're curious, if you want
+to stay up to date in this industry, if you want to continue building, your creativity is the most
+important skill right now. Use it, do it, go for it. Yep, just keep trying it and don't think that,
+oh, I haven't used it in six months. It's probably changed quite a bit since the last time you tried
+it out. So try something again, you'll probably get a much different result. Well, I think that's
+about time. Adi Pollack, thanks again for joining me today. Tell us. Thank you so much for having
+me. It's always a pleasure getting up. And listeners, we hope you'll join us again soon for another
+episode of the InfoQ podcast. Thank you.

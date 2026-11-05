@@ -1,0 +1,429 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: From Blind Spots to Observability: Operationalizing LLM Apps with OpenLit
+DATE: 2026-02-15
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/openlit-open-source-llmops-episode-77
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63906714955750011937985833-1425-4bb6-acfe-ce3b20759f52.mp3
+DURATION_SECONDS: 3036
+TRANSCRIBED_AT: 2026-09-17T03:34:30Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering Podcast, your guide to the fast-moving world of building
+scalable and maintainable AI systems. Unlock the full potential of your AI workloads with a seamless
+and composable data infrastructure. Bruin is an open-source framework that streamlines integration
+from the command line, allowing you to focus on what matters most, building intelligent systems.
+Write Python code for your business logic and let Bruin handle the heavy lifting of data movement,
+lineage tracking, data quality monitoring, and governance enforcement. With native support for ML
+and AI workloads, Bruin empowers data teams to deliver faster, more reliable, and scalable AI
+solutions. Harness Bruin's connectors for hundreds of platforms, including popular machine learning
+frameworks like TensorFlow and PyTorch. Build end-to-end AI workflows that integrate seamlessly with
+your existing tech stack. Join the ranks of forward-thinking organizations that are revolutionizing
+their data engineering with Bruin. Get started today at AIengineeringpodcast.com slash Bruin. And
+for DBT Cloud customers, enjoy a $1,000 credit to migrate to Bruin Cloud. Your host is Tobias Macy,
+and today I'm interviewing Amun Agarwal about the operational investments that are necessary to
+ensure you get the most out of your AI models. So, Amun, can you start by introducing yourself?
+Yeah, first of all, thanks for having me here. I'm Amun Agarwal, and I'm currently building OpenLit,
+which is an AI engineering tool built on open telemetry native platform. And it's used to kind of
+manage your AI development workflows. So, yeah, I have around 10 plus years of experience working in
+different platforms, open source platforms, dev tools, and all. So, yeah. And do you remember how
+you first got started working in the space of AI and data? Yeah, like, funny story. So, I was, like,
+the AI was starting up, and I was currently very well involved with front-end development. And then
+I suddenly saw one post about this AI. And two, 2.5 years back, I started working on a music
+recommendation app built on, like, Spotify APIs and all. Then I was running into a lot of problems
+like debugging and all. The cost reaching, the token usage got, like, huge and all. Then I realized
+that that is not the way to go forward with the AI development. So, I just got an idea about, let me
+figure out how this AI development workflow can be, like, made easy for developers. And then it
+started with Openlit. And, like, this music recommendation app just got on the back end, and then it
+started with it. Before we get too much into Openlit and some of the overall aspects of
+operationalizing these LLM systems and services, I'm wondering if you can just talk to what you see
+as some of the major blind spots that teams are dealing with when they're trying to build these AI-
+powered either chatbots or agentic use cases or various different components that rely on LLMs in
+various forms. So, like, if we talk about the blind spots, there are a couple of blind spots. Like,
+first of all, I would say the first and foremost blind spot is, like, how the AI is giving
+responses. Like, what it's intercepting with the prompts, what it's, like, taking the context, how
+is it modifying it, and then working towards the response. So, that area is still black hole. And we
+cannot, like, totally understand and totally pen down thoughts about how the AI is working. So, we
+need to be very keen on, like, logging traces, logging most of the information that it can help us
+debug the AI usage. So, that's one thing. The other thing is, like, cost and token usage. Like,
+people are still, like, keep on using, like, AI tools, AI providers into their app, but they are
+still, like, very much, like, blind about how the token usage costs abruptly high. How my cost is
+coming, like, out to be, like, more than my revenue. So, that kind of thing is really important for
+us to, like, figure out. Then there is third thing is prompts. Like, people are hard coding prompts
+into their apps, which is, like, difficult to manage. You can have, like, hundreds of different
+prompts, which can perform, like, thousands of use cases. But to manage that, it's really difficult.
+You need to, like, push in your code to the production and then update the prompts. But that is what
+is, like, the main area to be tackled. In particular, I think that a lot of these blind spots that
+you identified and challenges that come along with it are something that teams encounter fairly
+early in the adoption journey of starting to work with AI, particularly in a production use case,
+even whether that's for internal tools only. And as teams build up their overall sophistication and
+the ability to work at a higher level with these LLMs, they start to adopt these various agentic
+patterns. And I'm wondering if you see teams who are at that level of the adoption curve falling
+prey to these same challenges or some of the ways that the kind of maturity curve changes the
+stumbling blocks that they run into. Yeah, I think people are, like, just wanting to create some AI
+apps these days. Like, just the boom is there. People just want to, like, create a lot of things
+using AI apps. And most of the things are, like, meaningless. And most of the things people are
+developing just to, like, create a competition around that same area. But to create an AI app, we
+need to understand the AI first. Nobody is there who can understand the AI unless you have proper
+monitoring, proper observability, and those kind of things. To identify the areas, how we need to,
+like, take help from the AI to generate a response, to create some app. That's the main major area
+that we need to focus on. To the point of things like prompt management, the observability aspects,
+cost tracking, there are numerous tools that have been developed to address some or all of those
+capabilities. Some of them are point solutions. Some of them are full suites of capability, similar
+to what you've built with Openlit. And oftentimes, in order to be able to address the entire set of
+needs for running one of these generative models in a production context, you're going to need a
+superset of many of those tools. And some of them might have overlap. And so then you're running
+into the trouble of, okay, well, how do I figure out which part of which tool to use for this part
+of the problem? And I guess, given that, what are some of the major components that you see as table
+stakes for being able to put these models into production? I think you have, like, described it
+well. Like, there are too many tools out there which help us, like, take the AI apps from
+development to production. But the thing is, like, when we started two years back creating this
+product, there were a lot of tools in the market. But the tools were not fully open source. Then
+there was, like, people were not following OTL format. So OTL format is the, like, generic
+convention that people follow these days for observability. If you have that, it's a no-vendor lock-
+in support. Basically, any tool would be able to read that, process that, and give you output to
+that. So in this field of AI, like, it becomes difficult for anyone to have, like, a vendor lock-in
+thing. Because people are, like, these days trying out different things, like, just before, like,
+launching it to production. Let's say if I am, like, vibe coding, I'll try out different tools of
+vibe coding. Until, unless I just, like, get that aha moment and then I just, like, stick to one
+vibe coding tool. Similar is with the other tools. Like, there is one tool which is, like, they have
+this observability problem which is sticking to their own format. Which becomes difficult because if
+people are, like, I want to migrate this to another platform, they won't be able to do it. So those
+kind of things that people need to, like, keep in mind before, like, opting for the products for
+this area. Which helps them, like, take their apps to the further level as well as, like,
+maintainability is very important. If there is no maintainability, you won't be able to, like, reach
+to that level where you would be, like, now my product is, like, production level and market,
+reaches market fit. So those are the things that people need to care about before opting for a
+product like this. To enumerate some of the competing tools that I'm aware of, I'm thinking about
+things like Langsmith from the Langchain folks. There's Langfuse that was recently acquired by
+ClickHouse. Another one that I think is interesting is Tensor Zero, which is a gateway-focused
+product that has some of these observability and prompt management capability. Well, prompt tuning
+more than prompt management. And I'm just wondering if you can talk to some of the ways that you
+think about the overall landscape and the place that you're carving out with the work that you're
+doing on OpenLit and sort of the comparison between what you've been focusing on and some of these
+other tool chains. So if I talk about Langchain, Langfuse, Langfuse that got acquired by ClickHouse,
+they were kind of, like, the thing I talked about was a vendor lock-in. So they have a format that
+they were, like, building in. And it becomes difficult for a person to switch from a platform, which
+is vendor lock-in, because they are tightly coupled with it. If they are, like, using their
+environment, then they have to stick to it because they cannot move out of it. Then there is another
+one called Trace Loop, which is a very good platform as well. They are not totally open source.
+Their product is totally not open source. Then there is Helicon, which is open source. But they have
+a limitation to it with the Enterprise Edition. And what I wanted to build in was, like, to help the
+developers get to a particular place where they are ready to ship their apps to a production level.
+It's just that there are minute things that needs to be addressed, like prompt management. And then
+there is secret management. For different environments, you need to have, like, different API keys
+for different LLM providers. Then there is evaluation thing. Then there is OpenGround, like
+OpenGround, which is, like, comparing two different LLM providers with the same prompt. Those kind
+of things, if we are not allowing the users to have those things open source or free to use, they
+won't be able to, like, make their app to production ready. What's, they'll just be left behind. So
+that was my, like, a notion behind building this OpenLit. So we need to have such open source
+product, which is, like, free to use for at least the minimum viable things so that anybody can
+create MVP out of it. So that was my thought. And given the overall feature set of OpenLit, what are
+some of the other components or capabilities that you imagine a team needing to be able to have a
+full end-to-end LLM ops suite beyond just the hosting of the model or the API endpoint for the
+model? So since we were, like, OpenTeleMetory native, so there was this thing which was launched by
+Otel community, which was OPAM server, like protocol management for this Otel collectors and all. So
+when you are running your app on different environments, on different machines, with different Otel
+collectors, then what happens is it becomes difficult for you to manage those Otel collector
+settings, configurations to kind of filter out the traces or capture all the traces kind of thing.
+So we recently launched Fleet Hub, which is a feature where you can manage your multiple Otel
+collector configurations at one place. So you don't need to go into the different machine and then
+log in into that machine and then change the configuration, restart the server, nothing like that.
+You just, like, log in to OpenLit. You go and have your Otel collectors listed over there and you
+can just update the Otel settings and you are done with it. When you want to, like, let's say I have
+a, like, development app running and then what I want to do is, like, start sending those traces to
+a different platform. Now, you don't have to, like, go and update your app with different
+configuration settings and all. You just go to the Otel collector, you add your exporter to it and
+it's just, like, in one go, it starts sending the traces to different platforms. This is one. Then
+there is zero code observability. We launched Kubernetes operator that is helping people to kind of,
+without changing their app code, you'll be able to, like, instrument your app, AI app, with OpenLit
+Kubernetes operator. You don't need to, like, update your code, add anything to it. No, no need. You
+just go, download the Kubernetes operator through Helm and then you can just run that Kubernetes
+operator. You can update your configurations, like, which traces to filter out, which applications
+to trace and keep the data. You're done. So, these were the features that we recently worked on. We
+kind of had the notion about very low user memory. Like, if you run an OpenLit image, you just have
+two components. One is ClickHouse. Then the other one is, like, OpenLit whole client app and Otel
+collector and everything running. So, we wanted to keep it so simple that users do not, like, get
+afraid to add those things into their application code. And they were like, I need to add a lot of
+things. No. Just add one line of code, it's done. So, that's... One of the other aspects of building
+one of these LLM applications is the experimentation and evaluation. And those are phrases that have
+a lot of nuance and gradation in terms of how they're actually implemented. I know that in OpenLit,
+you have experimentation in the form of being able to load two different models with the same or
+different prompts and do a visual comparison of them versus experimentation in terms of the A-B
+testing style approach, where you might want to route a certain percentage of traffic to one prompt
+or one model versus the other and then be able to track those over time. And I'm just wondering how
+you're thinking about the current state of OpenLit and just some of the ways that manual point-in-
+time experimentation factors into some of the more longitudinal experimentation that other tool
+chains enable. So, like, for the experimentation thing, we have two features right now, which is one
+is OpenGround, where you can compare your LLMs with a single prompt, like, multiple LLM
+configurations. With single prompt, you can just check what was the prompt responses from each, what
+is the cost that every other provider took, what was the fastest provider that was there for a
+particular prompt. Then there is evaluations. We have the evaluations right now, but the context is
+missing from the OpenLit platform, which we are, like, still figuring out how to develop because
+context is a very, like, critical problem to solve. You cannot just provide and dump all the context
+to the application. It has to be, like, specific to the app. So, we are just, like, working around
+trying to understand how we can do it. But the evaluations are there. Right now, we have LLM as a
+judge. We provide, like, we give it to, like, prompt and then we give response and then understand,
+ask LLM to kind of give us the score of hallucination, bias and toxicity. But we'll just figure out
+and, like, enhance it. We have a future plan of, like, closing the loop. We have experimentation,
+then we have evaluation, and then we want to suggest what you can improve in your prompt or what you
+can improve in your dataset to kind of close the loop to make your AI app work better with
+performance, with cost, and with, like, responses.  Sort of cost tracking and things like that. So,
+I would say, like, we don't want any user to kind of restrict themselves into just using OpenLit. We
+don't want them to kind of act like, if I have used OpenLit, now I cannot, like, I want some more
+features and I cannot, like, just switch to another platform. That's not it. Tracking is one thing.
+We want, definitely want it. But it's not like we want the users to kind of feel, like, disheartened
+using OpenLit. So, we give out-of-the-box features, like, prompt management, secret management,
+evaluations, custom dashboards. So, those are the features that we want users to use and get
+attracted to. But it's not like if they have, like, Grafana has an observability platform running
+into their environment. And we don't want it to, like, add in more variables to their environment.
+You just start sending traces to Grafana. You have that observability platform. You just use our,
+like, gateway thing. Just transfer it to it. And beyond just the model calls themselves, I know that
+you're focused on adding trace information to things such as the various vector and content stores
+that you're going to be interacting with. And I'm wondering, as you see teams adopting OpenLit, how
+that changes their overall design and development workflow as they get their initial prototypes up
+and running and then gain insights into how it actually behaves. How does that change the way that
+they think about the overall system design and the way that they structure their development versus
+teams who are just coming at it completely blind? So, like, earlier, what used to happen is, like,
+people used to get the traces, like, a single input and output thing. Like, you gave the prompt, you
+got the response, and everything else was a black box. Now, like, there are various, like, methods
+you can just get the data from. So, we, in OpenLit, we have, like, implemented SDK in such a way
+that we try to give all the step-wise traces. So, if your tool is getting called, we name the tool.
+We, like, define what input was given to that tool and then what was the output to that tool, what
+response time it took, what tokens it took, all the information in a, like, a detailed format. If,
+like, anybody wants to debug a particular, like, workflow, AI workflow that is being doing, they
+don't need to get stuck at a place where they don't know what tool was used. At least, they should
+be aware what tool was used. Then, they can just debug that tool if they don't like the response.
+They can just go ahead and update that tool. At least, that kind of detailed information they should
+be aware of before jumping on to creating an AI app that can be deployed to production. Because
+unless and until they are aware about their own product, they cannot provide services to other
+people. And then, another aspect of getting this visibility and having this confidence-building
+machinery to be able to understand how the system is actually behaving as you go through change
+management of modifying the prompt, modifying the model, modifying the context it's retrieving. One
+of the default approaches that I tend to see with teams who are building with these AI systems is
+they'll automatically go to whatever is the biggest and best frontier model, start building with
+that, get some early successes and say, okay, great, this is what I'm going to use. And then, they
+start to realize over time, oh, this is actually getting incredibly expensive. It would be great if
+I could use the cheaper model, but they're prevented from being able to do that because they don't
+have that confidence-building machinery to be able to understand how the overall system is going to
+change when you go to that different model or try to optimize the prompt, especially when you're in
+more of an agentic workflow where you have some indeterminate number of calls that are going to have
+various compounding error rates depending on the different model capabilities, etc. So, like every
+model that has been designed by different providers, tackles different use cases. If you ask a
+particular model to generate a sequence of numbers, then the other model might not be able to help
+you with that. That might cause huge performance issues with the app. So, that is why observability
+is really very important before even going to MVP phase. Because unless and unless until you are
+aware about what model to use for a particular use case, you won't be able to develop a particular
+solution. You will just be playing around with your money and time. And digging now more into
+OpenLit, you've mentioned that it's built on OpenTelemetry as that core data collection layer. I'm
+wondering if you can just talk to the overall design and architecture of the framework and some of
+the different component models that you're building on top of to make it extensible. So, like we try
+to stick to what OpenTelemetry format is. We don't want to add custom layers to it because
+OpenTelemetry has a very huge component. And people are adopting it like really crazy. If we stick
+to that plan of providing users the same OpenTelemetry format, then people would have some kind of
+confidence into the platform because everybody is using it. If we come up with something new, then
+people would be like, this is new, this is unknown to me. How do I understand this? How do I do
+this? And the product will just like collapse. So, that is why we built around OpenTelemetry. So,
+there are community members. If they decide what should be changed, what keys should be changed,
+what format should be changed, it's like common to all. And it takes a whole lot of community to
+kind of decide what major changes to be done. Like recently, I remember like there were some kind of
+discussion about having some response and prompt in the event span or events, that kind of thing.
+And people were like dicey about what keys to support. And we were like hanging around. We shipped
+with different key and then it turned out that we want to revert it. And then all those things
+happened. So, at least the community was like confident enough to come over here that at least it is
+following OpenTelemetry standard. Then there is like configuration thing. You can definitely add
+your custom configurations. You can add your custom data to it. It's not like a restriction over
+there. We will show it. We will display it on the dashboard and everything. Your custom information.
+But it's not like limiting to just the OTL format keys. You can definitely add it. Then there is
+another thing which I talked about earlier like about the OPAMP management. Like fleet management,
+managing your OTL collectors. Because right now the observability is a very huge area. People are
+not just like sending traces to a particular server and then just dumping it into the database.
+That's not what is happening right now. People are having a different layer of collecting those
+traces which is eventually dumping those data into the database. Like in a batch format or in like a
+single Go format. Those configurations needs to be addressed. If we are unaware about those
+configurations, we would just be left behind with these OTL traces in the database without
+filtering. And once we like encounter that the filtering is not there, we would be left behind with
+tons of data. And it would be difficult for us to like filter out then. So beforehand, if it's like
+easily filterable, we should do it. That's what we have in our mind. And that's what we like built
+for in the OpenNet. Digging into the prompt management aspect, that's one of those things that needs
+to be reliable. Because if you launch a new instance of the application or maybe you have auto
+scaling and a new pod launches with a copy of the code, it needs to be able to access whatever the
+current prompt is. And if it errors and maybe falls back to a default prompt, then you're going to
+have a high degree of variability in terms of the end user experience because you have different
+endpoints using different prompts to call the API with. And I'm wondering how you've thought through
+some of those reliability aspects and some of the safe default behaviors around how the framework
+should manage the prompt, particularly in the event that whatever endpoint is serving the latest
+version has, you know, high load or high latency or goes down for any reason. So like we had like,
+let's say we are building a node.js application, we have a package and we add a new package and with
+a particular version. Now, what happens is if we want to update that version on the production mode,
+then we need to like update that. It's like auto updatable and then it deploys the app and then on
+the production, when the app gets deployed, it just breaks. That's not what should happen. So that
+is what kind of like we had in our mind to support both ways. Like if you have, if you have not
+mentioned any version and you just want to update your prompt to the latest, you would be able to do
+it. Like you just don't mention the version and then you just get the latest prompt. And every time
+you publish a new version of the prompt, it just like picks up that latest prompt. But similar to
+the node.js application, if you have mentioned a particular version, then unless and until you
+update your app with a new version, you won't be able to access that prompt. So that kind of
+reliability is very important when you are developing an AI application. If you just like update a
+little bit of context into the prompt, the whole meaning of how the LLM would understand it, it will
+change. Because LLM, it's not like you would be able to guess what LLM actually refer to a context.
+If you have thousand lines of code, you provide a LLM thousand lines of code and you ask a
+particular single particular thing, you don't know how that LLM gave the answer. Whether or not it
+referred all the points mentioning that particular question or it just picked up one line and then
+gave you the answer. You are not sure about it, how the LLM would work. So it's very important to
+like frame your prompts in such a manner that it doesn't lose your context and it's reliable when
+any update happens. So that's what like the prompt management is all about. And as you have gone
+from your initial versions of this project to where you are now and as you look forward to future
+development, how have the overall scope and goals changed? So earlier we started with like just
+adding telemetry to AI apps. We kept on increasing the integrations. Then we realized that we need
+to have a particular dashboard to be able to display all those information. And then the journey
+began with the OpenLit as a whole new product and AI engineering tool rather than being just an
+observability layer. So the scoping kept on changing. Earlier we didn't support OTL format. Like two
+years back maybe when OTL launched we just were one of the first ones to support the OTL format. We
+are totally open source right now. We don't have any enterprise version, any hidden cost, anything
+like the other players in the market. Then there is like lot 50 plus of integrations that has
+happened and it will keep on increasing. Then there is like the OpenGround. If you like look the
+previous version of the OpenGround, that was very crude. We just like wanted to like have that
+feature. We built it and we launched it. Now you see OpenGround. It has a lot of like integrations
+between the LLM providers. Then there is this fleet management that came up. So we have a couple of
+things on our mind which is like having data sets, having the whole new evaluation life cycle of
+like understanding, adding context to it, all those things. And then there is a couple of other
+things. Right now we are totally focused on like pushing it to open source. We are not like we will
+keep this as an enterprise thing because once your product is like there to hit the market. What I
+feel is like if you're happy with your product, it's okay to like give it free. Eventually you will
+get to a point where you can earn like out of it. You can monetize it. There is no line where it's
+like now you cannot monetize it. Anytime that would come like that place would come where you are
+not like now this is the feature that I want to like charge user for. But that's okay. Like if I
+charge less, that's okay. So that's the like thought process over here. With the platform approach
+that you're taking of having the instrumentation, the prompt management, evaluation and
+experimentation, those are some of the core requirements around being able to confidently build and
+deploy these LLM powered applications. And with that foundation, I'm wondering what you see as some
+of the adjacent capabilities that you're likely to expand into as you continue developing and
+iterating on this project. So we are like trying to add integrations for different platforms like
+Griffana. There is Dash Zero. Dash Zero recently like launched some AI integrations and OpenLit is
+one of them. And then there is Grafana. Grafana also has AI integration with OpenLit. We want to
+place OpenLit in such a manner that people are not afraid of OpenLit as an observability platform
+because it is not a competitor with other observability products. It's an overall tool which helps
+you build AI apps faster and more reliable. And the other aspect which we are thinking of is which
+every other company is like thinking of, which is data security. We don't want to like use users
+data. So that is why we don't have like exact numbers, how many people are using it and how what is
+the exact count of events. We just have a rough estimation. We just mentioned it on the docs page
+that we track some data but not the user data. We don't even track email, user email through which
+we can just like understand like what the user, which company the user is working on. But we want to
+stick to data security as a huge like aspect which is like a trust building factor for us. And once
+a team has been running OpenLit and has accrued a certain corpus of insights and information about
+the capabilities and performance and usage of their application, what are some of the ways that
+either you can do out of the box or ways that you envision teams being able to use that as a means
+of starting a flywheel of self-improvement, particularly for agentic use cases, being able to do
+that. So like we have a support of multiple database configuration. So for one app, let's say you
+have different environments and you use different databases. So you can visualize that on the same
+dashboard, adding different database configurations. It won't be like, like suppose you want to send
+your development data to a different click house DB and then you want to send your actual production
+data into a different click house DB. You shouldn't be like afraid of like just tangling all these
+traces data into each other. It will be separate. It will send separate data and you'll be able to
+like visualize it properly. You'll be able to evaluate each individual traces so that it's easier
+for you to understand what way my product is going towards, which I can improve on. If my product is
+like deviating from the path it should have, then I can just like modify a couple of things using
+open telemetry data, those toxicity evaluations, bias evaluations. And then there is analyzing all
+the individual traces of each step for a particular LLM call. Those kinds of detailed information
+would actually help the users to kind of polish their AI apps. As you have been building OpenLit and
+working with the community around it to understand how to improve the operability of these LLM
+applications, what are some of the sharp edges and blind spots that you still see people running up
+against, even with the observability information that they have available from OpenLit? I think
+there are two major things. One is the memory where people are just playing around with different
+products as well. There are a lot of products out there in the market, which is like handling these
+memory issues. Then there is another one, which is the huge context thing. What people do is like
+just add a lot of context to a particular product and it just fails and they are able to, they are
+not able to understand why is it failing. I provided it all the information, but it's failing. How
+and what to tackle. Those are the kind of blind spots that we think that it needs to be addressed
+soon. Because unless you tackle the context issues, you won't be able to get a meaningful response
+out of it. You will just be fighting over the different, same prompt, different responses, and
+you'll just be like wondering on the top of the mountain that should I jump or not? So that kind of
+thing. As you have been working on this project and seeing how people are adopting it, what are some
+of the most interesting or innovative or unexpected ways that you're seeing it applied? So we
+launched with multiple database configurations and we were dicey about it. Like we were like, why
+would people create multiple database configurations? It'll just be a single component and all. If
+they want, they can deploy another layer of Openlet into their system and all. But it was like very
+surprising to see. There was one like a single user or multiple user, but single instance kind of
+thing, which had like around four to five database configurations into their own platform. They
+added that database configuration into it because we have a DB change and DB added event kind of
+thing. So we knew like a lot of DB configurations getting added. It was surprising to see that it
+grew. Like people have been like pushing in database configurations like in a huge number. So that
+was the surprising edge for me. Then there was like how people are like using Openlet. They were
+trying to send data to different platforms via Openlet. And they were trying to like send it to
+different exporters. And people have been like doing it for a lot of other platforms. That gave us
+an idea about to go forward with the company and then just reach out to the different companies and
+ask them about the integration thing. Recently, Dash Zero also added Openlet integrations. Last
+year, I remember like I had a conversation with one of the Elastic guy and we like wrote a blog
+about how we can like observe AI apps using Elastic and then Openlet, that kind of thing. And it was
+a good response from users reading out that blog. So it's very surprising to see. People have been
+mentioning Openlet as a requirement for their jobs. That was like a very good moment for me. Like
+because this thing, Openlet has now become like a requirement for a AI developer kind of thing. So
+that's that. And in your experience of building this project and helping your end users understand
+how best to apply it, what are some of the most interesting or unexpected or challenging lessons
+that you learned personally? I think first of all, I need to like address addressing like people
+community like very frequently is a huge task. So that's the thing. Like I have learned it very
+hard. It was hard for me to understand like how frequent I had to like address people. Then there
+was like addressing their like feature request. People flooded with feature request like I want this
+provider, I want that provider. I was like how do I like support all these information to it? So
+that was difficult for me which helped me understand that catering all the requirements, all the
+features at once is not the part of the plan. You need to focus on the experience first before like
+addressing those feature requests. We shipped OpenGround very crude and it wasn't attached to the
+other components in the dashboard, which actually like we were trying to like address that very
+frequently, but we couldn't. And then we tried modifying it, but that had the less priority. So it
+took me around an year to address that and then come up with version two of OpenGround, which was
+very disheartening because people might not be using it. So why ship? Ship what has a very good
+experience, developer experience. Otherwise, people would just be coming and going. So that is a
+best learning I could get. One of the best learning that I could get from it. And for people who are
+building these LLM powered systems and services, what are the cases where OpenLit is the wrong
+choice? That's a very good question. I don't think OpenLit is the wrong choice. But jokes apart, I
+think if you are sticking to having a close net with different platforms, like if you're using
+Langchain and all, so they have their own format, which helps the other user. If a particular person
+is using Langchain and they want to visualize it using their components, so it would be better to
+like use their platform and not OpenLit because OpenLit supports the generic use cases, open
+telemetry format, which is like getting adopted by every other person. But your app might not be
+able to fit in with those requirements. So first of all that and then there is like if you want
+cloud support, we don't have cloud support right now. Eventually we would, but right now it's not
+there. Then there is a couple of things like gateways. We don't have gateways. If you want gateways
+like API gateway kind of thing, you go forward with other platforms. But all in all, what we have is
+like worth trying for. You can try, you can decide. People can just tag me with what are the feature
+requests and I'll think about it. As you continue to build and iterate on the OpenLit platform, what
+are some of the key features that you're focused on or any particular projects or problem areas
+you're excited to explore? I think one of that is context management, which is like adding context
+on the basis of different parameters, like a rule engine thing where like if a particular app is
+there, it should have a context predefined and the user might be able to get it like a version
+prompt something. And the evaluation is also based on that context. So it just gives you a overall
+picture about how the app is getting used with different prompts, but the same context. So that is
+the very keen like area that I am currently focusing on how to like tackle that. Are there any other
+aspects of the work that you're doing on OpenLit or just the overall space of LLM operations that we
+didn't discuss yet that you'd like to cover before we close out the show? I think there was one
+aspect that we were thinking of, but we kind of like drop off for the moment, which was like having
+a hub or something in the OpenLit, which was like if you generated an image, you have that image
+onto the OpenLit server or something, which you would be able to like get back later. Because
+earlier what used to happen is any LLM generated image would expire after some time. So that is what
+we were thinking of. But now that's not the case. The resource probably like remains for a lifetime.
+So that was the use case that we were trying for. But other than that, I think I mostly covered what
+I really felt. All right. Well, for anybody who wants to get in touch with you and follow along with
+the work that you're doing, I'll have you add your preferred contact information to the show notes.
+And as the final question, I'd like to get your perspective on what you see as being the biggest gap
+on the tooling, technology, or human training that's available for data and or AI today. I think the
+biggest gap would be the intelligence. Like we are still thinking that AI could do everything, but
+there is still a gap of understanding and having an emotional connection because sometimes what you
+say is not what you mean. So that kind of scenario is still missing over there, which is a huge gap
+until the AI just rules the world. So we need to be more emotional and we need to increase more
+emotional connection with the human rather than just trusting AI for like giving us the response.
+And the other thing is like the memory. We need to provide some memory to the AI to be able to like
+get things from the past. But we as a human, we have that memory inbuilt in our system, which is
+like different type of memory, short lived, long lived, and all those things. And that we need to
+like respect before like pushing all those things to the AI because like AI could like ruin what we
+like enjoyed in the previous life. So that's that. All right. Well, thank you very much for taking
+the time today to join me and share the work that you're doing on Openlit and your thoughts on the
+operational characteristics of these AI systems. I definitely appreciate all of the work that you're
+putting into this project and making it available to everyone. I definitely plan on experimenting
+with it for my own uses. So thank you for all of that. And I hope you enjoy the rest of your day.
+Yeah. Thanks for having me here. It was great talking to you. And this gave me an insight about how
+my thoughts are and how do I like present those thoughts to other people. So thanks for the
+opportunity. It was nice. Absolutely. Thank you. Thank you for listening. Don't forget to check out
+our other shows. The Data Engineering Podcast covers the latest on modern data management and
+podcast.init covers the Python language, its community, and the innovative ways it is being used.
+Visit the site to subscribe to the show, sign up for the mailing list, and read the show notes. And
+if you've learned something or tried out a project from the show, then tell us about it. Email hosts
+at AIengineeringpodcast.com with your story. Thank you.   Thank you.

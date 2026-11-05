@@ -1,0 +1,1084 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Postgres at PlanetScale (Interview)
+DATE: 2026-08-25
+SHOW: The Changelog
+LINK: https://changelog.com/podcast/684
+AUDIO: https://op3.dev/e/https://pscrb.fm/rss/p/https://cdn.changelog.com/uploads/podcast/684/the-changelog-684.mp3
+DURATION_SECONDS: 6150
+TRANSCRIBED_AT: 2026-11-04T02:34:48Z
+----------------------------------------------------------------------
+Well, friends, welcome back. Summer is over. The show is back. Some of you just can't get enough.
+Let's just say you can't get enough. And I'm here to bring it to you. This week, I'm joined by a
+good old friend, Sam Lambert, CEO of PlanetScale. One of our first conversations happened back in
+January of 2022. So we had a lot to cover in this pod. We talk about the new $5 PlanetScale
+Postgres, the story behind Metal. Spoiler, they are not racking. And stacking their own NVMe's. They
+build on the hyperscalers bare metal machines. The smart way. The cursor demo they have where agents
+optimized a database and shipped it safely through deploy requests. Why you can roll back a 500
+terabyte schema change as fast as a one megabyte change. And Sam's genuinely unresolved wrestling
+match over whether to open source Niki, their new sharded Postgres product. A huge, massive thank
+you to our friends and our partners over at Fly.io. That is the home of changelaw.com. Learn more at
+Fly.io. Okay, let's get into it. Well, friends, I'm here with the CTO of Buildkite. And one of the
+most challenging problems of modern era software development is continuous integration and
+continuous delivery. And so Lachlan Donald, Buildkite CTO, what are you thinking about today's
+teams, the challenges they face, the speeds at which they're developing new features, new code? It
+is just overwhelming. How do you all think about that? Such a good question. It's the question
+everyone's asking right now. All of our big customers are asking us at the minute, like, you know,
+if we 5 or 10x our throughput this year or 1,000x it, what breaks and when? And, you know, my answer
+is kind of same as it's been for the past 20 years, which is that the bottleneck is still trying to
+integrate those code changes in and then deploy them and check they work and then keep them working
+as you keep throwing more and more code at it. I think a lot of the fundamentals are the same, but
+we're just 1,000xing the speed of it. And, you know, that changes nearly every variable. Yeah, for
+sure. Okay. So where does Buildkite thrive? What particular type of team or enterprise do you thrive
+in? The area that Buildkite has always thrived in is like this like fastest moving tech companies of
+the world. Like we've been disproportionately successful in that small niche, the kind of Shopify
+class, Uber class, you know, OpenAI class of folks that have this key problem around iterating
+really, really fast. And, you know, the thing about all of those folks is they all have subtly
+different needs, subtly different problems. And so we've tended historically towards building like
+really well engineered Lego blocks that scale like orders of magnitude more than what our nearest
+competitor does. So, you know, I think that that puts our system in this tension where, you know,
+you've got to spend some time assembling those building blocks, those Lego blocks to get the thing
+that you want. But the end result is far and away more performant and scalable. And the experience
+is better than what you get from something that's off the shelf. So I think we've started from a
+position of really well engineered Lego blocks and then are kind of working backwards towards kind
+of creating the thing that scales down to a startup that starts with one person and 10 agents next
+week. Well, friends, go to buildkite.com. That's buildkite, K-I-T-E dot com. You deserve better CI.
+Engineer for the frontier. We are all facing trusted by the teams setting the pace. Again,
+buildkite.com. Once again, buildkite.com. Friends, I am back with an old friend. It's been several
+years, about four years, Sam. Since you've been on the pod, Sam Lambert, CEO of PlanetScale, one of
+my most favorite databases that I don't use. I'm so sad. Sam, I am on the list of trying out metal
+because who doesn't love a good NVMe, right? Oh, yeah. Got to have that performance, especially with
+databases. Inside the server, disk, magic. Yeah. You know, I always felt like, you know, PlanetScale
+was out of my realm in terms of what I personally needed because you're just so good. Is that a good
+thing or a bad thing? What do you think, Sam? Well, luckily, for folks like yourself, we now have a
+$5 Postgres option, PlanetScale Postgres. Very accessible. The price of a can of Diet Coke in the
+fine but expensive city of San Francisco. And so, like, very well-priced for people that just want
+to get going and have some simple Postgres. But all the great features of PlanetScale bundled in.
+It's there. We're ready. Come through. Give me a landscape of what PlanetScale is today. The last
+time we talked was in January 2022. Now, I know the audience pays attention to you. But just for
+those who may not have caught up since then or they just want to lay out the land. What is the
+landscape of PlanetScale these days? I know you're in Postgres world and you've got sharding. You've
+got metal. I've mentioned that already. But give me a zoom in to what you're doing. Yeah. So, a lot
+has changed since 2022. That was, like, the very early days for us. The earliest. Yeah. I mean,
+things have gone really well. We – well, right now, we have entered into the world of Postgres,
+which we announced mid-last year. We have announced our sharded Postgres product, Niki, which is
+coming very soon and is already ramping up with customers. And Vitesse keeps growing and hosts now
+some of the world's largest databases. We run very, very large sharded workloads for tons of very
+large AI companies. The AI era has been phenomenal for PlanetScale. We kind of – we've always
+presented ourselves, especially in the latter years, right, as just a big engineering team as a
+company that kind of has a very thin abstraction over the top. So, our marketing is very technical.
+We're very well known for our blog posts and our technical content. And our incredible marketing
+team are all engineers that spend their time kind of curating for our engineering audience. And none
+of us really foresaw this kind of agent revolution, AI revolution. But it turns out if you're just
+kind of hanging out and building a database that scales to extreme scales for customers, AI
+companies need this. And we've been very fortunate to have a load of them kind of come onto the
+platform and grow incredibly quickly. And so, it's been – it's an amazing time here at the moment.
+You get the – we're kind of in that era of like you build, you build, you want to get successful.
+And then you get all of the sort of success problems and stress to success. And we're dealing with
+that and scaling ourselves and scaling our various products. And it's just a very exciting time at
+the company right now. I'm just running around 24-7, meeting customers, getting customers migrated,
+talking. You know, it's fun. So, you say that, right? But then I go on your website, to your
+homepage, and I just search Command-F, AI. And I don't see it anywhere. What is going on? How are
+you leveraging and building and growing so well in this era, but yet you're not really seemingly
+positioned as an AI database? How is that? I don't know if there is a specific definition of an AI
+database right now. There's definitely AI database platforms, and we certainly have that. I just
+gave a talk at Cursor's conference yesterday where I showed off 10 cursor agents working on the
+PlanScale platform. The whole point of the talk is they went through a bunch of performance
+optimizations, deployed them very safely. And, you know, this is the thing that's really cool about
+PlanScale is we built this for humans. And one of my slides that got shared quite a bit on Twitter
+was that we built this for the flakiest agents of all humans. If you remember when we spoke in 2022,
+we were all about allowing people to ship really, really quickly, safely. Like, we have database
+branching. We have online schema changes. We have rollbacks for those schema changes. We block
+agents from pushing schemas into prod that would break queries. We have traffic control that
+isolates workloads and does QoS for databases. Like, we have all these, like, incredible features to
+make databases extremely safe for humans or their agents. The thing that communicates that we're
+there for AI is the fact that the best AI companies already work on our product and use it. We use
+AI behind the scenes to deliver insights to our customers and really good things for our customers.
+We don't need to necessarily scream the words AI over and over again. Like, you see these companies
+that don't really have a clue what they're doing. And their marketing team has been told by the CEO,
+we need, like, an AI narrative. We need, like, to just... And they just slap AI on everything. And
+it's just, like, not good. It's just insulting to the users, whether they're AI companies or not.
+Like, things did not change that dramatically. But we do use AI, and the AI companies use us. And
+that's the important thing. Can you give me a glimpse into what's required behind the scenes to do
+what you said with Cursor? I think you said you had several agents provisioning, deploying to
+PlanetScale. Can you give me a zoom into that? Yeah, that's actually another part of the talk that
+was key. Like, I didn't want the talk to be just one big demo of PlanetScale. It wasn't a sales
+pitch. Right. But the key points I was actually making is that infrastructure platforms are going to
+change now to give insights to AI, right? Like, you know, there's so many database companies out
+there talking about the day one. Oh, wow, we're the fastest to spin up a database and then, like,
+put it to sleep and never use it because it's agentic or whatever. That's, like, really not how
+software is built. Like, day one is day one. Great. Like, it's the point of creation. It's fine. You
+pick any stack. It doesn't matter. PlanetScale, although you should start your startup on
+PlanetScale at $5. because then you don't have to do a switch. And, like, we have an unbelievable
+amount of startups and the new YC batch building on PlanetScale for this reason. They know the ones
+that you used to default to just fall apart at basically no scale. And so we really focus, though,
+on, like, day one. You've got to get going. You've got to build. But it's like day 1,000 is where
+the real problems show up when it comes to maintaining, right? Like, any infrastructure is like
+this, is like a big living city. And it's complicated. There is so many interacting services. And,
+like, you'll get your most productivity from AI working with existing code bases that need constant
+pruning and evolution, maintenance, and care, which humans have to do. Agents can go and do this.
+And so what we do now is, like, we generate prompts and instructions for agents. And it is us
+scaling our expertise through infrastructure services and, like, giving it to the customer very
+directly and giving it to their agents very directly. And that takes an immense amount of
+infrastructure behind the scenes. So we take traces and log the performance characteristics of every
+query that hits our platform, which is tens of millions of queries a second. And we have to stream
+those data warehouse them. We have to, like, apply our various algorithms to detect whether they're
+using indexes or not. Like, we've had to edit Postgres core, MySQL core to go and do this. All to,
+like, generate a three-line prompt for an agent. And so you turn this, like, depth of infrastructure
+and expertise into this insight for agents. And these emergent behaviors then get observed and
+become the next instruction for agents. And it's an incredible amount of infrastructure and plumbing
+behind the scenes that requires our platform to be very complicated and well-managed. And we've
+achieved that. And it gets this very simple flow where I could just go on stage and, say, optimize
+this database. And Cursor's agents went away and got recommendations from the system. We are very
+early to this. Like, there's very few infrastructure providers that have built this way. It's
+because we were early to understanding that humans break databases and we have to make them make
+sense. Our developer experience is superior to most companies out there, especially in the database
+space. And so it's not hard for people that have built developer experience for 20 years to figure
+out how to get agents that same experience. Yeah. And so that's where we go. Take me to the
+technicals of this. So you have Cursor in this demo, let's just say, in your talk, optimize this
+database. What happens? Is Cursor talking to MCP? Is it an API? Is it a CLI installed into Cursor?
+Help me understand what enabled that query and that question to happen. Yeah. It loads up the
+PlantScale skills and the PlantScale MCP and asks PlantScale, what do you have for me? What insights
+do you actually have for me? Rather than just like we're in this stage of most people are just like
+pointing agents at like massive streams of logs or just a code base. And it's like very difficult to
+get the agents to sift through that and find the right thing. And so we make sure that it gets very
+narrow instruction. Make this, add this index, remove this index, scale this cluster, like all these
+various things that the agents can actually act on. And they will take the MCP and they're going to
+do the code. And then they will also hit the API to go and spin up a dev branch to go and do the
+work on. And that's where like the next chapter comes in, I guess, which is they get the
+instruction. They figure out what to do with the code base. And then they need a really safe,
+isolated way to test their work. And so they will use PlantScale branches to have an isolated dev-
+like environment. Sorry, production-like environment for dev where they can't break anything. And
+then the thing that we truly no one else does is we get that change into production in an incredibly
+safe way. So there's like a gate. It's the deploy request, right? Like it's like the pull request.
+The same people that like designed the pull request work here and, you know, are doing the deploy
+request here. So like there's various things. First of all, we stop agents screwing things up before
+they get to. So we block you. I'll give you an example, right? Like an agent has screwed up and they
+want to. And I demoed like we poisoned some agent instructions to go and do the wrong thing. And
+they got rejected from doing it. We then let one through so we could show what happens even if the
+worst of the worst happened. And I'll tell you that scenario in a second. But basically like if you
+go to drop a column in prod, which is a common thing. Like when you're doing a refactoring, you want
+to get this like rid of this data. You don't want it in the database. If you have referenced that
+column within the last 24 hours with a query, we block you from deploying it. And we show you what
+queries have referenced that column is a very common source of outages for people. It's just to
+think they are no longer accessing that column or table or whatever. And they are. And we will stop
+that happening. And we prevent outages every hour for customers when they are like we block many,
+many bad changes going in. We then have the scenario where we fought loud that to go through and it
+did drop the column. And then we have another feature for fixing that, which is we fire anomalies to
+say this is broken. This you have broken your database queries now failing. And we can roll that
+change back instantly. And it brings the old version of the table back with zero data loss. Like
+even if we've done like intermediate changes to the new table, they are still going to be in the old
+table and we can bring it back. And that is, again, nobody else does this in a platform where you're
+the only people, only platform that has this capability for databases. And so you can see it's these
+like small, sharp tools of a tool chain that get an agent from dev to production safely, can undo
+changes. These changes are all attributed to the agent. Like you go into a plant scale graph and
+you'll see a line that goes down the graph that shows when it was deployed. And you can then like
+see exactly what's gone wrong. And then once you've gone and made like changes and it looks good and
+it's like fine, we generate more for you to do if it needs to do more. And so it's this constant
+loop that goes round and round. And so now like agents are building planet scale for us and
+deploying their own work for us in extremely safe environments against like we see customers doing
+schema changes on 500 terabyte tables. And they just get it done. And they can roll. And by the way,
+you can roll back a 500 terabyte schema change in exactly the same time as a one megabyte schema
+change. Like it will be exactly the same. That's pretty astounding to even think about this kind of
+changes. And I think what I think about is the primitives you probably built upon. So you've been
+doing this for a while. Developer experience focused for so long. And so that's not just magic wand
+waving. That's literally, hey, we're developers. We use this every single day. We're improving it
+based upon our developer needs. Just even your data warehouse where you pull logs into to gain
+insights is a clue to that for me. But you have primitives you built on. So branching, you've got
+these safeguards. You call them gates. Help me understand how those gates come into play to give
+that insight but also block you if you're going the wrong direction. How do those gates appear to
+the developer when it comes to DX? They look very tactile and they look like we expect from other
+products, right? Like the deploy request is really meaningfully meant to look like the pull request.
+It communicates. It shows you a diff of your schema. Even though you didn't send us a diff, you did
+schema changes on a branch by using the normal DDL that MySQL or Postgres supports. And then we show
+you a diff. It should feel like your other tools. And then for an agent, the same thing just looks
+and feels native to them through MCP servers or APIs. And like we have pass-through mode for our
+CLI. So agents can arbitrarily call API endpoints that we have set up for our own use. So they get
+these abilities. Like in the talk, I talk about, you know, the Unix philosophy of these independent
+tool sets that humans or agents can gather together to get what they want and what they need and
+compose their own journey. Like you might not be doing a schema change, but people spin up a planet
+scale branch every time they do CI so that CI runs against the branch. And so it's basically running
+against a copy of production or a system that behaves just like production. And it's just about
+being getting out of the way, but blocking you from doing the wrong things. There's another way of
+thinking about this, which is I've been in databases for a very long time on very large products and
+services. And I basically took every outage that I'd ever seen. And we're undoing the ability for
+that to happen. I think for me, I'm curious, what is the most exciting thing happening right now?
+Obviously, you've got a boom and we've got a boom in the industry with AI. And there's a lot of
+speculation of bubble, bursting, just a lot of, I would call it fear, uncertainty and doubt, FUD,
+obviously. But aside from what might be the obvious answer, what is the most exciting thing
+happening for you personally in planet scale? So the thing I'm most excited about right now is
+watching Niki get built, which is our sharded Postgres solution, like Vitesse for Postgres. In the
+last five years, we have spent so much time and work evolving for tests from something that was a
+very raw open source project that was being used at very few companies to now something that's
+generally used to cloud product. And it's impossible now to be a consumer in the US or a knowledge
+worker in the US without interacting with products that run on planet scale. We have cursor, they
+use us to build, to just run gigantic sharded databases that back all of the product interactions
+that cursor builds, including origin, their new products running on us already. We have kick.com,
+pokes interaction, lime scooters, every square swipe, you know, whenever people are buying coffee
+or, you know, on square terminals, that's going through plant scale, cash app, just extremely large
+consumer products that need a very scalable database and they need sharding run on planet scale. And
+now we're bringing that to Postgres. It's been phenomenal to watch a team of experts, like the
+world's foremost engineers on this subject and field that have the experience of running these
+gigantic workloads in production on our cloud. Now bringing the same to Postgres through Niki, not
+just how quickly they're building and who is rolling out. Like right now we are moving another set
+of just huge Postgres workloads at very, very well-known companies onto Niki. And then watching that
+go is just phenomenal. So like bringing sharding and the sort of traditional practices of database
+scaling to the new audience that is the Postgres audience that is full of very dynamic startups.
+Postgres is definitely the database of choice for new companies and AI companies. And so I'm just
+extremely excited to see the demand. Like we actually, there's so much demand for this product that
+we have companies just, I had to just very gently tell the CEO of a startup, like they told me it
+was unfair that they weren't being given first access to this product. And I just had to say, you
+know, we have a queue. Unfortunately, we're working with a lot of people right now and we're trying
+to rate limit the demand. It's, I've never seen anything like it. And so it isn't a, yeah, it's a,
+it's an effort in like technical mastery. And it's also incredible to see that we've landed in this
+part of the market and there's so much need for the thing that we are so good at. So you have quite
+a queue for Niki and would you, I'm coming from the outside. So help me shape a lens here, but is
+Niki synonymous with Vitesse in that Vitesse is MySQL, Niki is Postgres? Is that, are they? Correct.
+I would say that Niki is more evolved in the sense that if you're doing a do over on a 50, like
+Vitesse is 15 years old now, getting a do over. Yeah. What do we learn? I mean, I don't want to leak
+too much of the architecture right now, but like, I mean, we certainly, we learned there was like at
+YouTube, there was YouTube did not design it to be a general purpose system. It was designed purely
+for YouTube. And so there was mistakes that were made or not even mistakes. Actually, I will give
+that, I will say they were not in any way mistakes. No, I think it was more, I think it's actually,
+I would have less respect if they'd have gone and done that work. Cause at the time that would have
+been an over optimization. They did things that worked for YouTube and that was about it. Vitesse
+did evolve over time to be used by a bunch of other companies, but they were still hyperscale and
+they were like pretty custom. The Niki is built with 15 years of a test knowledge, five years of
+planet scale knowledge, running it directly on the cloud and learning everything we'd learned and
+building general purpose systems. And then just getting all of the different things we want to add
+new features, new user experience on top and, and built by, you know, the union of all those things.
+It's an, it's an amazing piece of software. Yeah. Where does, I understand Vitesse and MySQL and the
+relationship there. Help me understand, Niki, is this something that is proprietary? Will we ever
+have our own hands on the software? The, the, I mean, it's not open source, is it? We have not
+decided yet. I'll be very transparent. We have not yet settled on whether we will open source Niki
+or not. Unfortunately, we've seen some people, some companies, very popular ones in the database
+space, be very, very misbehaving when it comes to other companies, open source projects, claiming
+credit for them, forking them, like hiring someone that's 15th on the maintainer list and saying
+they now maintain that project. Just things that are very bad and that didn't really used to happen
+in the early days of open source. But that, you know, there's a new generation of people that don't
+really understand these things. And I think it's so cutthroat. It is too cutthroat. Yeah. They, they
+use their position and they use their leverage to try and do these things and their voice. And, you
+know, I don't really want to see that happening. And then there's obviously Amazon who are an
+abysmal player in the world of open source, no matter how much they try and whitewash that and a
+terrible partner. And so working with them and seeing them, well, I mean, like, listen, they have,
+they have a sharded product called Limitless. It amazing name. Yes. I saw this amazing tweet once
+where someone said, we have had so much fun finding Limitless's limits in production. It was great.
+So the largest database that ever ran on Limitless runs on PlanetScale. They had an average two
+outages a day on Limitless. And so now we have Amazon telling people that the new version will be
+much more like Vitesse. And it's like, well, it's open source. They can go and try and do that. And
+so Amazon, the bounds at which Amazon will try and screw over small companies or the world of open
+source is unlimited. And so when we, when it's been proven that we are better engineers in databases
+than they are now, it wasn't the case back in the day. We didn't, we weren't around then, but the
+early teams that built the early databases at Amazon were phenomenal engineers. They just don't work
+there anymore. Also the largest database that ever ran on Uncharted Aurora now runs on PlanetScale.
+So PlanetScale, like it's just our bread and butter all day long. We move databases off of Amazon's
+products and they behave very poorly as partners with that. They tell people they're going to make
+their software like us. And so we do not know what the future of open source for Niki will be. It
+will take some deliberation, but it is because of people like that and some other startups in the
+database space that it's causing, you know, it's just, we're seeing it everywhere. People are
+moving, removing tests, removing this stuff. It's just because the same bad players are behaving
+badly. And now, you know, it used to be much harder to copy pre-AI, but now people can like slot
+fork. But even like they can just kind of move a lot faster in interpreting the code. Like back in
+the day, you had defensibility because most people couldn't just read the code and understand really
+what it was doing and what the trade-offs were and how it could be done better. Now AI can explain
+it to them. So it's desperately sad that these people do this and that companies are even willing to
+work with them, but they're the kind of casino you have to work with them. And so it just means that
+I don't have a good answer. I'm not going to pretend to know what to do. We may still open source
+it. It's just a world where you have to kind of play with your hand closed nowadays because of, you
+know, if you are a rising company that's threatening others that are already more incumbent, they
+will do dirty tricks and I would never want to give them any advantage. Yeah. Yeah. Well, you're
+touching on a very, I would say a very interesting hot button for me. I'm not sure how much it's out
+there. I think it is. I'm actually, oddly enough, in this day in my age, less slurping up what's on
+X and less slurping up what's on LinkedIn and places like that. I'm just sort of like in my own
+world in a way, which is kind of good because I've needed a mental buffer for this reason. But I've
+been in this thought process of like, you know, the primitives you build on, the seemingly crown
+jewels that you would normally open source. Because, hey, let's make this primitive available for
+others. We built on it. Let's make this. Let's be cool, right? It's just a good thing to do. I just.
+It's just a good thing to do. Earlier in this room, I interviewed a friend of mine, Jacob, who runs
+a company called Pierre. He created Twitter Bootstrap. And we were kind of talking about how open
+source used to be, used to just do it because it was a good thing to be. And now it's got a very,
+you know, I dedicated my life to open source. I worked at GitHub for seven years. Right. Like I, I
+supported the world of open source and I watched it from the inside and the nuances of it. It's a
+very fragile ecosystem. As a collective, the open source world is one of the greatest things
+humanity has ever pulled off. Right. Sharing our work for the betterment of humanity. It's why we
+have AI today. It is very sad to see the cynicism that has, has overlaid open source because of the
+way commercial companies have behaved, especially ones like Amazon. You know, I'm not sure. I know
+that's your lens and I'm curious if you feel it's just simply human nature. I think it's human
+nature. We're, especially here in America, we're all capitalists for the most part, right? Like
+we're running companies, we're building companies. We're, we're, let's talk about that for a second
+while we're on capitalism. I love capitalism. I, I, capitalism is the greatest vehicle for him. But
+I am so capitalistic that I think these large tech companies should be breaking up, broken up. I
+should not be competing with my own company by buying a rotisserie chicken at Whole Foods. That
+should not be allowed. Like that, that, that is just fundamentally anti-competitive. Let's look at
+AI. Google saw the early versions of AI very early. And Peter Thiel is completely correct that
+Google have run out of imagination based on how much money they have in the bank. They've stopped
+innovating. They use, they use the fact they have Google search, which is, they earned that. They
+earned and they built one of the greatest businesses of all time with Google search. But they saw
+the early version of AI and they had the research and they just sat doing nothing, just wasting the
+opportunity. But, and then others came up, OpenAI, thank God for OpenAI that woke up and built
+something and lit a fire under Google. And then Google get to wake up in the world, like the speed
+AI is moving right now, an age later. And there's almost no consequence for them because they still
+have a massive search business. They still have so much capital to throw into AI. This is not good
+for innovation. I am not, I am not this kind of socialist kind of breakup tech companies, anti-
+billionaire. Like, I think it's phenomenal that people put rockets in space and get gigantic rewards
+for doing so. I think we should be making more billionaires that get to make more things and build
+things and that should trickle down. I think this is the true spirit of capitalism. If you look at
+the forefathers of capitalism, the people, the way that in the young America, people talked about
+opportunity. They did not foresee the kind of leverage that these giant tech companies get. And it's
+hurting innovation. These sleeping, lazy giants sit on innovation and it doesn't hurt them. That is
+not good for the general innovation of humanity. I like that. We're going to coin that sleeping,
+lazy giants. So at the same time, you say forefathers of capitalism, they were cutthroat. Oh, you
+should be cutthroat. There was probably murder even. Like this is back original OG business days,
+right? I can only speculate. I'm not speaking from a biography by any means, but I imagine there was
+a lot of cutthroat. And if there was a version of open source, they would certainly glean from it.
+Like they're not benign, right? Just because it was early. Right. Yeah. But also open source came
+from a cap. Like, I mean, they tried, right? It was like Microsoft. Let's not let them, let's not
+remember the October letters. Let's forget the October letters. Let's not forget that they tried to
+kill and suppress open source. And, you know, they bought GitHub to undo this and they have done a
+good job and they have done some great open source. But capitalism, big organizations like Microsoft
+did try to stamp out open source and it did not work. And there is still a very rebellious, almost
+political movement of open source. Again, they take it too far in some areas. But it did thrive in
+capitalism too. There was a net good. But I agree with you. But I don't, the early forefathers did,
+you know, the crony capitalism is not what they wanted. They, they, some of the early decisions
+around contract law are why America has such an incredible economy now. Because they, because you
+could get a fair shake in court. You can still sue and get your day in court and win. And that is
+extremely important. So I don't think it's worth viewing capitalism as always having to end up into,
+in a very cynical, everyone's going to screw you. But I do think you have to be cutthroat. I do
+absolutely think. I mean to say that, I just mean that I think it's human nature and I'm with you.
+So I'm, I'm in a way narratively lamenting. Yeah. The scenario we're in right now from a position
+that the changelog is by and large been supporting open source since the year after GitHub was
+incepted. Like at the same year. Like I think GitHub was born in 2008. We were born in 2009. And
+we've been riding the wave of open source moves fast, keep up since the beginning. Well, friends,
+this episode is brought to you by our friends at Coder.com. Secure environments where developers and
+agents work in parallel. And I'm joined by Nikki Pike, field CTO for Coder. Nikki, what is a field
+CTO? So I get that question a lot and it's, you know, half the people understand it, half the people
+don't. So a field CTO, I describe it very simply as we're DevRel for the C-suite. So we provide a
+bridge between the customer voice, between the C-suite and the managers and the leadership teams of
+our customers back into our product. And then we go through and we help enable our teams to have the
+same message to make sure that the message is correct. And that we're building on something that
+people actually want, not just something that we think they want. Okay. So we're taking the laptop
+away from the developer. Not really, though. We're putting them in a cloud development environment,
+a secure environment where they can work with their agents in parallel. These are blessed
+environments. What's wrong with the laptop? The laptop is the trap here. And not only because the
+fact that it could be stolen, you could lose it, it breaks and you're out of work while you're
+waiting for a new one. But there's also just the consistency that you got there. We all know
+developers. Developers are going to be looking for some of the latest and greatest. And if you're
+not really controlling how they get out there, that's where you get this. It works on my machine. It
+doesn't work in production. It doesn't work anywhere else because you don't have that consistency.
+You don't have that ability to really standardize what that environment looks like. And this is a
+problem not only for new people coming in. You know, the onboarding statement is average, I think,
+is like four to five weeks for a new employee to really get their local laptop set up and ready to
+start doing their first type of code. And, you know, the time to first commit is a metric that
+almost everybody knows. And the reason they can't do that is because there's a lot of tribal
+knowledge out there. They got to go talk to other developers. What are we using? Where do we get our
+dependencies? Are we getting them from public? Are we getting them from private repositories? But
+there's also the security and the supply chain aspect of this. When you have local machines out
+there, look at like the Shai Halud, you know, that virus that went out not long ago. This was a
+compromise of the NPM public repositories. They went and downloaded things. NPM did what it did.
+Next thing you know, you're compromised. But when you use something like what we're doing with cloud
+development environments, then you can mandate and you can put restrictions on there to say, hey,
+you can only go get your packages from our private repo. Those packages are expected to have been
+thoroughly vetted. We know that they're clean. Now, does this stop everything like Shai Halud? No.
+If that compromised package gets into your private repo, you can still have that. But it really
+reduces the surface area of the attack. And it also reduces the blast area of the compromise should
+it happen. Because if your laptop gets compromised and you have to kill the laptop for whatever
+reason, that's weeks out of work while you're either fixing that or you're getting a new laptop in.
+The cloud development environments allows you to kill that, start back up fresh, and you're back and
+running in five minutes. You don't have to wait all that time. Well, friends, the first step is to
+go to Coder.com. Install Coder. Self-hosted environments for your teams to enjoy, to standardize
+around. And it's open source. So you can try it out today. Once again, Coder.com. And so as that
+same person, I'm sitting here today saying, okay, Niki, is it going to be open source? I don't mean
+that like, hey, Sam, give away your crown jewels. I just mean like, how do you battle this struggle?
+How do you deal with this struggle of like, gosh, we're in this scenario where my most fiercest
+competitors that have more than me, they can kibosh me, maybe not technically, but maybe, you know,
+with a purse potentially or a war chest. How can I give them my 15 years of a test, my five years of
+running PlanetScale and just hand that over in open source? It's a very challenging position to be
+in. But yet we come from this past thread of lovers and supporters of open source. Yeah, it's hard.
+I don't love thinking about it this way. And like I said, I used to say we would never do postgres.
+Here we are. I don't, I just don't know. You did say that when we talked in the first time. I mean,
+you're like, minus go for life. Right. The test for life. Right. And I changed my mind on that. And
+I'm still, I, I do not mind being consistent. Like I'm here. I, you know, I, my public stance is I
+think about things very openly and I express my feelings. And I have absolutely like people, when I
+tweet about stuff, people love to dig up old tweets. It's like some sort of gotcha. As if like, I'm
+like. People change their minds, man. Yeah, correct. I will change my mind faster than you. The
+world changes. Correct. I, I get no embarrassment and no shame from not being logically insistent.
+In fact, my bylaw, one of my things I say in my like kind of description on Twitter is I'm, I'm
+making more mistakes than you. And I'm actually very proud of that. Like people, again, they read
+that and they get it wrong. And they're like, oh, it's a guy's proud of making mistakes. Stupid. I
+genuinely, deliberately make mistakes. I move extremely quickly. I believe life is a, is like a
+spread bet. You have to make mistakes. If I said to you, there's a target down range. I'll give you
+a million dollars if you hit it. Choose a sniper rifle or a shotgun. What are you choosing? You're
+going to choose a shotgun because you're going to get, I don't know how many shot they go and put in
+a shotgun, but you're going to get more chances than the one sniper shot. If you bundle everything
+into one big decision, you better, you better not miss. Well, yeah. With a shotgun blast. And I
+learned this in the early days of GitHub. That culture was incredibly iterative. We would put
+something small out, learn, iterate, build. I just will not, I don't, I refuse to, to, to ever stick
+to anything in the past. I have, I have almost to a fault, zero respect for the past or time for the
+past. I just want to see what's tomorrow. And if the most offensive, horrible thing I can do to my
+competitors is open source sneaky, you bet you it'll be done in days. Until then, I think the best
+thing I can do is I'm watching some being built in the open. They are years behind us. I'm watching
+us take Amazon's best swing and moving customers off constantly. So right now I'm keeping that for
+ourselves, but who knows? We'll see. Yeah. You know, I would, I would struggle just as much as you
+are right now with that choice. And if I were you, just speaking out loud here, I'd probably keep it
+on the inside for now. Just because what do you gain? Yeah. Like who do you help by open sourcing
+Niki? That's the question. Yeah. And then even with open source, there's so much change. Maybe you
+could speak to this too, potentially as you, as you weigh these pros and cons is you see a lot of
+change in open source. You mentioned it pulling tests back, all sorts of things, not accepting pull
+requests, not accepting contributions. So we're open source. Sure. You can use it. It's still the
+free gift. It's still the USB stick on the front curb. Yeah. Thank you very much. But we don't
+accept any, any contributions. It's just in-house only. So there's no, and then you've got the
+Mitchell Hashimoto direction, which is like, let my current contributors, you know, I think I'm sort
+of, you know, TLDR in a way what they're doing, but it's, it's sort of like a merit-based. If you've
+done some good things or somebody suggests you, you can kind of come in kind of thing. And I could
+be wrong on that. Again, I'm sort of out of the loop to some degree on certain things, but I feel
+like the, the scoreboard and the way we participate in certain open source, not all open source, but
+certainly high stakes open source. Like something like Niki being open source, for example, there's
+a different game being played and it's, it's just a little unfair to release your crown jewel that
+helps you do so much. And then what do you really gain from giving it away? I don't know. Yeah. I
+think about this and I don't want to criticize anyone who's done like there are people that you have
+to find your own path in this world. And people do amazing, like open source maintainers are saints.
+Like the, the things they put up with, it's harder than ever. And now we, I just want to say that
+like, you are all incredible people and that I hope that we all find a better path forward for this.
+Maybe it's licensing. I don't know, but like, I really hope so. So I would never want to seem like
+I'm critical. We're losing from this too, right? Like we, we're still not the size of Amazon. So
+still when we're working with these gigantic businesses, they're like, well, I know we know plant
+skills profitable and has lots of money in the bank and is going to be around forever. But you know,
+it'd be easier if like we knew, cause you know, we've never had an enterprise customer churn, right?
+And we've never had a sharded customer lever. So we have retained every dollar of enterprise
+business. And they know that, right? And they know that it's like not incredibly easy to go from,
+if, if plants go as the best, most scalable database, if we hit the limits of that, like they know
+that they're not going to just turn around and do it tomorrow. But if a lot of the code was open
+source, it does give them more of a sense and a feeling that they have a plan if something was ever
+to happen or we got acquired or whatever. Right. So we're losing from this too. And maybe that's why
+Amazon behave the way is because this way is because it's easier for them to stymie us if we know
+that we can't do that. I don't know. It's, but it is sad and it's not an easy situation. And I will
+always come back and update you on as my thoughts change. But right now I'm, I speak like a lot of
+the people you've mentioned as being like shining stars of open source. I've had this conversation
+with people and we're all trying to find our way toward like figuring this out. Well, I mean, if you
+can give a demo with cursor, have it do some cool stuff with insights and you could do the same
+thing with the code base. You can look at somebody's code base, whether it's even from a license
+perspective. Yeah. You can graph intent. You can. Oh, yeah. You know, you don't have to copy code
+these days to copy the idea or even to. I don't want to say copy is like a bad thing. You know,
+we've all been copying. We've been standing on the shoulders of giants for a long time. But it's
+really just an interesting space where you have a super intelligence available for most anybody with
+20 bucks on most of the planet that has access to these tooling and to learn, to examine, to
+replicate. You can do it nefariously. You can do it altruistically. You know, you can do it from so
+many different angles, but the point is the primitive, the ability is there. Yes. Take me back to
+this unfair advantage of Niki. I don't want to blaze past that with how deep you went in the
+feelings you have on today's open source. But what is this unfair advantage? How long is this list
+and why do people feel? Take me further into that remark. Well, there's two sides to this and you've
+just touched on AI. One unfair advantage is that we have, like some of us have spent the last 15
+years in our careers working on very large websites or very large database deployments. And that is
+knowledge that has not made it into any single model, right? Like the code that we wrote to solve
+these problems may do, but the brains that that code was formulated are still in our heads. And
+precisely none of that has gone in. And the reason we have very, very large AI companies building on
+top of us is because they're buying for our expertise. They're buying for what my engineers will do
+at two in the morning, paged with a behavior that has never happened before. That active human brain
+instructing the agents to fix things and building the pipelines that the agents use is what people
+pay for. So that gives us one advantage, which is, yeah, maybe I'm not 22 anymore doing all nighters
+all the time, but agents can do all nighters. Yeah. So we've got, so not only has Niki been the
+distillation of so many years of experience of incredibly talented people, it's been built at a
+breakneck pace because those people turned out exceptional engineers can do exceptional engineering
+with AI. And we're taking our experience and using it. And so there is potential for a lot of tech
+companies that, can you hear that? Yeah. What in the world? They're doing construction outside. That
+is likely a drill. It's okay. Let's see if it passes. I hope so. Give it a second. That was a good,
+that was a great question you asked me. I want to make sure I don't forget that. Man, you're so good
+at this, by the way. Like I literally, you know, I, I've never, I asked you to come on this. I've
+never asked a podcast to have me back. Nope. Wow. You stood out. I still have the t-shirt. I also
+don't keep merch either. Like I really thought you did an amazing job. So like, I would love to make
+sure. Make sure to cry, dude. No, seriously. Seriously. I've been through some stuff, man. It's
+been, it's been a journey. I hope you're okay. It's while we're waiting for this to go, I'll, I'll
+give you a little snapshot. So behind the scenes, this last 2025 was a challenging year for me and
+my business partner, Jared. He's a great dude. I love him to death. Uh-huh. But we just had
+differing opinions on how the business should run. And, um, I just got tired of the partnership and
+I really did. And I'm sure he got tired of the partnership as well. It's not like it's a one-sided
+scenario here, but we were together as partners for a decade, basically. And that's, that's a
+challenging change really. And so right now in December of last year, I asked him if I could buy him
+out. He agreed. And so in February of 26th this year, uh, we inked that deal and it's, it's done. So
+he's no longer part of the business. So that's the change. But at the same time, you know, we have
+this AI revolution happening. I've been building a lot of cool stuff. Um, all the while also
+podcasting and maintaining this business, but it's been challenging. Because like the world has just
+changed drastically. And I've had some imposter syndrome to be honest with you, like, well, you
+should not show and do well. But to hear you say that is what makes me tell you that seemingly TMI
+behind the scenes that I would not normally share. So, uh, deeply with someone. Um, but so I
+appreciate that because I want you to wholeheartedly take my encouragement that you should keep
+doing going forward. And for multiple reasons, plant scale, we did layoffs. Like we were nearly dead
+at one point. Things are better than ever. We are now like just more alive, like ripping business.
+Like we got features like, like Brex did a report that were in the top 25 of like things that start
+as startups are spending on now. Like we are going. Wow. But it was so dark. And if you don't push
+through that, you will never get to that. And it's really hard. You're a founder too. And I,
+literally the story you just told me, another creator told me the exact same thing. Business
+partner, breakup, buying them out, pain. It's very common. And like, but I'm serious, like deadly
+serious. You are P99. Amazing at what you do. You should not feel. But all the best people feel
+imposter syndrome. I do too. Like, but you shouldn't. It's also a long journey to having done this.
+Like my whole career has been a podcaster for the most part. And I can honestly say I haven't built
+anything technologically that's worth really anything. So being in the tech industry and not really
+having any tech to show for it is kind of embarrassing in a way. No, but like media now is me. I,
+you know, media is, is, is hotter than ever now. Right. People want to tell a, because there's now
+like, I remember back in the day, there was like two companies doing one, the same thing. Right.
+Like you basically just like in 2013, you had to be the first person with the idea and you can make
+a big company. Now there's 10 people, 10 startups in San Francisco going after every bad idea. And
+people are differentiating now through storytelling, craft, design, experiences. I think you're
+about to enter an age where your skills are more important than ever. I genuinely, I look at how we
+build our marketing team and our buying behaviors are all going in that direction. Yeah. Well, I
+appreciate that. I mean, I think the business is definitely changing. I'm still excited about
+podcasting. I'm just a little bummed to be alone, even though it was my choice. Yeah. And so I'm
+just navigating some personal motivation, I would say. And then also I'd think a little bit of
+burnout and then also some imposter syndrome. So you mix all that together. You get a really weird
+soup that just tastes kind of nasty sometimes. Well, you should come out to San Francisco and feel
+the energy out here. Like it will, it will really pick you up. I think it will really make you feel
+like go to events, see people. Or like, I think you'll really enjoy it. You'll meet some new
+generation of founders to interview and chat to. I think it'd be really good. Man, I got a ton of
+friends out there too. I mean, I would consider you as a friend as well, but I would. Come through,
+come to the office, hang out. You're more than welcome. I should just do like a tour. Yep. Go see
+Adam Jacob. Come see you. Exactly. There's a few others that I would so reach out to. My buddy at
+Render. Yeah. Anurag. Great guy. There's a small handful of folks I just like going to hang out with
+if they would let me, of course. Come through. Right. I think we're going to drill this window. So
+I'll carry on. So I'll start. I didn't pick up the editor's name. So we're like in this very
+interesting time right now. There's a bunch of companies being built by people who've got deep
+expertise from working in other places. They know their domain really well and they can build for
+the next generation. And using AI to do that really rapidly. Like AI scales expertise phenomenally.
+And I do speak to startups. Like they're kind of. There's an arc of time. And this is how I view us
+via Amazon. Right. Which is like five years ago. VCs used to tell me you're never going to be
+Amazon. Well, five years later, we've got the largest databases from multiple of their products
+running on them. And people advocate for us over them constantly. It's the kind of arc of time when
+it comes to startups. There's an incumbent and there's the rising ones. And the things that mean
+they are struggling right now to respond to demand. They're doing great as a business right now.
+They're the ones with GPUs. But like it's difficult for a 50,000 person organization. And, you know,
+we have a 50 person engineering team. They have 5,000 people running engineering on the competing
+products to us. And we still beat them. This is because we can move faster. We are nimble. We are
+involved. We get there. Like large organizations, thanks to AI, although they are trying to keep
+everyone out, like they are at risk because they can't move fast enough. You just like you don't
+need masses of people to do stuff anymore. And so it's interesting. Like I'm seeing some young
+companies that come with a different angle of seeing things and they're going to be truly
+disruptive. But I'm seeing some wash against the waves of just the facts of life and the facts of
+how some software dynamics are. Again, that may all wash out in 10 years time. It might be
+completely irrelevant to have anything we've built. We might have a God computer that can just do
+everything. We're not there yet. We've got one more cycle maybe before that, maybe a few. Who knows?
+Where some great companies will be built by very experienced people scaling their expertise through
+AI. So it's actually an amazing. I've never had more fun. Like we have a customer at WAP. They are
+just phenomenal at what they do. And they're young and they're building for their audience. And they
+are just absolutely outstanding. And they're scaling incredibly rapidly. When it comes to consumer,
+when all these places, experience actually kills you. Like you can be too old for these things,
+right? But when it comes to infrastructure, there are just ways of doing infrastructure that will
+persist for quite a while. And there's rules to how that gets done. And that's how it's going to be
+for a while, I think. Mm-hmm. Help me understand your hardware story because this is something that
+I'm personally challenged with. How do you compete and innovate against Amazon or even Google
+whenever you deliver Vitesse or Nikkei or PlanetScale to GCP or AWS? How do you compete and innovate
+in their playground, so to speak, their hardware, their world? Do you build your own machines? What
+is your story? We do not build our own machines. I think when we named Metal, I think it was a good
+name at the time. I think it was kind of obvious what it meant. But people have conflated it with us
+running our own data centers. That is not true. I thought you did. Right. I thought you bought some
+NVMe's and racked them and stacked them. I'm glad you then thought that so I can correct that, which
+is we use the bare metal machines that Google and Amazon give us, and we build on top of that. So
+that's how we compete. We take the same machine they do and build our entire software stack on top
+of it, which means the machine, the profile, the cost profile of the machine is low because they
+don't really put much margin on top because they don't really do anything. But the most impressive
+thing is those machines are ephemeral. If we lose one of those machines or we give one back by
+accident and we misschedule something in Kubernetes or whatever, we would lose the customer's data.
+And so we differentiate, and no other startups are doing this. There's a few that think they are.
+It's hilarious. We can see the code and they're going to lose data. And so we differentiate by
+running databases and state, and we run more state on Kubernetes than anyone on earth. We just
+actually released a really amazing fatty on our team, released a great blog post about Kubernetes.
+It's just a wonderful, masterful piece of writing. I recommend anyone read it. And, yeah, so we
+build from the base up. So it means we can perform as fast or better than their solutions with all
+of our DX, agentic AX on top of it. The higher uptime we are, we compete with them by having higher
+uptime and just generally a better product while inside the cloud. This is the thing. There's a few
+Neo clouds that have built really well outside of the major clouds. But if you want to sell to large
+companies and companies that are far beyond startups, you have to be in AWS and Google because of
+latency issues and all of these things. We have to be there. And so the fact we found the perfect
+hybrid between on-prem performance and scalability. Well, no, we add the scalability. On-prem
+performance inside the Hyperscalers cloud is why we get to do what we do. We also run in the
+customer's account too. It is not on-prem. You still go to plantscale.com. It's like bring your own
+cloud, which I think you and I will have talked about in 2022. And we were early to that. It was one
+of the greatest things we did. Like we have gigantic customers running it because they are customers
+of Google and Amazon. So we run inside their accounts. And so it means that they secure it. They pay
+the bill. They get like great discounts when you're committing like a billion dollars to Amazon. You
+get a decent discount. And so they can use that as a machine. So we can get the net, like the total
+cost, like our cost, plus the discount on those hardware costs. We can often be Amazon on price. And
+so that's why, you know, that's how we compete. Yeah, it's interesting because you have to, you
+know, it's almost hypocritical, but you can't help it, right? Like, yeah, because you just said in
+one second, they're terrible, terrible partners, alluding to Amazon. But yet, you know, you have to
+play in their world. So it's like this, like a masked party, you know, like maybe a masquerading
+kind of thing. I'm thinking like a party where you have to go with a mask on, you know, but you're
+still kind to people. Mm-hmm. It's this really weird scenario where you have to play nice, but not
+quite so nice. Oh, believe me, like I massively respect them for the position of leverage they've
+put themselves in. AWS is a phenomenal business built by phenomenal people. And we should have
+nothing but respect for them. At the same time, they have to strike a fine balance of competing with
+the people that run on them, right? And like how long people will tolerate that. Now, luckily,
+there's that undoing as well because they've built like, what, 350 services. And now there's 10
+competitors for every one of those services. And it hurts for them because they have to keep up and
+people want the best in class tools. Unfortunately, the databases are some of the services that make
+the absolute most money for Amazon. Like people, I have other CEOs who have great partnerships with
+Amazon because they compete with less important Amazon services. So you must, I mean, I just met one
+of your customers and they told me how much they spend on Amazon, how much they spend on you. Like
+Amazon must love you. And I was like, we have a terrible time because we're competing with the
+software that they're trying to, the services they're trying to protect the most. And so, yeah, they
+behave really badly in that world. And so they just have to be careful. And I hope we don't make the
+same with some of the large model companies that constantly talk about how they're going to replace
+everyone. It's like I would caution anyone from allowing that to happen again. Because with AI, it
+could be dangerous. Like it is really bad that you can be an Amazon customer and that they can see
+you working with someone else and their sales. And then they use that to reach out to them. And they
+do do that. And it is extremely bad. And there's nothing we can do to stop them. It could not be a
+thing. It happens. It happens all the time. Our customers tell us constantly. And so they have to be
+careful because like you don't get to reign forever. There's other clouds. And Microsoft actually is
+not like that. On Azure, their sales team, the way they operate is much more friendly to the
+ecosystem of people that work on them. Amazon particularly really do not do that. They pretend to.
+They suck you in. Like they have released. It's a company that I think most people think is compared
+to us isn't really. But Amazon just released a competing product to them today after having that
+company on stage at reInvent last year. So they will pull you in. It's so funny actually. A founder,
+I can't remember what company it was, tweeted a screenshot of an email they got from Amazon Corp Dev
+being like, oh, hey, you know, it looks like you're doing really well. We'd love to reach out and
+see how we can help. That was sent like six months before Amazon released a competitive product. And
+I reached out to that founder and showed him an identical email from me. I just didn't pick up the
+phone because I've been tired of their shit for so long that there's no way I'm talking to any of
+them. Yeah, it's like, are you a fan of Silicon Valley, Bonnie Chance, the TV show? It's too close
+to it. I've watched, I've enjoyed watching it. And I've met the producers. They came to GitHub when
+they were doing research. And I know a friend of mine is one of their advisors. They did a great job
+of parodying it to the degree where I find it a struggle to watch when I live in it in Silicon
+Valley. It's hard to watch. Oh, and some of the actual props were from GitHub. I don't even remember
+the scene where they get delivered merch on the doorstep. GitHub provided that as a prop. But yeah,
+like, it's hard to watch for me is a long-winded answer of saying no. I've seen some of it and it is
+good. Mike Judge is a genius. But when you kind of know people that are just exactly the same as the
+characters, it's a bit much for you. Plus, I don't really watch TV. So there you go, extremely long-
+winded way of explaining that to you. The answer is no. Well, friends, I'm back with a good friend
+of mine, Michael Greenwich. Michael, I know that I love WorkOS. Our audience may not know about
+WorkOS. But what are the challenges developers face starting a new project? Choosing the right
+tools. Choosing the right database. Choosing the right auth. Take me there. When a developer starts
+a new project, the decisions that they make at the very beginning end up having long-lasting
+consequences. What language you build in. What platform you build on top of. What database you
+choose. These are things that are very hard to change later on. So they have, like, major
+consequences. And especially if they limit your ability to grow and scale. At some point, as the
+product starts to take off, you're going to have to stop developing new product features and go re-
+architect to rebuild your system. And that might be a killing blow right at the moment you need to
+accelerate. So these decisions early on are really, really important. And I think that's why
+developers gravitate towards solutions that are mature. Things that they know that will scale. Even
+things that are open source. You're going to pick, you know, something like PlanetScale for your
+database provider. Not because it's the cheapest or because it's the, you know, most fun to use. But
+because you know it's going to be a durable provider that you can scale on for years. And WorkOS is
+like that for auth. You know, at the earliest, earliest days, if you look across all these different
+services, they kind of look very similar. But at day 1,000 or day 2,000 or day 10,000, you're going
+to want to have made sure that you picked a platform that could scale with you. And today, WorkOS is
+powering auth and identity and security and permissions for all these AI companies. Literally the
+fastest growing companies in the world, like OpenAI and Anthropic and Cursor and Perplexity. WorkOS
+is under the hood there. So I think when people pick WorkOS early on, really what they're doing is
+trying to pick the defaults to allow them to grow and rapidly scale. And there's no platform other
+than us that's done that at that same level. Well, friends, the next step is to go to WorkOS.com.
+Sign up today. Check it out. Free for a million active users. Try it today. There's no excuse not
+to. It is your default. You should choose it. So do so. WorkOS.com. Once again, WorkOS.com. That's
+okay. Because I won't ruin the plot by any means, but I'll just give a glimpse. I think it was in
+season two. It may have been in season one. They were brought in by a venture capitalist firm. They
+being Pied Piper. And they were innovating on this compression algorithm. And they were hunting for
+money, obviously, because like any startup, you need money to grow. And they were brain-reaped, I
+would guess is probably the proper term. I don't know if that's the proper term or not. So similar.
+It's like, you know, let's email you. Let's get you into the room and ask you how your thing works
+with no intention to invest because they were not intending to invest. And, you know, because
+they're naive and they're early in their careers, they gave away information. They were happy to,
+like, gosh, in these venture capitalist meetings, no one ever asks us how the platform works. Let's
+just whiteboard the thing for you. So they literally whiteboard, you know, their crown jewels. And
+now they have a competitor, let's just say. Before they did not, now middle out, that was pretty
+much the, you know, the crux of Pied Piper, was now given to a funded team who is capable with
+engineers. And they go and build the same thing. And now they have a competitor. This happens all of
+the time. This is a real thing. That's the reason why I was in the show. It's like, it's real. You
+see a story once a week of someone on Twitter being like, oh, yeah, actually, this company offered,
+like, to try and buy us and do due diligence. And they use that really poorly. And, like, it's very
+bad. This is, you know, I chat to young founders and founders that are new in this. And it's amazing
+how naive people can be to thinking that these giants are here to help and that it's not immensely
+cut right through. And it's getting worse. There is so much on the line. Like, people are terrified
+by AI. They are terrified by what it's doing to them, even though they should not be. It's causing
+this to happen much, much more frequently. And, yeah, you have to be very careful and very secretive
+about what you do. We just don't. We try. Like, we have learned the lessons. And we try not to fall
+for these things. Yes. It must be challenging to even come up on a podcast to have me ask you
+questions that might go into an area. I'm sure you're protective of it. But nonetheless, there's
+some anxiety to some degree. Like, I've got to be in the public because I want to promote what we're
+doing. And I'm the CEO. And you have to be you have to do your job. And there's a job. One of the
+jobs of the CEO is to be some version of a figurehead to the company and a spokesperson. And
+obviously speak eloquently and have clear thoughts and share your idea as well. But then there's a
+part that's like, well, now I'm at risk because, like, if I share too much, you know, how much do I
+share? How how do I navigate this this new world we're in? And I think that's a how do you how do
+you personally handle that yourself with being in the public? Because you're pretty you're pretty
+well spoken in two ways. Well spoken. But then also I hear you and I see you on X. And I'm like,
+dang, there's Sam going toe to toe with, like, benchmarking and, like, calling them out. And, like,
+you're in the most positive way, ruthless. You know, like, I love that about you. I love the way you
+come at folks in a way. But how do you how do you manage the the ability to sort of show up
+somewhere like this, but then also not give it all away? I think about this very often is a constant
+evolving debate. So we're very open. We're known for our technical content is a great example.
+Right. So how do you share really deep, insightful things that have a meaning? You can tell when
+tech content is just like fluff. Right. Like, how do I talk about really deep things without giving
+away proprietary things? I talk about this all the time at the beginning of every one of our all
+hands. There was a giant slide that says confidential on it. And we're very clear. And I remind the
+employees that we are incredibly open at PlanScale. Like, if you're an employee of PlanScale, you
+know, you can look at how our finances are. If when we do board meetings, we present the board deck
+for the entire company. I believe in hiring exceptionally good people. I mean, I cannot self-assign
+this, but it's something I'm aware of that people would view PlanScale as having quite a high talent
+bar. Um, and being a small engineering team that's clearly boxing above our weight. Um, I do not
+believe in hiring incredible people and then hiding anything from them. Like, every business problem
+can be engineered. We are only engineers to engineer ourselves towards building a phenomenal
+business. So I share very, very liberally internally, but we have to remind people that you, you
+might not like, it's very, unless you're essentially myself or like. The C level at the company. It
+is very hard to know whether the thing you are doing or working on, or you might just say. It plays
+an important role in a very big picture that we don't want to get out there. So we guard very, um,
+you know, we're very protective over what we do, our roadmap, what we're working on. Like when we
+built Postgres, we had to work in secret. Like you had to have a code name so that when we could
+ship front iron end code, because we were iterative, it wouldn't be referred to. So that when we
+were in South Park, we can talk about what we're like working on without them knowing. Like we are
+very secretive in that way, but we have to do a fine line of like being open and like allowing our
+marketing team and myself and folks to go and speak on behalf of the company and not leak and mess
+things up. And so it just takes refinement and it takes culture and it takes thinking that through.
+Like our Kubernetes post we did about Fadi is amazing. Like it goes very far into showing you how
+well we think about systems without exactly kind of giving you the keys to the kingdom. And so it's
+this constant balance that will, again, it will change over time. But I try when it comes to
+Twitter, Twitter is a bit of fun for me. Like half the time I don't take things seriously. You're
+something having fun. I just don't mind saying things that I know is going to make people lose their
+minds. And it's like, it's just funny to me how easy it is. Especially also when it just doesn't
+impact me. Like I don't get anxiety about this. I can have a fight with someone online and then just
+close my phone and never think about it. I can sleep like a baby. So it doesn't really bother me.
+But it's funny when it really lights up some of your competitors and they lose it and whatever and
+do some LinkedIn posting. But also like partly the way I am on social media is because I do not
+believe in letting in false truths or things come be said about your company and not jump on them
+immediately. I've worked at places or I've watched other companies that just get drowned on social
+media with things that are not true about that company. And they are too reserved and polite about
+it. They don't squash these mistruths. I go at that stuff incredibly quickly to correct it in the
+public record. I make it sound like there's tons of drama around this company. There really is not.
+But people come up and say things and they try. They do silly things. And you just call it out and
+just say it for what it is. And it's just a way of handling PR and public relations. And sometimes
+companies misstep and you can get out there and correct them really quickly. And I watch companies
+just getting absolutely destroyed in the public narrative. And their CEO should just be out there
+correcting these things, saying it, confronting them, whatever. Like I've had people say hateful,
+mean things. I've had the odd death threat too. Wow. I often meet the people. You know, like you
+just go and say hi and talk to them and make friends. And I have a few people that I now talk to
+very rarely. It's a bit of a meme internally that I've had people that have been real haters, like
+just absolutely hated us and me and now are customers. And I just reach out to them and have a
+conversation with them. Like if someone is mad and hateful at me and makes a good point, you can
+really flip that by going, yeah, actually, you're right. I was completely wrong with what I said.
+Like I genuinely do try and put controversial things out there, see how people react, and then
+change my mind if I do believe. And I very often change my mind. I have zero fear changing my mind.
+Like it's my job to do that. Yeah. A lot can change. Well, a lot can happen in relationships
+whenever you can be transparent, but then also be willing to have a conversation. Like so many
+people just don't have the conversation. Correct. They would much rather subtweet you or they would
+much rather, you know, talk about you behind your back or, you know, roundabout, so to speak. And
+not only like negative or positive, just sort of like just about you. Right. But, you know,
+something changes whenever you actually have a conversation with somebody and there's clarity. And
+then there's also just transparency in terms of, you know what, I was not actually totally right
+here. I've changed my mind here and I don't feel that way anymore. Or you were right and I was
+wrong. You know, that is the way that happens there. Absolutely. I completely agree. That is the way
+to deal with subtweeting, by the way. If people subtweet you, just immediately go at them. Just say,
+I know that's about me. And then just like react to it. They stop because they subtweet because
+they're cowards. And if you call it out, but people are too polite, they won't call it out. And so
+it lets all this stuff happen. It's silly. For those that are listening that maybe be aware of my, I
+have zero expectation that a single person knows who I am that is listening to you. And maybe they
+do now. Obviously, that's why I'm here. But, you know, maybe you've interacted or seen my Twitter or
+whatever. And there might be people that really think this guy, like this guy, he's a piece of
+online or whatever. I just would love to let you know that it is one of our largest sources of
+leads. There is a drop down in our sales force to designate their source being my Twitter. Is that
+right? One of the hottest AI companies in Europe came inbound two weeks ago. Whenever I see, I love
+meeting customers. If you read blog posts from our customers, it's out there very many times that I
+will be the first person they've spoken to. And I will also babysit their migrations. I'll be in the
+Slack chat. I love it. Talking to customers is one of my favorites. I don't know. People are like,
+why are you talking to me? I'm like, what else should a CEO be doing? I'm talking to customers, work
+on the Prime. Right. But, like, they're very surprised. Anyway, I joined. I saw them come. One of
+their engineers filled out a contact us form. And I was like, that's a great company. I want to talk
+to them. I added myself to the meeting. Because I added myself to the meeting, the founder showed
+up. And I said, and this is a great company. They're going to pay us a few million dollars. I said,
+how did you hear of PlanScale? And he said, I love your Twitter. And I was like, thank you. That's
+great. And I said, you can't tell. I said, unfortunately, like, that's going to just make me worse.
+But, like, it works. And I get told all the time that people just want, they don't hear genuine
+takes anymore. Tech has become so mealy-mouthed. And there's fakers there. It's never been more full
+of fakers that don't know how computers work. I think people will feel refreshed. Tech got a little
+bit too friendly to the non-technical ones that can yap all day long. We should drive them out and
+get back to talking about, like, actual engineering. And I think there's a void of that. And I think
+people miss it. And I'm kind of, I'm just saying my stuff. It's not deliberate. I might quit
+tomorrow. I don't care. I don't think so much about it. I'm not obsessed with my follower account.
+Like, I just say the things I care about and believe. And maybe don't believe or want to test the
+belief in. And I just use it. And it's that. It does come up a lot, though. It's like, people
+mention my, I get people mention my Twitter to me constantly. Maybe I should change. I don't know.
+Well, I follow you, so I pay attention. So I see, I'm not involved in the conversations. But like
+anybody else, I lurk. Yeah. You know, and I'm here for the stuff. I'm here for the good stuff.
+Sometimes it's drama. Sometimes it's not. Yeah. And I can't really recall the ones, the posts that
+I'm talking about. But I recall other database companies touting their superiority in terms of their
+speed and their migrations. Like, I don't even remember what. But it was something like that. And
+you were just like, nah, not true. Like, here's the real benchmarks. That's how they're being not
+true with their details because you can fudge that. Just like calling them out. I'm like, dang. Why
+not? Why not? I love that. I mean, like, I guess because some people would be maybe too busy. Not
+that you're not too busy. But like somebody might use the excuse of being too busy to come at them.
+But that's what I think stood out to me was like that I liked about your personality was that you're
+not you're not unwilling to push back when you know, you know, maybe of an untruth or a fudging of a
+number, so to speak, or some sort of benchmark detail that just didn't really fit. Now, you have a
+reputation to maintain with plan of scale, obviously. But I would say that you are definitely edgy.
+And I like that. Like, it's not a bad thing. It's not how I would respond because I'm just not quite
+that way. But I respect it. I like that. Yeah. Maybe it's just that I'm oddly broken. I have brain
+damage. I don't know. I also don't. I don't believe that people are too busy. If someone is
+comparing your product technically and lying about it, you should stamp on that immediately. Yeah.
+Like, if you care about your craft, and I care massively about the craft of engineering, I love the
+database space because it is just engineering. There are so many companies that have out-talked us,
+out-yapped us, and now their largest customers are migrating to us because they use Postgres. We are
+winning. But it's fundamentally a game of engineering, and I take it very, very seriously. I love,
+like, we are not a very serious culture internally in the sense that we have a sense of humor. I
+like to make jokes. I like to be funny. I like to push, like, be silly. But when it comes to
+engineering, and we take our job of engineering very seriously, everyone accidentally lets down
+customers and things, and now and then that happens with us, and we take that very seriously as
+well. We are here to be a database product, and I feel like one of the best things I can do to
+attack my competitors is out-engineer them and then have a lot of fun doing it publicly and build a
+narrative around doing that. And they can come for it. Like, when we announced our Postgres product,
+it was a very simple blog post. It just benchmarked us against all the ones that were on the market.
+We smashed some of them into the floor. We had to give two of them. We had to give them double the
+resources just so they could show up on the graph next to us. That was the way. We showed up humble
+because we said we weren't going to go into Postgres because we didn't go into Postgres. I didn't
+know if we could do anything better. I didn't want to be arrogant enough and believe that we can
+just grandiosely show up and do a different database better. Once we'd shown that we could, though,
+we made that the point of what we're doing. All of the companies that we benchmarked got very
+triggered. One, actually, the CTO came up to our people. We released it while we had a booth at a
+conference. That day they walked up to them and got so angry that spit was flying. Like, someone
+else from another company, a friend of mine whose company's booth was next door, was like, you need
+to check on your team. They've just been screamed at by the CTO of one of the people you
+benchmarked. Wow. I'll save their name. It would be so big for them to get mentioned on a podcast
+like for this. So I won't. I won't. But, yeah, it really made people extremely mad. They all
+promised follow-ups. We watched them all benchmarks. It's been a year, not a single follow-up
+because they couldn't do it. So they can sit back down and try and write code and do all their
+yapping. They can hire their big brand designers to spend 90 grand on a website. And we all just do
+engineering and we'll take that bit very seriously. And then we'll have fun messing with them
+publicly. Yeah. That's wild. Let's go to maybe an angle I wasn't really going to mention. But you
+mentioned $90,000 websites. And I'm not saying that your website is not $90,000. And I'm not going
+to try and offend you by telling you how much you did or didn't spend on your website. But it's
+pretty simple. Google Doc. You're not going to offend me. I did it in a Google Doc. So it's not. It
+was very cheap. How do you mean you did it? The first version of that website, and Holly, our
+incredible CMO, she has a Twitter thread about this. I was on a trip to see the Redwoods. And I was
+up late at night. And I was like, we need to go way simpler. I just want to. We've got great tech.
+Let's just communicate this like a readme. And so I opened a Google Doc and just started drawing
+ASCII out into it and writing words. And then Jason, our phenomenal designer, took it, made it look
+like less like the let like sort of scribblings of a mental patient and put it up on the Internet.
+And it went viral immediately. I got invited onto podcasts that have like hundreds of thousands of
+listeners, like marketing podcasts. I didn't go on those. But like people were fascinated by it. And
+there's things that get spoken about all the time. It will change. We are going to work on a new
+version of the website. Like it's too simple now. It's that format and that medium is too simple to
+communicate the complexities of three separate products and all this sort of stuff. So it will
+evolve. But it was very fun to run in the other direction. Now, by the way, there is some beautiful
+$90,000 websites out there. Some companies produce, have insane taste and produce absolutely
+incredible websites. We just went very simple for now. And we're going to, you know, never going to
+go to these. I also just don't like it. It's bad engineering to me when you open a website and it's
+all flashy and like you can hear your MacBook spin up and Chrome is stuttering. Like that's bad
+engineering. That does not communicate what I want to communicate. But it was just a little silly
+thing. You know, again, I just like to try dumb stuff. It works or it doesn't. You can undo it or
+whatever. It worked pretty well. I think back in the day when we had you first in the pod and for
+several years after that, you had closer to what would seemingly look like a $90,000 website. And I
+think it was about a year or two ago you've gone the direction you've gone. So you haven't always
+had this, you know, you've had this minimalistic opinion, but it didn't seem like you were this
+plain. That's probably the way it's said. You know, this is very close to plain text. It's not a
+pejorative. Our previous website was also extremely good done by an extremely talented set of
+people. And it got copied. There was actually people that open sourced libraries to copy our like
+gradient hero. And someone said to me recently, like they remember that year when we had that
+website. They saw copies of it everywhere. And we did. Like people ripped that old website off. So
+now I'm saying what we're doing right now is figuring out the new one. And I'm like, when we tried
+really hard, people loved it. And like it was good. When we didn't try at all, people also loved it
+and copied both versions. Now I kind of feel like the pressure is on to do something else that's a
+bit crazy. I'm not trying to pretend I'm some design genius and we're going to come up with anything
+amazing. But you do feel that kind of like, huh, like we also didn't try to do those things. We just
+did things that made sense to us. But it gives you that pressure to like think, what can we do this
+time that's special? Maybe we found it. I don't know. We'll see. We'll see what people think. I'm
+sure they won't be afraid to tell me online. Since you're a spicy natured fella, that's probably the
+sweetest thing I could probably say. That's cool. I like that. Say something meaner. I'm enjoying my
+own words. I'm sorry, Sam. Say something meaner. I'd like to do it. Keep this in as well. Don't cut
+it. Say something mean. What do you think the worst? No, no, no. I really meant that in that way. I
+liked how it sounded. I had to laugh. It's like a comedian on the stage laughing at their own joke.
+That's like, you shouldn't do that. So I did that. No, it's good. I liked that. You should enjoy it.
+Maybe I'm spicy. I don't know. You are spicy. That's fine. Maybe everyone's bland. I'm not going to
+go wrong with that, man. Listen, I live in Texas and it's just fine to be spicy. Okay. Just fine.
+That's true. I want to go to this level because this is something that I've had. We've had podcasts
+on this. We've talked about Multigress. We've talked to Sugu. We've talked to, I'm even an investor
+in Superbase. I'm a small angel investor in Superbase. Well, that was a very good investment. I
+didn't get a chance to give you money, so I couldn't be an angel investor for you. Well, that was an
+exceptional investment because they've built a very valuable business. Yeah. I've only had two angel
+investments. That's my best one. Okay. Good. Congratulations. Not very many angel investments on my
+side, but that one I think is paying off very well. And I'm happy about that. I've got friends who
+use Superbase and I'm like, why do you use it? And these are obviously, well, I shouldn't say that.
+They're newer to software development, aka vibe coding, which is just fine. You know, everybody's
+got to start somewhere in the old area. That is their audience. And they've done a phenomenal job of
+building that audience. They have millions of people that are vibe coding for that platform. I'm
+like, why are you using Superbase? It's like, that's where my database is. I'm like, is that it? Is
+that all you're using them for is just a Postgres database? Okay, fine. They're doing incredible
+work from this. I digress. They've ridden this wave and they had great experience. I think they
+should feel very proud of themselves. And they've created an amazing business. Most people have not
+done that. It's amazing. What are your thoughts on, you know, what you're doing with Niki and
+Multigress? How do those two rub, I suppose, in the marketplace? It's their attempt. There is, like
+you've just referred to, there is one of the people that created for Tess at YouTube and was a co-
+founder of PlantScale that is a super base doing this and a couple of ex-employees. You know, the
+competition is good. They're welcome to go and do this. It's great. It's different. I'll tell you
+how it's different. Well, first of all, I'll address that Sugu left the company before we had a
+single-shadowed customer in production. And so the thing that I don't like about this situation is
+the perception that someone who made PlantScale what it is today has gone to Superbase. That is
+completely untrue. If you look at the version of the company pre-2020 and 2021, that is the
+counterfactual to what PlantScale could have been, and it was not. And now PlantScale is what it is
+now. He played no role in what it is now. And so when people online make takes about, oh, you know,
+they're going to, Superbase is a shot at becoming anything like PlantScale. That is just not true.
+None of the PlantScale DNA has gone to Superbase. So I can correct that, like leaving that early in
+a company that has achieved so much since that period of that person leaving is hardly the boon
+people think it is. But that's fine. Yeah. And I wish him well. I don't like talking about
+individuals and their histories, but they have had no problem trying to claim the Vitesse name and
+claim an association with PlantScale. And I don't like that. So what they're building, I have no
+doubt, will be of quality. And the people that are building it are not unserious and they are not
+bad engineers. However, they're in a business that does different things. It is not the union of the
+15 years experience of a test, the five years of building PlantScale and all the other things that
+we do. And so it'll be interesting to see how it goes. I wish everyone well. I think it's great
+building software. However, when nearly like. There's customers that are still on their homepage
+that have migrated to us already. Well, now we do Postgres, the logos that are on our page and you
+consider the long term sustainability of what it takes to build a sharded product and the companies
+that run on sharding. A company that's really only serviced five coders is not going to compete with
+a company that has done the opposite of that and is running some of the world's largest databases.
+And that will prove out. But at the end of the day, I would not try and go after their audience
+because I don't believe I could. Right. I do not believe. And until I maybe will believe that one
+day, but I try and stay humble and say I would not try and compete with Superbase right now on five
+coding on backends as a service. They've done a really good job at this. They are welcome to try and
+compete on what we do, which is what they think they're doing with Multigres. But as someone has
+been through this, there is many more things that are not just you don't just have an open source
+like sharding tool is not it is their record with security is very publicly quite bad. Like we do
+not have that right. These are all things that enterprises care about. At the end of the day, when
+I've seen the largest database that they ever had that moved to us and it was like. Like. I mean,
+minuscule in comparison to it was far below our average customer size. It's going to be a long
+battle when they have to like. Do you envision a world of opposite a giant sharded postgross
+customer and versus us and. What's your largest customer and ours is four orders of magnitude
+larger. I mean. I don't know. We'll see. I like the competition, but I don't really think about.
+Like there's other ones that are trying other sharding ones. It's like, why have I do it? I just
+don't think about it. I. We are on schedule. We're on our schedule when it comes to database
+scaling. We set that standard industry wide. You have to start being like, you have to focus in
+other places if you want to win that way. But I do wish them well. And I wouldn't hate to
+communicate any disrespect for the incredible business that they have built. Yeah. So you mentioned
+having extraordinary engineers. You mentioned having the ability to give those extraordinary
+engineers artificial intelligence, AI, right? Models, LLMs, Anthropic, Cloud, Codex. Pick your
+flavors. I know what my flavors are. I say use them all, of course, right? Use the ones that work
+for you. You've got Neeky out there. You're not sure about open sourcing it for all the reasons
+we've already talked about. But what was it like to take that exceptional engineering team, 50, how
+many ever was necessary, or how many ever you sliced off from that larger swath of folks to build
+out Neeky? What was it like to kind of have a redo, I would call it? Like, I've been enjoying the
+redos in this AI world because there's so much more possible. I'm almost happy to fail at trying to
+implement something because I learned and that my next version would just be that much better and
+more closer to what I actually want to deliver. So what was it like having had that many years of
+experience with Vitesse, this brand new superpower, some of the most amazing engineers out there
+anyways, and then here you go and you're building Neeky. What was that like? Phenomenal. Like, it's
+just been amazing. Like, to watch people that are so good at what they do and their craft, to have
+superpowers to build. Now, we are not just vibe coding this thing, right? I sure am not. To be
+generous, the Multigres team as well. They did a really good post about how they used AI to build,
+and people also interpreted that as vibe coding, which I don't think that's what they were doing
+either, right? Like, some exceptional engineers are building really, really quickly, but I'm
+watching phenomenal people build in phenomenal ways with AI, and it is like, I thought Neeky would
+take two to three years, right? We're a year in, and we're already moving customers now. That is
+like, and I thought three years with like earlier AI, right? Like how it was a year ago when we
+started this. And then I also thought, you know, just doing 15 years of work that quickly, right?
+Like, now, has it got feature parity with the test? No. Will it get there soon enough? Yes. It is
+amazing. It's actually a great kind of meditation on the fact that code was just a thing you had to
+get through, and that taste, and now that's a terribly overused word, so whatever, but like, but
+your taste, your biases, your experience. It's fed into things that will write the code is truly
+where it was. Like, and it gives me like, there's a lot of people feeling despair about AI. We are
+ingenious creatures. We have engineered our way off of this planet to the depths of the ocean. We've
+engineered our environment around us. AI will be a tool to do that, and I, when we start, like, when
+AI takes over more, and our ingenuity gets flowed into that machine, we will gain more as a species.
+So it's very exciting to me to see this and see how we engineer using these tools. And the
+productivity is there, and it does truly gel with the belief that I have and other people have that
+this stuff will scale the expertise that companies have. We are proving that right now. Like, the
+knowledge that things we know, the proprietary knowledge we know about running databases at this
+scale, can influence how we build and produce something very quickly. And that shows that there is
+an incredible moat to experience and intelligence and your company's culture and the way you build
+and the targets you set for yourself. And code is always just a syntax that you have to build, and
+you have to be smart at reading it, and you have to be really good at coding, and there's a massive
+power law to the distribution. Like, the ability to code has been unfairly distributed across the
+industry. But if you're listening to this and you're skeptical to AI, I hate to tell you that it's
+here and that it's happening, and the best engineers are engineering in phenomenal ways. I'm also
+happy to tell you it's nowhere near too late to adopt these tools. The hype sloplords on Twitter
+that are just saying random stupid things and making everyone get triggered and upset are wrong.
+They've always been here. They've existed throughout the industry. Dumb people have dumb takes on
+tech. The good people that are good at engineering look at this as a thing to engineer, and they
+just engineer it. And so it has been amazing to have that do-over, and it taught me so many lessons
+that I knew in an abstract way after building software for 20 years, but now I really know it. Yeah.
+Do you think – there's one part of my question that you didn't answer very well, and I'm just
+curious about this, and that's fine – is the redo part of it. Do you feel like – I wouldn't want to
+say that necessarily because I'm not sure of the actual code. I haven't read it because it's not
+open source, and that's cool. But when we look at Niki and the opportunity to redo – you mentioned
+it's not quite where Vitesse is at. Will it be eventually, of course? Yeah. But was it a joy for you
+and for others that were involved in writing this code or operating the AI that wrote the code and
+all the wisdom that came from that? Was it cool? Was it fun to do a redo? Oh, yeah. Or a take two on
+what Vitesse was for MySQL to do what Niki is for Postgres? Members of that team have told me that
+they're having the most fun of their career. Like, just to start with an empty repo. Heck, yeah.
+Like, we had this meeting. We all got together, and we just talked about, like, how are we going to
+build this? Like, what are the main lessons we learned from taking Vitesse? And, like, Vitesse was
+built by very smart people at Google, right? And they did an incredible thing breaking out of Google
+and did all these things. And, like I said, Vitesse has grown and become a real mature product in
+the last five years. In the last five years since 2021, its usage has gone up 65,000%, which is
+pretty good. It's used by more people now than it ever has been. But, like, there's nothing like
+that getting it on all of your, like, washing all your sins away and trying again. And Vitesse is an
+amazing piece of software. But, of course, if you can just start from, like, you do it some days,
+you do it just anyway, right? You, like, take one crack at something and go, okay, I learned, like,
+I felt around. I learned all the things. I'm going to just refresh and just, like, do the first shot
+again, and it works, and it goes well. And so doing that decade scale with massive customers running
+on it, you just make things differently. Like, Vitesse is still a phenomenal piece of engineering,
+and it is far superior to Niki as right now or anything else out there in terms of database
+scalability. But over time, Niki may outdo it just from the sheer nature that it's, like, the
+architecture is different, and we're very, very excited about it. And we are excited to keep pushing
+Vitesse. Vitesse is getting new things added continually because of some of the things that MySQL
+can do. Like, I wouldn't say one's going to be better, actually, than the other. It's going to be
+different, but taking a database system that's similar to MySQL in architecture, it's still a SQL
+database, and then doing it again, incredible fun. Like, the real do-over was incredible fun.
+Everyone's enjoyed it, and I feel very lucky to watch that teamwork. Yeah. Both sides of the major
+database coin, MySQL and Postgres, will forever be in some version of a war. We've always been
+around here, Postgres for life, so thank you for coming around, Sam, even though you feel that
+Postgres is, in fact, inferior to MySQL, and we'll leave that for a different day. Oh, can I hit
+that nuance there? Sure, sure. It is just different, right? MySQL lost the crown because they
+stopped listening to their users. They stopped building for developers. It is a very good database
+to operate, and I think it is still easier to operate than Postgres, right? Like, high availability
+is easier, all of these things. Like, we run into so many issues with customers, and you just have
+to explain to them, this is how Postgres does it. Vacuuming is bad because it's a core thing. Like,
+it's a core decision. Similar to the replication is not how I would like it to be, but it's
+different. They have a different philosophy, and they've achieved something phenomenal. It is the
+default database now because people have done a good job of helping you operate it. Heroku, us, the
+major clouds have taken that pain away, and so now you're left with a dev interface, and the
+extensions ecosystem, so much better, so much better. So I love Postgres now. Like, getting to work
+with that audience and see these brilliant and amazing companies and using it, and then to bring
+something truly differentiated from our biases in the MySQL world, it's phenomenal. So I wouldn't
+say one's better or worse. They're just different. But, like, they will get better over time. Or,
+like, they all wear them. I hope we can play a role in making both better continually over time.
+Well, you're a minute or two away from a customer call, and I appreciate you going literally to the
+one-yard line with me on this podcast. Is there anything you want to say in closing, just as we tail
+out, end of the show, anything whatsoever? I loved the episode we recorded all those years ago. It
+was one of my favorites that I've ever done. It's one of the ones that people have referred to over
+the years, and people still, you know, that was maybe how they heard of PlantScale, and they're very
+complimentary about how we both did on that show. And so I'm really glad to be back, and it's
+amazing to see these enduring things that go through this. Like, the industry has changed a lot
+while you do what you do, and so it's amazing to have something enduring that we anchor on, and I
+enjoy listening, and I've enjoyed being part of it. So I just want to say thank you, Adam, for
+everything you've done for all of us that are listeners, and for building something that you should
+be very proud of, and that we like subscribing to, and that I really enjoyed being part of, too, and
+I'm very happy to be back with a company that's defaulted live, with hopefully users listening now
+and potential users in the future. So thank you to yourself and your audience and everyone involved.
+So you've got something enduring and really amazing. Well, thank you. Thank you very much. It's been
+a lot of work, as you know, over the years. I mentioned the pod. We were – our inception was – our
+birth date was November 2009, so we've been here for a very long time. We're coming up on our next
+birthday here later this year, and I forget how many years it's been, but as long as I care about
+this community, which I think will be the day I die, I'll be producing some version of a podcast.
+Hopefully, it is always the Change Law, because I feel like the name we chose, changelaw.com even,
+is like – you can't erase it. It's an institution. It may change and have different variations over
+the years, but I feel like we're – we've always struck the right balance of who to talk to, why to
+talk to them, et cetera, and obviously having you a part of that has been amazing. So thank you,
+Sam. And thank you for all the work you do at PlanetScale and the whole team there. And just being
+you. It's not me. It's our customers. We're only here because of our customers. Thank you to all of
+them. We love our customers. They're very special people. But you have truly achieved the changelaw
+for the industry. You've been doing this long. You've tracked the change. You know what you should
+do is you should go back and reflect on old episodes. I bet you've got some amazing people that
+aren't – there's like – you could do a supercar. So many. Yeah. I mean, it has really been the
+changelaw for the industry, and you should keep going, because we're about to enter a new era that
+will be fun and different and really cool. I think so, too. This next era is going to be
+interesting. And I sure hope we all endure it, as you've said. I sure hope we can and we do, because
+things change seemingly every single day. But, Sam, thank you so much for being a friend, coming
+back on the pod, sharing all your wisdom, and really just sharing the struggle of what it takes to
+last in this industry and what it takes to be a great player in this industry. I appreciate your
+perspective, your wisdom in your team, your product, and your customers. Thank you. Thank you. Thank
+you. You better keep that glazing in. If I hear that edited out, I will be furious at you. You
+better sit there and have other people go, wow, yeah, actually. Now I think about it. Adam is
+amazing, and we're grateful to him. Oh, man. You better keep it in. I will be so mad. You'll get my
+Twitter out if you don't. Well, friends, thanks for tuning in to this episode of The Change Law,
+joined by Sam Lambert, CEO of PlanetSkill. Big fan of what they're doing over there. Love the way
+Sam has led this company. You know, love the almost died, but not default dead. Now they are default
+alive and thriving, which is cool. Databases have been all the rage for a very long time for obvious
+reasons. And now in this agentic era we're in with AgentSkill being slung around everywhere, we need
+PlanetSkill. We need PlanetSkills to focus on MySQL, to focus on Postgres, to focus on Niki, to
+focus on Metal, to focus on NVMe-based databases. And that's cool stuff. And so I hope you enjoyed
+this show. A massive thank you to our friends who have sponsored this pod. We got our good friends
+over at BuildKite, our good friends, obviously, and partners over at Fly, and our good friends over
+at Coda.com. And, of course, to the Beat Freak in residence, Breakmaster Cylinder. All right,
+friends, this show's done. We'll see you again very soon. We'll see you again.

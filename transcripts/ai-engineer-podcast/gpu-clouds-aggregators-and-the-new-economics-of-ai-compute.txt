@@ -1,0 +1,542 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: GPU Clouds, Aggregators, and the New Economics of AI Compute
+DATE: 2026-01-27
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/gpu-cloud-marketplace-episode-75
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/6390506821343929494441b0a7-114e-4f58-bdd7-9d27dd424008.mp3
+DURATION_SECONDS: 2762
+TRANSCRIBED_AT: 2026-09-17T03:33:41Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering Podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Unlock the full potential of your AI workloads with a seamless
+and composable data infrastructure. Bruin is an open source framework that streamlines integration
+from the command line, allowing you to focus on what matters most, building intelligent systems.
+Write Python code for your business logic and let Bruin handle the heavy lifting of data movement,
+lineage tracking, data quality monitoring, and governance enforcement. With native support for ML
+and AI workloads, Bruin empowers data teams to deliver faster, more reliable, and scalable AI
+solutions. Harness Bruin's connectors for hundreds of platforms, including popular machine learning
+frameworks like TensorFlow and PyTorch. Build end to end AI workflows that integrate seamlessly with
+your existing tech stack. Join the ranks of forward thinking organizations that are revolutionizing
+their data engineering with Bruin. Get started today at aiengineeringpodcast.com/bruin. And for dbt
+cloud customers, enjoy a $1,000 credit to migrate to Bruin Cloud. Your host is Tobias Maci, and
+today I'm interviewing Hugo Shi about the strategic realities of sourcing GPUs in the cloud for your
+training and inference workloads. Hugo, can you start by introducing yourself? Yeah. My name is Hugo
+Shi. I'm the cofounder and CTO of Saturn Cloud. I've been working on data science and machine
+learning for a long time. And the reason why I'm interested in this topic is because we are like a
+platform layer that sort of lets AI and ML engineers self-service the compute that they need, and we
+install into GPU clouds. And so like, that's why we've been doing a lot of research and work on
+understanding the GPU cloud market. And do you remember how you first got started working in the ML
+and AI space? So this was a long time ago, actually. This was in 2009. Canvas was not really a thing
+yet, or it had maybe had just been released. I was primarily using NumPy, and the history was that I
+was actually like a MATLAB jockey because my PhD program was all MATLAB code. And then the first job
+that I took out of grad school was a desk quant job at a options market making firm. And so for
+there, was doing mostly MATLAB and Java, and then I wanted to get some sort of scientific compute
+environment that I could run at home open source. And so being a MATLAB user, I naturally tried
+Octave. I wasn't super happy. And then my friends told us, Hey, you you should check this Python
+stuff. And I was like, Oh, that doesn't sound right. It's like some dumb thing that web developers
+use. And And then I started messing around and turned out it was pretty cool. And it could unify
+like general purpose compute along with scientific computing and mathematical compute, and I fell in
+love. And so as you mentioned, you're now responsible for a business. A big portion of your client
+base is very interested in being able to execute workloads against GPUs. And I'm wondering if you
+can just start by giving your summary of your understanding and view of the current market of cloud
+GPUs and some of the different players? I would say the the most common source of GPUs are the
+hyperscalers. So these are AWS, GCP, and Azure. And then I guess Oracle is like the up and coming
+hyperscaler even though they're a huge company. So I I would group them in there. And the
+hyperscalers tend to have higher prices for GPUs, for example, like h one hundreds are generally
+around $10 an hour on the hyperscalers. Then there are GPU clouds and GPU clouds, they specialize in
+providing access to GPUs. They also have CPU instances many times, but their pricing tends to be
+much better, somewhere between 1.5 to $3 to $4 an hour for an h100. And then I would say that within
+the GPU cloud market, it gets a little it's pretty, it gets pretty interesting. So you have full
+service clouds, and I would classify those as clouds where they often have additional managed
+services, not to the same depth as the hyperscalers, but they also have like usually managed
+Kubernetes, managed Slurm. Oftentimes they'll have VPCs, load balancers, things like that. These are
+clouds like Lambda Labs, CoreWeave, Nebius, Crusoe. And then there's also bare metal clouds, which I
+would, or I would say they're more concierge clouds. And that is where maybe I'll talk to sales and
+I say, Hey, I need 64 H100s for the next six months. And they say, okay, and I wire transfer some
+money and then they provision the machines and they email me like SSH keys and IP addresses or
+something like that, and then I have access. And then finally, I think something that's also
+interesting is, there's a GPU aggregator market that I would say is a subset of the GPU cloud
+market. And these are companies like Shadeform, Vast AI, RunPod, FluidStack, SF Compute, RevDev.
+There are more. And then also, I would point out that a lot of times these business models get
+mixed. So for example, RunPod and FluidStack, they do aggregate GPUs, they also have their own
+hardware, whereas SFMpute primarily aggregates GPUs and does not have their own hardware. And so GPU
+aggregators is just, you know, you go to one place and you can access GPUs from a bunch of different
+providers. It's something that I never thought would work just because that's, like, very counter to
+how most people have been using cloud computing. Like, most people try to stay in one cloud only.
+But because of GPU scarcity and GPU pricing, the aggregator model is actually taking off. And I
+think that's probably a good we can dig into more, but that's that's a that's a high level summary
+of the market. And another interesting layer on top of that is there are businesses such as yours
+where one of their major value add is the fact that they will manage orchestration of your workload
+across these various GPU providers and abstract some of that complexity. And I'm wondering how you
+see those players in this broader ecosystem. Well, there are not as many of us. So and I would say
+and and actually the other the most recent, the big one, Lightning AI, just acquired or merged with
+Voltage Park, and so there's even fewer now. I would say that in the GPU cloud market, there's still
+not a lot of products that are geared towards it because the market's a lot smaller. There's a lot
+of open source stuff, right? Because most of the GPU clouds have either a managed Kubernetes service
+or you can set up your own Kubernetes service, and then any other platform that works on Kubernetes
+like Kubeflow, you can install and run, and I think that's what most people do. But there are, I
+think, a growing number of companies that are doing what we're doing. I guess the ones that I'm most
+aware of are like DSTACK and Metaflow, and also Flight. And I would say that these products all have
+like significant overlap, but they're also quite different. So, you know, they tackle different
+parts of the stack. But the point is that there's a lot of There's a growing amount of products that
+are focused on helping people run different workloads on GP clouds. Another one that I'm aware of
+just because I had them on my podcast somewhat recently is a company, I think they're called ARIA
+AI. But, again, with many of these providers, they're not necessarily concerned with managing the
+access to GPUs as the core primitive that they're exposing. They're interested in getting you
+onboarded to their model of how to actually create and manage those workflows, and so you're going
+to be abstracting on top of whatever APIs or primitives that they're going to expose versus just
+saying, here's some raw compute, have at it. Yes. Exactly. And then I guess the other thing that I
+would add is that some of these additional services blend like a managed AI service with aggregator
+models. So for example, well, Lightning did this. Like, you could access Lightning, then from
+Lightning, you could dispatch to a bunch of different clouds. And we do some of that as well, but, I
+think that is distinct from a model where the application actually runs in your cloud account, which
+for a lot of enterprises, that becomes more and more important because you get better security and
+tighter integration with, your existing services. And so I think a lot of these products that
+function as aggregators can also be deployed in this other model. I know, like, Daxter can take
+advantage of compute in your environment. Flight can also, and Metaflow can as well, I think. And
+for people who their primary concern is just I need to be able to access these high powered GPUs
+either because I'm trying to do my own training run of building my own foundation models or fine
+tuning or because they need a certain amount of capacity to handle whatever scale of inference
+they're trying to deal with or maybe because they're running some fluid simulation model, they don't
+even actually care about any of this generative AI stuff. I'm just wondering how you see the general
+calculus deciding which category of provider to work with. And then once they have made that
+determination, how to actually go through the process of identifying which providers is going to
+offer the things that they actually need. Yeah. That's a great question. I would first start by
+assessing how much security you need and also how many managed services you think you're gonna need.
+So if you're just spinning up, you just need, like you just want SSH access to a machine, like, lot
+of providers can get you that. If you need, you know, managed Kubernetes and be to be able to set up
+VPCs and load balancers, then that puts you into a slightly different category of providers. And
+then if your security needs are, lighter if you have lighter security needs, then the aggregators
+are pretty compelling. Right? I would say the aggregators tend to have the best prices, but the
+aggregators tend to have less managed services because they're dispatching to all these different
+clouds. Right? And so they sort of only have access to the least common denominator of all the
+clouds they support or they expose different services depending on which cloud you're dispatching
+to. So I would say assess if you need a lot of managed services and assess if you need high
+security. If you need a lot of managed services and high security, I would go with one of the more
+full featured GPU clouds. So CoreWeave, Nebius, Crusoe, Vultr. If you don't need as many managed
+services or your security posture is lighter, I would go with, an aggregator like, SF Compute,
+vast.ai. And I'm not saying that the aggregators are not secure because they're good engineers.
+They've done everything probably correctly, but it's just that, you know, if all you're doing is
+working with Nebius, then you just have to be concerned about Nebius' security. If you're working
+with the aggregator, then there's just more links. And so, you know, the weakest link in the chain,
+there's just more links. So it's probably easier to have a weakest link in there somewhere or weaker
+link in there somewhere. To the point of the managed services and the amount of feature set
+available, that can definitely be a very strong differentiator for some of these different clouds
+where AWS and GCP, obviously, they've been around for a long time. They've established a lot of
+reputation. They've invested substantial capital and engineering hours in actually building out
+these various components that are superimposed on top of the core primitives of I just need a way
+to, you know, execute an instruction set on a CPU and have some means of storage and random access.
+And for some of these more bare bones providers where it's just, hey. I've got a server rack with
+dozens of h one hundreds have at it. I'm just wondering how that factors into some of the effort
+involved in being able to actually take advantage of the compute and, like, how much the feature set
+trade off versus I can save 50 or a 150% on the actual compute costs? Like, what do you see as being
+some of the maybe organizational factors that play into going through that calculus and determining,
+and decision structure? Yeah. I would say I mean, ultimately, it's just gonna come down to how many
+GPUs you need, how much you think you're gonna save, and then whether that's worth it in terms of
+the additional work that you're gonna have. But I do think it's interesting to talk about the
+different services that GPU clouds provide because they tend to be different than what the
+hyperscalers provide. So at its core, every GPU cloud provides machines with GPUs, right? That's
+their job. I would say the next tier of service is that most of them, many of them will have a way
+to give you a Kubernetes cluster or a Slurm cluster. And then I would say on top of that, the next
+tier is storage. So, you know, not all GPU clouds have storage, or they may just have storage on the
+machine, but it's just on the machine. Like, you can't attach it to other machines. Like, it's just
+it's just the ephemeral storage that's on on the node that you're on. But a lot of GPU cloud
+providers are have their own, like, block storage service. They have their own NFS or shared file
+system storage, and they have their own object storage. I think a growing trend is that a lot of
+these clouds are using providers like Vast Data and Weka. And I just want to clarify because there's
+Vast Data, which is a data platform, and then there's vast.ai, which is a GPU aggregator. So
+different companies do different things, similar But Weka and vast data have gotten really good at
+providing high performance, local and shared storage that drastically outperforms the NFS and give
+you really fast access to your training data. And so, yeah, so there's that. And then I guess on top
+of storage, the next tier I would say is networking services, and not everyone has these, right? So
+load balancers, not not every GPU cloud has load balancers, you sort of take them for granted on the
+hyperscalers, but that's not always there. A lot of them do, but not all of them do. And then VPCs,
+private subnets, things like that, right? A bare metal cloud that's just saying, here's an SSH key
+and a public IP address. There's no, you know, everything's publicly everything's all your machines
+are exposed to the Internet, right? And then if you go to a different, you know, a that has more
+features that supports a VPC that has public and private subnets, you can deploy your nodes into the
+private subnets, that gives you much more control over networking. So that's how loosely I think
+about it. Would say raw compute, Kubernetes and Slurm, storage, networking services, and then
+finally the last year after that is managed services. So these are like managed ML flow, managed
+Postgres. Those, there tends to be the fewest amount of that, but that's growing because people are
+starting to expect more and more. But I definitely think like Kubernetes, Slurm, storage, those are
+networking. Those are like generally the those are like the key features that you would need. You
+assess which ones do you need and you make determinations based on that. And like the managed
+service stuff is sort of nice to have. One of the other interesting aspects of where we are now with
+this growth of newer cloud providers that are very focused on a specifically GPU access in terms of
+the overall evolution of the technology sector, the past decade plus has been very focused on the
+idea of cloud native computing. There's the cloud native computing foundation. The substrate of all
+of that is largely Kubernetes. And one of the key promises of that overall effort was this idea of
+workload portability of it doesn't matter what cloud you're in or whether you're on a cloud at all.
+You can just run it on your hardware. You just as long as you have Kubernetes, you can do whatever
+you want. And the reality is that there are it is a leaky abstraction, and every Kubernetes cluster
+has its own set of plug ins and assumptions made and underlying feature sets that are being
+connected into. And the cloud providers have also managed to find their way into your Kubernetes
+cluster by adding some of these different operators to say, hey. We'll automatically provision your
+load balancer and your storage layer. And I'm just wondering what you're seeing as some of the
+realities that teams are coming up against as they say, well, I'm on Kubernetes. So, of course, I
+could just use this other Kubernetes cluster over there on Lambda or whatever it might be, and then
+they start trying to actually deploy their workloads and run into some of those sharp edges. I'm
+just wondering how teams are starting to come to grips with some of those realities and either say,
+oh, well, I'm only going to run this one specific workload and then tailor may you know, tailor
+their deployments to that reality or just some of the ways that teams are thinking about what
+workloads to move and how to think about making them actually portable, particularly if they're just
+chasing the bottom dollar or the cheapest cost for any given provider? Okay. So first, I think the
+short version is if you're deploying microservices and most of your things are containerized, I
+would classify that as cloud native. And however, I would say, I think we should be making a
+decision between Kubernetes native and cloud native because there are lot of people who have cloud
+native deployments, but they're just like, it's like Terraform orchestrating ECS, right? And so if
+if you you got Terraform orchestrating ECS, okay, want to move to GCP, fine, move your containers
+over, but none of your Terraform code's gonna work, right? Because those APIs are all different
+between AWS and GCP. So I would say, I understand the promise of cloud native being very portable, I
+don't I think if you're just, like, using Terraform to use ECS, that's it's not as portable. Like in
+some ways, just deploying to an EC two instance is more portable because you can just, you know,
+deploy the same instance on GCP. Kubernetes native, however, I think that's very interesting. Right?
+So if you're doing Kubernetes native stuff and then the question is like, do your containers make
+use of cloud APIs or not? Right? So if you're using ECR and if you're using S3, then you have to
+make sure that when you go to another cloud, you can either deploy those services or they have them
+out of the box. And so but I think from a Kubernetes from a Katz native perspective, this is much
+easier, right? Because at least then your code isn't changed. The the YAML LFS and the Helm charts
+that you're deploying will still work on all the clouds that you're deploying to. In practice,
+because we've been focused on deploying the same application, Saturn Cloud, on different clouds,
+we've had to deal with this problem, right? And so typically, the way we do it is we deploy a bunch
+of Helm charts. The Helm charts expect there to be block storage, network storage, object storage,
+and container registry. And so on clouds that don't have that, the nice thing is that we can deploy
+open source Kubernetes versions of those services into the cluster and then just configure your
+services to talk to those endpoints instead. And so so I think that's I think for Kubernetes native
+people, it's much easier. You just deploy the same Helm charts and then you figure out which
+services you need to patch. That, but I think, I mean that addresses the question like very
+mechanically. I think the other part is that, is data gravity, right? Because that's the other issue
+is that if all of your data is in AWS, then accessing it from Nebius might be kind of tricky. And so
+for there, I think it's I don't think there's any magic bullet. You either decide to copy your data
+over to the GPU cloud once, and then you deal with the egress cost once, or you set up some smart
+caching layer, and so then you deal with egress cost constantly, but you're trying to minimize it.
+And I don't think there's a better solution to that. Ironically, most of the GPU clouds actually
+have free egress. And so what you could do is you could store your data in the GPU cloud and then
+access it from the hyperscaler, but most people don't do that because they view their hyperscaler as
+their home base, Right? Because most of their other services that are on GPU focused run there. And
+on that question of data gravity, how do those realities change when you're moving from the very
+high throughput, high bandwidth needs of running a training workflow versus the still high
+throughput potentially, but much lower, you know, orders of magnitude lower than a training run when
+you're just running inference. And you say, well, I need to be able to act assess my context corpus
+for this either chat or agentic use case, but I'm not talking about terabytes or petabytes of data
+that I need to be able to have random access to for being able to do this training run. Right. So
+that actually, that that brings up another feasible pattern, which is, I think what you're alluding
+to is like, could well, let me take this back. So so training workloads are generally much more
+integrated into your company, as in they're going to touch more pieces of data, they're going to
+call more of your APIs, they're going to access a lot more stuff that is sensitive, right? Whereas
+the inference, can just deploy a public endpoint, maybe it has to call out to some of your API
+services to get some additional context, but you're generally okay with those things running on the
+private internet. So another strategy is like you keep your training workloads in the hyperscaler,
+and then you can move your inference workloads to GPU clouds. Of course, that depends on where most
+of your spend is, right? So and I don't think it's always I think okay. Training workloads are more
+expensive, but you don't do as many of them. Inference workloads are cheaper, but you do a lot of
+them. So, you know, that trade off depends on your company. I think most companies spend more on
+inference now. And I think that's mirrored by the fact that many of the GPU clouds also deploy
+managed inference services, right, because they see that trend, they they know that it's easier
+easier to move inference workloads to them. So like Crusoe and Nebius and many other providers have
+their own dedicated inference services now where you can deploy your models. In terms of that data
+gravity question, that is not anything new. It's just being accentuated and Yes. I guess, revisited
+because of these change in workload patterns. But there were a set of technologies that were
+introduced a decade or so ago as an outgrowth of the Hadoop ecosystem and the just store all of your
+data, and someday it will be useful. One of the ones that I'm most familiar with is Aluxio that is
+effectively a caching layer explicitly built for these high data requirement use cases as compared
+to other layers of caching that are maybe more application or content centric. And I'm just
+wondering what you're seeing as some of the trends as far as people may be reconsidering use of some
+of that data virtualization pattern, either specific technologies or just the the overall concept.
+I'm trying to think if I am aware of any useful patterns. We see a lot of stuff, but I don't know if
+there's any clear patterns on that side. Yeah. I don't think I have anything to say about, like,
+useful common patterns. I think there's a lot of different use cases, but I don't think the patterns
+have really emerged yet other than either you copy once or you continuously copy. So other than
+that, I haven't seen anything. More sophisticated, that's becoming a clear pattern. Right? Other
+people are definitely influencing more sophisticated things, but those are usually tailored to their
+specific use cases. I'm not seeing more general trends yet. Yeah. Interestingly, I haven't visited
+the Alexio page for some time, but when I look at it right now, one of their first pieces of content
+that they're surfacing is make multi GPU cloud AI a reality. Yes. It makes sense. It makes sense.
+And the other aspect of the overall economy of GPUs is that particularly in the 2020 through maybe
+2023 or 2024 time frame, there was a dramatic shortage of availability of these GPUs as an outgrowth
+of the supply chain impacts from COVID, etcetera, as well as the rampant growth of AI use cases and
+all of the different cloud providers trying to buy up all of the inventory. And I'm just curious
+what you're seeing now both as some of those supply chain restrictions have eased as well as
+successive generations of sufficiently powerful GPUs have been released and just some of the ways
+that that changes some of the economics as well as some of the demand for either a specific GPU
+model versus just something that has at least this type of capacity. Okay. So the GPU scarcity is
+still real. It is less severe than it was before, but we still have capacity issues. On the
+hyperscalers, it's still hard to get the top tier GPUs. Even on the GPU cloud, sometimes they don't
+have on demand capacity depending on what region you're trying to deploy into. I think the
+interesting trend around GPU clouds is that most of the demand or most of the reserved demand, and
+I'll talk about what I mean by that, is gets funneled towards the top tier GPUs. And so, for
+example, like when g b 300 is widely available, everyone wants g b 300 because it's the latest and
+greatest. And what that means is that when people's contracts expire, they want to, if possible,
+roll over to the latest generation of GPUs, which means that suddenly you have much more on demand
+capacity for the previous generations of GPUs. And so that's starting to happen. There's much more
+on demand access for h one hundreds now than there were before. It's still not h one hundreds are
+still not, like, super easy to get, but they're a lot easier now. And so I think that is going to
+become interesting as there's more and more on demand capacity because then the tricks that the
+hyperscalers started using, spot instances and capacity reservations, can also be applied to help
+GPU clouds, optimize the use of their capacity. The other aspect that I think is factoring into some
+of the demand side question is the growth of competition both from AMD as a major player with
+companies like Meta being one of their major providers as well as their continued investment in the
+Rockm stack to act as a competition against the lock in of CUDA, but also looking at some of the
+ASICs and the specific inference chips such as AWS Trainium, the tensor cores that Google is
+investing in and just it makes it a much more complicated market as far as differentiating between
+GPUs versus inference compute. And there's some overlap, but they're not necessarily exactly the
+same. And I'm just wondering how you're seeing people try to navigate some of those questions as
+well. Okay. So I would say in terms of GPU or accelerator diversity, I think the most interesting
+players there are AMD. So a I mean, AMD is making great progress on that. I know when we spoke to a
+lot of GPU clouds before about the AMD GPUs, there were a lot of, like, ease of use reliability and
+hardware issues that they were dealing with, but that's gotten better. And so I think the GPU clouds
+are having an easier time getting access and standing up and making reliable AMD GPUs. At the same
+time, the software stack for AMD GPUs is getting better, and so that's really interesting to
+observe. It would be great if there were multiple players in the accelerator market rather than just
+NVIDIA being the the dominant monopoly player. I think it's also interesting that I think AMD is
+doing a lot better with Rockham and PyTorch now than they were doing this kind of stuff before. I
+was at AMD AI Developer Day, and I met someone on the AMD team that was working on PyTorch. I don't
+remember his name, but one thing he told me was that he'd been he said that he'd been working on AMD
+open source stuff for, six years. And I was like, oh, that's really interesting I thought the Rock
+and PyTorch stuff was more recent than that. He said, Yeah, actually, he'd been working on their
+TensorFlow implementation. And so the way that they handled that project was like, they like forked
+TensorFlow and they made these changes and like, it wasn't compatible with the upstream, so it never
+got merged. So like, they had this own monstrosity that they had to maintain and deliver to their
+customers. So I think that's the wrong way to do this kind of thing. What they're doing now with
+PyTorch seems to be much better, right? They're, like, committing things upstream. It's in the
+PyTorch open source project. So I think I am encouraged that things there seem to be moving in the
+right direction. On the subject of hyperscaler chips, I don't really have a lot of data on this, but
+my personal bias is that I'm not optimistic about those just because I think people are people are
+already, like, hesitant about cloud vendor lock in. If you're using their silicon, like, okay, like,
+you just that's that's way far. And then also, like, just if you look at how much more AMD has to do
+to get all the open source stuff working well, hyperscalers could definitely do that, but, like, I
+just don't see them putting in that level of work yet to get all of that stuff running smoothly. But
+we don't support, like, TPUs, so I this is, like, stuff that I've heard about, but I I don't have
+hands on experience with TPUs. Yeah. That's definitely something that I have the vague sense of as
+well that all the cloud providers are trying to push their specific silicon to say, hey. It's great.
+We've got these things. They're easy to get to. But to your point, I haven't seen any real noise
+about people actually using them, and I think that they're largely just there for being the
+substrate for those cloud providers dedicated services like AWS Bedrock or Google's Vertex AI.
+NVIDIA has invested so much in the software ecosystem. Like, if you look at the stuff that I don't
+know exactly who's working on it, but I know Andy Terrell is. If you look at, like, the stuff that
+they're doing around CUDA Python, like, that's really exciting, right? To be able to program all the
+all layers of the CUDA stack with directly in Python, like, that's that's that's pretty amazing. And
+it's going to take a lot of work for anyone else to catch up to that kind of stuff, right? I think
+AMD is not going catch up completely, right? But I'm optimistic that they'll get their stack to be
+good enough such that, you you can at least, you know, be successful with PyTorch, TensorFlow, JAX
+workloads on their chips. But but I think yeah. I just I just think the level of investment, like, I
+see NVIDIA investing most, AMD's close second. I don't see the hyperscalers investing nearly as much
+in this kind of stuff. But maybe maybe I'm just not seeing it because I don't pay attention too much
+to the TPU and Ferencia, like that kind of market. The name of the project is escaping me right now,
+but I know that there are also efforts. There's a I think it's a new language runtime that is a
+superset of Python, but their purpose is to make it easier to build GPU kernels to, again, help with
+easing some of that lock in of CUDA specifically and expand the ability to run across different
+accelerators. And I'm just wondering what you see as the the potential impact of work like that
+having on this broader ecosystem of training and inference. I don't know and see much about those
+types of projects these days. So I'm not saying I'm just saying that, like, I haven't dug deep into
+that space, so I not present myself as an expert in those type of libraries. But I would say, like,
+if you observe what happened to OpenCL, I'm not optimistic that that kind of approach is gonna be
+that successful just because it it just shifts the problem from the hardware vendors to, like, this
+open source project, which I would say, like, has less resource to devote to getting things running
+well on all these different ships. Maybe I think about it wrong. I just I that seems like it's gonna
+be really hard to get broad support. Yeah. So I just found it. Mojo is the name of the project.
+Okay. I mean, I wish them all this like, that would be fantastic. I wish them all the success. Like,
+that would be that would be great, but it does seem like a very hard problem. Absolutely. And then
+the other impact that I'm curious about is this trend towards smaller or more efficient model
+architectures and some of the ways that that is shifting some of the demand or requirements around
+specific GPU capacities and also the tendency towards trying to push some of these inference
+workloads to more edge compute locations or lower resourced compute locations and how that maybe
+shifts some of the eventual demand for GPUs. Okay. I will also disclaim that the edge stuff is not
+something that we deal with a lot because we we just focus on the cloud cloud market. But I will
+say, I think it's fantastic that people are making the code more efficient. Right? I think it's
+fantastic that they're finding smaller models or they're optimizing the architecture. But there are
+two sides. Right? So, like, you've got one side optimizing and making things more efficient, and so
+you're reducing demand. But then the other side is, the insatiable demand just keeps growing. But we
+need both. Right? We need we need to both make things more efficient, but we also need to grow
+capacity. Another interesting aspect of all of this is that for a lot of people, their first pass of
+saying, oh, well, this AI use case is really great. I'm just going to go and use the OpenAI's and
+Anthropix and Googles of the world and whatever API endpoint they're exposing. And then eventually,
+they gain sophistication in terms of being able to do things like evaluations or doing a better job
+of managing knowledge corpora to provide context to the model so that they can operate more
+efficiently, adding in things like caching, etcetera, Maybe they then migrate to some of these open
+weights models that they are self hosting. And I'm just curious what you see as maybe some of the
+overall industry trend or maybe some of the aspects of tooling and frameworks that allow people to
+maybe accelerate their overall sophistication, their overall kind of growth in terms of
+sophistication of being able to move to that. I'm going to run my own compute and my own models and
+maybe just some of the economic realities that are hard to gauge or understand when you're on one
+side of the fence or the other as far as maybe it's easier to just use the AI provider versus I'm
+going to actually run my own GPUs and compute and maybe optimize some things, but now I'm paying
+more for operational overhead or for headcount because I need more people who have expertise. I have
+an opinion. There's no magic answer here. I think the first thing that you have to decide is whether
+the quality of your model is your competitive advantage or not. Right? So if you're just if your
+primary value add is that you're, you know, helping people aggregate their data, you're helping
+people do really good context engineering for models, like maybe you don't need to build your own
+models. But if your primary value add is that, like, you're a really good coding assistant or
+whatever, the quality of your model is one of your competitive advantages, then you absolutely have
+to invest in building your own models because otherwise you'll have no competitive advantage rate.
+Like your model quality is just as good as OpenAI, which is, it's going to be really good, but
+everyone else has access to that same level of model quality. So that's one thing. The second thing
+is that the tooling for the things that people want to do with LLMs, Serving, fine tuning, even
+training is getting better. And I think something interesting in that space is that there's the rise
+of, well, I'm gonna call them no code approaches or low code approaches, but that's not really that
+accurate. But basically, things where you can just sort of upload data and then it will handle the
+fine tuning for you as opposed to you writing code. And so I think that's an interesting trend. I'm
+biased because our platform is a code first platform. But the other reason why I'm biased is because
+we've seen this cycle play out before where people are trying to build, drag and drop data science
+environments. And I think when you're dealing with something as messy as data, UIs are not going to
+be the right way to program that. I don't think. Right. And so that's why I think I still think that
+the code first approaches are going to be what's winning at least for a long time. That idea of
+upload to fine tune your model also brings back some of the five or ten years ago trends of AutoML
+of being able to say, give me your spreadsheet. I will generate your predictive model for you using
+random forest or linear regression or whichever model of choice you want to use. And also, the the
+name of the project is escaping me, but one of the projects that came out of Uber that was very
+focused on that AutoML, but for deep learning of being able to try different neural architectures
+and then be able to generate a model for you based on your datasets. And I'm just wondering what
+you're seeing particularly as somebody who is in that provider path. What do you see as the
+predominant use of these accelerators? Is it generative AI training and inference because that's
+what everybody's talking about right now, or are the realities much more nuanced and people are
+still relying very much on those random forest linear regression as well as being able to build
+their own deep learning models for certain predictive use cases and that it's actually a a very much
+a long tail where generative AI and large language models are just stealing the oxygen from the
+room. Oh, so right. So first of all, I do not think that traditional machine learning is dead. Like
+people are still using XGBoost random forest. Those are still better at doing what they're doing
+than large language models would be because XGBoost will generate a prediction in way lower latency
+with way way fewer computational resources than a large language model, and also probably be more
+accurate for the use case that you're using XGBoost for. So it doesn't make sense for those things
+to go away. They're still gonna be done. Maybe they're not as interesting now because if you're
+thinking about compute spend, way more compute spend is going to generative AI because generative AI
+workloads are way more expensive than traditional machine learning workloads. But yeah, I do think
+that AI is sucking the oxygen out of the room a little bit, right? Like AI makes everyone think that
+traditional machine learning isn't being done anymore and everyone's just building language models
+to do everything. That's not true. Yeah. Just wondering, you largely answered the question, which
+was basically just, is it actually all AI because that's a lot of what he's talking about, or is the
+reality a little bit more messy and nuanced than it's just that AI is having an outsized impact on
+the conversation. To your point, the actual compute spend because it's more expensive versus the
+level of value and utility that is being produced across the board from these different techniques.
+Yeah. Okay. One other thing I will add is that even amongst the AILM use cases, the usage patterns
+are not I think this is good example of how people who design products or why code first stuff is
+important and how you can't really scheme it. In this world, it's really hard to know exactly what
+your user is going to need to do and then build a UI around it. And so the example I'll give is that
+we worked with a biotech customer. That biotech customer is using protein or biological large
+language models, but their usage pattern is very different than most other companies, right? Most
+other companies, they'll just like, they'll fine tune and they'll deploy the model and then the
+model will be served by like VLM or something, and then they'll hit it from some more web
+application. These biotech firms, they may never deploy the model, right? What they do is they train
+the model and then they shove all their data through it, and then they check to see if anything
+interesting came out for the drug that they're trying to discover. And so there are people doing
+things with large language models that are never deploying inference services. If you just looked at
+the product landscape to understand usage, you would assume that everyone's uploading a bunch of
+JSON files and fine tuning this model and then clicking a button and it's getting magically deployed
+to some cluster. Yes, I'm sure that's happening in some places, but also people are just writing
+scripts and multi processing to just run a bunch of jobs that are each consuming a single GPU to run
+some language models to get some insights, which is not much different than like old deep learning
+workflows, right? It's just, it's using largely language models instead of a deep learning model. As
+you have been working in this space, working with your customers, what are some of the most
+interesting or innovative or unexpected ways that you're seeing teams be able to capitalize on GPU
+availability and economics across this growing number of providers? I would say not necessarily
+something that I've seen our customers do, but I think one of the more interesting things out there
+right now is SF Compute. So SF Compute is a GPU aggregator, but what's interesting about them is
+that it operates as a kind of like a financial marketplace. Like, so people who have GPUs that that
+meet their security criteria and have deployed their software can register their GPUs for sale on
+this marketplace, and they can set their prices. People who want GPUs can say how much they wanna
+buy them for. And if, you know, there's overlap, then then you buy your GPUs. And what's cool about
+this model is that it's not just actually have like a, like a forward curve of GPU prices. So it's
+not like, it's not just that you buy them. It's like, you can say, well, my next training run is
+going to be in three months, it's going to be from April 1 to April 14. Can I reserve 64 H100s at
+that time? And then the providers will see, well, this is what our forecast of demand is. We're
+going have this capacity, so our price is this. And then, you know, the price gets set
+automatically. And I'm describing this process that like happens in a second, right? It's just, it's
+all automated. But yeah, you can just buy cheap capacity in the future when you know you're going to
+need it. And so that model, I think, is very interesting. And as you have been exploring and gaining
+understanding of this overall sector? What are some of the most interesting or unexpected or
+challenging lessons that you've learned in the process about working in this space? I don't know if
+this is for me, I think the most surprising thing was how much variance there was in GPU providers.
+Because if you're used to like, if you're coming from a world where you're used to working with AWS,
+AWS, GCP and Azure, it's like, okay, AWS, GCP and Azure, they're they're pretty different, right?
+AWS is much harder to use. GCP tends people think is the easiest to use, it's got the nicest UI, but
+they all pretty much have the same services. So like, whether the managed service I need exists or
+not is not something that you ever think about, because whatever hyperscale you move to, they all
+have the same managed services. They all have like a analytics database, a BigQuery, Redshift, or
+Postgres managed. You know When you go to a GPU cloud, like, you have to check some basic stuff,
+like, do they have block storage? Can you take snapshots? Are there backups? Right? Like there's,
+it's just, so I was surprised by how much variance there was. Like some GPU clouds out there are
+still like handling orders manually, right? You tell me what you want when you want it. And then I
+reserve it in our system. And then I manually provision the nodes and I send you SSH keys and IP
+addresses. Contrast that with like a service like Nebius that has a full blown managed Kubernetes
+service, you can also click on managed MLflow and it'll just deploy that on the chart to your
+Kubernetes cluster, right? There's a lot of variance in terms of software capabilities between the
+different clouds, much more so than exists in the hyperscale market. Think that was the most
+surprising thing for me. I guess the other surprising thing is that you forget about this, but when
+you work with the GPU clouds, because they have to do a lot less, they're actually way easier to
+use, right? So like they don't have to have very complex I'm permission setups because they don't do
+that many things. For them, not a question of like, do you need you don't have to opt into
+InfiniBand, you just get InfiniBand because everyone who uses it is probably going to use
+InfiniBand, right? And every node is deployed to an InfiniBand fabric. So I think the specialization
+definitely makes ease of use much better. Like we were deploying a lot to EKS and we had to manage
+CSI drivers for EBS and we had to manage, you know, the NVIDIA device plugin that did all these
+things that we had to do to make sure GPUs work properly. We go to Nebius Creusot, you just manage
+Kubernetes. All the operators that you need to get GPUs working are already pre configured. They all
+work correctly. There's no tweaking. It just all works. And so, and, you know, they can do that
+because that's their primary use case, right? So anyone who's using that cluster is going to want to
+use those services. Whereas if you're using EKS, like you may never need GPUs. So I think that's
+something that I understood intuitively, like that the GPU clouds would be able to make things
+easier, but like actually experiencing it was very surprising. I was surprised by how much less work
+there was. As you continue to work in this space and keep an eye on the market and work with your
+customers, what are some of the predictions or hopes that you have for the future evolution of the
+availability and economics of GPUs and some of the predictions that you have for the, I guess, need
+and evolution of GPU as a service providers? I definitely think there's gonna be more on demand
+capacity. Right? The thing that I said about h one hundreds more available on demand because
+everyone's rolling over to like GB300s or whatever. That's definitely a thing. And so I think it'll
+be very interesting. I'm excited to see how that plays out in terms of the availability of capacity
+reservations and spot prices on more of these GPU clouds. That's the first thing. The second thing I
+would say is in terms of trends, I think more and more GPU clouds are gonna become more and more
+full service. They're gonna look more and more like the hyperscalers. And so CoreWeave acquired
+Weights and Biases. DigitalOcean acquired Paperspace. And recently, Lightning AI just merged with
+Voltage Park. We're seeing this because I think the GPU clouds recognize that they have to move up
+the stack and not just provide raw compute, they have to provide a good developer experience for
+using the GPUs. And so I think that trend is going to continue. And then the last thing that I would
+say is that there's going to be consolidation. Right? Because there's, I don't know, how many GPU
+class there's, like, 20 or 30 or a 100, depending on how you count them. And so it just doesn't make
+sense to have that many. Right? And so there's going be mergers and consolidations. Some of them are
+going to go out of business. But that also means that the ones that survive are gonna have more
+flush out ecosystems and are gonna be more competitive with hyperscalers. So I'm very optimistic
+about that. And then the last thing that I'm optimistic about for the future is just AMD and having
+multiple providers, hardware providers in the market that I'm optimistic and excited about. Are
+there any other aspects of this overall market and ecosystem for GPU as a service or your overall
+experience of working in the space that we didn't discuss yet that you'd like to cover before we
+close out the show? I think most people operate in a world where I think this is true, but
+basically, like onboarding a new vendor is difficult. Onboarding a new GPU cloud or new cloud period
+is even more difficult because people understand that clouds once you like a cloud is like a very
+long term relationship. Right? Like, you start to use their APIs, it it gets very tied in with your
+company. And so there's a lot of onboarding a new cloud's not an easy thing. I will say, though,
+that as the GPU clouds get more and more mature, that's becoming easier and easier. Right? A lot of
+them now have SOC two, ISO twenty seven zero zero one. I get I get the number slightly wrong each
+time I say that. And many of them even have HIPAA. So, you know, it used to be that getting security
+review for GPU cloud, that was now it's reasonable. Like, you could actually make the case at your
+company. Not saying that IT sec is gonna be like, oh, that's fantastic. Let's onboard a new cloud,
+but but you can at least make the case and you can get there. Alright. Well, for anybody who wants
+to get in touch with you and follow along with the work that you and your team are doing, I'll have
+you add your preferred contact information to the show notes. And as the final question, I'd like to
+get your perspective on what you see as being the biggest gaps in the tooling technology or human
+training that's available for AI systems today. Okay. So my viewpoint's gonna be biased because I'm
+so much on the infrastructure side, right? I'm not saying that there's other things like on the
+PyTorch side, or maybe JAX is better than PyTorch, like that kind of stuff. Model architecture
+stuff, I think there's tons of stuff there, but I'm much more exposed to the infrastructure side. I
+would say there's a lot of interesting work being done now around infrastructure reliability,
+because generally if you have a cluster of CPU machines, you're running them hard, but when you're
+running a GPU cluster, you're running them really hard. They're operating at super high
+temperatures, you've optimized to max them out to 100% whenever you can. You're optimizing your data
+loading patterns so that they're always that they're always saturated, they're always computing all
+the time, and as a result, GPUs fail a lot more, and so there are some projects out there that are
+focused on automatically relocating workloads when hardware fails. There's another project that I've
+heard of from a company called SystemStack that they actually have an application you can deploy
+that will sort of monitor node health, and instead of just migrating workload, it will actually try
+to repair the node for the most common failure conditions that it's aware of. And so I think that
+kind of stuff, stuff to make these long runs more reliable, I think that's the trend. That's
+interesting trend that I'm seeing right now. All right. Well, thank you very much for taking the
+time today and shedding some light on this overall ecosystem and the economics and realities of it.
+It's definitely something that I have been tangentially aware of, but certainly haven't explored to
+the depth that you have. So I appreciate you taking the time to share some of your lessons learned
+and insights from that, and I hope you enjoy the rest of your day. Oh, yeah. Thank you so much, and,
+thanks for having me. It was really fun conversation. Thank you for listening. Don't forget to check
+out our other shows. The Data Engineering Podcast covers the latest on modern data management, and
+podcast.init covers the Python language, its community, and the innovative ways it is being used.
+Visit the site to subscribe to the show, sign up for the mailing list, and read the show notes. And
+if you've learned something or tried out a project from the show, then tell us about it. Email
+hosts@aiengineeringpodcast.com with your story.

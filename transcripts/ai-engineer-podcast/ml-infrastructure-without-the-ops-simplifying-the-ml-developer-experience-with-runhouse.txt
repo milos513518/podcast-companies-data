@@ -1,0 +1,847 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: ML Infrastructure Without The Ops: Simplifying The ML Developer Experience With Runhouse
+DATE: 2024-11-11
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/runhouse-ml-infrastructure-simplified-episode-40
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638668760280576680bd3e1488-da51-4aa8-afb1-962bc5866457v1.mp3
+DURATION_SECONDS: 4572
+TRANSCRIBED_AT: 2026-09-17T03:33:31Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macy, and today I'm interviewing Donnie
+Greenberg about Runhouse and the current state of ML and AI infrastructure. So, Donnie, can you
+start by introducing yourself? Yeah. Glad to be here. I'm, Donnie. I'm the, cofounder and CEO of
+Runhouse. We are a serverless distributed compute platform for AI and ML. I've been working on the
+project for about 2 years now. Prior to that, I was the product lead for PyTorch at Meta. I worked
+on almost every aspect of PyTorch, and some large rearchitectures of Meta's internal AI platform. So
+that's kind of informed a lot of the views that I have of AI, ML infrastructure, and the nature of
+Run House today. And do you remember how you first got started working in the area of ML and AI?
+Yeah. Actually, I came from more, like, research and open source. So I was at IBM Research working
+on quantum computing applications, and, I was the tech lead for their open source quantum algorithms
+software. And then, PyTorch team reached out because being a kind of research and open source,
+centric system, they they wanted product help that was going to be coming from from from that side
+of the world. And so I actually came into the PyTorch team with only really quantum machine learning
+background, but had to quickly ramp on basically every domain within, within PyTorch, and then lots
+of the kind of, lower level subsystems, like compilation, distributed, etcetera, and then, you know,
+gradually had to kind of broaden out into the higher level subsystems, like, orchestration and,
+fault tolerance, those kinds of topics to kind of, the broader machine learning life cycle. And from
+your perspective of working in the space, working at Meta, where you've got exposure to very large
+scale and complex AI and ML workflows, what do you see as the core elements of infrastructure for
+these ML and AI capabilities and applications and maybe some of the ways that that's changed over
+the past few years? Yeah. It's an interesting question because it's, like, it's changed a lot over
+time, and it really depends who you're asking. I worked with many internal meta teams, and meta has
+very custom kind of homegrown infrastructure, but then also worked with the, large vendors of AI
+infrastructure and then many teams in enterprise that were building up their own stack. And it's
+sort of a you know, there are multiple waves that are actually moving in sequence, or moving in
+parallel with each other. So I think it's actually really important at this particular moment in
+time to kind of distill exactly what AI machine learning infrastructure is, especially as it's
+distinct from just, like, traditional infrastructure. I think it was a very easy answer, which is
+just, like, ML and AI teams do some specific things. So let's just, like, emulate those activities
+and wrap them in, like, an API that you can call that does the thing for you, and we'll call that AI
+ML infrastructure. But that always comes with very significant opinionation. So I would describe
+kinda like the first wave of AI ML infrastructure kind of as that way. It's just like very monkey
+see, monkey do kinda grab bag of of of point solutions to various problems in the AI ML life cycle,
+and then we've gotten more mature from there. So, like, all the opinionation that that adds, right,
+like, when you're just wrapping a thing that somebody does in a an API to do it for them, you're
+gonna take on a lot of opinionation. And even if you're more and more thoughtful about it, it's very
+difficult to reopen doors that you've closed, in just, like, the interface of the API is proper.
+And, also, like, when you're doing this for many, many companies, you often introduce features that
+look innocent at the time, but actually introduce a lot of opinionation because the feature itself
+is optimizing some aspect of the AI ML life cycle, which depends on the methods proper. So I think
+after the first wave of very opinionated tools, you ended up kind of with much, much more
+unopinionated tools that were built kind of in these, like, homegrown enterprise stacks. And, those
+included, I would say, more of a kind of, like, core grab bag of elements, like a Kubernetes
+cluster, an orchestrator, some kind of serving solution. But even those had a degree of
+opinionation, and they were often very focused on actually just getting things working on the
+production side. So as far as the, like, core core elements, I think today, where where we've gotten
+to just continuing to try to strip away that opinionation is that the the the really, really
+distinct aspect of AI ML that we know for sure is that there's large scale data and computation that
+can't be done on a laptop, and therefore, it doesn't have a local development path. And so if you,
+like, remove everything else, remove all of the, like, AI method specifics, all of the specific
+choices of distributed frameworks and things like that, that's a really key piece that hasn't been
+solved, or that that hasn't been solved in the core infrastructure that you need to introduce with
+AI ML infrastructure, and you can kinda blow out the whole world from there. So, like, being able to
+run things on GPUs requires you to be able to have, like, a really interactive dev experience on
+remote compute, and be able to schedule that computation in some sort of shared compute environment
+with other people. The scale of the data not fitting in a typical laptop or even like a, you know,
+single dev box requires you to be able to account for kind of stream ability of of your workflows
+from 1 sort one, you know, place of compute to another place of compute or just be able to size up
+and down your workflows very dynamically. But just that lack of local execution demands basically a
+sort of platform as a runtime. So I think that's where most of the world has gone or or most of,
+like, bleeding edge of AI ML is gone. Is this, like, platform or, as a runtime concept? And then one
+other thing that I would point to is distinct about AI ML, but has sort of glimmers from the day
+there there are glimmers of this in the data world is just, like, super, super wide workflows
+because they incorporate both online and offline elements. So, you know, most of the web world looks
+very online. Right? Like, live serving systems, very continuous curves as far as the traffic and the
+scaling. A lot of the data world is, like, very offline where, you know, jobs that are being run
+nightly or have, like, you know, multiple dependencies, but many of which can kind of wait but have
+to complete eventually. AIML tends to mix those in a way that, requires, like, very, very wide
+systems to be programmed and, like, fall tolerantly and reproducibly. And and that's another thing
+that hasn't completely been solved by either the website or the data side that AI ML infrastructure
+tends to be focused on. And the curve ball that has really come in the last couple of years is the
+shift of a lot of the ML and AI focus from deep learning and your traditional linear aggression
+style ML workflows to now everything is transformer models, building off of these large language
+foundation models or multimodal models and being able to serve those for inference largely with some
+sort of context corpus. And I'm wondering how you're seeing those pressures affect the ways that
+people are thinking about their overall infrastructure and workflow stacks for being able to support
+their ML and AI objectives, And how much of the generative AI space is hype and people are still
+doing all of the deep learning and linear regression style ML? And how much of it is that has
+actually taken over a substantial portion of what people are focused on right now? Yeah. I think
+it's actually it's become a lot clearer over the last few years what exactly is AI and what exactly
+is ML. And, and and then what exactly kinda falls into, like or distinguishes that from, like,
+classical, like, big data work? So I would say, like, classical big data work is, like, mobilizing
+data inside of a company for the purpose of, like, strategic decision making and analytics. And ML
+has always been distinct from that in that it is mobilizing data at scale within a company for the
+improvement of product proper. Right? So that really introduces a hard fork, you know, in in those
+stacks. Right? The mobilization of the data itself, that that can mean deep learning. It can mean
+regression, whatever. But that really means that you're actually using the first party data in a way
+that, adaptively improves your own systems. Now I think we have a lot more clarity actually about
+what is distinct like, what distinguishes ML from AI, because AI mostly seems to be taking the form
+of machine learned or intelligent methods that have a kind of globally shared distribution about
+them. Meaning, like, the model itself actually represents a concept that is transferable from one
+person to the next, like, you know, language or identifying cats and images, etcetera. Whereas,
+like, ML, especially as we see it inside of large companies, is very much proprietary distributions.
+Right? It's like mobilizing my transaction data to build a fraud detection system, mobilizing my
+user interaction data to build a ranking over my own products or recommendation, or search system
+over my own space of entities. And that's actually a really, important distinction to make because
+the infrastructure that you need tends to look very different for each of those two things, just as
+the infrastructures look very different between BI and ML. So on the AI side, you might just be able
+to use large off the shelf hosted model because language is language, and the shared distribution
+is, you know, common between you and the person who trained the model. In the end, the the behavior
+of the model still depends on the data that it was trained on, and so the importance of post
+training thoughtful post training by these hosted model providers will actually end up dictating its
+applicability to you as a consumer, whether the behavior of the distribution they're modeling is
+actually gonna be useful. If they built it for chat, it's gonna be built useful for you for, like,
+unstructured data abstraction, over some very specifically formatted PDFs. But, ultimately, like,
+you know, you want to bin pack these jobs as aggressively as possible. Maybe you're hosting your own
+models that can kind of be, like, widely shared within the company or something like that. On the ML
+side, we're still seeing a tremendous amount of customization of things that you want to do because,
+ultimately, these are systems problems with, you know, dozens or hundreds of engineers banging on
+the same system, just incrementally improving it, and it's much more of a sort of scientific
+activity and one that needs to just be, like, kind of optimized over time. And so the range of
+activities that people are doing there is actually going in the opposite direction. On the AI side,
+they tend to be converging. Even the large models that you see off the shelf tend to be actually
+converging in behavior, especially over the last 6, like, 6 months. On the ML side, it's, if
+anything, significantly more divergent. It's like there's still a tremendous amount of, you know,
+enterprise business that depends on traditional ML models and nothing more, like, you know,
+regression, gradient boosted decision trees, etcetera. And then, you know, there's just extreme
+pressure to walk up the chain to more and more sophisticated models, either using, deep learning,
+transformer architectures, larger and larger models, larger and larger training techniques. Right?
+And then that pressure manifests as a sort of, like, distribution of where people end up in terms of
+how much how much sophistication they can introduce. So maybe you have a business that depends on
+gradient boosted decision trees today, and you just desperately wanna get that onto, like, you know,
+GPU hardware. And then maybe you wanna actually once you're on GPU hardware, you just desperately
+wanted to get into deep learning to have more sophistication and just yield better performance. And
+then once you got you you got it onto single GPU deep learning, you wanna get it onto multicard or
+distributed or to, let's say, like, a large scale architecture, like a distributed transformer
+training or something like that. So that pressure has actually just scattered people across the
+range of sophistication. I think there's one area that's been quite interesting that's where where
+they've overlapped, and ML and AI have arguably always overlapped here, which is where you're
+combining, you know, shared distributions and shared models, like a transformer, like an embedding,
+with mobilizing first party data to build ML systems. For example, you know, instead of doing lots
+of really elaborate complex featurization, in order to train, let's say, like, a fraud detection
+model, maybe you take your text that, you know, arrives in your Tableau data, and you shove it into
+a massive embedding. Do a hosted model provider or your own hosted open source model and get that
+embedding, and then use that to train your machine learning model. And, like, that's really the sort
+of hello world example of that, but it gets, you know, arbitrarily complex from there. But that's
+arguably kind of more of the same. That's always been the job of machine learning practitioners to
+take all the new model architectures and whatever they can to try to improve their machine learning
+systems. But that's kind of like the the the wrinkle between the 2 where lots of teams that have
+been doing ML started to walk up the AI stack and incorporating more. Another interesting aspect of
+the ML infrastructure space is that I think maybe around 2019, 2020, there was a large investment in
+the overall idea of MLOps and building largely a separate stack of infrastructure and suite of tools
+for that machine learning practitioner, distinct from the work that was being done in data
+engineering. And I think part of that was exploring the space of what are the tools that ML
+engineers need? How does this work? How do we build this as a service and as infrastructure? And I'm
+wondering what you have seen as some of the lessons out of that MLOps tool growth and the
+corresponding tool growth and explosion that happened in data engineering around that same time
+frame, and any ways that those two areas are starting to converge, or any lessons learned that are
+shared between those workflows? Yeah. So I I actually I think that this is the the MLOps phenomenon
+really points to another really key distinction that should be drawn in the way that the that we
+talk about the infrastructure. AI infrastructure can be kinda pointed to as somewhat different from,
+like, ML infrastructure, where if you're talking about, like, AI infrastructure at scale, often that
+means that the definition of done is training and deploying one really huge model that models this
+particular shared distribution for all the people who are gonna be consuming this model. And the
+fault tolerance necessary for training, for example, doesn't need to be that strong. Like, most of
+these, AI labs that are producing these models are triggering trainings mostly by humans pressing
+enter on a laptop, and the trainings themselves are quite homogeneous. They're massive and quite
+homogeneous, and they work perfectly fine on Slurm. And that's the architecture you've actually seen
+things sort of head towards in, like, a in an AI lab is just being able to share, compute over
+relatively massive like, over massive relatively homogeneous jobs, whereas ML infrastructure has
+always had very, very different requirements from that. You're talking about models that work best
+when they're trained often, when they can incorporate or remodel the distribution as often as
+possible. So sometimes they're trained as often as every hour, or minutes we've seen, and that tends
+to require a much richer fault tolerance, much, much richer support for, like, complex fault
+tolerance, much richer automation, observability, telemetry, etcetera. It's just a totally different
+scale dimension. Right? So instead of just running one massive training every 3 months, you're
+running, you know, 1,000 or 100 of 1000 or millions of trainings, and they're they all look slightly
+different. They're super heterogeneous. So I think that's a really important distinction to make,
+and MLOps is almost entirely about solving the latter problem and not the AI lab problem. And I
+would actually just treat the AI lab problem as kind of completely separate for the purpose of this
+discussion. The MLOps phenomena, I think, actually created kind of a lot of short scorched earth
+mainly because there was so much mixing of mixing of these, companies together the requirements of
+these companies together. They were in different stages of the distribution. So from, like, 2018 to
+2020, a lot of, like, the large enterprises were really in the experimentation stage of deep
+learning. They were just starting to realize real value in pockets of the organization, and
+therefore mainly wanted infrastructure that kinda was monkey see monkey do is going to, like,
+dependably give them a solution for a very specific problem they have and not really give them so
+much control and customization over the infrastructure or the methods themselves. But But adding
+into, like, 2020 to 2022, you tended to see many of those companies actually outgrow that
+opinionation, have maybe deep learning now producing real business impact in multiple different
+organizations. And so there was a push for consolidation. And the different methods that were used
+in those different stacks now just directly conflicted with the opinionation inside of a platform in
+a box type solution like SageMaker or Vertex AI or something like that. So, you know, when you mix
+those 2 audiences together and you just group them into it under a term like MLOps, you're not gonna
+have a good time. It was like very different requirements. And ultimately, even, you know, the
+bleeding edge kind of practitioners in the space also have slightly different requirements than the
+ones who are just building their homegrown stack for the first time, and they just, like, wanna get
+it working. You know, they don't need extreme, flexibility to be able to mix workflows between,
+massive data processing systems and then massive distributed training or fine tuning or evaluation
+or inference systems, like, super heterogeneously. So I think on the data side, actually, there
+tended to be pretty extreme standardization of these workflows in a way that everybody benefited.
+Like, the very overused term, like modern data stack, I think is a reflection of the fact that
+people converge pretty quickly to the standard activities that people wanted to do. On the ML side,
+we just completely didn't have that. And I think one of the biggest differences that you see now
+between the two sides is that there's this massive emphasis on the data side about, like,
+standardization, doing everything in platform, these kind of walled garden, data estate, or lake
+house kind of architectures. And the benefits you get from them are huge. You've got, you know,
+amazing lineage. You get amazing off benefits. Right? You just, like, spin up an environment as a
+data practitioner, and all the data that you might need or have access to is just kind of
+authenticated and at your fingertips. On the ML side, we just totally don't have that. Like,
+arguably, on the ML side, we're completely still in is almost like Hadoop era where anything that
+you wanna do that isn't essentially single node, you can't, like, SSH into, a VM to do. It's just
+completely in, like, this wild west. And then that's if you're already somewhat familiar with the
+workflow and a bill and, like, able to unblock yourself. If you're in a different part of the
+organization where you're just starting to adopt ML and you're looking at other people who have
+already adopted it, then, you know, you're completely lost. Right? Like, there's absolutely no
+standardization. There's no in platform kind of support, and you don't have any of this sort of
+democratization that's happened on the data side where, like, many people inside of an organization
+can be tapping into these tools and have the data at their fingertips and even just, like, dabbling
+in that kind of data work. So I think that the the place where that is the most glaring is inside of
+inside of those data states. So, like, inside of Snowflake or inside of Databricks, obviously,
+there's many, many solutions for, like, data centralization, you tend to see ML teams actually doing
+a bunch of their data work in platform. Like, maybe they do their exploratory data analysis in
+notebooks. Maybe they do a bunch of processing using, like, SQL or Spark or, you know, whatever
+whatever they do use for their, like, big processing. And then they get up to the training stage,
+and they have their sort of batches, and they just, like, crash out of the platform to use whatever
+they use for training. And in some cases, we see people move like, bouncing back and forth between
+these kinds of platforms, and it's just, like, glaringly bad. Right? Like, the fact that, like, you
+have this, like, beautiful auth and telemetry and, like, unification about the admin of
+administration of the compute and all that kind of stuff. And then just, like, right when you get up
+to training, you, like, crash out. And training is such a fundamentally data activity. Like, it just
+sort of it that that I think is the most glaring place where you can see this, like, misalignment or
+how far behind we are on the ML side from where they are on the data side. And on that point of
+trying to unify the experience for ML and data teams, I know that there are projects like Metaflow
+that came out of Netflix and ML flow from the Databricks folks. And then there are these massively
+parallel compute frameworks like ray and Dask that aim to alleviate some of that pain. And I'm
+wondering if you could talk to some of the ways that you think about the problems that they're
+trying to solve and some of the ways that maybe those conflict with the requirements and the needs
+of those ML teams that have those very heterogeneous workflows and wide distribution of needs. Yeah.
+So I think the the industry has gradually marched in the direction of less opinionation, but I would
+call it a sort of greedy march so far where, you know, people are kind of throwing their hands up
+and just declaring, like, our platform doesn't accommodate the bleeding edge of deep learning. We
+need to rebuild. And this happens at the the the digital native kind of, like, AI first companies.
+It happens, like, every 2 to 3 years that they need to, like, rearchitect their platform to
+accommodate a wider set of methods than or or or to kind of nuke some of the assumptions about AIML
+that they made in the beginnings of their platform. And so, like, many of the systems that you
+mentioned are somewhere along that march of, like, eliminating opinionation. So, you mentioned,
+like, Ray and Dask. Like, I think that those are good examples of, like, saying, okay. Our
+distributed frameworks need to be significantly less opinionated and maybe just like Python generic.
+And I think that's generally a good direction. They serve as, like, a really strong foundation for
+abstractive libraries to be, deployed to many different organizations and to kind of just introduce
+less opinionation in the lower level upon which those those libraries are built. I would still say
+that we're not completely there. Like, I still think that almost every choice that a machine
+learning team has available to them for how they want to architect their kind of compute foundation
+has a lot of opinionation relatively, especially, like, relative to the data side. So to us, like,
+the some some really amazing experiences that you have on the data side are, like, Databricks Spark,
+where just, like, in code, you declare, like, hey. I need this size cluster. I need this size. I I
+need this much compute. And then you take, like, the work that you have to do that you're gonna
+basically, like, parallelize, and you just throw it at that cluster, and you point at whichever data
+you're going to process, and it, like, doesn't. And the unopinionation that you have there that's
+worth noting is, like, you could do that from anywhere. You could do it from a local IDE. You could
+do it from inside of a notebook outside of the Databricks ecosystem. You could do it from in a
+notebook in the Databricks ecosystem. You could do it from Argo or an orchestrator in production.
+You could do it from, pod deployed in Kubernetes. Right? It's really an opinion about the place
+where you actually do the work. By comparison, deep learning systems do not have that type of
+affiliation. So if you're using Ray or Dask or you're using Dask isn't exactly a deep learning
+system, but, like, it's quite popular. If you're using those or if you're using even systems like
+SageMaker training or Vertex training, they're very opinionated about how you execute the code. And
+if they are somewhat remote first, then they're still basically just making you submit a CLI
+command. So, ultimately, the code is running kind of in the place where they consider it to be safe
+to land your land your, your your code to execute. So in the case of Ray, for example, you really
+want to be actually, like, triggering the execution from on a Ray head node. So what that often
+means in terms of the workflows is like SSH ing into array cluster or connecting, like, a hosted
+notebook to the array cluster or submitting a CLI command so it only executes from on array cluster.
+Like, that's pretty disruptive. Right? And then ultimately, that means that in production, and
+you've seen the stack's gonna go this way for people who have adopted a ray, your orchestration node
+needs to launch or your orchestrate your your, step in your orchestrator needs to launch a ray
+cluster and not just like a regular, you know, container or whatever that may be. And so I think
+that that's been that's been a big phenomenon lately is, like, maybe getting away from some of the
+problems of MLOps where research and production are super, super far apart. You have this extreme
+fragmentation between the stuff that you can do at real scale on your platform as a runtime type
+system where you're running your production jobs, and then you're unblocking your researchers in
+notebooks. So, like, Ray has been amazing for that, giving people kind of unified runtime that that
+will work for both, but then introducing a lot more opinionation. Metaflow, I think, is kind of
+another great example where it solves a really core problem where the mixed execution of your kind
+of Python code that's running locally that's maybe not so demanding, and then the super demanding
+stuff that needs to run on your platform as a runtime, can be kind of interleaved. But, again, it's,
+like, really opinionated. So, you know, it you need to kind of structure your workflows in this,
+like, work this opinionated workflow kind of structure. And if you want to use your platform in a
+way that doesn't exactly fall into kind of that DAG based sequence, then, you know, tough luck.
+That's kind of just the way that the system has been built. So I think moving away from that is
+something that that we see as, like, a secular trend. And then I think that there are also, like,
+very serious fault tolerance implications to that opinion So if you are executing all of your code
+as, let's say, Ray or DASK jobs within a cluster structure or you're executing all of your code
+within, let's say, a DAG structure given to you by an orchestrator, by definition, you don't have
+full control and creativity over the way that you handle faults. So in the case of running your code
+inside of a cluster structure like Ray or Dask, if something fails on the cluster, like a node goes
+down or a process fails or something like that, failures tend to be cascading. It's like a very
+coupled structure, and you can't handle that from inside of the cluster itself. Right? Like, if
+something fails in the cluster, like, it's practically gone. Right? You, like, run out of memory and
+some on a head note or something like that, it's gone. Or in the case of, like, an an orchestrator,
+if something goes wrong in the sequence of orchestration that that orchestrator has not built the
+operator or the support for you to explicitly handle, then you're kind of done for. You don't have
+the ability to kind of just, like, fully creatively within the context of a normal programming
+language, be able to catch an arbitrary exception, be be able to handle lots and lots of kinds of
+edge cases, be able to have some sort of failure on the cluster, and then basically say, oh, I
+recognize that. I want to just, like, nuke the cluster and do something different. And so, like, we
+we still see those as very significant gaps on the ML side. Right? This is, like, super, super
+arbitrary kind of fault tolerance, super heterogeneous workflows in the way that you actually
+utilize the clusters. And now bringing us to what you're building at Runhouse, can you give a bit of
+an overview about how you're addressing these challenges of ML infrastructure, how you think about
+the workflow that is ideal for these teams that have such disparate needs, and some of the core
+problems that you're trying to address with the Runhouse tool chain? Yeah. So the first thing that
+we took aim at with Runhouse is actually just the opinionation itself. So we asked a question like
+and I we're working at Meta. I had seen this rearchitecture of the infrastructure happen several
+times. Like, I was very intimately involved in the rearchitecture of our recommendations modeling
+stack to accommodate new AI assumptions or, let's say, the the assumptions that we had made before
+breaking and having to completely rearchitect. So the the first question was basically, how can we
+make it so that if somebody wants to use PyTorch distributed or Ray or Horovod or whatever, like,
+whatever they choose to use, whatever methods, whatever arbitrary kind of combination of sequences
+in their program that they wanna do, how can we just remove all opinionation and do it in a way that
+doesn't introduce a new layer? Like, rather rather, we should be removing layers. So rather than
+sort of introducing a unified, you know, next thing that everybody should migrate to, how can we
+make it so that whatever they however they work today, they can basically kind of tap in and use
+arbitrary compute in whichever way they're most comfortable. And so that's kind of the core tenet of
+the system. It's a an effortless computing platform for distributed AI machine learning from the
+perspective that wherever you run Python, and it's just totally arbitrary Python is where you can
+actually interface with your computer run house. Wherever you run Python, local IDE, local,
+notebook, or in production in a, you know, an airflow node or in a pod deployed in Kubernetes or
+whatever, it doesn't matter. Be able to interface with your, like, powerful platform compute, you
+know, in a in a platform as a runtime manner, not having to, like, deploy to execute, but rather to
+actually just be able to traverse the powerful compute and utilize it within your program. Can we do
+that in a way that the the the compute itself is completely a blank slate, and just whatever system
+you wanna use on it, you can use on it? So the way that we see it is sort of like Snowflake for ML,
+where Snowflake had this, like, really powerful kind of step function difference for, for an
+individual data engineer where maybe the work that they have to do is, captured as, like, a SQL
+query of some kind. And previously, maybe they needed a team to manage a Hadoop cluster or something
+like that to be able to actually get this query running. And with Snowflake, it's very effortless.
+You just take your SQL query, just throw it at your cluster, and it just runs it. For us, in ML, the
+the the analogy is just like arbitrary Python and arbitrary distributed Python at that. Just being
+able to take that, throw it at your compute platform, and it'll just run it. And so we've
+architected Runhouse to basically do the same thing. So wherever you run wherever you run Python,
+you can dispatch these kinds of distributed Python workloads at the system, and it will schedule and
+execute them on your own compute using your own data, obviously. And if you want to use Ray or you
+wanna use Dask or you wanna use PyTorch, you wanna use TensorFlow, it doesn't really matter the
+distributed framework. It will distribute automatically distribute and execute your code. And it's
+extremely unopinionated in the sense that you don't have to migrate your own Python code to it. It
+doesn't give you a DSL that's, like, somewhat limited in what you can do. It's actually, like,
+aggressively DSL free. You just take whatever Python you have, you throw it at the platform, and it
+distributes and executes it. So you don't need to basically decide, okay. All of my code is not
+going to be Ray code. Right? We've adopted Ray as a unified platform, or all of my code is going to
+be, like, all of my ML stuff runs on SageMaker. So we have to just accommodate the way that
+SageMaker tells us the structure of training jobs. It's just completely arbitrary. You can't outgrow
+it. It's not possible. I've even run, like, Andrei Carpathi's, like, llama CPP with the system, you
+know, deploying and recompiling with the each execution. And then, we were very inspired by Ray's
+solving the kind of research and production fragmentation and wanted to make sure that people were
+not dealing with translating from research to production ever with such a system. And so from the
+outset, it is, like, completely unified for both research and production. And that was, like,
+something we worked on for over a year, just making sure that the workflow of your iterating with
+the system is as responsive as, let's say, a notebook. Meaning that when you're re executing some
+super powerful job that happens within your Python workflow, it's going to redeploy and re, you
+know, and start executing your code within about a second. And then on the production side, it has
+to be, like, super fault tolerant and reproducible through these, like, super wide workflows, and
+that's kind of, like, just a square zero requirement for production teams. And so that's where we
+kind of solve a lot of these extra cluster problems. So where, you know, Ray or Dask or PyTorch
+distributed or whatever are super, super handy on the cluster, they give you, like, very, very
+powerful distributed methods on the cluster. We wanna basically give you, solve the problems outside
+the cluster for you. So if a fault happens on the cluster, you could just catch it in Python. Or, if
+you wanna have some really complex heterogeneous workflow that involves multiple different clusters
+and multiple different distributed systems interacting with each other, maybe even multiple clouds.
+Like, we do that pretty natively. That's completely supported just in Python through without having,
+like, a DAG DSL or any kind of opinionation about the flow of execution. And then the last piece
+that we focused on was basically being, like, a true platform as a runtime. So by not having any
+kind of local runtime requirement or local kind of cluster structure, we can be, like, extremely
+unopinionate about where you execute from. And one of the interesting challenges too about the ML
+space in particular is that it's building on so many other layers where you have to have the data
+available to be able to do the training. You have to have the data available to do the exploration
+and building the features. You also need to have infrastructure or some capacity to provide
+infrastructure to be able to execute on, so that often brings in some sort of an infrastructure or a
+DevOps team. And I'm curious how you think about who the target user is for Runhouse and some of the
+ways that you work to support collaboration with those other roles and responsibilities that all tie
+in together to actually building and training and deploying these ML systems. Yeah. So a system
+that's sort of Snowflake for ML, it has, you know, 2 core audiences. In the same way that Snowflake
+has your people who are just, like, throwing SQL at the system and then people who are actually
+managing and configuring the system, We also tend to see a split in enterprises or, among ML teams
+between the people who are just, like, throwing workloads and the people who are actually just
+keeping the lights on, making sure that those workloads execute. But by being in this sort of Hadoop
+era of AIML, usually what that means is that those teams are extremely coupled together, and the
+infra team, the team that are that's actually managing the execution of the workloads, tends to be
+extremely overworked and very focused on unblocking individual jobs. And that's, like, a very common
+pattern. We see teams that, basically, their infrastructure road map is actually just the specific
+items on the road maps of their client teams that they need to unblock this quarter. That is just an
+anti pattern in my view. So we empower the ML practitioners themselves, the people who are in, like,
+a research or an ML ML engineer role, to not really think about the infrastructure and specifically
+to not ever have to translate the ML work that they do because they've been given a template or
+specific execution requirements by the infrastructure team. So they're not going to be working in
+notebooks and then translating into airflow or babysitting the translation after they've done their
+research and handed it off to an infra team, babysitting that, like, this thing is being converted
+into the production stack in the right format, they just get this extremely neat, extremely flexible
+environment to be able to show up and do their ML work every day. And when they want to grab
+something in production and make a tweak to it and see what impact that has. That's just a normal
+experiment like a normal software engineer would do. They don't have to translate it back into the
+notebook environment or any crazy things like that. On the infra side, what we want is basically to
+liberate those teams from actually doing the conversion or from actually having to do the airflow
+debugging and babysitting that is really characteristic of those teams. So if you see failures of
+some particular type of job in production, you should be able to go and look at the way that it
+failed and catch that exception if it's an exception that, you know, shouldn't be happening or needs
+to be handled in a particular way and be able to systematize that knowledge within the system
+without having to figure out a way to, like, rearchitect your entire system, be able to handle that
+new type of fault or something like that. So for the for the infra teams, unifying the computer
+state also means, like, liberating themselves from a lot of the really, really gnarly work of ML
+infra, like, you know, repeatedly debugging these, like, really pernicious errors and finding ways
+within your opinionated systems to handle them, and also just being able to unblock scale much more
+natively. So if maybe it was a job of an infra team to figure out how to get the platform to a place
+where this single GPU training can now happen multi GPU because of a company priority to scale such
+and such model or to go from, you know, single node multi GPU to distributed or to go from
+TensorFlow distributed to PyTorch distributed because we need to take advantage of this open source
+library for this company priority. It shouldn't be that that is a, you know, 6 to 12 month activity
+to be able to progress machine learning proper within the company up the sophistication scale. You
+should be liberated to tell your practitioners, use whatever systems you like, interleave them with
+whatever existing systems you're using, and kind of introduce an opinionation in that matter. So
+it's really designed for both sides. The opinionation benefits both. I would say that the teams who
+are most aggressively reaching for the system are the ones that are basically staring down that
+challenge today. They're like, our teams want to use you know, this team wants to use Ray for this
+one thing. Are we gonna have to rearchitect our entire stack so that now in Kubernetes, we're
+launching Ray clusters instead of, you know, regular pods, or we're in airflow. Every time we get to
+a node, we can run Ray on it. Or all of our researchers have some sort of launcher that they can hit
+where they can request a Ray cluster instead of, you know, whatever VMs or or or containers are
+requesting today. And Runhous is extremely surgical and and, una un obstructive or undisruptive for
+those situations because inside of whatever code you already have running, inside of whatever
+orchestrator you're already using or inside of whatever, day to day dev process your ML researchers
+or engineers are following, you can now just take that block of code that you want to distribute
+with Ray and use around how to send it at your platform, turn it into you know, automatically
+distribute it, wire up the Ray cluster, and you haven't had to lift a finger to be able to introduce
+Ray into your infrastructure mix, and you haven't had to migrate off of something else to do that,
+and you haven't had to migrate the code proper to adopt the Ray DSL anywhere other than that one
+place where you wanted to use it as a, you know, handy distributed library for that one thing, like
+hyperparameter optimization or, you know, data processing or something like that. Digging into the
+implementation of Runhouse, can you talk through some of the ways that you approached these design
+objectives and the end user developer experience and how that influenced the way that you
+architected the solution? Yeah. So when we started Runhouse, we we were already talking to 100 of ML
+teams and continued basically just working closely with the ML teams we have relationships with and
+new ML teams across startups and enterprise and, you know, like, AI native companies to arrive at
+what we felt was basically rid a a system that was that was AI compute at your fingertips, but
+completely rid of the opinionation that these teams might run into. And such a diverse set of teams,
+you run into a lot of opinionation. The first one that we were very sure we needed to get rid of was
+underlying hardware or the the choice of compute that you could use. So we didn't want to have to,
+like, change the system to be able to handle different kinds of of acceleration, like different
+kinds of GPUs as new GPUs are coming out, or even different types of CPUs or different types of
+operating systems, or the even, like, opinionation about the specific, resources that you allocate
+within a cluster, like being able to be hyper efficient about the fact that this particular job
+needs, you know, just this amount of disk and just one GPU or something like that. We didn't want
+any of that those restrictions. And, the best way to do that was just to allow people access to
+whatever compute they're already accustomed to having access to, which meant their existing
+Kubernetes clusters, their existing cloud accounts. And, and and and that also solves this, like,
+you know, major problem of not having to deal with or not having to introduce entirely new security
+and configuration and management and all that kind of stuff. Whatever you already have in place, if
+we could basically run on that compute, then we're not introducing a new ML silo or actually
+destroying a silo and just bringing all of your existing compute into one estate as it were. So,
+that was a, you know, hard decision we made at the outset was we're not going to repackage the
+compute. We're going to be use use people's existing computing data as aggressively as possible. And
+then what it means to actually provide a platform as a runtime or a compute foundation in front of
+that means to basically give all the ML researchers and engineers a place where they can actually
+request the compute live in code, similar to, you know, requesting a Databricks spark cluster inside
+your code. You're making a request to Databricks' own control plane, and then they're launching the
+compute however, you know, they're configured by your admins to actually launch it. And we do
+something similar just without the opinionation that has to be a spark cluster. It's just an
+arbitrary cluster. So the actual architecture run house is you have a client of some kind, and that
+runs in Python with no local runtime whatsoever. So arbitrary Python can run it, and it can dispatch
+arbitrary Python workloads. And then you have the control plane itself, which we have, like, a
+hosted control plane that we just we, you know, run inside of our own cloud account, or you can
+deploy the control plane inside of your own cloud. But in either case, it's basically just an API
+front end that's getting a request for a cluster and then getting you back the cluster to your local
+client to then be able to natively work with. And then that control plane is basically allocating
+the compute from wherever you've configured it to have configured it to have access to compute. So
+it can have, you know, Kubernetes clusters that it can pull pods out of. It can have cloud accounts
+that it's able to allocate VMs out of, and then you can control where and how the work to be done
+and the cluster to do it on are kind of matched in terms of the actual prioritization and
+permissions and queuing and those kinds of things. And from the infrastructure side, side, I know
+that teams will sometimes have requirements of, you know, we want to limit this type of spend or we
+can only use these types of instances or, you know, maybe there's some complex scheduling that needs
+to happen as far as access to GPUs, which are perennially limited in terms of their availability.
+And I'm curious how you think about some of those requirements of being able to manage those
+constraints from the policy side that exists within the company while still preventing any sort of
+bottleneck on the ML teams. Yeah. So the the configuration itself, actually, it doesn't need to be
+this, like, extremely complex scheduler and prioritization, like, kind of slurp 2.0 or something
+like that, Because, ultimately, the if if you request compute as a user and you're requesting it not
+in the form of a job to be submitted to a system, but rather compute to be given back to you, it
+actually really inverts the structure of what can be, you know, what what actually you can expect to
+happen and what what edge cases need to be accommodated. So if you're, you know, an Argo pipeline or
+a researcher that's requesting n number of GPUs with this amount of disk right now, the 3 things
+that can happen if that compute isn't available are, 1, you can get an error immediately that says
+compute is not available. Deal with it. 2, you can get basically queued and then just use, like, you
+know, normal Python async to be able to handle that behavior, do other things in the meantime, or
+just, like, wait. Or, 3, we can launch fresh compute. And because it's the user's decision to
+essentially do what they will about that information, you can limit the things that need to happen
+on the scheduling side much more aggressively because you can you know, it's now kind of the user's
+own decision if they want to wait indefinitely or fail and raise allowed error or something like
+that. Whereas if we were, like, an orchestrator, for example, then we would have to have all kinds
+of support for handling every possible thing that can go wrong and notifying you for each of them
+and then, like, making sure that we're not too noisy if you're actually not supposed to have compute
+here and you're supposed to be waiting and all that kind of stuff. So, you know, that that's one one
+piece of this is just is that the configuration itself can be relatively narrow. You need to be able
+to queue if you want to. You need to be able to tell a user they don't have quota to launch a
+particular type of compute. You need to give the user the control to be able to request compute in
+terms of, like, logical units. Like, I need, you know, 1 a 100 or I need a a 500 gig of disk or
+physical units. Like, I need a g 5 xlarge or whatever. You know, that that that level of control is
+important. But other than that, you don't need a ton more. And the fact that you can that that
+Runhos is really designed to be a unified interface compute also is we've intentionally designed it
+so you can you you can and should use it from within a system that is good at this type of stuff. So
+you should be using Runhouse. If you love Prefect or Airflow or whatever because it gives you really
+good, you know, retry logic and fault tolerance or because you love its you you know, you love the
+caching or you love the way that it notifies you about jobs. It represents dependencies between
+jobs. Keep on using them. Right? And then just use Runhouse inside of that orchestration to actually
+access your compute on the fly. And that also, you know, makes it so that we don't have to
+completely rebuild the world of orchestration to handle all these different types of faults and
+different types of scheduling. It significantly simplifies our contract from the user's perspective.
+You use Runhouse to take some really heavy or, what do you know, some machine learning activity or
+Python activity for that matter that you couldn't do in the local environment, either because the
+data's too big or because the compute is too big, and then make that thing run you know, request the
+compute that you need to be able to run just that one thing and, you know, handle the case where the
+compute isn't available, and then that's it. You know, that that's that is your entire workflow, and
+you can do that in an extremely ways from within your workflow. So you can mix many clouds within
+the same workflow or, you know, do multiple things with the same cluster for multiple stages of
+workflow in order to save costs and things like that. And given that all of that infrastructure
+management is in the control of the person who is building with Runhouse, I imagine that any aspect
+of data locality to the compute that you're deploying is something that is in the control of that
+person as well, where Runhouse is agnostic to any of that evaluation of saying, oh, I want to run
+this job. It needs this data. Let me make sure I'm running in the right AWS region, etcetera. That's
+just that the user understands what their operating environment looks like, so they will decide, oh,
+I need this data, so I'm going to launch this type of cluster. Yeah. So we we've actually we've
+heard that the requests to provide more automation there from a few companies. I think that our
+attitude about this is that the first step is just to give the user the control. Like, today, you
+don't really have the control. I can't tell you how many companies we've spoken to where they have,
+like, multiple Kubernetes clusters in different clouds or in different regions, And the job of the
+ML engineer researcher is to actually, like, go into some UI in the morning and look at where the
+compute is available. And if the compute isn't available inside of the region where their data
+residency requires that their data has to live, then, like, it's a ticket to the infrastructure
+team. So just the fact that you have relatively low level control within your job that you want to
+run this stage of your workflow on, you know, inside of GCP and then this stage of your workflow
+inside of AWS, and you're not doing this through, essentially, like, replicating the user interface
+to the compute and replicating the entire control plane in each of the places where you have the
+compute, so it's very much a user activity to make these, like, really course decisions at the
+outset, is a major problem solve for a lot of people. We've spoke to companies where they just can't
+progress past CPU only gradient boosted decision trees for for one company, it was like, they have a
+$1,000,000,000 run rate business that depends on CPU gradient boosted decision trees because the
+data residency requirements make it such that they need to train models on e inside of each of the
+separate regions where they're gonna be utilizing different, you know, countries' data. And
+therefore, like, they just that's that's just too complex for them to handle. They just don't have
+the you know, they can't replicate the control plane, and they only their control plane is built
+around Kubernetes and just, like, not fundamentally multi cluster. Just giving them the control to
+be able to take the same ML pipeline and then just have it, you know, run this thing on this region,
+run this thing on this region, run this thing on this region is already a major step forward. Now I
+think that there's another interesting problem to be solved, which is to say, in a declarative
+manner, the same way that I declare I need x GPU, that I need x data string or something like that,
+and then the system is also going to allocate a customer for you based on where it know what what
+cloud it knows that that data is in. But it actually just bridges us into an entirely new territory,
+which is essentially like data cataloging. So I think that our opportunity there is quite
+interesting, which is that if you're somebody that has a very rich governance structure built around
+your data, it would be better for you to be able to bring the ML workloads into that platform, into
+the data walled garden, than for you to have an entirely new ML super optimizer that is, like,
+integrated with all of your data and hyperdata aware or something like that. So, actually, this is
+something that we've that we've thought about, like, basically building native apps on top of
+Snowflake or Databricks where basically just we can complete that sort of embarrassing crashing out
+moment for the ML teams out of the data platform. So the lineage and the governance and the odd, all
+that stuff just carries straight through. And because it's a native app, the compute gets allocated
+by the data platform in a way that is already aware of the residency requirements the same way that
+your Snowflake clusters are aware of where the data lives that they're gonna be processing or your
+Databricks Spark clusters are aware of the data that they're gonna be streaming in based on, you
+know, the string IDs on the Databricks platform. And as you have been building Runhouse, working
+with end users, customers, community members, what are some of the most interesting or innovative or
+unexpected ways that you've seen it applied? Yeah. So I think one of the areas that I've been
+particularly surprised is on the fault tolerance side. I think that fault tolerance is something
+that we tend to see as sort of 1 dimensional. Just like errors happen, like, what do we do about
+them? Like, retry, you know, notify the user, and then kind of, like, maybe cache and restart the
+entire job. But when you have the full expressivity of Python to be able to handle faults in super
+wide, super heterogeneous workflows, then you tend to see actually a lot of creativity in how those
+faults are handled. And, actually, the benefits tend to carry much further than just, like, better
+automation and lower fault rates. So, we have one team that uses Runhouse for, like, recommendation
+system service that, requires the retraining of a couple hundred, or it it requires basically, like,
+a few thousand, training jobs to be executed through Run House per week. And, you know, when we
+started working with them, they were doing this remote execution via SageMaker training. It was,
+like, extremely human demanding from a fault tolerance perspective. They spent 50% of their overall
+team time just, like, debugging errors that happened and then trying to, like, manually short
+circuit them. And so and, you know, the fact that you can't SSH into a SageMaker cluster, the the
+overall debugability and accessibility of the system is poor enough that, like, that actually just
+makes sense from, like, a team time perspective. But, also, just from the perspective that all
+SageMaker training will allow you to do is sort of a Slurm like execution where you submit a CLI
+command. And if that CLI command fails, what are you gonna do about it? Right? You're gonna parse
+the logs to see that it was an out of memory error or something like that? You you just can't do
+that. Right? There's a hard line between the remote thing that's running and the local thing that's
+running. So because Runhouse doesn't have that hard line, right, it's just you send off your Python
+to the remote compute, and you get back a callable that's identical to your original, your original
+function or your class that you sent off to the that you dispatch to the remote compute. Now you
+don't have, this you have, like, very, very rich control over what you actually do with that from a
+fault handling perspective. So what we saw that team do actually was that they launch all of their
+trainings on, like, relatively small compute up front, and then maybe they know that, like, 10 to
+20% of those are going to Oom. And before, those ooms were just, like, purely wasted team time. They
+couldn't onboard new customers because they were just, like, investigating and short circuiting
+these ooms constantly. With the Runhouse, they just catch the oom as, like, a regular Python
+exception and then just, like, destroy the cluster and then bring up a new bigger cluster to, you
+know, rerun the job for that 10 to 20%. And so, overall, their their their failure rate for their
+pipelines just, like, plummeted. It was, like, 40% before we started working with them, and it's,
+like, less than a half a percent after. And those are all, like, very easily explained errors that
+are just aren't such a priority to fix in such a complex way. But so for 1, they were able to
+operationalize the debugging and incorporating the system that just destroys the fault the the the
+failure rate. But then secondly, they're able to save a ton of money because they were able to
+launch all their jobs in a way that they were expecting ooms from some of them, and it's just not a
+big deal. Right? Like, you catch an OOM, destroy the cluster, launch a bigger cluster. They do that
+actually multiple times. They'll destroy the they'll they'll catch another room, destroy it, bring
+up a new one. You could do that with many, many kinds of faults. You know, if you get some sort of
+node failure in training, you don't have to tear down the entire cluster. You don't have to nuke all
+the data that you've loaded into the file system. You can just, like, calmly kill the training job,
+trigger a new training job that rewires up PyTorch distributed so that your failed node or your
+failed process or whatever is now brought back into the mix or just completely nuked out of the
+cluster. It's totally fine. You can make sure to checkpoint if you have a failure. You can do
+checkpointing in parallel, multithreaded because it's just trivial. It's just a separate call to the
+cluster. So that type of, like, really sophisticated interaction with the cluster from a fault or
+from a resource utilization perspective, I was expecting that to be, like, a super user thing that
+nobody would really do. People just do it instantly because it's just Python. Right? It doesn't
+really require much more brainpower to know how to catch the exception. Yeah. That's definitely very
+cool. And in your experience of building this system, investing your time and energy on RunHouse,
+what are some of the most interesting or unexpected or challenging lessons that you've learned in
+the process? So I think that one of the hardest things is operating relative to the kind of grain
+of, hype cycle. You know, you can't really even if you know that you have a sort of technically
+excellent correct solution, and, you know, you've talked to hundreds of companies, you know exactly
+how it's going to fit. You've tried to you made everything, like, extremely low lift. Ultimately,
+you know, it's 2022, and the thing that many people are asking themselves is not, how do I, you
+know, fix the ML development and fault tolerance and efficiency and compute utilization story, it's
+like, you know, how do I incorporate LLMs into my workflows, or how do I, like, deploy a chat app?
+You actually, you know meeting people where they are is, like especially in, like, large enterprise
+is super important. And I think that patience that people are eventually going to get to the section
+of the curve where they are hitting these problems that you know that they're kind of barreling
+towards is really important. Like, if you just try to kind of go out screaming and raise this sort
+of, like, doomsday story that everybody is, like, building these super unscalable stacks, and
+they're gonna end up hitting all these error, you know, issues that that you saw inside of, like,
+Meta or, you know, Airbnb or Netflix or whatever, like, that alarmism doesn't really get you
+anywhere. But finding the people who are, like, the early movers and are really, thoughtful and
+aware of how their systems are going to scale operationally is, like, probably the most important
+thing. And, you know, gradually, what we've seen is that those problems, you know, you have to kind
+of trust that those problems are going to eventually show their faces. And especially now that I
+think there's more and more of a recognition that and the essence of ML, like, the magic of ML that
+has been, you know, put into, that that that has yielded, like, you know, transformative business
+results for Google and Facebook and Netflix, etcetera, etcetera, is actually mobilizing first party
+data. Now we're seeing that actually, like, training and incorporating first party data is now
+completely back into the fold, and people are raising this question of, like, how do we do this with
+extremely heterogeneous, you know, AI methods and extremely, an extreme diversity of sophistication
+in the different place in in in how we're actually utilizing compute or, distributed frameworks
+inside of our organization. Now those are kinda coming back into the fold. I think that there's a
+really dangerous kind of moment right now to be avoided, which is a lot of people kind of running
+around trying to convince others that you will not need to train models anymore. You could do all
+the ML stuff you previously did strictly through calls to some sort of hosted ML system, which are
+kind of playing to the challenge of ML itself. Right? They're pointing out the fact that or they're
+they're they're, taking advantage of the fact that ML itself is hard and unfamiliar for a lot of
+people and trying to get people a plausible easy way out that maybe they just won't have to invest
+in it or do it. But in practice, you know, that's a really dangerous message because then you're
+gonna have very, very extreme centralization, work or, concentration of, expertise to mobilize first
+party data among very few people. And the, you know, the the I guess the precedent for this would
+be, like, the ad ecosystem. Right? Like, if you only have a very small number of players who invest
+way, way more than everybody else does in their ad systems, right, their ability to mobilize first
+party data to, buy or auction ads super, super effectively, then everybody else just needs to kind
+of consume those ad systems through the few. And in ML, I think that the more we aggressively
+democratize ML by making it so that you can just, you know, whoever you are inside of a company,
+whatever type of engineer you are or whatever org you're in, you can tap into and take advantage of
+the hard parts of ML infrastructure, like, you know, distributed frameworks and compute. And we try
+to democratize the a obviously, open source is a huge part of the story. We democratize the methods
+proper. And so now you have 2 of the most important ingredients. You have the the kind of prior art
+of what's actually worked for somebody else in the form of the open source AI methods, and you have
+the infrastructure at your fingertips, you don't have to do a math massive lift to be able to
+unblock this within your organization. The only remaining piece is the first party data. Right? And
+that that actually, I think, is a really important message for us to be, you know, bringing out to
+these enterprises in a way that doesn't kind of, scream this sort of, like, doomsday scenario at
+them that, like, they're, you know, that that that their ML stack is about to get nuked or, like,
+you know, that the GPUs are gonna go to GPUs are, gonna become significantly cheaper and you need to
+accommodate your you know, accommodate greater diversity in GPU stack or something like that. Just,
+like, bring them those basic ingredients to do ML magic, and they'll wanna do it. And then, you
+know, we'll avoid this sort of scenario where only very, very few people actually have the expertise
+to mobilize their own first party data. And for people who are building ML systems, they're doing ML
+training, they want to improve their overall workflow, what are the cases where Runhouse is the
+wrong choice? So one of them is just the AI Lab use case. Right? If you're training a low
+cardinality of models, right, you're let let's say you're, you're training a model specifically to
+put it on hugging face and gain some brand recognition, you don't need Runhaz to do that. Right?
+Just you you can use you you can set up the infrastructure manually. You don't need so much
+automation. You can SSH into it if you, you know, just spin it up as VMs or whatever. And, you know,
+weights and biases is really good for observing your training workflows. Like, the ML research that
+sort of looks like what you would do in grad school workflow, I think, just doesn't really require
+Runhouse. Runhouse specifically shines when you have, somewhat heterogeneous compute. Right? Maybe
+like multi cloud. We really excel at multi cloud because the decoupled structure of the client
+that's running the thing and where the thing is run makes us really agnostic to the choice of, like,
+hybrid, you know, on prem versus cloud versus multiple cloud accounts, whatever. If you don't have
+your heterogeneous hardware, if you don't have so much, recurring execution where you need fault
+tolerance or automation or you don't have such wide workflows, then, you know, Runhouse just you
+don't need that level of sophistication. I I think that the, the case where actually you might be
+doing some really homogeneous activities, but where Runhouse still excels is the collaboration use
+case. Because I think that the ML infrastructure or maybe even just, like, infrastructure broadly
+has not been built for a sort of multiplayer user journey in the way that we we've basically focused
+focused on this from the beginning. And even if you have, like, you know, one cluster or a
+Kubernetes cluster that you're launching a few containerized things out of, the collaboration
+benefit of just being able to, like, share a cluster that you're working on with a peer, send them
+over your notebook or your script, and have them just be able to pick it up and run it as just like
+normal code utilizing your cluster is pretty magic. That's one where I think we do deliver a
+benefit, but, you know, we're you're you're not really doing mobilization of first party data in a
+way that's kind of complicated or painful. You just don't have that much infrastructure overhead,
+and your stack Runhouse is not exactly solving that problem. And as you continue to build and
+iterate on Runhouse, what are some of the things that you have planned for the near to medium term
+or any particular aspects of your road map that you're particularly excited about? Yeah. So I think
+that the the the data estate finally being unified with ML activities is something that I'm really
+excited about. I think that it just shouldn't be the case that, you know, the NL people are looking
+enviously at the data side where they could just, you know, ship off a SQL query or load up a spark
+cluster and know that everything is authenticated and all the lineages tracked and everything like
+that. So being able to, like, integrate really, really cleanly into that and make it so that the
+activities you do on your clusters via Runhouse feels like it's within this, like, unified platform
+experience is something I'm excited about. How exactly that actually flows, I think, is still kind
+of like product and user journey question. And then just greater and greater control on the part of
+the admins, I think, is something that we will continue to invest in for a long time. Just, you
+know, richer preconfiguration of your clusters. And we support arbitrary Docker containers and lots
+of kind of configuration activities in code today. So you can set up the cluster however you want
+to. And if you see someone else setting up a cluster, you can exactly copy and paste your code to
+pip install the same packages or whatever. But I think that the preconfiguration of compute so that
+it's really, really seamless how the compute gets delivered to the ML engineers and researchers, and
+they get this, like, kind of magic, I don't think about it at all. I just ship off my thing, and it
+will run-in this on my compute platform. Those are things that we're excited about. The last thing I
+would say that we'll just continue to invest in is, like, making sure that we can support arbitrary
+ML like, continue to support arbitrary ML methods going forward. So I think we have, like, very good
+coverage today. We've made it so that your choice of distributed framework or your choice of GPU
+vendor or, you know, cloud provider is not really a factor. But the methods, you know, constantly
+move. And even if, let's say, people are eventually, like, eventually, like, move away from Python
+or start doing ML and, Rust or JavaScript or something like that, like, those are decisions that we
+thought about. We're not really we don't have a good reason to do them today, but, like, just
+continuing to make the system more and more future proof is something that we're excited about. And
+as you keep an eye on the overall space of ML infrastructure, ML workflows, the role that generative
+AI and AI more broadly is playing, what What are some of the future trends that either you're seeing
+come to fruition or predictions or desires that you have for kind of that future world of ML and AI
+and developer experience across them? Yeah. So I think that some of the best ML teams that I've
+encountered are ones that have a real systems focus about the ML. They're not thinking of each ML
+project as kind of a thing to be unblocked, where, like, they do some work inside of a notebook, and
+that produces a model, and then they put the model, you know, into some sort of serving system and
+then, like, problem solved, or they turn that notebook into, an airflow pipeline, and then they
+just, like, schedule a daily problem solve. They're actually thinking about the system as something
+that needs to be refined and iterated over time because the nature of ML is that you it's it's very
+much an experimental line of work. You change you know, you you do 10 experiments. You tweak your
+system, in in a way you know, in some minor way 10 times, and 9 of those times nothing happens or
+something bad happens. And one of those times, it's actually delivering transformative results that
+you couldn't get any other way, you know, like top line kind of business impact results, then, you
+know, those are the teams that we see actually with this, like, hyper focus on the research for
+production time, hyper focus on the ability to, like, you know, experiment same day on production
+data or production scale compute, not give, like, toy compute inside of a notebook environment or
+something like that or toy data inside of some isolated environment. So I think that as more and
+more teams actually recognize that ML is distinct from traditional development in that way, that,
+like, you're actually trying to create as much democratization among your workflows to be able to
+try anything on the system as you can and do it at scale, then more and more people are going to end
+up hitting a transformative impact, you know, and and having maybe more of a realistic view about
+why increasing the throughput of experiments equals dollars versus just, like, making it so that the
+ML team has 3 top line priorities as an org to unblock these specific ML wins that we expect to
+deliver impact, but, like, aren't exactly sure. So I I think that in ML, in general, you make a lot
+more money from the places you don't expect than the places you do. And then not having to having
+those wins actually in the bag so that you don't have to constantly rejustify that upwards is going
+to be something that will fundamentally change the ecosystem, I think, because, you know, it it will
+it will stop having to be this, like, back and forth between the CFO and the ML team about what
+exactly they're doing, which is obviously very different from, let's say, the way that a CFO talks
+to, like, a front end team. But I think that the Gen AI detour has sort of taken us aside of the
+like, you know, taken us away from that for a brief period of time, and we're gradually coming back.
+And so the sooner we get back to that, I think the sooner most of the magic that ML delivers is
+going to happen again, and people are going to continue trying to march up the sophistication ladder
+of the ML system that they already have and democratize their ML infrastructure for more and more
+people to be able to, like, try out you know, try things out in in weird, unexpected places inside
+the company. But if everybody's like, the most important thing for us to do via in our ML
+organization is, like, build a chat app, then probably less of that magic is gonna happen. Are there
+any other aspects of the work that you're doing at Run House or the overall space of ML
+infrastructure that we didn't yet that you'd like to cover before we close out the show? Yeah. So
+one one area that I think is actually not really so discussed in the, like, in the discussion of,
+like, architecting ML infrastructure is how the, the ML infrastructure organization relates to
+existing DevOps, like platform engineering organizations or data infrastructure organizations. And
+that, I think, is an area that we've largely shied away from. 1, because the MLOps wave really tried
+to convince everyone that ML was special, and it required special systems, systems that you should
+buy from me. You know, that was sort of the the general vibe. And, also, the organizations
+themselves are very heterogeneous. Right? Like, it wasn't that there was a particular structure that
+you could point to in enterprise and say, this is how your team should be organized, and you should
+have your, you know, platform people that, you know, maintain your main platform and your ML
+platform people and your data platform people. Like, it was just completely all over the place, and
+I think that Gen AI and continued reorgs in AI data organizations is actually kind of worse than
+that. But I think that this is, you know, why we focus really heavily on being precise about what is
+different about ML development from, let's say, like, web development or from data engineering.
+Because the more precise you can be, the more you can utilize your existing expertise within your
+DevOps teams, your platform engineering teams, and not fork the stack and essentially gatekeep it
+from the rest of the organization where it's like we're using ML specific tooling that only the ML
+engineers understand and the ML researchers understand, and only the platform team really, has the
+expertise to manage or even, like, just from a compute efficiency perspective, like, we have to keep
+that compute totally separate from our main compute that we utilize. So I think this is actually a
+really, hopefully, a positive trend that we're seeing that platform engineering teams and
+traditional dev ops teams are getting more and more involved, and ML teams are asking the question
+more aggressively, can we not utilize ML tooling? Right? Like, ML op stack and just utilize, like,
+very, very well understood tooling or tooling that's really well understood within our organization,
+like Kubernetes and Argo and Knative or, you know, whatever. The the much more industry standard
+platform tooling. And then say, how does this need to be tweaked so our ML people could be
+productive with it and not, you know, be able to accommodate the fact that there's no local
+development, you know, and these systems are built under the assumption that you could develop
+locally and then containerize and deploy. So that's not available. Right? If you need to be able to
+run on the platform, can we just tweak to be able to, to to accommodate that difference? So I think
+that, like, defragmentation or kind of layering of platform engineering organizations is, like, a a
+trend that we're seeing, like, glimmers of and looking forward to expanding so that we have less,
+like, score shirts from people very dramatically adopting some big ML ops system that's promising
+to, you know, solve ML in a in a perfect and final way by giving them exactly the workflow that they
+should be following from ML. People kind of go back to just like standard code testing, deployment,
+CICD best practices that they already understand their organizations. Alright. Well, for anybody who
+wants to get in touch with you and follow along with the work that you and the rest of the Runhouse
+team are doing. I'll have you add your preferred contact information to the show notes. And as the
+final question, I'd like to get your perspective on what you see as being the biggest gaps in the
+tooling technology or human training for ML and AI systems today. I I think that everybody saw the
+democratization of AI at the same moment via the hosted API workflow. Right? Like, being able to
+call into a massive LLM just by an API endpoint was kind of magic in the same way that, like,
+utilizing, you know, automating text messages through Twilio is kind of magic compared to, like,
+however you set up kind of the, like, phone based interactions with users before. And I think that
+we should be extrapolating that much further. Right? So, obviously, the more you, you know, put an
+API in front of something, the more opinionated it's going to be. But just the concept of shared
+services at people's fingertips, both from a cost efficiency perspective, so you can, like, much
+more aggressively bin pack, and from an accessibility perspective, I think, is a good thing. So, you
+know, in many organizations before the Gen AI hype cycle, there was no shared text embedding that
+you could call. Right? You know, BERT obviously existed. The the concept of taking embeddings over
+text was extremely common. But, like, in a typical organization, you couldn't take, like, a text
+embedding or a, an image embedding through a ResNet or whatever that might be. And then, you know,
+following the Jet AI hype cycle, now those things are much more standard. And I think we should be
+going a lot more further with that. Not being prescriptive about what our engineers should be having
+access to from, like, a scaled AI perspective, but more of, like, buy us for us type stuff. So if we
+have 10 pipelines and 10 researchers who are who are running, like, basically the exact same batch
+evaluation because that's, like, our standard evaluation gauntlet. Like, we should serviceify that
+and put it at their fingertips and binpack it on, you know, binpack it onto one cluster rather than
+just having all of them allocating separate compute for that job and, you know, having to solve it
+from scratch and having, like, you know, a 1000000 different copies of this particular way of doing
+something. I think more aggressive sharing of subsystems within ML will be a good thing. And I think
+moving away from, like, the definition of done for production of ML being a a a DAG, an ML pipeline
+DAG is going to help with that because when your definition of done is a pipeline DAG, you end up
+with just a large collection of ML pipeline DAGs that don't really share anything between them
+because they have to be isolated by definition. So serviceification, I think, as, like, something
+that as a direction for the future of ML infrastructure and developer experience, something we're
+also pretty excited about. Thank you very much for taking the time today to join me and share your
+experience and expertise in the space of ML infrastructure and the workflows that ML teams are
+relying on, the bottlenecks that they're hitting, and for the work that you're doing on Run House to
+help alleviate some of those challenges. So I appreciate all the time and energy that you're putting
+into that, and I hope you enjoy the rest of your day. Great. Thanks a lot for having me. Thank you
+for listening. And don't forget to check out our other shows, the Data Engineering Podcast, which
+covers the latest in modern data management, and podcasts dot in it, which covers the Python
+language, its community, and the innovative ways it is being used. You can visit the site at the
+machine learning podcast.com to subscribe to the show, sign up for the mailing list, and read the
+show notes. And if you've learned something or tried out a project from the show, then tell us about
+it. Email hosts at the machine learning podcast.com with your story. To help other people find the
+show, please leave a review on Apple Podcasts and tell your friends and coworkers.

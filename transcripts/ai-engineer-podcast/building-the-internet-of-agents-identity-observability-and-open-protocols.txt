@@ -1,0 +1,669 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Building the Internet of Agents: Identity, Observability, and Open Protocols
+DATE: 2025-11-10
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/outshift-multi-agent-systems-exploration-episode-68
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63898315570181451989f42621-8dbb-4a2c-8dc6-bb2db0894b7f.mp3
+DURATION_SECONDS: 4034
+TRANSCRIBED_AT: 2026-09-17T03:33:39Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. When ML teams try to run complex workflows through traditional
+orchestration tools, they hit walls. Cash App discovered this with their fraud detection models.
+They needed flexible compute, isolated environments, and seamless data exchange between workflows,
+but their existing tools couldn't deliver. That's why Cash App relies on Prefect. Now their ML
+workflows run on whatever infrastructure each model needs across Google Cloud, AWS, and Databricks.
+Custom packages stay isolated. Model outputs flow seamlessly between workflows. Companies like Whoop
+and 1Password also trust Prefect for their critical workflows, but Prefect didn't stop there. They
+just launched FastMCP, production ready infrastructure for AI tools. You get Prefect's orchestration
+plus instant OAuth, serverless scaling, and blazing fast Python execution. Deploy your AI tools
+once. Connect to Claude, Cursor, or any MCP client. No more building off flows or managing servers.
+Prefect orchestrates your ML pipeline. FastMCP handles your AI tool infrastructure. See what Prefect
+and FastMCP can do for your AI workflows at aiengineeringpodcast.com/prefect today. Unlock the full
+potential of your AI workloads with a seamless and composable data infrastructure. Bruin is an open
+source framework that streamlines integration from the command line, allowing you to focus on what
+matters most, building intelligent systems. Write Python code for your business logic and let Bruin
+handle the heavy lifting of data movement, lineage tracking, data quality monitoring, and governance
+enforcement. With native support for ML and AI workloads, Bruin empowers data teams to deliver
+faster, more reliable, and scalable AI solutions. Harness Bruin's connectors for hundreds of
+platforms, including popular machine learning frameworks like TensorFlow and PyTorch. Build end to
+end AI workflows that integrate seamlessly with your existing tech stack. Join the ranks of forward
+thinking organizations that are revolutionizing their data engineering with Bruin. Get started today
+at aiengineeringpodcast.com/bruin. And for DBT cloud customers, enjoy a $1,000 credit to migrate to
+Bruin Cloud. Your host is Tobias Macey, and today I'm interviewing Guillaume de Saint Marc about the
+complexities and opportunities of scaling multi agent systems. So, Guillaume, can you start by
+introducing yourself? Sure. Hey. Hi, Tobias, and thanks for having me. So I'm actually the Vice
+President of Engineering for a team at Cisco called Outshift. And Outshift is our internal
+incubation team, internal incubator. So our mission is to, basically project ourselves a little bit
+ahead of the curve and, explore areas which could be very, very high potential for Cisco, very, very
+high potential for our customers and partners, typically with technology which is barely mature,
+sometimes not even fully proven, definitely where market and product do not, you know, are not
+shaped yet. So, basically, we are equipped as a group to, work on highly risky and very ambiguous
+topics, but which could, of course, be a super high reward for for the company and for our
+customers. And we spend most of our time failing on what we do. This is the name of the game, like,
+we explore things which, you know, are not materializing. But, you know, once in a while, we stumble
+on something which, turns out to be really, really important for us and for the future of business.
+So that's, that's what I do. And my team is primarily consists primarily of software developers,
+software engineers, and platform engineers, and and a stronger AI ML team as well. So that's us. And
+I have, you know, a bunch of distinguished engineers and principal engineers who spend their time
+finding patterns and and and pushing the boundaries. And, that's a very, a very fun and a wonderful
+team to to work with, I I have to say. And do you remember how you first got started working in the
+ML and AI space? Yeah. So I I've been it it's it's, it turns out that gosh, you know, it's it's a
+long time. But now for for the past twenty five years, I've only done this type of job across the
+different companies I've been at, starting in the media area and then moving to, to Cisco, which is
+much more of a horizontal platform infrastructure type company. But, so I've always been working on
+what's next and what is going to come and disrupt us, what is what what are the new things which are
+emerging which we need to get on top of, and how we can disrupt ourselves because before someone
+else is doing this. And so AI ML, topic really came, you know, came progressively. And for me, one
+of the key moments I remember is 2012. This is really where we really started to realize that
+something called deep learning was happening and was going to be more important than just you know,
+like, the the also important, you know, more ASIC machine learning that, we were starting to,
+productize at the time and we had looked in the team for a little while. But, yes. So 2012 was a big
+moment for me and, and for the team. And we did quite a lot of work on machine vision at the time.
+And, this was in the context of video and then with Cisco, you know, IoT. And there's a lot of
+products we have today in the Meraki product portfolio, for instance, around machine vision. So, it
+started like this. And, interestingly, in 2035 until 2018, with with part of my team, we did a lot
+of work on something which we called, you know, we we were obsessed about reasoning engines. So, the
+ability to combine, basically, some classic, some sub symbolic machine learning, deep learning,
+typically machine vision, with some ability to reason. So, not just, like, extract characteristics
+and objects from a situation, a picture, and then start reasoning. But what is it exactly happening
+here? Of course, this was pre LLM era, so but but it was already an attempt at combining symbolic
+reasoning with with deep learning at the time. And I think this is still a promising model for the
+future, to combine symbolic reasoning, deterministic reasoning, with the power of transformers and
+MLMs and generative AI, as we see today. So we were already, sort of, having a lot of intuition in
+this direction. And, and, of course, you know, over the past few years, massive there's been a
+massive amount of work in our team to embrace generative AI, especially when we realized that this
+was going to change pretty much everything for us in our domains and for our customers. And one of
+the key areas of focus for the work that you're doing at Outshift based on some of the material that
+I was reviewing while I prepared is this idea of multi agent systems where we very rapidly evolved
+from the initial bout of large language models with ChatGPT being the standout exemplar of these
+chat systems and then realizing that we could actually use them for doing more than just be a a
+fancy party trick of being able to be a conversational interface and have moved into this realm of
+agentic use cases where we discovered how to wire in different tool calls into these LLMs and then
+empower them to be able to make decisions about which tools to call and with what parameters. And
+now as we continue pushing on that, we're figuring out how do we actually orchestrate these across
+multiple different agents. And I'm just wondering if you can give your definition and overview about
+how you think about what constitutes a multi agent system. Right. And this is I mean, what you said
+what you said is important. I'll I'll just, you know, emphasize it for a second and and then answer
+your specific question. I think when everyone, of course, remember, today, I hope so, the chat
+deputy moment and when we realized the depth and the reach of of the transformers. And it was like
+this fascinating way to generate natural language and interact in natural language with knowledge.
+And and that was, like, the obvious massive use case, and we all saw this, and we're like, oh, this
+is massive, and this is so cool. And and and it it was a bit magical. So, We are getting used to it,
+so the magic is fading away a bit. But, it's still incredible how the machine can generate, you
+know, this, very human type of fluid language in the interaction. But the thing which and and this
+is not an invention, it's really a discovery. Right? Like, we collectively, the world discovered how
+the the another emerging behavior, emerging characteristic of these large language models, which is
+their ability to do some level of reasoning. And I think this has been less understood at the
+moment. It's I mean, we started to talk about it, you know, a few months after, like, again, child j
+p moment, And, you know, I would say even, a well known Chinese company has been actually, doing a
+better job at surprising the world with this ability to reason. Right? Because, suddenly, a smaller
+model was trading, you know, intense training for more inference cycles, And, you know, taking a
+problem and showing how an LNM is capable of, looking at a problem and instead of trying to solve
+everything in one hop, in one inference, just take your time, chop it into subproblems, look at each
+problem, resolve, reassemble. These are the foundations of how humans are reasoning. Like, we you
+know, I mean, if we go back to a a well known, guy called, Descartes, the French, mathematician and
+philosopher, he was like, you can resolve everything by decomposing a problem into smaller problems,
+solve them, reassemble. Right? So that's really this. Right? And when we saw that we saw that there
+was something, bigger at stake, and this ability to do reasoning was leading to you know, combining
+the the the ability to generate content, access knowledge, but also do reasoning, we started to see
+the pattern for a credible way for agents to achieve goal oriented missions or tasks. And and that
+was very exciting. And at the same time, we saw immediately the problem, which was, well, this is
+great. This is definitely something which is going to be exciting. But wait, we are stepping into a
+completely new moment or era for computer science, which is we are going to start really combining
+probabilistic and deterministic in a way which we had never done before. And how can we do all this
+software with this stochastic probabilistic nature? And how can we apply this to enterprise and IT
+and problems which so far have been using primarily, you know, deterministic software. And so we we
+we started to realize that agents will be, of course, something very important. That was, I would
+say, on the course of twenty twenty twenty three that we realized this. And we saw that, one thing
+which is going to be key is that the agents will have to be specialized. Because if they are not
+specialized, it's going to be very difficult for enterprise to first them. If if I take the
+comparison, and I'll do this a few times, you know, with humans and this is, obviously, a very
+imperfect comparison, so I don't think agents are humans. Right? AI agents are humans. But they they
+have attributes in a way. It's, it's obvious that if I tell you, hey, Tobias. You know, there's this
+great guy. You should hire him. He's the best at, coding and and and, can do all your engineering.
+Oh, he's also a wonderful marketing guy, and he's great at HR, and he can do your finance. You're
+going to probably look at me as, you know, Guillaume, this is too good to be true. I can't trust
+someone like this. It's the same for agents. Right? Agents will be trusted by enterprise if they are
+really specialized. And so that's that's why we had the intuition very early that multi agent
+systems, so, the ability for agents to collaborate to achieve a bigger goal or mission, will be
+really something important because because each individual agent will be trusted for what they are
+good at. And this also replicates something which we see with humans, which is we're good when we
+work as a team. And there's many, many ways to create a multi agent system. But so basically, a
+multi agent system is the, is a system where you have multiple agents collaborating to achieve a
+task or to achieve a goal or a mission. And this can be, by the way, a sort of an infinite game. So
+it can be something like, hey, forever, please monitor my IT infrastructure and take care of any
+cybersecurity on earth. So that's a mission with no end, or it can be a very much more
+transactional, like, hey. Please analyze this and do that, right, in a finite, amount of time and
+with a beginning and an end. So, basically, to answer your question, a multi agent system is a
+system with multiple agents collaborating together to achieve a task or a mission. And then there
+are different ways to, build or to, design them, of course. Right? So some, agents can some multi
+agent system can be more or less self forming or more or less deterministically pre wired, if you
+want, in in a certain way. So we can talk about this. Right? Of course, different types of multi
+agent systems. But, yeah, that that's that's the whole genesis of why multi agents, we think, is
+going to be important. Another interesting subproblem or maybe a a a superset of the problem of
+multi agent systems is determining what are the parameters, but, also, what are the boundaries where
+most of the time, at least in the readings that I've done and the conversations that I've done, the
+general case is that when somebody is talking about a multi agent system, it is within the
+constraints of a single organization or a very specific problem set where they say, I have maybe my
+supervising agent that does the routing to determine how do I decompose this problem into subtasks
+so that I can then send those to more specialized agents to actually perform those specific actions
+with their more constrained set of tools. But as these systems become more sophisticated, more
+trusted, then they will naturally start to grow in terms of capabilities and extent. And in
+particular, with the introduction of things like the a to a protocol where we say, hey. We want
+these agents to be able to talk to each other in a dynamic way. Then we start to go beyond the
+boundaries of a single team or an or an organization. And I'm wondering, as we start to think about
+how do we actually allow interorganizational and even maybe interpersonal multi agent systems to
+communicate and execute on particular actions? What are some of the new challenges that come about
+in terms of the trust building communication parameters and the coordination of which agents should
+be doing which tasks, and maybe we, don't necessarily need to have a a different implementation of
+these different agents that are doing similar tasks. Maybe there's just one canonical agent that you
+just spin up an instance of to be able to do a particular thing. Yeah. So that's, that's a great
+point and set of questions. I'll try to unpack it on on a few damage because there's a lot in what
+you've said, and and you're absolutely right. This I think you've summarized well, you know, the,
+all the, excitement and all the complexity, you know, because we know that the natural is enormous,
+but then there's so many ways to attack this and to do these multi, agent systems. So the the the
+first thing is, so you you you took the example of a supervisor agent, which would, you know,
+decompose task and then call. So that's already that's already a fairly sophisticated, type of
+agents. There are even simpler agents, that or simpler simpler, mass multi agents, system structure
+that we can think about. I like to do this parallel. You know, we we, you know, a lot of us in the
+industry have been through the the cloud revolution moment, and we've seen the cloud native
+architecture and the cloud native technologies emerging on top of the more classic IT we had before.
+And at the time, I remember we talked about the lift and shift. So people, you know, some some folks
+were like, oh, I took my virtual machine, and that's it. You know? I put it on a, on a YaaS. I put
+it whatever on one of the platform, and, hoorah, that's it. I'm in the cloud. And and, you know, at
+at that time, we're like, well, there is more to what actually it means to have a cloud native
+architecture, right, and the way you actually resync every single microservices and and and
+elasticity and and, high availability. So I think something similar is going to happen with, with
+Adjantic. And so, the similar of lift and shift is actually you take in a an enterprise a well known
+approved certified process, which can be even, like, a very linear process, you know, do a, b, c, d.
+We have this type of process all over our companies, like, you know, for customer relationship or
+for, I don't know, in HR or in finance. Very, very deterministic and very, rigid process. And, by
+the way, most of the time, if you if if you have people, implementing this, I mean, humans
+implementing this process, it's not really collaboration. It's more like transactional. It's like,
+please do this. Oh, you're next in the process. And so we we see players starting there for their
+multi agent system. Like, I'm going to lift and shift an existing process, so I I know that it has a
+beginning and an end. I know that two agents are not going to go in infinite loop arguing with each
+other or or whatever. I know that, I I the process exists. The the the call graph, the logic exists.
+I'm just going to port it in an in an agentic way, and I'm going to select, you know, agents for the
+specific task, and voila. You know, that's it. I'm I'm I'm already doing a multi agent system. And
+what I said sounds fairly straightforward and simple, but you already have a lot of productivity
+gain attached to this by doing this type of stuff, especially if the agents are very specialized and
+and, able of, executing these things with a good level of reliability. And so this is, I would say,
+on on one side of the spectrum, right, very rigid, but yet, you know, lift and shift predefined type
+of, mass structure. On the other side, you have the full self forming. And the full self forming
+could be literally like one supervisor or agents or one root agent starting to decompose the problem
+and starting to dynamically decide, reason about the problem, create a plan. It could look like, you
+know, even like the Kanban, and then start to look at the different types of agents and which are
+needed, and then start to literally search for these agents in real time, you know, in in run time.
+Right? And and try to to hire the best agents for the job and and try to build a project which has,
+you know, hopefully, you know, will converge to, to to fulfill the the the goal or the mission. And
+this is where, obviously, you have a lot of complexity, because how do you make sure that your mass
+is going to converge? How do you evaluate you know, how good it is? How do you discover agents in
+real time and hire them? You know, we we are not there yet, although we think we should get there,
+right, in a in a very open and interoperable way. And and so you have all the spectrum between these
+two extremes, like the full self forming and the and and the fully rigid. And and one one nice sort
+of in between architecture or or design for a mass is maybe you're not going to have a fully
+predefined call graph because that's quite rigid and it doesn't allow for, you know, more more
+creative ways to solve missions, but, you can start with a defined set of agents, which is usually
+how people how a human would do a project in a company. Like, it's like, hey, we are going to do
+project a, whatever. And, well, I need a developer. I need a UX designer. I need someone from
+marketing. I need a product guy. I need someone from finance. Whatever it is. Right? And so that
+actually, I think, is, a good way to think about, you know, what are the the the fundamental agentic
+skills you need. Gather this team of agents and maybe give them a supervisor or give them, you know,
+a sort of a scrum agent, which is going to help them work together. But but here, you have control,
+you know, at the beginning on, you know, the set of agents which are going to, to do the mission.
+So, yeah, all of that is possible. We are looking into all of this, and there is a lot of
+fundamental infrastructure, building blocks that we need for this. And you mentioned a to a. I want
+to say something about a to a and MCP because these are the two protocols that we're probably
+talking most about today. And for us, when we saw these two protocols coming, we so so we we we have
+a large initiative, called Agency, which is an open source initiative where we are trying to, bring
+a lot of contribution to the, infrastructure of our multi agent system, and we can talk about it a
+bit later. But in Agency, we have designed an agent to agent protocol called ACT. And when we saw a
+to a and had really good discussion with Google and the rest of the TSC and, you know, we we joined
+TSC today, so we are on the a to a TSC. We were at the a to a summit this week in New York. You
+know, a lot of lot of, activities there. This is this is the exciting moment where an entire
+industry is forming. A new layer of the stack is forming, so this is very exciting for all of us. We
+we we we defaulted for eight way because, like, it's great. You know? We we we we knew we needed
+something like this, so we dropped our own protocol. We didn't drop the rest of what we are doing,
+but just we wrapped it around eight way because we were like, okay, that's great, you know, let's
+join forces. And eight way for us is important because that's really like a peer to peer type of
+protocol, while MCP is much more, suited for for context by the name, but but for, like, tool
+calling. So if you have an agent which needs to call a tool in a very transactional way, like, I
+need this done. Thank you. Goodbye. See you next time. I need you. MCP is perfect. Right? But if you
+need something which is more like a peer level collaboration, like agents could, you know,
+collaborate, not just as one is a tool for the other, but they they can go back and forth, and they
+can, you know, bring information to each other, and they can reason together. Then that's why we
+think, you know, it's very important to understand that we need both MCP and A2A, and they are not
+equivalent. They have different they're coming from different perspective, and it's very important
+to, to be clear about it. As we get to a world where we have a number of different agents that are
+available and we can get to the point where we have that discovery protocol and we can say, okay.
+This is the task that I need. I'm going to select this agent because it advertises this capability.
+I'm going to hire it, to use your terminology for the duration of this task. That brings us into the
+world of the decentralized system where the current web is the largest and most successful example
+of such a system. And HTTP is the most ubiquitous protocol, but there are numerous other protocols
+available. And as we get to a point where we do have the Internet of agents, what are some of the
+new concerns that come out of that? Because the web, while it was a well intentioned project, has
+also been it's a double edged sword where there are a number of security issues and a number of
+other issues around consolidation and control that come into the picture. And as we get to the point
+where agents are the primary operators in this interconnected world because of the fact that they're
+able to sustain much longer communications than an individual human can, and they're able to operate
+at a much faster rate than a human can. How does that compound the complexity and the issues around
+trust and security and autonomy? I love that question, and, you have no idea how much we we've been
+talking about exactly what you've mentioned here and the question you asked. This was actually the
+genesis of it. You know? We we looked at so we we had the intuition multi you know, agent would be
+important, multi agent system would be important. And then we started to look at it, step back, and
+say, okay. What what is it that we can really, do here? How can we contribute to the to the
+community, to the to the industry? And then we we realized that, the Internet of agents was a
+necessity. Right? Not just for us, but for for the world. And we we came back exactly to what you've
+mentioned, which is how did the Internet started and and, you know, the the fascinating
+infrastructure, which is now powering, you know, the the entire digital economy. And then, of
+course, later, you know, the the other waves of of of innovation and the structure of the web has
+and the Internet has changed, you know, especially under the, with the formation of the the large
+hyperscalers and cloud platforms. And even this is bending. You know? This is this is a force field
+across the entire Internet and how information is flowing, you know, with these big platforms. But
+one thing we one thing we we told ourselves is it was it was important to go back to the to the
+roots of the Internet, and we had a a bit of a a birthright to to help here and to to be vocal and
+to to to to share the vision that we need the Internet of agents to be open and interoperable. We
+need any player to be able to to build an agent and to announce this agent, the rest of the world,
+without having to comply to the particular regulation of, oh, you know, you're not on our platform.
+You're not visible. You don't exist. You know, you can't be advertised. You can't be seen by
+yourselves. So the the the announce and discovery problem is was really like the first fundamental
+problem that we that we thought about. And this is an entire pillar of this agency project, and and,
+the Linux Foundation project now that we have, started with the community. And so the the Internet
+is great, but the Internet is is amazing because it's distributed and vastly decentralized. And so
+we started to wonder, you know, what is the equivalent of DNS? And the DNS, by the way, mind you, is
+vastly distributed but not fully decentralized. There is an an an entity called Bankan who's, you
+know, looking after all this. So and a few things happened since, like, in particular, Web three and
+and all the the blockchain, you know, and and decentralized technology. And we're like, there must
+be a way to to do something smarter. And so this was this is exciting because this is like, many
+years later, can we, as we see a new form of Internet about to emerge, can we can we fix some of the
+problems from the initial Internet? And so there's multiple access. One is, you know, we are all
+more or less familiar with the seven layer OZ communication, and you mentioned HTTP, which is right
+in the middle here. But we see almost like additional layers emerging. Like, layer seven, which is
+the application level, is not enough. We need to be more specific. So of course, it can contain any
+single the content, but it's actually very useful, we think, to explicitly mention the syntactic
+layer and the semantic layer. And especially for agents, it's becoming really important because the
+syntactic layer, which you can picture your image on top of the application layer, is really like
+the grammar and the vocabulary that you're going to use to you know, do you do you do we speak the
+same language, or do we have the same grammar to even understand each other? Right? And a to a for
+us is definitely in this, in or MCP, is definitely at this level, trying to solve the syntactic
+communication problem between agents. On top of this, we have the semantic, which is really like the
+substance, the meaning of what is the the knowledge and the information, which is actually a change
+exchange between agents. So that's just just to pick up on your, in, you know, putting things in
+perspective with the beginning of the Internet, we think that this agentic revolution is so
+fundamental that it might actually introduce new fundamental layers in the communication stack,
+syntactic and, semantic. And the second axis is about, as I said, discovery and announce and
+discover. And here, we are actually pushing a directory, a mechanism, which is completely
+distributed and decentralized, and we think it's important. So basically, what what we are, pushing
+and and what we are this is still the beginning, so we are, in the process of of convincing the
+industry that this is a good idea. Of course, this has to be completely open, completely
+interoperable. We are pushing a protocol and, mind you, a a particular module or a node, which any
+player can deploy. So any any player can deploy a directory node, and this node is, gives you the
+ability to manage your authentic assets and advertise to the rest of the nodes. So that's literally
+a decentralized network. And we think this this is a great opportunity to push the fundamental
+decentralized nature of this new Internet a bit further than the original Internet. And we think
+that so few things important to mention here, and I'll I'll, I won't be too long. The first one is,
+yes, this is using technologies like OCI, which is the you know, there was no need to re to reinvent
+the way we are, packaging information, offering information, for instance, about containers. So this
+is an extension of the cloud native OCI for for Adjentic. We have created a format called oesf. Oesf
+stands for Open Adjuntic Schema Framework. And the the word which is important here is the f. It's a
+framework. So it's a it's a it's a framework to describe any metadata for any agent. And then you're
+going to tell me, okay. But then, you know, this is going to be opinionated, and it's going to be,
+like, a popular way to describe an agent, and maybe folks want to do it differently. And so that's
+where it's a framework. So it's fully extensible. Like, we started, we were doing only our own
+protocol, but we fully, included MCP and eight way. We're working with Oracle on, I don't know,
+something that's called agent spec that they have, which we are going to integrate as well. And I
+say we, it's not us. It's the community. Right? So we have a a framework which is really extensible,
+which is here for the greater good of everyone, which we can keep extending to enrich, you know, how
+we describe agents. And there is a lot to say about agents. Not only what they do, but also how you
+deploy them, or if they are already deployed for you, where you find them, aspects of the how you
+communicate, how you collaborate. You can attach security artifacts. You can attach observability
+and evaluation artifacts. So there is a lot here. And, and we think it's a really great idea, to, to
+to approach the the the discover and announce problem through a federation like this. And, yes, a
+lot of inspiration from, from the the the Web three as well here. And the the the thing on which we
+are still working, and it's an open problem, is how we fuse this with identity. Right? Because as
+you discover, the agent card of a given agent, you also want to it's easy I mean, it's easy. I mean,
+we have already solutions, to, fully sign and and verify, that a particular card is legitimate, has
+not been tampered, and is has been originated by who it says, you know, has originated it. But how
+you can link it with the agent identity is a more complex problem, because with agents, you have
+many many identities to take into account. And as you said, yes, agents are interesting animals,
+because they have indeed, attributes of humans, but they also have attributes of workloads. So they
+sometimes behave like a human or like a user on the stack, but they also operate at scale and speed
+of machines. So agentical identity, in addition to the discovery, is the second pillar on which we
+are working. We are not the only one. There is a lot of work to be done here, and that's also
+opening a lot of, interesting, problems to solve at the infrastructure level. Another interesting
+and potentially challenging piece is in this world where there are agents that are available, and
+maybe you want to make use of them for a particular component of a given task. And so one of the
+thorniest challenges that we're tackling right now just with generative AI as a broad capability is
+the question of cost predictability because one workload, depending on how much text you send or how
+much information you're sending or how much reasoning is required, can have a highly variable cost
+associated with it. So it's very unpredictable in terms of what you're actually going to need to
+invest to achieve a particular outcome. And so if you're now in a world where I have an overall
+objective and I'm going to hand that off to maybe a coordinator agent, it is going to farm out some
+of those pieces to other agents that are controlled by other entities because maybe I need to use
+your booking agent to reserve my flight and then a different agent to reserve my hotel and a
+different one to plan my dinner reservations if I just wanna, say, make me a vacation plan. Then
+there's also that question of cost for the, we mean, one, the the bookings that is a separate issue,
+but more specifically for the cost of actually executing those agentic workloads by an agentic
+identity or entity that is controlled by a different system than yours. And so then how do you
+figure out how payment gets allocated or transferred through those interactions? Because, you know,
+if I'm somebody who runs a particular agent, I don't want to do that work for free if I don't have
+some guarantee of remuneration. And I'm just wondering how that is being considered or addressed in
+this new new and, potentially scary world. Yeah. No. That that that's great because you're you're,
+you know, hitting on on the nail. You know? A lot of, issues we see coming with with multi agent
+system. On the one side, you know, they are very, attractive solutions because they can autonomously
+do things that we couldn't do without a lot of humans in the loop before. But on the other side,
+there's a lot of, pretty interesting, engineering challenges to solve. So so so few things. So just
+just to pick up on on your remark and question, I'll talk about two aspects of what we are doing.
+One is identity, I just mentioned, I'll talk a little bit about it, and observability as well. And
+by the way, there is no surprise here, right? We are Cisco, so we're surprised, you know, as there
+is a new era unfolding to find us doing connectivity, security, and observability, and identity.
+That's that's who we are. And so, in a way, we are not really innovating here. We're just,
+translating, you know, what we do in a in a new, new world. So the identity piece is is is
+interesting because, let me start with observability first. So the scenario that you've depicted is
+a great scenario where you have actually no idea what's going to happen. Right? Like, you have no
+idea what's going to be the cost of all these agents collaborating together. Probably these agents
+are hosted in different platforms. They have been designed by different vendors. The only thing is
+that you have put this multi agent application in the middle, which is going to this call graph in
+the middle, which is going to, stimulate and exercise all these agents in order to achieve the
+mission like build me wonderful holidays. So the first thing we we we need is we need observability.
+And so, you know, when when we talk about observability, identity, connectivity, a lot of folks are
+like, hey, you know, Guillaume, yeah, but look, I mean, we've been working fifteen years building
+the the cloud native stack. So we have we have everything we need. And by the way, you're Cisco. You
+have Splunk. You have, you know, so many great observability solutions. Problem solved. You know, we
+can observe these agents are just workloads. So end of the end of the game. Right? Let's just
+observe these workloads. And this is where, as obviously many folks listening, I'm sure, are already
+there, this is where observing an agent as a workload is useful because as a workload, it can fail,
+it can have memory issues, it can have Kubernetes configuration issues, it can have connectivity
+issues. And so all the classic observability matters here. But it's also, an agentic system, and if
+you look at the semantic level, then it might be displaying, like, I'm super healthy as a from a
+workload standpoint, You know? All my metrics and all my MELT, you know, metrics, you know, logs and
+everything all look looks perfectly fine. And I might be going completely nuts and doing nonsense
+work and, you know, you know, not at all, you know, helping, you know, to converge the mission of
+the of the of the multi agent system. And and so we have been working on extending the OpenTelemetry
+schema, so literally, like, the the de facto standard. And we have we and, again, when I say we,
+it's us at OutShift, together with colleagues from Splunk and many other big names in the industry,
+a lot of collaboration with Microsoft, here specifically, to extend OpenTelemetry to be relevant for
+agents and multi agent systems. So now we can get metrics and we can get traces from agent to agent
+collaboration. So we're really observing the mass itself, not a not so much a particular agent, but
+anything an agent do in the context of a mass. So any tool call, any, interaction with another
+agent, and we can so so, of course, you know, at some point, you can go and inspect the actual
+payload, you know, the the semantic of what two agents are exchanging. And you can apply your self
+agent, typically, and an LLM as a judge, right, or these type of techniques to to to determine
+whether you think that this is going anywhere, this is appropriate, or, you know, these two agents
+are lost in what they do. But in a more deterministic but but this comes with a cost, and this is,
+of course, of course, one of the method. But in a more deterministic way, what you can do as well is
+you can just observe the, the behavior of the mass. So in the case of your application, you're
+probably going to test it a few times before you release it for production. And as you test it, and
+it's highly recommended to test it and to observe it a little bit, you know, in staging before you
+release this, you can you can detect a lot you can deterministically, so for, you know, at a very
+reasonable cost, determine that the the you can start to understand the pattern of how this mass is
+functioning. So for instance, you can see an agent systematically doing, you know, failing or doing
+five, calls to the same tool, sort of failing, you know, and then, you know and so you can realize,
+okay, so this agent doesn't have the right tool. Or you can see two agents, systematically going
+back and forth. You can detect loops, for instance. You can detect infinite loops, right, which
+which are the the nightmare in terms of cost because the cost explode when two agents starts to. So
+it's not, it's not an exact science yet, but at least we are, you know, like, in this case,
+observability extended to agentic is is a very, very minimum and necessary tool that we think is
+going to help a lot, mass developers and engineers to prevent these massive issues around costs or
+simply not converging or disappointing the end users. And we are doing a lot of additional work in
+this direction, some more complex work, but, starting with this extended telemetry and
+observability, even simply, I'll give another example. You know, we talked about the deterministic
+mass, the mass which are functioning along, you know, a predetermined call graph. But we also talked
+about the mass which are more self forming or, you know, the collaboration between agents is not, is
+not is emerging. How do you it's actually great to be able to visualize the call graph of how this
+is working, even something like this. So we have released a small SDK, which I mean, it's all
+OpenTelemetry compliant. So use this one, use another one, doesn't matter. What's important is, you
+know, to leverage open the the the standard on the OpenTelemetry side. And we have, something called
+the the the MCE engine, which is really, helping to, analyze all the traces. And this is a way to
+actually visualize the call graph. So we'll see like, visualize the actual collaboration which is
+happening between agents because this is not something which you systematically know in advance how
+it's going to go. And then you can detect a lot of patterns, oh, okay, I see these guys are wasting
+their time or these guys are not converging, these guys are going to cost me a fortune. So even
+anyway, all these tools are really trying to help with the problem you you outlined. And the other
+thing I would say, again, trying not to be too long, is identity is another big problem. So I talked
+about the fundamental prime of identity and the Internet. So here we have three identities that we
+need to reconcile. We need to you have the identity of the agent Karl, you have the identity of the
+agent itself, runtime, right, as a workload, and you have the identity of the agent as a business
+function, I would say. So basically, you need to reconcile these three identities, and they live in
+different layers of the stack. So that's one, you know, interesting aspect of, you know, cross layer
+integration that we are working on. And the other aspect is so the most interesting identity here is
+the business identity, because this is where you're going to attach permissions. And this is where
+using classic human user identity and permission system is falling short. And why? Because a given
+agent can be working for you at a point in time, and fifty milliseconds later can be working for me
+with completely different set of permissions and authorization. That's completely new for the stack.
+The stack is not, you know, like, a a a human user is much more continuous and constant in its, you
+know, rights and, level of permissions. So how do you handle that? Well, simply, you need completely
+new proxies and completely new components in your stack to be able to acknowledge that a given agent
+can have, by by default, certain level of agency authorization. Like, for instance, the travel
+agent, It's okay that the travel agent maybe has access to some travel database and some, you know,
+travel transaction system, and under no way should have access to the HR system, just just as an
+example. So you can do this as a fixed rule when you deploy this in a in a company or in a multi
+company environment. But then there are other aspects which really depends off, this is what we call
+the T back, and actually, we we should call it T three back, because this this is about, you know,
+the tasks, the tools, and the transactions. And it really depends. It depends who the agent is
+working for at the point in time, and it depends also the context of the transaction or the context
+of the tool that is, being called. And one of the problems is with the with with the again, if you
+use the mechanism for authorizing access to a particular tool in an enterprise like a regular user,
+like, I don't know. I'll take an example. Like, at Cisco, we are using an HR system from a well
+known SaaS vendor. Right? So anything HR for me, you know, check my HR status, you know, holidays,
+you know, book holidays, you know, whatever. I'm going to do this, with this SaaS. The level of
+granularity to authorize access to my profile is literally binary, zero or one. It's like, can you
+accept, you know, do you have Guillaume's authorization to enter Workday in this case and, you know,
+act on behalf of Guillaume or not? And that's a problem because if I want to use an agent to check
+my holidays, I want the agent to have only access to this portion of the APIs. I don't want the
+agent to be able to do other things which I have access to on Workday, which is, for example, hire
+my entire team, which could be literally like a catastrophic type of, agentic derailment. So for all
+these reasons, we we we are creating solutions, which again, everything is on agency, to manage
+this, TBAC. So tool transaction, task level access control with a much level of granularity much
+higher level of granularity, and at a frequency which is changing way beyond what a regular human
+user would be, needing in in in the real life. So, yeah, I picked up on these two examples because,
+you know, the minute you want to deploy something for real, without observability and without
+identity and, agency access control of a different kind, which has never been developed so far, you
+cannot handle agents in your stack. One of the other interesting complexities of this Internet of
+agents is what becomes the role of the human in that regard where maybe I am the person who is
+initiating a given request, but at what point do I get brought back into the loop, And how do you do
+that without getting to the point of notification exhaustion where I don't wanna keep getting asked
+these things. I'm just going to give up and say, just do whatever you want. Don't ask me anymore. I
+give up. Yeah. That's a that's a huge problem. And, yeah. So so so there's, there's quite a lot to
+say here as well. So we we we need human in the loop. Right? The the the way we I'll try to make it
+all. So a few things. So first of all, we think that the way you designed a multi agent system is
+going to lead to a new era for the UX team as well. So our UX team is thinking a lot about what it
+means to design a user friendly agentic system. One of the big problems is that if you don't really
+think about it, and and, you know, I think a lot of the well known players like ChargeGPT, OpenAI,
+Claude Anthropic, all these guys are are doing a fairly good job of keeping the human in the loop,
+which doesn't necessarily mean that I go back to you and I keep asking you questions or but at least
+I'm letting you know what what the hell is going on. Right? So, typically, you know, decomposing the
+syncing, letting you know, I'm doing this, I'm doing that, you know, or finding a way to, you know,
+like, splitting the screen, like, here is the chat on the other side of the screen, you know, the
+the the the piece of code I'm I'm writing for you or the the visualization or the HTML page I'm
+generating for you. I give you a a a sort of a a way to visualize this. So, we're thinking about a
+lot about it. The thing is that the state of the art today is mono agent. When you interact with,
+cloud desktop or with, just just to take two very, obvious examples, random examples, you actually
+interact with one agent. And this agent is this agent is telling you, hey. You know, I'm doing this.
+I'm doing that. And and and, of course, the streaming is is one of the most basic and fundamental
+aspect of, you know, I don't wait five minutes to, you know, I start telling you where I am, and I
+start streaming back the response. And, you know, it's it's like the very early days of the Internet
+when, you know, we were downloading on very low bitrate, you know, networks, you know, with the the
+old modems. You know? And you could see, you know, the image being loaded progressively. Right? And
+it was just keeping us busy looking at the image, you know, being, you know, displayed
+progressively, and and that was keeping us patient in a way. So that streaming is exactly the same
+mechanism. But what has not been done yet, and this is where we are heading and working on in terms
+of user interface, is doing the same for multi agent systems. So you're actually obviously, these
+companies have multi agent systems hidden behind their big agent. Right? But it's implicit. It's not
+explicit. It's hidden, right, for good reasons, you know, for simplicity of usage. We think that in
+an enterprise context, when you literally have a multi agent, a team of agents teaming up to resolve
+a task, it will be important to give visibility to the actual work of the team of agents. Think
+about it. You you are human, and you work, you know, like you, Toby asked me, and two other folks
+who are working on a project. We have a sense of, you know, what's going on, and, you know, we have
+notes on our latest meeting and, you know, we have a shared repository with our assets. And I know
+what you're doing, you know what I'm doing, you know. This is the whole scrum of joy, you know. We
+we we keep each other informed about how we are progressing. We collaborate. We go back and sync. So
+it's going to be probably a good idea to as we put the keep putting the human in loop to to give
+visibility on the the fact that it's not just one big magical solution, but you actually have
+multiple agents with specialized functions working in the background and and, and and so let let you
+know, give visibility on this, which is something really new, we haven't seen yet, and I think it's
+going to be very cool to, to make progress on this. And then there is the other problem, which is,
+like, I talked about the TBAC. So the TBAC is there is a perfect way to solve the TBAC problem.
+Before agents does any call to any tool, stop, and put a human in the loop. Is this okay for this
+agent to call this tool or to have access to this data? And so the name of the game is how can we
+securely reduce, as much as possible, this number of interactions? Right? So there is no silver
+bullet. It's the sum of many things. It's the sum of some of the techniques I've I've explained,
+which is like having fine grained policies which are established a priori, so before, the agent you
+know, like at the start of the setting of the agentic context. And some of this will require AI. So
+we're going to have what we call special agents. We're going to have, you know, as part of this
+click of agents working together, one agent is going to be specialized in actually learning over
+time and, you know, being the guy in charge of going back to the human and asking questions. So if
+as an agent you need to use a tool and you don't have permission and you need to ask permission or
+you know, maybe you go and talk to me. I'm another agent. My only job is authorizations. And as the
+TBAC agent, I'm going to improve over time and, grow confidence for where I can grant you
+automatically access with the minimum set of APIs that you need, and when I have a doubt and I need
+to go back and ask the human. And as the human is giving the answer, this is obviously, wonderful
+feedback, which I can, integrate in my, in the training for improving, you know, or fine tuning my
+model. So, yeah, it these things are much needed. The the concept of special agent is very
+interesting because when you think about it, there are agents which are doing the the primary tasks
+for a mass, and we think there is going to be a set of agents, and we're working on those, of
+course, and we're probably not the only one. A set of agents which are going to be utility agents or
+utility agents or or or sort of, infrastructure agents or, you know, IT organization agents, which
+will be there for access, TBAC, control. We're thinking about, security agents. We of course, an
+observability agent can do a lot of things because you can send back all the telemetry and do the
+analysis in the cloud, but a lot of customers also want to know that things can stay local. And so
+having a local observability agent, which can you know, raise alerts or, give you some visualization
+of what is going on locally and take decisions is also a really good idea. Well, if you have a
+special agent focused on security, you're obviously going to have to name it OO7. Yeah. Yeah. Don't
+don't get me started with code names. Yeah. That's true. I mean, that that yeah. Yeah. Well, you
+know, we have we have Shellox. We have Poiro. We have double o seven. We have all these, you know,
+funny special agent names. You know? Yeah. We it's a lot of fun. But, yes, exactly right. By the
+way, the, yeah, the security agent is, is quite a, a challenging one. You know? How do you know?
+Because because it's it's it's not a class you know, at Cisco and many other companies, we have so
+many solutions for classic infrastructure security. Here, this is more about, I'm not kidding. This
+is really about getting into the mind of agents, you know, and checking that things looks coherent
+and consistent, and checking that an agent is not trying to hide a a special mental state to the
+others or trying to say something and do something else because and it could be an agent or it could
+be a click off agent. Anyway, so so the the the security agent is, and and, of course, you know,
+needs to also collaborate, closely with the with the observability agent. It's just fascinating, you
+know, to to talk about this world where, you know, we have these new colleagues, you know, these
+agents, you know, which are, of course, are not human, but have some attributes and will join the
+team and work for us. That's, it's very exciting. You know, there's still a few years of work ahead
+of us, but, this is progressing fast. And, yeah, we think that we are certainly working on a lot of
+these problems today. And not just at the infrastructure level, again, agency and all the
+infrastructure code and solution we are trying to share, but also we are learning from examples. We
+are developing examples for ourselves to eat our own dog food and convince ourselves that multi
+agent systems can do a lot of amazing things, and they can also they are bringing also new problems
+that we need to solve. And as you have been working in this space and helping to explore the
+boundaries and frontiers of this strange new world that we're in, what are some of the most
+interesting or innovative or unexpected ways that you've seen either the agency framework instead of
+utilities or just the overall principles of multi agent systems applied? Yeah. So that's you know,
+I'll be humble here because I think we're at the beginning of this, you know, I don't know, multi
+year, maybe multi decade era. But, yeah, we we so so what we've done is so this is a chicken and egg
+problem. Like, we wanted to help and we wanted to come with agency and with a a a lot of this,
+foundational software to help. But at the same time so now it's easier because we have formed a
+large community. So we have a lot of, you know, we have a lot of contributors. You know, it's it's
+it's you know, we probably still play a key role on agency, but this is not in our hands anymore.
+This is, you know, has been donated to Linux Foundation, and it's it's really in the hand of the
+community. So we're getting, like, much more, like, three sixty degree feedback, you know, and views
+from all the players and sharing their feedback as well. But when we started, at the beginning, you
+know, back of 2023, 2024, and this was all still internal stuff, we needed to learn learn by doing.
+And so we we we started, and we started with a few experiments. So some experiments went nowhere,
+but a few experiments have been actually, going super well, and some, you know, are being, you know,
+now we will we'll being part of the the mainstream Cisco roadmap for bringing new, new features. So
+we looked a lot at IT ops and AI ops and SecOps and NetOps. So so, basically, anything which is
+around the supervision of an IT of a complex IT system and complex IT stack. So, basically, we as
+you would expect, you know, we're trying to apply mass to our own vertical, our own domain, which is
+IT. And, so few things. So we have, I I I I give you three quick examples. The first one and and
+these are three examples where we have, like, amazing results. So, like, massive productivity and
+time saving and gain, you know, with Adjunctic. So the first example is network configuration
+validation. When you have a large enterprise or even bigger, like a large service provider or large
+telco, validating a new network configuration is not a small deal. It's actually a make or break,
+you know. If if your new configuration that you're going to deploy to enable the business, to enable
+new features, to enable new, you know, extension extension of your activities, is bogus. You you you
+will simply, immediately stop your business. Right? And so, usually, customers are spending weeks
+and weeks to validate these configurations. And, with, in this case, a fairly deterministic
+workflow, but really good and specialized agents, we have, we are bringing bringing this back from
+weeks to, you know, a few hours of of getting a really high level of confidence that this
+configuration can go ahead and be deployed. So that's very exciting and, of course, something which,
+you know, you can imagine Cisco is, pushing, into a number of products, coming up soon. Another use
+case is the root cause analysis, and here we really took an approach of how do I root cause you
+know, like, suddenly my application is not working anymore or my application performance is
+degrading. What the hell is happening? And the problem could be Internet. The problem could be
+network. Problem could be, you know, hardware, server, storage, could be Kubernetes configuration,
+could be the new, the new configuration that the software team just the application team just rolled
+out. So troubleshooting this can be really complex. And, same, you know, we've created a bunch of
+agents which are literally reasoning like humans and looking at all the graph of possible
+possibilities for where the problem could be and pruning it, you know, as they pull telemetry from
+the system. So you have an agent specializing in, you know, forming hypothesis, an agent
+specializing in, you know, retrieving the telemetry, an agent specializing in analyzing, an agent
+specializing in, you know, wrapping it together and deciding if we need another, cycle of reasoning.
+And this has been spectacular. We have, we have seen working on on real, incident telemetry from our
+customers. And we we are bringing back, you know, things like you you need a team of five of your
+best experts from all across the world, you know, in the same virtual room for four days to find the
+problem, to fifteen minutes and less than 600 LLM influence of, in this case, a not particularly
+massive LLM. So, again, the productivity gains are wonderful. And there is a third example I need to
+mention, this project. It's an open so these projects are closed source because they are close to
+our business product. But, there is a third project which we have fully open sourced, with the
+community called KAPE, which is the Community AI Platform Engineer. And this is really like an
+agentic an agentic, engineering platform. So taking care of your Kubernetes deployments, taking care
+of your so this came from actually the necessity in my team to scale, you know, with no additional
+budget for the platform team. And so at some point, I talked to, Hassid, who's, our director of, of
+platform engineering at Roundshift. I said, hey, man. You know, I I we don't have more resources,
+but maybe, you know, we start using MAS to actually automatically solve much more of the tickets of
+our own team. And so you so that you guys can spend more time actually, you know, like instead of
+working on tickets, why don't you work on an agentic system to to solve these tickets? The idea was
+that simple, and and and it has worked beyond what we could have hoped. So Kape is fully open
+sourced. We've worked this with the Canoo community, which is really like the the DevOps community,
+you know, with many, many players from AWS to Adobe and others. It's working well. It's in my team,
+we have connected it to more than 40 tools and, you know, it's you know, we've we've we've made it,
+like, fully integrated into our backstage so, like, any developer in the team in the morning, you
+know, would come up and, you know, have, you know, Kate ready to help and assist them. And, of
+course, it's not 100%. It's maybe 40% of the tickets, which can be, completely automated. But, the
+characteristic of all the use case I've just mentioned is none of them requires 100%. So if you try
+to do the autopilot or a car where even 99.9 is not good enough, it's very, very difficult with
+Adjantic. But if you have a use case where if agents are doing a really good job 90% of the time,
+this is already massive productivity gain, then you can go so far with Adjantic today. And so that's
+that's why we are so hopeful that more of these use cases, at least for our vertical and we know for
+ourselves, are going to be very significant. And that's basically what motivates us to keep
+investing on, you know, building this infrastructure for multi agent systems. Are there any other
+aspects of the work that you're doing, the agency framework and the work that you're doing at
+Outshift or just this overall topic of multi agent systems and the Internet of agents that we didn't
+discuss yet that you'd like to cover before we close out the show? I think we covered a lot. You
+know? I think just to maybe to to wrap, yes. So I encourage, you know, folks to go and check,
+agency.org. They will find the, you know, all the reference to, the material I I I talked about.
+CAPE is great because that's, again, a a beautiful multi agent system, open source example, fully
+open source. So, CAPE is, something you can find as well, in the open and and learn from. In Agency,
+we have, you know, we took inspiration from the Sock Shop, you know, and the Kubernetes. Right? So
+we also have, an application called the the the Coffee Agency, which is basically a little a bit of
+a toy application, but helps you understand exactly, you know, the different components of, agency
+and how it works. And one of the nice things that this little, application is illustrating is, you
+know, very, very ironically, we talked about identity, discovery, observability. We didn't talk
+about, connectivity, but we have, we have a a piece of technology which we think is really important
+called SLIM, which is fully, you know, compatible. I mean, basically, we have SLIM supports eight
+way MCP. It's gRPC based. It's super high performance. And, and so this little toy application, the
+Coffee agency, shows how you can use Sling in different configuration, to, to to help with, agent to
+agent agent to tool communication in an optimal way. One thing I I maybe would say to conclude is,
+Slim has been designed primarily to do a much better job than just, you know, eight way in isolation
+or, any, other protocols to to deal with, agentic group based collaboration, when it's not just
+point to point, agent to agent, but it's a team of agents working together. And, we think this this
+is really important and inspiring just to look at how human works. We work as teams, and we keep,
+you know, using, you know, either, video call tools or we meet in person. And we think that agents,
+most of the the mass collaboration will be group based, and Sling is a very, very unique and highly
+differentiated, technology for that. We have a paper that we did with, our good friends at, m I MIT,
+the folks doing the Nanda project, which is another we share so much of the vision for the Internet
+of Egypt with these guys. We have integration on on the directory side that we are going to, share
+very soon. So their their directory, our directory, you know, kind of interoperating. And, and we
+have a paper showing how SLIM so as a communication messaging, you know, underlying syntactic and
+semantic level, a to a in this case, is getting much better and is, you know, offering, like,
+completely different, order of magnitude, better stability for, adjunctive group based
+communication. And we think it's going to be the primary form of communication between agents in the
+future for multi agent systems. So, yeah, just wanted to highlight this because I didn't make full
+justice to it, but it's probably actually, one of the most solid technology, we have, brought to the
+table so far. Alright. Well, for anybody who wants to get in touch with you and follow along with
+the work that you and your team are doing, I'll have you add your preferred contact information to
+the show notes, and I appreciate all of the time and effort you're putting into helping to explore
+this strange new world and, start to define some of those frontiers. So thank you again for all of
+that, and I hope you enjoy the rest of your day. Thank you, Darius. That was a great discussion.
+Thank you for listening. Don't forget to check out our other shows. The Data Engineering Podcast
+covers the latest on modern data management, and podcast.init covers the Python language, its
+community, and the innovative ways it is being used. Visit the site to subscribe to the show, sign
+up for the mailing list, and read the show notes. And if you've learned something or tried out a
+project from the show, then tell us about it. Email hosts@aiengineeringpodcast.com with your story.

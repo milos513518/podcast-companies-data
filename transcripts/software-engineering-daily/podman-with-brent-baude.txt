@@ -1,0 +1,212 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2025/07/SED1852-Podman.txt
+EPISODE: Podman with Brent Baude
+DATE: 2025-08-12
+SED: 1852
+HOSTS: Jordi Mon Companys
+PAGE: https://softwareengineeringdaily.com/podcasts/podman-with-brent-baude/
+----------------------------------------------------------------------
+
+EPISODE 1852
+
+[INTRO]
+
+[0:00:00] ANNOUNCER: Podman is an open-source container management tool that allows developers to build, run, and manage containers. Unlike Docker, it supports rootless containers for improved security and is fully compatible with standards from the Open Container Initiative or OCI. Brent Baude is a senior principal software engineer at Red Hat, where he works on Podman. In this episode, Brent joins the show to talk about the project.
+
+This episode of Software Engineering Daily is hosted by Jordi Mon Companys. Check the show notes for more information on Jordi's work and where to find him.
+
+[EPISODE]
+
+[0:00:46] JMC: Hi Brent, welcome to Software Engineering Daily.
+
+[0:00:48] BB: Welcome, I appreciate that.
+
+[0:00:50] JMC: So, why don't you introduce yourself?
+
+[0:00:51] BB: Yes, my name is Brent Baude and I currently work for Red Hat as the architect of Podman. I've been with Red Hat about 11 years. Prior to that, I was with IBM for 17 and change. I'm located in the United States in the great state of Minnesota.
+
+[0:01:09] JMC: Beautiful state. So, we're here to talk about Podman as you mentioned, part of the title, but there is a GitHub Containers Organization, github.com/containers that contains, no pun intended there, a few projects and you probably don't maintain and certainly are not the architect of the others. But can you give us a sense of what is the overarching theme of all the projects hosted within the containers org?
+
+[0:01:34] BB: The obvious answer here is they have something to do with containers. Many of them are maybe library-oriented that are brought into larger applications that you might know, but you might not know the libraries. We do prefer some affiliation with OCI and OCI standards and there's certainly outliers on those kinds of ideas, but that's the general theme throughout container-related, OCI-related, and either they're going to be small applications or libraries that build up much larger applications.
+
+[0:02:11] JMC: What is the Open Container Initiative? Like could you describe what the standards there, what is the difference without it, what came before maybe, and what did it come about?
+
+[0:02:20] BB: The OCI standards give us a roadmap, if you will, or a skeleton, I wish we can program and be able to have a standard that will work, for example, with an application like Podman, but also could work with CRI-O, which is another one of those projects in the containers area that we handle, containers and images in particular in the same manner.
+
+[0:02:47] JMC: Yes. Is it a way of making container images agnostic of the container runtime, right, of the multiple and -
+
+[0:02:53] BB: As long as we follow the standard, of course. Yes.
+
+[0:02:54] JMC: Exactly. So, the grunt of the work is on the container runtimes, project maintainers, like yourself.
+
+[0:03:00] BB: Yes.
+
+[0:03:00] JMC: So, how does Podman fit into this containers org? Like is it the central project or what is it?
+
+[0:03:05] BB: It's certainly the most active and popular. I believe that it's actually one of the more popular in GitHub period. But yes, Podman fits into that just in sheer popularity. Like I said earlier, there are a bunch of libraries in that organization that make up big parts of Podman, like its storage subsystem and how we handle containers images, how our network stack works. All those are sort of modulated into various libraries and GitHub repos and applications under there.
+
+[0:03:37] JMC: Yes, I'm looking at OSINT site, which is one of the places that I go to analyze the success and contributions of certain projects and Podman is very close to 30k stars. I mean, I know that there's other metrics that measure project success, but blimey, that's a good one. So, before we dive into Podman itself, which we'll delve into considerably today, give us a sense of the history, like where does it come from? What was the need for this? What was the design decisions, what was the vision in a way, I guess? Why did you get involved in this?
+
+[0:04:10] BB: Podman has an interesting origin story as though I think it's popular to say now. Initially, we were part of the CRI-O project as a small utility called kpod at the time. And the idea was kpod was going to be - with CRI-O being Kubernetes they needed a utility that you could run locally on those nodes and kind of get a feel for what might be going on, if you're really debugging, or you're just trying to work with something. That was really the role of kpod, initially.
+
+Once we sort of began to work on it, it became clear to us that this could be a much larger scoped, not even now utility, more of a tool or an application. We've came upon this idea that we kind of looked at containers, its security context, and how it should be run a little bit differently than what was going on maybe with some of the other projects including Docker out there. So, we dropped out of CRI-O, so to speak, into our own repository, formed a small team around that that kind of did some skunkworks initially to make sure we were on the right track. And of course, at some point, you have to rename it and we renamed it to libpod, actually is what was called because we're still viewing it largely as a library.
+
+Then shortly thereafter, we renamed it again to Podman, which stands for pod manager, not -
+
+[0:05:40] JMC: Not a superhero.
+
+[0:05:41] BB: Not a superhero, even though we have an origin story, yes.
+
+[0:05:46] JMC: Okay. But now, so I assume that at that point, it was a Red Hat only. I mean, it was open source since the get-go, but it was sort of like living in the Red Hat ecosystem only. But now it's a contributor to the CNCF. So, how did that come about? And why did that happen?
+
+[0:06:02] BB: Probably similar reasons that anything else would get donated to the CNCF. I will say of, and even the CNCF has told us, we were doing it right. A lot of projects go to CNCF because they need structure. They maybe need CI and automation, and they need maybe help with the structure in terms of the contributing rules and maintainership rules and things like that. We were largely doing everything right. We were always very transparent. If someone asked us where we were going with something, there's zero reason not to just be truthful. Our submissions process was very lightweight even though our CI can be difficult at times. For someone to contribute, we tried to make it as easy as possible, and we just, I think, were very well-behaved upstream projects.
+
+But I think there's also an impression that it was a largely one-vendor solution. And that's just simply not true. We certainly have had contributions from others and other companies and just random flybys. So, this just takes it to the next level of saying we are committed to open source. We are transparent. We'll remain that way if you decide that you want to contribute and also to just, it's a little bit of honey to attract more contributors. That's our hole.
+
+[0:07:24] JMC: Tell us about the product itself. What actually has been contributed? What is the state of the product itself? Because it has evolved considerably from a component in CRI-O, to what is a standalone container runtime, container management system in itself. So, let's actually describe it and then we'll go into the particular core capabilities of it.
+
+[0:07:45] BB: Yes, it's an interesting question because I do periodically get asked, is it production-ready? Which I always sort of smile about because there was a day when we would say use at your own risk. That's certainly, certainly well into the past now. The very fact that it does ship as the single container runtime in RHEL, then Red Hat's flagship, it's production-ready. It's more than that. It's not to say it's without bugs but who isn't.
+
+So, that's to me it's production-ready. I'm always amazed you'll probably hear me say that a couple of times today at how people have chosen to use it and implement around it, or write a wrapper for it, or use it and embed it in their actual self or products. It always catches me off guard. I suppose I should know better by now.
+
+[0:08:34] JMC: So, I think what comes to mind when someone mentions Podman, in any kind of conversation, is the daemonless architecture, right? This is probably the thing that stands out the most. There are more things we'll touch upon those later. But I guess why was it designed as a daemonless product application? And what is it that makes it daemonless? Obviously, the absence of a daemon, but how does that affect the usage of the product?
+
+[0:08:57] BB: I suppose there's a good argument to be made that it reduces attack vectors as being one of the key things. But it also allows resources to be freed up. In the case of a daemon, typically, that daemon runs and takes up resources, even when it's listening. In the case of Podman, when you run it, it doesn't have a daemon. Podman itself runs, it does some of the, I'll say, all the setup for the container to be able to run. We then call a runtime like C Run to actually run the container, and then we also have a small utility called conmon that it's short for container monitor. And conmon actually then is the only thing that's left running at the end of this. It just does all the logging for the container. It keeps standard in and out open and allows us to exact back into the container if you want to kind of join that container namespace and take a peek at what's going on. That's a very, very small C program right now. It takes very little memory to sort of run, and then it also its final job is with the container exits to sort of what was the exit code and was it normal or not.
+
+[0:10:13] JMC: So, I guess it was the performance decision in a way to make Podman really performant. 
+
+[0:10:18] BB: There's a little bit of everything being sprinkled in there, yes indeed. Also, having a service open is like having a door open or a window partly open or however you want to put it in terms of being taken advantage of. Also, we kind of like there's an advantage to daemons without a doubt, but there's also disadvantages. If the daemon goes down, it tends to be catastrophic. Not to say that we're perfect either, but it's more of a one-for-one loss if something is catastrophic. If you lose maybe one container. Unless it's something like system D running around trying to handle things or the kernel has decided it's on a memory and it's going to start choosing.
+
+So, there are some trade-offs there as well that I think influence things. Then finally, is the rootless portions. Daemon has to be run as a user. Podman can be run as either a rootful or a privileged user or an unprivileged user and we don't need to start and stop a daemon to do so.
+
+[0:11:19] JMC: Yes, exactly. Could you expand on that on the rootless container execution? Because that seems like every admin's, I mean, I'm exaggerating by saying every admin's nightmare, but it seems like when you're managing containers, creating them and spinning up, you would rather have all the privileged just possible because you'd rather kill completely a cluster or whatever, but that also comes with serious trade-offs. So, Podman, by design, I guess, is designed to manage less container execution. Is this correct?
+
+[0:11:46] BB: Yes. The idea behind it is really, I guess, start with, you said the word nightmare. Our nightmare is container escape. Someone being able to escape the container and get on the hose. One way to mitigate a considerable portion of that is to ensure that even if they did escape, they had the minimum amount privilege possible. In other words, not root.
+
+But the fact is, as you kind of pointed out, the less privilege that a user needs to run its job, probably the better, because again, it's about reducing the size of that vector and the landscape around it to be able to reduce any opportunity for something bad to happen. I think in the ideal world, an administrator might admit that they would like every single job to run with the least amount of authority and the most isolated that it could possibly be. In this case, we're using a lot of the kernel, which is very well trusted on managing privileges in that way. So, we're simply following along with the Linux kernel. I'm using some of the best practices they've developed and offer as functionally to stay within that circus ring, if you will.
+
+[0:13:01] JMC: I think that removing, so to speak, debugging capabilities that a privileged user may have, as opposed to someone without those, I think puts the burden rather on the builders. If you've packaged the correct things, if you're able to repackage it, the container again, the container image, rebuild it again, easy, you just don't care about debugging it, just remove it and probably spin it up again with the amended rebuilt image. I was going to ask you, how does that process of building images with Buildah, one of the other - I'm not sure if I'm pronouncing it correctly, by the way.
+
+[0:13:33] BB: You are.
+
+[0:13:35] JMC: One of the other projects in the containers org. How does that work? I'm particularly interested in multistage builds, but in general, give us a sense of how does that process look like? 
+
+[0:13:44] BB: Yes, Buildah, and I can't do it properly either, is meant to be said with a strong Boston accent. Almost, like builder.
+
+[0:13:51] JMC: Oh, okay.
+
+[0:13:53] BB: In the way that a Bostonian would do that. Interestingly enough, named by Dan Walsh, I believe who I know is a Bostonian.
+
+[0:14:01] JMC: Okay, makes sense.
+
+[0:14:03] BB: But nevertheless, Buildah is both an application and a library in the relative world of Podman. Buildah is a standalone application designed specifically for building and building, experimenting and kind of putting together images and manifests. However, Podman for the command Podman build actually pulls in the Buildah as a library and we use the exact same code that Buildah uses. It's actually a subset because there are a lot of complex features that Buildah does offer that aren't available as part of Podman build.
+
+So, we see a mix of people using both. If they're purely, all they do is build images, they're very likely using Buildah. If they're more of a developer where they're building, tearing down, following the ephemeral nature of containers, then they tend to be using Podman. There's no set rule. The one thing that maybe differentiates is, Podman does have a RESTful API backend, where it's a pretty well-established API to interact with it. So, if you're doing builds with something that needs that, you tend to drift that way.
+
+[0:15:23] JMC: Going back to the daemonless nature of Podman, was it more difficult to build? Let's imagine that we could go back in time and you could become one of the architects of Docker, of a daemon-based container engine. Would have been easier to build that as opposed to Podman? Did it came with unique challenges to build a daemonless Podman?
+
+[0:15:39] BB: Yes, it would be easier. It would have been easier.
+
+[0:15:42] JMC: So, what are those challenges then?
+
+[0:15:43] BB: Basically, over the years, the first few for certain, we had to develop some strategies to sort of combat what you don't get with a daemon and there it could be as simple as there's not an all-knowing source of truth whereas a daemon you can always ask it what's the source of truth and it knows for everybody. So, dealing with state or dealing with conflict over locking or racing or things like that become their paramount. We developed a number of techniques to really learn how to deal with that. File locks, shared memory locks for various things, but also the order in which a container lifetime is, if you look at how it starts as an image and rolls up and goes all the way out down to an exit code, we had to just sort of be able to at every portion of that, be able to sort of know what a state is so we didn't have somebody starting and stopping the same container at the same time.
+
+Somebody needed to win and then somebody needed to wait. And that's really what the challenge has become. We still do find admittedly very small, like thin use cases where it's like, "Yes, missed it." And they tend to be harder and harder to deal with.
+
+I suppose on a daemon side, you have the inverse problem as well, which is that we have the source of truth everywhere, but then you have all kinds of things trying to ask a single source, what's the source of truth? A lot of people don't know, we have a SQL in general, it's a default SQLite database, writing underneath all this, helping to manage that. And that's also one of the locks that we sort of implement is right through there. In state and status, at a given time in a container lifecycle, maybe in there as well. 
+
+[0:17:43] JMC: Okay, that was my next question. If you could describe the typical container lifecycle, is there any sense you could give us about?
+
+[0:17:49] BB: If we step back a little bit, kind of off the cuff here, it starts with identifying a container image that you want to run with. So, whether that's a Fedora or Alpine or an Ubuntu, it really, and again, that doesn't matter. It should be clear with our folks that if you're running a Fedora workstation, you can run an Ubuntu container perfectly well. I don't know how well understood that is at times. It's completely indifferent. So, it's identifying the image. If that image out of the box is not good enough then it's likely as we've talked about, you need to build it for your purpose. So, if you're using an Ubuntu image and you're trying to run, I don't know a lamp or an nginx service, you need to install those applications in the container image so that you can use them. And then there's probably some configuration and some other very custom things that you want added and that's sort of like the third step of the build in my mind.
+
+After that, we got to know the next piece is assembling how the user wants to run it. Do they want to run it in the background? Do they want to run it in the foreground? What security options do they want on or off or networks do they want to join? And all that information is assembled. That's generally the role of Podman then. That's all kind of brought together. All right, this is how the user wants to run it. And then when it actually becomes run, typically it's executed by the container runtime like C Run, Run C, K Run, and it does the namespacing and a lot of that related stuff, and then something has to hold that kid process inside the container. We like to just call kid one. 
+
+Something's got to hold that open and keep it alive. In our case, that's conmon and other cases it's something else. Container runs for its duration and then there's an exit strategy for that and off that goes and typically then users want to know whether it was a good exit or a bad exit. And if it was bad what kind of bad exit was it? Depending on how you ran it, it may just completely clean up behind it, or it may leave it to be able to be run again. That to me is, that's not Podman specific, that's in general how containers kind of go.
+
+[0:20:12] JMC: Are there any other specific features that you feel particularly proud of? The community has praised or there was tremendous hard work to get into Podman?
+
+[0:20:23] BB: Yes, they're all sort of like children, babies. So, there's quite a few. There's some that you're wanting to know some that are unique to Podman, maybe, or?
+
+[0:20:35] JMC: Any that you particularly are fond of.
+
+[0:20:37] BB: Yes, where to start? I'm quite fond of our implementation of Kubernetes. To be clear, we don't interact or orchestrate, but what we can do is we can generate Kubernetes YAML, which is the backbone of how to orchestrate containers on a large scale. We can generate that from a running container, meaning go ahead and figure out how you want to run the container. And then once you do have that, you can snapshot it, if you will. You can replay it locally, or you can pitch it off to a Kubernetes orchestrator and say, run this.
+
+That was one of those back in the envelope. Super-fast. Let's see what we can make. Is this like even a thing? And oh, it is. Okay, so let's make it real. It's really one of our key community - it's one of the key areas in Podman that the community really helps us tell us, this option needs to be implemented. And so, the community has really steered that to success. Quadlets, another huge one for us, that was actually contributed to us by it. It was a Red Hatter, but someone not on the team. Then the Podman machine, which is akin to Docker Desktop, is something personally for me, is something to behold. And we've kind of gone through two iterations of it now, but that has been wildly successful. Again, another one of those, I can't believe how this thing's being used kind of technologies.
+
+[0:22:18] JMC: When you say akin to Docker Desktop, you mean that it's a GUI that runs locally?
+
+[0:22:23] BB: It's not the GUI. The GUI is now provided by Podman desktop. Another project. It's all the underpinnings. We can run on a Mac without the GUI. We don't bundle that all together. So, you can run Podman with the CLI just like you would in Linux. You just got to initialize a machine and have it running what we call a machine which is essentially just a really special custom virtual machine underneath the covers. So, it's all the underpinnings and we can do all CLI-related stuff and still have that function, and/or you can add Podman desktop and get a real nice GUI that does have a lot of value add in itself.
+
+[0:23:08] JMC: Podman is currently the only container management system within the CNCF. Is this correct?
+
+[0:23:15] BB: No, I think containerd is there.
+
+[0:23:17] JMC: Oh, right, yes, you're right.
+
+[0:23:18] BB: CRI-O is certainly there. I don't know about others offhand. I know those guys are there. Yes, absolutely.
+
+[0:23:25] JMC: I don't know how much you can talk then about, because I'm going to ask about the future, like the roadmap and what it looks like. Obviously, this is a question for the community, I guess, but since you're so involved in the contributions of your team are probably one of the biggest. Can you talk us a bit about what's coming up in Podman's future?
+
+[0:23:42] BB: Sure. Again, I can be absolutely transparent about it because, and in fact, on our GitHub repository, that would be github.com /containers/podman. In that repository, as a part of our CNCF activities actually, publish a roadmap. Now, they can be kind of generalized, but I just published what we're doing for 2Q this year, so April to June. I'll just step back. Our project, we do a quarterly priority analysis. So we, for the most part, scoop up, a couple of weeks before the quarter is going to end, I scoop up all the stuff that's been asked of us that we had to defer, that has bugs that have been reported or features that have been asked for. I scoop all that up and we review it as a team and kind of decide we have a ranking process. From that, we derive what we're going to do in the next quarter.
+
+So, some of the things that have come out for the next, say, three months, but there are themes moving forward even well beyond that. We'd be significantly increasing our scope and support for OCI artifacts. We currently don't support them on Mac and Windows. I think by the end of the quarter, we will have all that for the Mac clients. We continue to have improvements in our rootless networking, via project called Pasta. There'll be some integration of quadlets directly into Podman, whereas today, they're sort of somewhat unlinked. You'll see that in Podman, we'll be able to sort of have a view of what's going on with quadlets, and for example, get a list of them and what their status is and things like that. You see an increased adoption of composefs in particular for edge deployments and other special utility projects, and we have been for the last six months, looking at push and pull speeds. 
+
+So, for example you have a local container image and you want to push it up to a registry like quay.io or docker.io or vice versa, pulling it down, and looking at ways that we can minimize the amount of network traffic or speed that we've been putting a lot of time into something called partial pulls where we pull down just what's the portions that are needed at the time as well. And then using the standard compression around all that, so quite a bit. We have a good development team, not even counting the external contributions. So, quarter to quarter now, we're able to advance quite well.
+
+[0:26:26] JMC: Partial tool sounds like the shallow clones that I did years ago, kind of to not pull all the tree of blobs and just get the latest or a few.
+
+[0:26:34] BB: Yes, I think there are several sort of derivatives of that model, and even just in file systems. I guess I would say file systems is not an area of expertise for me at all, but standing outside and kind of looking at those guys, they wouldn't be redoing it if they haven't, if they were satisfied with it. So, there must be some weaknesses that we're still trying to iron off.
+
+[0:26:57] JMC: To move in up a bit in the sense of getting a bird's eye view of the market in general. I know that in open-source projects don't necessarily compete against each other, but it is true that one projects want attention, contributions, engagement and all that. So, with that in mind, with containerd in mind, with CRI-O in mind, with Docker in mind, with all the I guess competitive alternatives, alternatives in that space, does the Podman team address a specific audience? Does it want to tackle a specific use case? Do you guys see your audience, the global audience, sort of like divided into camps in a way, I guess, as my question to you, or not?
+
+[0:27:40] BB: Definitely. I thought I would be less hesitant to say that we all agree on what that actually is and what that looks like. But my view is Docker, CRI-O, or just Kubernetes in general, containerd, Podman, they were all made because they have a strength. So, that strength does tend to dictate where they, I'll say best play, at least perception and probably in reality as well. So, for Podman, we pretty much can run anywhere or anything that Docker does, but probably our sweet spots, like let's just say in the last year, our sweet spots are around developer environment. So, the single node developer that needs to either develop using containers, they're writing something around containers, or they're, for example, writing code and they need containers to say run their regression tests or something like that in various environments.
+
+That's certainly a large one, the other one where we're really starting to stick out, particularly with the use of quadlets is being able to run containers as a service in conjunction with systemd. So, edge applications tend to be embracing this model of using Quadlet and systemd to manage a service. You could almost say, well, what is Podman even doing in that other than running the container? And that's somewhat true. We sort of step into the background and allow systemd and Quadlet to do its thing. That is really seemingly kind of come out of the woodwork, if you will. And the piece that has complimented that well has actually been our Kubernetes ability.
+
+So, they use Kubernetes to describe the service in a very sort of meaningful way as opposed to a lengthy run command or something like that. People do this with Docker Compose as well. So, we've got a nice descriptor and then, the Quadlet can ingest that and use Podman to run it, and it's very repeatable. Of course, the added advantage is, you could then kick that. You could, in an emergency or whatever, you could kick it to Kubernetes and scale it out or whatever. So, I think we also have play well in the terms of that pass-off from single-node developer to I want to scale, and we really believe in that pass-off. That's something that someone else does better than us. And of course, we have an opinion on that too, but here, that's your world, you guys do that best. We play within our sandbox.
+
+So, to me, that's kind of how things are evolving. If you'd have asked me that question five years ago, you got an entirely different answer.
+
+[0:30:42] JMC: Yes, I agree. So, I'm taking for granted that most of the people that are listening to us are more familiar with Docker, it is of the projects that I've mentioned, the oldest probably. I couldn't have that wrong, but it's probably the most popular, very likely. So, those that are local first, those developers that are listening to us, as you say, playing with node, running stuff locally, and are familiar with Docker Compose, but at the same time, went to dabble on Podman and try it. Can they play around with Docker Compose and Podman? How would you onboard those guys?
+
+[0:31:16] BB: Yes. It's a reality. Docker Compose has a large following people, companies, development teams have invested a fair amount of time fine-tuning those files. The question makes perfect sense. Our answer is that you can take your existing Docker Compose file and Podman will honor that. So, what we do is it takes a little bit of an explanation on how it actually works, but a Podman being daemonless doesn't exactly jive with Compose out of the box well, because Compose is expecting a RESTful service to be answering.
+
+So, what we do is we run usually a socket-activated system service with systemd that will start the RESTful portion of Podman. And then what we tell you is just use Docker Compose against that and it has worked quite well. Not every single use case is covered. If you've gotten some very specific things like there's some new build-related API stuff that Docker's done that's in their API, it's not in ours yet. We've even gone to the point of if you have the Docker compose binary, this would be the v2 Docker compose. If you have that binary in path, in other words, it's easily found, you can actually type, "podman space compose" then that will behave just like Docker Compose. And we do that just for convenience for people that have scripted this on top of, so it's Docker Compose and maybe they've written a bash script or maybe they've written a PowerShell script and they want - they don't want to go in and change all the things. So, that's one thing that we've done.
+
+We've had very good success with that, and we talk a lot because of questions about how do I get from Docker Compose all the way over to Kubernetes. Podman can kind of do that for them. They can run their workload against Podman with Docker Compose. They can snapshot that and generate YAML. They can stop all that, replay it, make sure it's doing what they expect, and then they can throw it out to an orchestration. That has been sort of interesting, that idea of kind of intermediary to get to where they want to be. So, I think that's been interesting.
+
+Yes, that's how we deal with Docker Compose, and it was, I will say back - so we started honoring Docker Compose in Podman 3. We're at Podman 5 and change now. That was one of those decisions where you look over the cliff and you say, "Yes, this is possible. Do you want to do this because it's going to come with baggage?" And it did. But it was pretty much the conversation was can we not do this. Back then that was Docker v1 which was a little bit of a simpler approach. It was all Python based. So, it's a little easier to deal with. I think we're in a good spot with that now and we certainly see people bumping back and forth between Docker and Podman, and Podman to Docker. That to me is just the open-source freedom that allows you and not wanting to lock people into specific vendor solutions, which is what the CNCF's about and frankly what we're about.
+
+[0:34:55] JMC: It's true. I wish that Compose worked a bit better myself with Kubernetes, that's my personal opinion, and I think others, but you're right. I mean, you have alternatives. You can go on to other projects and that work with Kubernetes pretty well, like Podman, and just launch yourself into the CNCF ecosystem. Tell us about any projects, production that are running in production live that are based on Podman. Has the community come back with real world examples of, "Hey, we're running a Podman, for this and that, and it's amazing."
+
+[0:35:27] BB: Yes, absolutely. I mean, it is amazing, particularly when you think about the first line of code going in and where we are now. I guess to me, the most impressive and successful ones are obviously that we can't share.
+
+[0:35:43] JMC: Yes, that's usually the case.
+
+[0:35:44] BB: Yes. I mean, that is the case. That said, we have maybe a bad topic these days, but we have a lot of government agencies using it. HPC community has definitely accepted and they're doing the HPC thing of pushing it as hard as they can push and squeeze everything out that they can.
+
+[0:36:06] JMC: The HPC, could you elaborate on that? What does it stand for?
+
+[0:36:09] BB: Well, HPC's environments typically, they're at massive scale massive scale or latency or pushing it to launch as many containers as possible. For example, it's probably not a great example, but those are things they're concerned about. Whereas the design of this was a person sitting on a laptop. If it took one and a half seconds versus one second to us, we don't even recognize that. To HPC, that's important. We've seen a very, very broad acceptance in the banking and FSS for some reason that it just seems to have really stuck very well there. I think the primary driver behind that has been to get off of privileged solutions like virtual machines and some of the other runtimes. We have seen edge, as I mentioned, a real embracement from edge-related things where we have some interesting functions like auto-update where if a new image is released, Podman can detect that and it will update it. And if it doesn't work, it'll roll it back.
+
+So, that satellite system sitting on an iceberg somewhere floating around doesn't go down and someone has to go visit it kind of mentality. We've certainly seen edge embrace that. Then just befuddles us, but Mac and Windows, it's just been like a totally unexpected embracing of that. Obviously, it's an interesting thing coming from Red Hat. It just really is. There are a lot of Macs being used in Red Hat, so there's some familiarity around that. I don't think it's a trade secret that IBM itself has adopted Podman and Podman desktop, and there are tens of thousands of users of that going on there.
+
+[0:38:15] JMC: So, someone like you that knows the nooks and crannies of every single place and component of Podman, are there any quirky features, any quirky design decisions that you particularly fund off because it's just fun or provides a keep experience, so to speak? Is there anything that stands out in that sense?
+
+[0:38:36] BB: Yes. There's probably a handful. The first one is in our name. People forget that we run pods and there are advantages to running containers in pods. There just are. Networking is greatly simplified. You can have shared namespaces between them for things like IPC and otherwise. These are, if you sit back and think about them, these are really important on how you may construct your application. I'm surprised it hasn't - people use it. And certainly, all the K8 stuff we do has to use it because that's all based on pods. But that's one.
+
+The other one is just a little quirky one called runlabel and you can type podman, I think it's podman container runlabel or runlabel. I forgot to top my head because I don't use it as much as I should, but it basically allows you to have a label attribute on the OCI image that says, "This is how I want to run this image." So, it might have - if you've ever run a Docker or Podman command line, there's, I think like 300 options that can be passed in or so, various incantations. Well, that can be embedded in the image as a label. And then the user doesn't have to type out this 100 character, how to run this that's just bang, and it goes somewhat composed like, somewhat in that territory with maybe a lot less orchestration, but simple.
+
+We've got a number of sort of advanced network scenarios too that we support because people have come and asked us, "Could you do this?" So, we've got some kind of quirky ones there in particular about network isolation. Again, kind of building on the reduced vector story. And if the container doesn't need a network or only needs to talk to each other, then do that.
+
+[0:40:41] JMC: Yes, nice. Well, Brent, anything else that we didn't touch upon about Podman that we should have that the audience should know?
+
+[0:40:48] BB: I think that as outsiders watching our journey through CNCF, will be something we will likely have to move our repository as a term of that. That would also include Buildah and then there's a command line utility called skopeo that would also likely go with all three are kind of in the same basket. Watch us continue to mature and smooth out the rough edges on our Windows and Mac support, and particularly around GPUs and alternative architectures. They'll continue to be movement in there and contribute. That's what we're here for. Nothing makes us happier than someone who files a request for enhancement on RFE on our issues page, describes it, and several us comment like, yes, that's a great idea, and then a pull request shows up to add it with tests, and that's just awesome because it's like a shot in the arm.
+
+I mean every contribution you wonder is this going to be a flyby and now we're going to be left holding it? Or is this somebody that wants to be part of this and it's an ongoing effort? But regardless, contributions are great because it's a way for the community to tell us where to go and I love that. Because otherwise we're trying to always figure it out and it's extra work and you do get it wrong sometimes.
+
+[0:42:19] JMC: Well, Brent, this has been fantastic. I wish the Podman Project the best, that it graduates, it becomes a widely used project within the CNCF and elsewhere. Thank you for being with us.
+
+[0:42:32] BB: Jordi, it's my absolute pleasure. Thank you.
+
+[END]

@@ -1,0 +1,239 @@
+EPISODE 1843
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: PostgreSQL is an open-source database known for its robustness, extensibility, and compliance with SQL standards. Its ability to handle complex queries and maintain high data integrity has made it a top choice for both start-ups and large enterprises. Heikki Linnakangas is a leading developer for the PostgreSQL project, and he's a co-founder at Neon, which provides a serverless platform for spinning up Postgres databases. In this episode, he joins Kevin Ball to talk about why PostgreSQL has become so popular, why he founded Neon, Postgres Core vs. Extensions, the pgvector similarity search for AI applications, and much more. 
+
+Kevin Ball, or Kball, is the vice president of engineering at Mento and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies, founded the San Diego JavaScript Meetup, and organizes the AI in Action Discussion Group through Latent Space. Check out the show notes to follow K-Ball on Twitter or LinkedIn, or visit his website, kball.llc. 
+
+[INTERVIEW]
+
+[0:01:18] KB: Heikki, welcome to the show. 
+
+[0:01:18] HL: Thank you, Kevin. 
+
+[0:01:21] KB: I'm excited to get to talk to you. Let's start a little bit with about you. Can you introduce yourself, and your background, and what got you to the point where we're talking today? 
+
+[0:01:31] HL: Hi. My name is Heikki Linnakangas. I've been working on Postgres for the last 20 years for different companies. Currently, I'm a co-founder of Neon, which is a cloud provider for Postgres. Before that, I worked for Greenplum, like an open-source analytics platform built on Postgres and many other things. But currently I'm working on Neon on a serverless Postgres and cloud. 
+
+[0:01:53] KB: Yeah, I have been very heavily on the Postgres train since probably the mid-2010s. I sort of grew up on MySQL. But then at some point, they seemed to really fall behind and Postgres kept going. And honestly, these days, I feel like there's all these new specialized vector DBs and specialized DBs. And I'm like, "Why not just Postgres?" It's a high bar. 
+
+[0:02:17] HL: Yeah, I think that's a bit of a meme nowadays, like, "Just use Postgres." It's kind of funny, because I started around 2003, I want to say. And back then, it was not a given that people use Postgres. MySQL was made more popular. And we kind of had to explain people, first of all, what is Postgres? And then next, you have to explain why would you use Postgres rather than MySQL or something else. Proprietary databases were much bigger back then as well. But over the years, something changed and you don't have to explain that anymore. It's become the default, which is funny. It feels strange to me because it used to not be that way. But nowadays, people just take it for granted that people are using Postgres. 
+
+[0:02:56] KB: What do you think gave Postgres such both longevity, and why has it become the default? 
+
+[0:03:03] HL: That's a great question. I've thought about that myself. To be honest, I don't know, but I can speculate. I think Postgres has done really well. It has a reputation of being very stable and that it has a good feature set, but it's been around for a long time and it's stable and predictable. I think a lot of the credit for that goes to the packagers and the whole release management team. We've been doing regular yearly releases, annual releases for a long, long time now. And it's like very predictable, the schedule, and what's new, all the upgrade process, all of that, it keeps improving, but it's a very stable and predictable process. 
+
+At the same time, proprietary databases - well, proprietary software in general has become less popular. People are moving to open source increasingly. And in the open-source ecosystem, MySQL have had their own problems with the versions and it's been confusing in that world. And then other databases never really became that popular for some reason. But then there's of course technical reasons. Postgres has a big ecosystem of all kinds of tools and a lot of things that kind of come with the fact that it has become popular and the default. A lot of people are - there's a big ecosystem. And if you have a problem with Postgres, you can Google that easily, you will find 10 blog posts explaining the same error message that you're seeing and how do you fix that. It has reached kind of the point where there's a snowball effect going on. Because it is popular, also, it has advantages simply because it is popular. 
+
+[0:04:26] KB: Yeah, that momentum effect is there. One of the things that stands out to me actually thinking about it is also extensibility. I feel like Postgres has been able to not just grow in the core, and it has grown in the core. When document stuff started to get big, we said, "Okay, we've got JSONB. Let's go." But the custom types. And I'm curious, actually, for folks who have never played around with that, maybe we can talk a little bit about that extensibility. What does the extensibility story for Postgres look like? 
+
+[0:04:56] HL: If you go all the way back to the university project 30 years ago when Postgres was born, that was at the core of Postgres already back then, the idea of extensibility, and especially with the data types. Postgres has a very flexible type system. You can create your own data type with its own functions. And not just functions, but also operators on how you integrate into the different index types, and you get to define your own definition of ordering for your data type, and what does it mean to sort it, or what does it mean to - you can create your hash functions. 
+
+Many other databases have a few basic data types, strings and integers, for example. And everything is either a string or an integer with some sugar on top. But Postgres goes a lot deeper in that. Even all of the built-in data types are created using the same primitives of operators, operator families, operator classes, and how do other operators work together. And you get to define all of that yourself. 
+
+Remember, I wrote for a presentation once, a data type for indexing colors, for example, or to work with different colors. It was a toy. But it's really interesting to see that you can create a data type for colors, for example, and then you get to define your own operators. What does it mean for yellow to be greater than blue, for example? Or whether operators make sense, and then you get to build your own indexing system for that. You can build similar to geographic indexes, you can build indexes on which colors are closer to each other, and you get to define the distance function and all of that. Yeah, the type system is really very flexible. 
+
+A lot of the credit goes all the way back to the university at the time. That was the whole idea of Postgres even before any of the other stuff was - while looking at all that was even created yet. But then we have these extensions. PostGIS has been really important for that. That's been around for a very, very long time. And Postgres has been kind of the default for geographic applications even longer, and it has been for other applications because of PostGIS. 
+
+And the fact that PostGIS was built as an extension and it has a different license, it's GPL licensed. It was never going to become part of the core because of the license issue, if nothing else. But that has kind of forced a nice dynamic between the communities, too. We're all friends and we talk to each other. Whenever there has been a need for a new kind of an indexing or some kind of support for indexing geographical types, we've kind of designed the core features for what does it mean to have defined these things. And then on the PostGIS side, they've implemented the implementations of that for the geographic types. But that has played really well. 
+
+Another very popular extension nowadays recently, thanks to all the AI stuff, is pgvector. That's become really popular in the last couple of years suddenly. But the fact that why is it possible to create a pgvector extension? It all plugs into the same extension points that we have had for PostGIS and other data types. And it just plugged in really nicely there. 
+
+[0:07:44] KB: That makes sense. And it is interesting how having that external body be such a big part, actually, of Postgres' early growth forced you into that. 
+
+[0:07:54] HL: Yeah, I think that's really, really helpful. And the fact that it was a different license, there was never really any question of, "Should it be part of the core?" It was not meant to be. But that has kind of driven the way we think about extensions. And in general, it's good thing to have extensions, and we don't want to have all the different data types in core. They have a more happy life outside of the core as an extension. 
+
+[0:08:14] KB: How do you think about what should live in core and what should not? 
+
+[0:08:19] HL: That's a great question. People have different opinions. My opinion is that anything that if there's a reason it needs to be a part of core, then it can be part of core. But for most new things, it's better if you can have something as an extension. Extensions have a lot of advantages. You can have your own release schedule. You get to decide your own releases. You get to decide your own other external dependencies. Something like PostGIS, for example, depends on a bunch of other libraries that we would - if we would rather not have any dependency on core Postgres on those libraries anyway. But similarly, if you're building a new data type nowadays, you get to decide which other libraries you use, for example. You don't need to ask for permission for anyone, you just do it. And I think that's really powerful. That allows you to move much faster. 
+
+[0:09:01] KB: Absolutely. 
+
+[0:09:02] HL: There are reasons. People do suggest or want to include various stuff in core, and we have to have discussions like, "Why should this be in core or not?" I think that dynamic is shifting a little bit. One of the reasons why people want to have extensions in core or move these things into core is that they want to have the same level of support and the same kind of - they want it to be in the core part of Postgres for whatever reasons. But as a developer, I'm always pushing back on that because that basically sounds like someone is dumping a lot of work to me for me to maintain all that stuff. And I don't want that. I want to have less things to maintain. 
+
+[0:09:35] KB: Yeah, for sure. I mean, I think this balance is always tricky, right? And you've got - as you say, if you're outside of core, you can move much faster, you can explore things much quicker, you can use a lot more third-party dependencies. What types of innovations are still in progress for core? Where do you think the core of Postgres is developing? 
+
+[0:09:56] HL: Well, there's no central roadmap. We know what's coming in version 18, which is released in autumn in September, probably. There's going to be asynchronous IO. That's the big feature I've been keeping an eye on. I haven't done much work on it except some reviewing. But Andres Freund and others from Microsoft have been leading that effort. But that's going to bring big improvements to the IO characteristics of Postgres. 
+
+One thing that I've been working on a little bit is multi-treading. I kind of raised the flag on that, like, "Let's get multi-treaded." And that has hit social media and stuff. I haven't done much work on actually making that happen. But I think we are in a place where there's agreement that that's where we want to go. And that's kind of the first step in establishing that it's desirable. That's something we want to happen. And I'm hoping to spend a lot more time on that for the next release, actually. But yeah, there's no central roadmap for a Postgres. It always depends on what other stuff that people submit patches for. What are the things that people and companies who are contributing decide to work on? 
+
+[0:10:55] KB: Yeah, that makes sense. Well, let's talk. You mentioned briefly, pgvector. And I know that whole space of vector databases, and storing embeddings, and all of these different semantic search layers and things like that is very much the hot topic today. And I think you worked quite a bit on pgvector. Is that correct? 
+
+[0:11:15] HL: Yeah, I have contributed a little bit to that. 
+
+[0:11:18] KB: What is in pgvector? What does it take to run it? And how does it stack up against, say, for example, a dedicated vector database? 
+
+[0:11:26] HL: I mean, it uses the same algorithm as many other director database. HNSW and IVFFlat, those are the two algorithms that pgvector implements. And that's pretty much the state of the art. There are some other algorithms with slightly different tradeoffs. There are other implementations of the algorithms that can be faster or slower, but it's roughly the same algorithm that everyone is using. 
+
+I think pgvector vector is stacking up okay. It could be a little bit faster. It could use less memory. There's always improvements to be made, but it's doing okay. But the thing with all of these algorithms, in my experience, coming from a traditional database world, and I haven't done much with AI, but what I have done, when I started to look at pgvector, I started to look at it from the point of view of, "I know indexes, I know how PostGIS works, I know all the other index types. Let's look at this new thing. How different can it be?" And it turns out that, yeah, vector data is slightly different. Vectors are large, first of all. And building in these indexes is very slow compared to traditional B-tree indexes or other indexes. That was a bit of shocker, just how expensive and CPU-intensive these workloads are. 
+
+Another thing that is striking is that there are no good disc algorithms for vectors. All of the algorithms pretty much depend on you have to fit your workload in-memory, which puts kind of a cap, upper limit on how much data can you deal with. And the big difference is between many of these algorithms and implementations is actually in how much you can compress it. How much lossy compression can you do? Some of them, you can compress the vectors all the way down to one bit per dimension. And it works surprisingly well. And there's like all the new research that is happening is happening on how do you just make the data smaller so that it becomes faster to process and you can fit more of that in RAM. That's very different from traditional data types that I'm used to dealing with. 
+
+[0:13:15] KB: Yeah, that makes sense. And then are there any ways that pgvector is different from some other custom type? Or does it essentially end up looking to Postgres the same as PostGIS or something else? 
+
+[0:13:29] HL: It looks exactly the same. That's the interesting thing. And this is something we haven't solved, but something that is interesting with the vector algorithm is that they're all approximate. Whenever you're doing a search on a vector index, it's always - the thing it does, the thing that all of these algorithms do is approximate nearest neighbor search. And whenever you hear something approximate, that's kind of a red flag to a SQL developer. The databases are supposed to be very exact. And if you do select star from a table, you don't expect to get approximate results. You expect to get exactly the same data set what you inserted. 
+
+But that's not what these algorithms do. They're always approximate. They lose not that much information, but they do lose some information. And whenever you then do the search and you pick the top 10 results, for example, it's not deterministic which results you get. And that's fine for simple cases. But that actually throws off some of the rest of the system. If you're using pgvector together as part of your larger SQL query, for example, you would do a vector search, and then you would filter that or whatnot. Then it gets complicated because, suddenly, the kind of the lossiness of the query propagates all the way to the other stuff. 
+
+If you fetch the top 10 results, and then you get the different results, and then you filter them, and then you sort them, and you get different results than you would otherwise. For exampke, it controls the rest of the query, and it can even cause errors when the ordering doesn't match what the planner expects, stuff like that. They're rare coroner cases, but it can happen. That's something that we still haven't figured out. How do you represent that kind of approximate query results from these operations at the SQL level? I'm not aware of anyone who has a good solution to that. I would be all ears. And then maybe this is something that needs to go all the way to the SQL standard or something where you would kind of define the semantics of what does it mean to get approximate results. 
+
+[0:15:19] KB: Yeah, that's fascinating. Because I think, yeah, in a lot of cases, you might have that as a separate data store. And so you don't have to worry about how is that combining then with the SQL place. It's up to the application developer. They decide. 
+
+[0:15:31] HL: Exactly. Yeah, you have to figure it out yourself. Yeah. 
+
+[0:15:35] KB: That kind of leads to an interesting question. You know this is a type of bug that can occur. How do you deal with that inside of Postgres? Do you sort of look for it and raise an error? Do you just return incorrect results? What does that look like? 
+
+[0:15:49] HL: Yeah, it depends. It depends on how exactly it happens. It can lead to incorrect query results. Well, they're kind of all incorrect. This is approximate search. 
+
+[0:15:58] KB: Yeah, what does correct mean in this world, right? 
+
+[0:16:00] HL: Right. What does correct mean? There's different levels of correctness. And how do you measure that? Now, that is well-defined. There are ways you can work around it. In the SQL syntax, you can kind of work with it the same way you would with an external vector database and do one query for the approximate part and then do the rest of the query using the results of that. You can put a barrier with a width clause or something to kind of force the planner to make the planner a certain way. That's one workaround. 
+
+But if you don't do that, then, yeah, those errors can propagate. And depends on what the rest of the plan looks like. If it's a merge join and you get the different ordering for the results, for example, then there's actually checks like sanity checks in Postgres. However, if the result said that was supposed to be ordered is not, you will get an error. But in other cases, you might just silently get incorrect query results again for some definition of incorrect. 
+
+[0:16:50] KB: Yeah, it is a fascinating world we're in right now. Looking at this and looking at sort of where Postgres is going and how it's being used actually brings me a little bit towards Neon. Can you actually share what was the motivation behind starting Neon? 
+
+[0:17:08] HL: The way we started, we looked at the architecture of Amazon Aurora, and we decided that we want to build something similar, but make it open source. That was kind of the starting point. Now, along the way, of course, we've come up with new ideas and other stuff, but that's still kind of the core of what we do. And the core is the separation of compute and storage. 
+
+The idea is that there is a separate storage system, which keeps all of the history. That's the interesting part about Neon. And that's different from Aurora. At least they don't expose it. But the way the Neon storage works is that it takes the write-ahead log from regular Postgres and it keeps all of the history and it kind of allows you to do point-in-time recovery. And it replaces your regular backups and archive that you would normally use with the Postgres setup. It kind of integrates and replaces all that with the Neon storage, which keeps all of the history. And that allows you to do stuff like point-in-time query or launch multiple read replicas against the same storage without having to make multiple copies of your data. Things like that. And that allows us to scale the storage layer separately, independently. And then there's the compute side. And the compute for us means basically Postgres. And Postgres connects to the specialized Neon storage instead of the local disk. 
+
+This idea of separating the compute and storage, that was at the heart when we founded Neon and what we started to work on. And it's still at the heart of everything we do, all of the features we have. Branching is a popular one that a lot of our paying customers are using Neon because of the branching functionality. Well, that's possible thanks to the storage, because the storage allows us to do that branching. 
+
+We are serverless. Again, the big reason why we can be serverless is that we can launch Postgres very quickly. And the reason we can do that is because we have separated the storage. It all kind of ties back to thanks to the storage engine. That makes all of the other stuff we do impossible. 
+
+[0:18:58] KB: Yeah, this concept of a serverless database is fascinating. Because as the world has gone towards, okay, serverless, and stateless services, and all these things, the most heavy inertial piece that's hardest to do that for has always been where your data lives. Because data is persistent. Data has to be persistent in order to be there. And if I understand correctly, you're saying, "Okay, great. But let's sort of cut the tightest barrier possible around that thing that has to be persistent and make everything else serverless." 
+
+[0:19:28] HL: Exactly. Yeah, that's exactly what we do. We made even Postgres serverless by pushing down the thing that needs to have the state, which is the storage. Kind of push that further down the stack and separate that as well from the compute side of Postgres. Yeah, as you said the data has inertia and it doesn't move easily. It's not serverless. You can't just suddenly come up with data from thin air. You have to actually store it somewhere. 
+
+[0:19:54] KB: How fast can you spin up Postgres if your data is separated off in Neon? What is that response time on a serverless Postgres? 
+
+[0:20:01] HL: We measure it internally, and it's about 700 milliseconds at the moment, I think. There's a little bit more that the user perceives because the handshake to the client and so forth, that's a little bit. But we try to keep it under one second. When we started, another part of how we make this work is that we run the PostgreSQL instances in Kubernetes cluster and we launch a VM, a virtual machine, for every Postgres instance. 
+
+When we started, the delay of that was about five seconds to launch a new Kubernetes pod and connect your connection to that. And we kept hearing from users like, "Yeah, Neon is awesome. But man, the cold start time, that's too long. That's killing us. That's too long." We kept hearing about that, and we started to work on it based on the feedback we got. And we had plans to bring it down further and further. 
+
+The thing that made a big difference is pre-creating these VMs. We have a pool of pre-warmed VMs available at all times. And we got it down to about one second, and we stopped hearing these complaints. That was kind of the tipping point where people stopped complaining. And that was really interesting to see. We still have plans to bring it down even further, but it's not really a problem anymore. That seems to be that people are happy with the roughly one-second delay when you connect for the first time. 
+
+[0:21:14] KB: Got it. That's low enough that you can essentially spin this down if you don't have requests coming in. But it'll stay hot so long as you're coming at it. It's not quite the same thing in some ways as a serverless function that, really, lifetime is only the request. 
+
+[0:21:30] HL: Well, a serverless function has the same thing. The function lives somewhere. There's data. The code is somewhere. And there is a delay the first time you call a serverless function as well, and then it gets loaded. 
+
+[0:21:41] KB: Oh, that's fair. Yeah. 
+
+[0:21:42] HL: It's not as high. Typically, that's even lower. But we also have plans to bring it down even further. But the pain point seems to be somewhere between one and five seconds, where people stopped complaining. 
+
+[0:21:53] KB: That makes sense. I'd love to dive into what you're doing in the storage layer. Because I was researching this a little bit ahead of time and found it completely fascinating. Can we maybe just start with high level architecture, which I think you laid out when you were starting Neon. Or at least I saw it in the blog post. But what does this minimum viable encapsulation of your heavy inertial data look like? And how does it enable these things like point-in-time queries and all of that sort of thing? 
+
+[0:22:22] HL: The kind of abstraction we have is that we store all of the write-ahead log of Postgres for the users. It's the same write-ahead log that people use normally with Postgres for point-in-time recovery, backups, archive replication, all of those features. All of this is based on the same write-ahead log. And the basic idea is that the storage takes the write-ahead log stream from Postgres and processes it and it transforms it into a different - reshuffles the data into a different format. Based on the write-ahead log, it can reconstruct any version of a page. 
+
+Postgres always requests a page - all of this works at the page level, at the block level. It works with the 8-kilobyte blocks that Postgres always uses. But whenever Postgres needs to read a page, instead of reading it locally from disk, it sends a request to the storage. Get page number 1, 2, 3 at this point-in-time. And kind of this time dimension is what makes all of these other features possible. 
+
+The storage layer can reconstruct any version of any page. If the page has been modified 100 times, it actually keeps all of the 100 versions of the page available, and it can return any version of those pages, depending on what the request is. And you can kind of see where that's the thing that enables us to do things like having a read replica that's lagging a little bit behind the primary. It will just request all of the pages at the slightly delayed point-in-time, or it replaces a point-in-time recovery, because you can just launch a new compute node, a new Postgres instance, and it can just tell. You can just tell it to, "Please show me all the data at this older point-in-time." And the storage layer can do that. 
+
+Now, there's a lot of complexity and a lot of smart engineering that goes into the storage to make it possible to do that, like actually keeping every version of every page is very expensive, obviously. There's a lot of smarts in how it stores the data. And it doesn't literally keep all of the versions, but it keeps the write-ahead log and some images of the pages at specific time points in time, so that it can quickly reconstruct any page based on the write-ahead log and the images it has. 
+
+[0:24:33] KB: This sounds to me like essentially an event-sourced model, if I'm understanding correctly. 
+
+[0:24:40] HL: Yeah, that's one way to think about it, yes. 
+
+[0:24:42] KB: Where the events are the write-ahead log. It's saying, "Okay, this changed in this way. This changed in this way." And then it's projecting out, "Here's the state of data at some point-in-time," and you save those images essentially. And so any point-in-time becomes the most recent image before it, plus a set of deltas. 
+
+[0:25:01] HL: Right. Yeah, that's one way to think about it. In an event sourcing system, it's up to you to define what do you do with the events, and how do you collapse the events into the final image of whatever you have. In this case, it's the pages and the page images. Postgres never needs to know about any of the stuff that's happening behind the scenes. Postgres can just request a page, and it will get a page, and all the stories does all the magic to reconstruct that. 
+
+[0:25:25] KB: Yeah, Postgres can stay blissfully unaware of the events underneath the surface. And it's just what is my state? That's really interesting. You highlighted at a point before around the importance of having data in-memory for certain index types or other different things. What does the memory hierarchy of this system look like? Are those servers that are responding to pages? How much are they keeping in-memory? Where are they falling back to? What does this look like? 
+
+[0:25:52] HL: Starting from the top, from the fastest tier. I guess, even the CPU caches, and registers, and so forth. But the way I think about this, at the top, there's the Postgres shared buffer cache, which is the same buffer cache that Postgres always has. We actually configure that buffer cache to be very small. I think we studied 228 megabytes, regardless of the size of your database and regardless of the instance size. And the reason for that is flexibility. That allows us to easily scale that up and down. Postgres doesn't allow you to change the size of that. We kind of set it to the minimum that we can get away with. 
+
+Then there's the next level of cache, which is something we call the local file cache. And that's a Neon-specific thing that we built that just uses a local file as a kind of second-level cache. If the page is already in that cache, then you don't need to go and request it from the storage. We can return it locally. And that makes it possible for us to have such a small shared buffer cache that it kind of allows us to overflow that. 
+
+Then the next step is that whenever there's a cache image from that, now you have to actually go to the storage and you have to go to what we call the page servers, which is that's the service that does all the reconstruction of the pages that we talk about. Now you have to actually do a network request, you have to go over the network, make that request, and then bring it back. 
+
+There is caching involved within the page server as well for various things, but that's not very significant to the latency. We pay a lot of attention to the latency of all of this, because that easily adds up. But as soon as you have to go over the network, the other latencies don't matter so much. We spend a lot of time making sure that there is caching that happens in Postgres, and that we do pre-fetching properly. So you don't have to - that's a very effective way of hiding the latency. Then the stack goes even deeper than that. 
+
+The paid servers actually don't - they're not the final source of truth either. The paid servers are actually just the cache of what we store in object storage, like Amazon S3, or Azure Blob Storage. The object storage is what ensures that we don't lose data in the long run. If one of the page servers goes down, we just launch a new one and it will download the files from the object storage that it needs on demand or beforehand. There is a pretty deep hierarchy of caching involved. 
+
+[0:28:08] KB: Yeah, absolutely. That's fascinating. You pay very close attention to the different latencies involved. What does that look like, one network hop? And then if you have to go all the way down, say you're accessing something that's completely cold coming out of the object storage, how much does that add to your query time? 
+
+[0:28:24] HL: Yeah, the first time you have to do a request and download this data from object storage, that's hundreds of milliseconds, or up to a second, or two seconds even. That's very slow. But we do try to keep things cached on the paid server side so you don't see that latency. You can also hide that a little bit. We do offload the stuff and kind of remove it from the hot storage for databases that haven't been accessed for a long time. I don't remember what exactly that time is. But if you haven't used your database for weeks, then you're probably okay with a few seconds of latency on the first hit, the first time you actually access it again. And those downloads tend to happen in big batches, so it's not like you have to pay the one-second latency for every page. It's only really for the first few pages, and then it gets cached again. 
+
+[0:29:07] KB: Nice. You talked a little bit about some of the benefits that this gets you, but let's maybe dive a little bit more. You said you don't need your whole backup service. Is that because it's all going to object storage anyway, which is already dealing with all of that? Or how does that work? 
+
+[0:29:22] HL: Yeah, that's correct. All the data ultimately goes to object storage. And that's what ensures the durability. There's actually two pieces that take care of the durability. For the recent stuff, recent modifications, we have a service called the safekeepers that make sure that we don't lose the recent transactions. Because you can't stream data to the object storage. That's the thing, that's the service we keep. Three copies of the recent write-ahead log. And there's a query algorithm there based on Paxos, which makes sure that when you commit the transaction and we respond to the client that, okay, the transaction is committed. We don't lose the recent transactions. But that's only for the recent stuff. Pretty quickly, the data gets processed by the page servers and uploaded to files on object storage. And that's ultimately what ensures that we don't lose the data. 
+
+[0:30:11] KB: That's awesome. To Postgres, all of this just looks like a file system? It doesn't have to worry about it? 
+
+[0:30:18] HL: That's right. We have to modify Postgres a little bit to make this work because there was no extension point for this, unfortunately. It's a very small patch. It's a tiny patch to hook into the - very close to the functions where Postgres normally does, like read a page from disk, or write a page to disk. 
+
+One interesting fact about this all is that it's all based on the write-ahead log. And we reconstruct the pages from the write-ahead log. Whenever Postgres writes out a page from the buffer cache, we actually just throw it away. We don't need it. That's because we can always reconstruct the data from the write-ahead log just like you would when you're restoring for backup. In a way, we are continuously, all the time, restoring the data from the writer-ahead log. 
+
+[0:31:01] KB: It's interesting to me. Because I remember when I first looked into how Postgres does replication and all these different things, I saw this write-ahead log and I was like, "Oh, under the covers, it is like this event-sourced model, but it's just continuously creating like the one projection or the one true image of it." You're essentially saying, "Okay. Well, yeah, let's take advantage of that. Let's hook into it. Let's put it over here. We can ignore Postgres' attempt to keep a safe image. We've got that handled." 
+
+[0:31:27] HL: Yeah, the write-ahead log is the data. That's the important thing. 
+
+[0:31:31] KB: Yeah, absolutely. You said you did this wanting to do something like Aurora that is all open-source. Is the Neon storage layer open-sourced as well? 
+
+[0:31:39] HL: Yes, the Neon storage layer is all open-source. 
+
+[0:31:41] KB: Wow. What else goes into Neon that is making this work? 
+
+[0:31:47] HL: Right. Well, all of the storage and the other things that we talk about so far is roughly half of what the company does. How roughly half of the engineering effort goes into all that. The other half is all the other stuff, like the website, the control panel, billing, all kinds of stuff. And user-facing APIs, dashboards, managing the whole cluster that I mentioned. The Kubernetes cluster. There's a lot of stuff to make all that work. Oh, and auto-scaling, like scaling these computer VMs up and down, moving them around, just managing the cluster and managing the whole service and all of the serverless aspects. 
+
+[0:32:25] KB: Got it. If you were to say, again, about 50% is business stuff, essentially. What it takes to keep the business going. And 50% is open-source, Postgres, Neon. If somebody wanted to take the Neon storage system and run it somewhere else, they could just go and do that? 
+
+[0:32:41] HL: Yeah. And I would love that. People try that every now and then, and I encourage them. It can be a little bit tricky because we don't - it's not the product we sell, like the open-source thing. We built this thing so we can run our service. We don't do tagged releases and things like that. It can be a little bit hard for other people. But there are people who are always doing that. And we have gotten some contributions to Docker images for people to run that on their own. And I welcome that. I love it when people are doing that. 
+
+[0:33:10] KB: Yeah. Well, and I think it speaks in a slightly different area to sort of the openness of the Postgres community, right? That you can do this and have it be open and connect into Postgres without needing to do too much. You have a patch, but it's, I assume, also open-source. 
+
+[0:33:28] HL: Yes, for sure. 
+
+[0:33:29] KB: That's super cool. I guess then the question I would come to from this is, where are things going? What is the evolution of Postgres and kind of cloud databases looking like in your mind? 
+
+[0:33:44] HL: Yeah. Working for Neon, I have things I want to work on for Postgres, for upstream Postgres. People might have different opinions. But the thing that strikes me is that I would love to see much more flexibility in Postgres, so that it's easier to run in this kind of serverless environment. Not just Neon, but for anyone who wants to run it in cloud and scale it up and down. We have had a lot of friction with connection management. For example, if you want to have thousands and thousands of connections, you need to have a connection pool. And well, there was a lot of connection poolers out there in the ecosystem, and they have slightly different tradeoffs. And people have found the workarounds, and there's thousands of blog posts on how to do all that. 
+
+But kind of at the core, having to deal with all of that is a bit painful. Some other databases do a lot better, to be honest, with just having lots of connections open and dealing with that problem internally. For Postgres, it's a bit messy. It comes down to things like memory management, if you have a lot of connections. Now they're competing for memory. Every connection has its own caches for queries and stuff like that. It kind of adds up. That whole story is a bit awkward. I would love to somehow address that. 
+
+And that's one of the reasons I wanted to start on working on the multi-threading is that it will - just switching to threads won't fix any of those other problems, but it makes it possible to start having more shared caches. It makes it possible to resize these certain memory areas more easily. I think in the future, five years down the line, maybe, that we will start to reap the benefits of that, and then we can have more flexibility. 
+
+[0:35:19] KB: Yeah. I think that's always one of the challenges with a really long-lived project is you get these big architectural choices that were made in Postgres, in this case, 20 years ago. And you get to a point where they're limiting you. But you've got millions of users. You can't just rewrite it. You've got to very gradually shift things forward. Maybe walk us through in your head what that looks like for, for example, multi-threading. What does it take to make such a huge architectural change that's going to set you up in five years to be able to reap those benefits? 
+
+[0:35:52] HL: Well, there's a long list of to-do items on a wiki. What do we need to do? There are some core components that need to be refactored. The first step is to refactor things so that it's easier to use either threads or processes. Because this is not gonna happen within one release. We're not going to just switch over. So we will need to have a plan where we can comfortably live with threads or processes for at least a few releases. I would love to keep that transition period as short as possible. But realistically, it's going to take years. 
+
+One aspect of that is, again, the whole ecosystem we have. There are tons of extensions out there. Even if we do all the changes we need in core, the whole ecosystem will have to be dragged along, and we need to make it as easy as possible for them. I actually think the ecosystem - extensions might actually move faster because it might be a lot easier to write some extensions in a multi-threaded environment to begin with. I think we will pretty quickly start to actually see extensions that only work when you're using the threads, even as soon as we get that feature out there. But yeah, it will take years. And there's a lot of refactoring that needs to happen. And then we'll need to define the user visible - how do you choose? How do you configure this thing? 
+
+Hopefully, we won't invalidate much of the conventional wisdom of how do you set up Postgres. And the goal is that it should have roughly the same tradeoffs, at least in the beginning. But then once we get to the point where we're going to start to remove the stuff that requires processes and kind of go all the way in, that's when we're going to start to really reap the benefits, and we can start to rely on having trades and the shared address space. 
+
+[0:37:26] KB: Databases feel like an area where there's been a lot of noise recently about new approaches and new different things. We alluded a little bit to vector databases, and we had the whole boom of key-value stores. And then, oh, now that we can do distributed and still maintain SQL guarantees, and asset guarantees, and things like that, what do you think is going to keep Postgres as the main choice for developers? Or what are the risks that it's not addressing that something else might be able to come in and take that crown? 
+
+[0:38:03] HL: I mean, nothing is forever. But Postgres has been around for a long time, and I think it will stick around for a long time still. There's a lot of new projects that are choosing to use the Postgres syntax. There's a lot of projects that are choosing to use the wire protocol. There's a lot of projects that are choosing to use bits and pieces of Postgres even if they are completely new implementations of a completely new system. I think there's some staying power in that, like just being the lowest common denominator between all of the forks and all of the different approaches. That's one way. 
+
+But Postgres is still alive and kicking. There isn't really any serious competitors, I find. There's a lot of competitors for niches, but there's nothing that is taking over that I see. And there's no reason. It's a similar story with the Linux, for example. It's very dominant. The fact that it is open, there's no particular need for anyone to compete directly with that. You can just join the project. Why compete when you can join the project? And Postgres is similarly very open. It's not dominated by any single commerce or vendor. There's a true open-source ecosystem around that. If someone wants to do something cool, some kind of a new approach, they can just use Postgres for that. And that's how it will keep evolving with the times. 
+
+[0:39:13] KB: We've covered a lot of ground. We've talked a lot about Postgres. We've talked a lot about Neon. Is there anything we haven't covered yet that you want to make sure that we talk about before we wrap up? 
+
+[0:39:22] HL: Talk about the feature of Postgres. That and the whole open source ecosystem. That really depends on what people come up with. If someone is out there thinking that, "Hey, I have this new cool algorithm or something," please submit it to the Postgres community. The review process can be long and tedious, but there's a lot of people paying attention. And some things get done very quickly, depending on what it is. 
+
+[0:39:44] KB: I guess that is one thing that might be worth diving into. I feel like in the last few years, the vast majority of growth in the software engineering world has been really at the application layer. Lots and lots of new developers jumping into applications. Getting involved with a database project feels very intimidating. How would you recommend people approach that? And why should they be looking? I mean, that's the other thing, right? We've got these new sexy AI development tools. We're doing apps out for days. Why should somebody get involved with Postgres? 
+
+[0:40:16] HL: I think someone needs to be motivated and have their own reasons. A lot of people historically have gotten active with Postgres because they have an itch to scratch. Maybe they run into a bug. Maybe they have a mission feature and they want to fix that. But a lot of people, including myself, actually have started by just wanting to work on databases for whatever strange reason. And then Postgres is a good one to get started with. Yeah, I wouldn't spend too much time thinking like why would someone contribute? 
+
+[0:40:43] KB: I think if you feel drawn, do it. If you don't feel drawn, don't. 
+
+[0:40:47] HL: Exactly. For advice for how to get started, I don't know. I feel that I've been around the community for such a long time that however I got started is probably obsolete by now. I know there are a bunch of good books, there's a lot of resources out there. I would suggest people just Google for it. Maybe writing your own extension is a good way to get started. We talk about all the extensible type systems and stuff. That's a good place to get started and play with. 
+
+[0:41:10] KB: Yeah, absolutely. Yeah, the extension ecosystem, that is a great way, especially because you can get in. You're writing your own indexing code, right? You're understanding what does it take to index? How does this stuff have to work under the covers? What do I need to do? I feel like that's a good way in. 
+
+[0:41:25] HL: Yeah, for sure. 
+
+[0:41:26] KB: - Awesome. Well, this has been super fun. Thank you for joining me today. And yeah, good luck. I'm really excited to - I actually have not tried Neon yet. I have to. 
+
+[0:41:36] HL: It only takes five minutes. 
+
+[0:41:37] KB: I know. Well, that's the thing, is I have dealt with so many backup things, and this, that. Like as I said, databases have so much inertia, the idea of, "Oh, I could just spin it up and get my point-in-time. I don't have to build a custom time system to keep track of what things were." That sounds amazing. 
+
+[0:41:56] HL: Yeah, for sure. Thanks for having me. 
+
+[0:41:57] KB: Cheers.
+
+[END] 
+
+

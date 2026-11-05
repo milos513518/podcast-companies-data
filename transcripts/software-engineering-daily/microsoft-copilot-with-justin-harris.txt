@@ -1,0 +1,266 @@
+EPISODE 1696
+
+[INTRODUCTION]
+
+[00:00:01] ANNOUNCER: Microsoft Copilot is a chatbot developed by Microsoft that launched in 2023 and is based on a large language model. Justin Harris is a Principal Software Engineer at Microsoft and has extensive background in classical machine learning and neural networks, including large language models. He joins the show to talk about Microsoft Copilot, natural language processing, ML team organization, and more. 
+
+This episode of Software Engineering Daily is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him.
+
+[INTERVIEW]
+
+[00:00:44] SF: Justin, welcome to the show.
+
+[00:00:45] JH: Hey, great to be here.
+
+[00:00:47] SF: Yeah. Thanks for being here. Let's start with some basics. Who are you? What do you do? 
+
+[00:00:50] JH: Hey, I'm Justin Harris. I'm a Principal Software Engineer at Microsoft. I grew up in Montreal. I'm talking to you from my parents' basement in Montreal right now. But I live in Toronto with my wonderful girlfriend and our little dog, Skywalker, who we like to take kaying by the Scarborough Bluffs near where we live. I'm really into skiing. But today I'm excited to talk about artificial intelligence and Microsoft Copilot. Because I've been working in AI for over 10 years, I've seen a progression from working on natural language processing with classical machine learning, and statistical machine learning, to deep learning, and now, of course, using large language models.
+
+[00:01:28] SF: Yeah. Awesome. I think that's a great sort of place to get started. Given that you were doing NLP research back in your university days, how has things changed in terms of the way that we think about AI models from those days at University of Waterloo where you're doing research to where we are today?
+
+[00:01:47] JH: Yeah. There's been a lot of interesting changes. I think some of the big changes is, of course, that we could easily quickly see is that the models are much bigger and much more sophisticated and able to handle a lot more different problems. When we were first developing applications at the startup, I was at Maluuba, who that later got acquired by Microsoft, we were focusing mainly on models using support vector machines, conditional random fields, and some Nave Bayes classifiers. All these statistical machine learning techniques. 
+
+And each model was very specific to the type of problem it was supposed to solve. there was models just trying to classify what you're asking about into like if you're trying to set an alarm or call somebody for the different things you can do on your phone. There were specific models for trying to extract keywords. When you're setting an alarm, trying to figure out what time you're trying to set the alarm for. Or if you're calling someone, trying to extract out that contact name. And now with large language models, we're able to let one model handle a lot more of these problems. 
+
+We already kind of saw this progression as we went into deep learning where we would get one model to do the classification and the entity extraction. But now we're able to use these models, large language models, to do a lot more for us and trust them with much harder problems.
+
+[00:03:04] SF: Mm-hmm. Mm-hmm. Yeah. Those kind of statistical models that you were referencing like support vector machines, and Nave Bayes, and there's Bayes trees and stuff, that's kind of like where - back when I was doing ML research, that's like what I understood at that time like - and then I kind of left that area of research and then all the things around deep learning kind of happened after that. But they're really specific to solving - basically, creating a classifier, bucketing things. And they're solving really specific problems. And now we're kind of offloading a lot of those problems to large language models and these more complex models. Do you think that there could be a problem where we're sort of trying to over-apply that LLMs to solve something that maybe a Nave Bayes classifier is like good enough to solve that problem and it requires a lot less compute and a lot less cost to build?
+
+[00:03:54] JH: Yeah. Sometimes. And it's always kind of a balance. The nice thing with a lot of those simpler models was you can almost divide up the engineering problem to different people. This team, they work on this model. This team works on that model. But then the problem was you also had to split stuff up between different languages, like spoken languages. You'd only have one model per language. 
+
+The nice thing now with these very large language models like GPT4 is that it understands different languages, so you can benefit in different ways. But, certainly, there might be things where a fine-tuned and smaller model might be very good for your problem. 
+
+[00:04:28] SF: I think that's a direction that folks will end up going in. Maybe you - from like a proof of concept or like demo perspective, you start with sort of the large general-purpose model. It's kind of like an easy way to get up and running. And then when it comes time to actually productionize, if you'll maybe save on cost or memory, you'll end up actually deploying like a smaller model that's more specific to the problem that you're trying to solve.
+
+[00:04:50] JH: Yeah. For sure. I think you see teams doing that already where they're fine-tuning a model for a specific use case. Maybe you see this is what your customers really want and they don't need the full power of a GPT4. But you can do some fine-tuning and have a specific model just for that use case. 
+
+[00:05:07] SF: As you mentioned, you're the principal engineer for copilot platform and Microsoft Copilot. Can you give an overview essentially of the landscape of copilots at Microsoft? I think a lot of people are probably familiar with GitHub Copilot. Maybe 365 Copilot. But it seems like there's essentially more and more copilots being integrated all over the place.
+
+[00:05:28] JH: Yeah. The copilot word is very strong. I work on the copilot platform. And this powers many different copilots at Microsoft. I'll say that we don't work with the GitHub Copilot team much. But mainly what I'm focused on is the copilot. microsoft.com. And this is what's also available in the Edge sidebar. It's available in Windows, in Skype. I'm trying not to forget a few surfaces, because there are many. 
+
+And it's also the same code powering the enterprise integrations in Office, Teams, and so on. And there are other copilots at Microsoft. But we're trying to build a platform that they can all leverage in their own ways. And some of them might need to do some custom code integration. But what we're mostly trying to do is standardize the integration through plugins.
+
+[00:06:17] SF: How does that work? Can you walk me through? How do teams actually take advantage of the platform? What's the integration like? Is this a library they're using? An API? What's the integration process like? 
+
+[00:06:27] JH: Yeah, it depends. A lot of them will call us through an API where they can use our - they can chat, and send a user message, and get responses. And they might want to add their own custom integration on top of it to provide their own sources of data to get specific information for their application. If you were building like a support copilot or something, you would want to be able to do a search over your own documentation and provide specific information using those. And we would feed that as grounding information to the large language model.
+
+[00:07:01] SF: How would that work? If I'm building like a customer support copilot for my customer support team, then, essentially, I want to create probably something like a RAG-based system where I'm going to leverage the actual knowledge base that customer support would be using to feed that into the model. How does that data get to the model? 
+
+[00:07:21] JH: Okay. We have a standard way to set up these plugins. There is some public documentation about it for what we do show externally so that you can make plugins for copilot.microsoft.com. Internally, it's kind of similar. We have some extra things that are enabled for internal teams. And what they need to be able to do is provide some instructions and examples to explain to the model and let the model decide when their plugin should be invoked. 
+
+We're giving a lot of power to these models and letting them decide what kind of tools out of the ones it knows about should be available. And a lot of these tools, like you mentioned, RAG, a lot of them are RAG, retrieval-augmented-generation-based plugins. We're letting the model decide what information it should request. 
+
+These other teams would implement that search over their data and they would provide some results, like some JSON as grounding information that we would then show to the model and ask the model to generate a response based on the information it's seen and the user message. 
+
+[00:08:22] SF: As somebody who's like on the application team in charge of doing some of this integration, do I really need to know that much about how the underlying AI systems work? Or is it essentially a lot of that stuff abstracted away and I'm mostly just doing some sort of like API-based integration? 
+
+[00:08:39] JH: Yeah. A lot of t is abstracted away. You don't need to know it. But, of course, a lot of people are excited about this new LLM technology. And they like to dive very deep into it and look at our code and stuff. And we appreciate it. We're like, "Well, that's great that you understand what's going on to maybe some deeper detail or try to debug something." But we do make it very easy by default. And most cases just work where you don't really need to understand too much. You can even just copy someone else's example and get it working. 
+
+[00:09:09] SF: It seems like with all the - basically, sort of introduction of copilots to different Microsoft services, presumably, there's like a thesis somewhere within Microsoft that this kind of interaction with computers is going to be the way that people want to interact with computers from now on. Or at least presumably into the near future. It won't be necessarily about sort of clicking through a set of actions. We'll tell the computer essentially what we want. 
+
+And to me, that feels like as big a shift in the way we interact with technology as moving essentially from terminals in the 1980s to like Windows 3.1 or something like that. This is a pretty big leap of faith in terms of what they might be thinking about the future of interaction going to be between like a consumer and a machine. I guess, what are your thoughts on this? How do you see things shaping up?
+
+[00:10:00] SF: Yeah, it's certainly a big shift, where you're trying to explain in natural language what you want a lot more and relying less on maybe clicking through UIs and stuff like that. I think this has been a big push with the chat applications over the years. 
+
+I think as these models are also getting smarter, it's much easier to kind of infer and pull in the right information from different sources. And sometimes that requires some refinement. That's something that people have to think more about. And when they're interacting with these models, trying to formulate their question right or even work together like you would work with a person.
+
+[00:10:37] SF: There's certain advantages to like a traditional UX where I can force someone down a certain path. But with, essentially, free-form text entry, you don't have a lot of control over what someone is necessarily going to put in. And it's harder to sort of guide them maybe to a place where they can be successful. How do you essentially create like a good experience that still gives them the freedom to essentially express themselves in natural language?
+
+[00:11:04] JH: Yeah one of the things that we like to do is provide those suggestion chips. It's those suggestions after the model streams a response. You have some options on what you can click on to kind of guide you. And I really love those as a developer to help me debug and test it. I could just keep clicking on those suggestions. But they are really insightful and useful as follow-up questions to continue the conversation and dive a little deeper. 
+
+[00:11:30] SF: I'd like to dig in actually a little bit on the testing side. When it comes to like testing AI models, I think one of the challenges there is reproducibility is often a challenge. Also, especially in large language models, in these complex deep warning networks, it's hard to necessarily know why certain things are created all the time and sort of traced back. How do you essentially test things and also make sure that changes either in the AI model or other places is actually leading to a better experience for people or a more accurate answer? 
+
+[00:12:06] JH: Yeah. We're using a lot of the principles that we already have developed in Bing to test this, like running experiments with AB testing. And if we try to tweak the prompt, we would do an experiment and have a treatment and control and see how different people interact. 
+
+Let's see. There are some sophisticated things we're doing with testing that I probably can't get too into. But let's say a lot of it is like typical stuff you would in software. Some of the other things typical stuff you would see in machine learning, it's very important to have these end-to-end tests set up where when you have a non-deterministic system. And, especially, when there's multiple models that would be involved in the processing, we're not just talking to these large language models. There's also many levels of responsible AI checks. Like checking the user input, the model output while it's streaming, the final model output. And these checks, they're for many different things. Not just checking if someone's offensive. But also trying to detect if you're doing a jailbreak. If you're trying to extract the instructions from the model, because we treat those instructions like proprietary information almost as important or more important than code. 
+
+To test this, there's a lot of different tests, of course, for each of these individual components. But it's important to have these end-to-end tests to make sure that the entire integration works and making sure that you're validating the output properly. And that you can dynamically handle the output being slightly different each time, because it's not going to be exactly the same for every input.
+
+[00:13:39] SF: You mentioned essentially there where there are s multiple models at play. You're using models to make sure that probably the output is following certain ethical guard rails and you're building responsible AI systems and so forth. And, historically, when we look at the way software developers build tools and build software, a lot of it was around sort of anticipating what people needed to do. But the LLMs are essentially changing that. The interaction is no longer restricted to these clicks on a web page or clicks inside some sort of UI like we were mentioning. 
+
+And it's pretty much impossible for us to kind of like anticipate all the things that someone could potentially put in. And in order to deal with that, we put certain guard rails and kind of control the systems and stuff. But like how do you actually figure out the right guard rails and safety features to put in place? And is that like a reasonable expectation to put on the model to kind of be able to anticipate all those needs? 
+
+[00:14:40] JH: Yeah. There's a lot of different things that we do. We have dedicated teams trying to figure out, uh, when the problem comes up and what should we do. First - right, there's already a lot of things that we have. Sometimes when we see a new issue, it's kind of like bucketing it in to an existing type of classifier or maybe a classifier or a system of protection that a team already has in place. And we might be able to leverage that piece or update some training data for that classifier and try to add a new version. 
+
+But some of the new stuff that came up with large language models is, like I mentioned before, these jailbreak classifiers. Trying to detect if people are trying to extract instructions. And there's lots of creative ways that people do this. That is a case where we did need to make a new type of classifier to try to detect this stuff. And then, also, being able to run these detections on the model output, so that even if someone does find a way to bypass our classifiers, that we have dynamic and sophisticated ways to run checks on the output. 
+
+[00:15:45] SF: Is it similar sort of approach use for like dealing with things like memorization? Sometimes if I want to pull essentially prompt in LM to give me like the exact quote of a - I don't know, like a famous person. Frank Sinatra or something like that. Then I want it to have essentially the memorized quote and give me the exact quote. But if I asked for like give me Justin's social insurance number or something like that and that was part of the training data, I don't want it to give me the memorized response there. I want to make sure that it understands when it's okay to give a memorized answer versus when it should prevent the answer at all versus when it should essentially like hallucinate or makes up an answer.
+
+[00:16:25] JH: On some of the stuff, if it's quoting exact data, we do have classifiers to detect if something has IP rights associated to it, intellectual property rights associated to it, and we can tag and annotate that. Because sometimes it's okay to show that stuff in certain context. In other context, it might not be. That's part of what's interesting for us building this platform, that it's not just something for consumers. But it's also for enterprise and many different clients that could have different needs where these different levels of protection would be different in different cases. Not sure if that exactly answers your question though.
+
+[00:17:02] SF: I mean, I think you raised a good point there where a lot of it's contextual right, where depending on the use case and who the customer essentially is, what they want to restrict is going to be different. As somebody who's using the platform, like how do I essentially make it understand my particular use case and what's okay? 
+
+[00:17:22] JH: Okay. It depends. For you coming as a user, often what's really cool with these LLMs - I remember one bug early on where someone was saying, "Oh, this table that it generated wasn't left aligned." And I said, "Okay, just tell it to left align the columns then." He did that. In the next message, it said, "Thanks. Please left align the columns and output it." And that's great as a software developer. Cool, I didn't have to write some custom code to try to reformat a markdown table or something. That's part of it from the user side. 
+
+From the developer side integrating with this, we have tons of different configuration options, probably over a thousand of different things and knobs people can tweak. Different thresholds. Some of these integrations might be tuning these thresholds for different classifiers in different ways to customize it for their application. 
+
+The example we always like to use is suppose the Xbox team wanted to use this for like help in a video game. Well, maybe they're okay talking about a little bit more violent content depending on the game. But, obviously, you don't want that in an enterprise application if you're talking about a Word document. You probably don't need some file and content unless maybe you work at a place where that's relevant. We try to make sure things are very configurable.
+
+[00:18:36] SF: Yeah. Okay. That makes sense. And then in terms of me like tweaking the knobs, does it come down to just kind of like a lot of experimentation to get to something that's going to work? Or is there some sort of guiding principles around like what things you should be looking to tweak? 
+
+[00:18:52] JH: Yeah. There's a lot of experimentation definitely that goes on and trying to train these classifiers, of course. But then, also, setting the right thresholds. And in general, people can reuse thresholds that might already exist for another problem. You probably shouldn't be trying to guess, and test, and figure these out yourself.
+
+[00:19:10] SF: What's the training process for the classifiers? If I'm going to do a new integration in the copilot platform and I'm tweaking these parameters, then is there a training cycle? How does that actually work? 
+
+[00:19:22] JH: I don't work too much on that directly. There's teams of dedicated people that maybe they have to tweak training data or trying to improve models with a specific test set in mind that they might be trying to make sure works well with this classifier. Typically, it's handled by the model experts. Like other teams doing integration, they typically wouldn't bring on their own classifier. There's already a lot of helpful ones that we've developed. And that's one of the reasons that a lot of teams come to our platform is because there's already so many of these classifiers and responsible AI checks that we have set up for them. 
+
+[00:19:59] SF: And then, recently, there was an article written where some researchers had figured out a way to hack AI assistance by listening to network traffic. Even though the traffic was encrypted, they were able to figure out like the token length and then use that with another LLM to reverse engineer the conversation. And it wasn't perfect. But they were able to actually sort of capture some conversations. What is Microsoft essentially done or put in place to address those kinds of attacks?
+
+[00:20:28] JH: Yeah. Okay. I'll give you kind of the short answer first, is that we added some random padding to make the length variable. This was a really interesting problem that caught us and a lot of other companies too by surprise. And that's why I like to share it and make sure that people building applications with LLMs are aware of this. 
+
+To really emphasize the problem, what could happen is let's say you're on a public Wi-Fi. Let's say, Sean, you're at Starbucks talking with an LLM maybe about your work documents, or a medical issue, or something. An attacker on the same Wi-Fi network could be listening to the network traffic and know if they're making some assumptions, like you're talking to the copilot and they assume you're speaking English and they know which model you're talking to. Just from seeing the variable lengths of the network traffic, they can infer the lengths of each token that the model was outputting and make a good guess at what the model said.
+
+[00:21:25] SF: When I heard about this, I was pretty skeptical that you could do this well. But researchers had a compelling video that showed that this could be done. And maybe they don't get every word right in the response. But you can kind of get the gist of it just from the way it's talking. 
+
+In their example, the user asked something about a rash that they had. And, of course, that's still encrypt - everything's encrypted. And you can't read the user's stuff, the message, because that's all sent in one chunk. But the model is responding by token or by word. You could think of the tokens basically like words. 
+
+And so, just looking at the network traffic, even though it's encrypted, you could see the lengths of these words. And just from those lengths, you could predict what it's likely the model said. In their example, it didn't necessarily get every word right. But you'll still able to infer that the user was asking about a rash or a specific kind of rash. 
+
+to solve this, we made the length of the output random and added some random padding. And what was interesting is some colleagues on my team said, "Well, does the output have to be random itself or just a random length?" And then the security team said, "Yes, it should also be random." Just to be sure you don't make any assumptions about your encryption algorithm, it's always good to keep that padding random as well.
+
+[00:22:41] SF: And I guess the reason they can figure out like the responses by token is. Because, generally, an LLM is - when it does the completion, it's sending those back like token by token essentially. Because inference is slow, they don't want to wait for the entire inference cycle and then send back the entire response. Is out right? 
+
+[00:23:01] JH: Yeah. That's right. There are cases where maybe some tokens could get batched together if we happen to respond really quickly. And we're also doing a lot of processing on each token. We're doing some offensiveness checks. We might be buffering stuff. If it starts to generate a URL, we might try to wait and buffer until that entire URL is ready so that you don't get a URL that's not quite ready and try to click on it and it goes somewhere else. If there's bolding or italics, we might try to wait until the extra stars are added after the bolding. But not if it's too long, right? 
+
+There's a lot that's happening between each token. And, usually, we're super picky down to the byte about what's happening. But it's possible that something takes a while and we might send two tokens at once. But that's right. Most of the time, we're sending one token. Or you could think about it as one word at a time. 
+
+[00:23:50] SF: How does that work when you're generating something that's going to be like essentially create like more of a visual response? Like you mentioned earlier, creating a table or other types of markdown elements, is that done essentially client-side? How does it figure out essentially that this is supposed to be in a table, or in a chart, or something like that and still be able to do that token by token? 
+
+[00:24:14] JH: Yeah. That's what's really cool about using these large language models. We tell it that we want it to generate markdown and it's able to generate that table in markdown. There's a special syntax with pipes, and various other characters, and dashes to help you make these tables and hesitating, because there's more verbose that are clearer and there's more succinct ways. 
+
+But, essentially, the pipes help make the table. We're telling the model that we wanted to generate markdown and it will send down this table. And then we're inserting that markdown into an adaptive card. Since it's marked down, the model can generate images and links to images. But they're not always very good at generating these long things or memorizing a URL for an image even though it likes the try. Sometimes it starts and you're like, "Oh, wow. Is it going to generate a good link?" And sometimes it does. Not always. 
+
+Part of that stuff that I was mentioning that we could be running between tokens is we can have teams add hooks so that they can insert their images into the adaptive card. Adaptive cards are this standard schema that just does JSON that you can use to give your backend a lot of control over what's rendered in the client. 
+
+Most of the time, our responses are using markdown. But teams can add hooks that say after a sentence that they want to kind of cut off and stop the markdown and then insert their own image element and then restart the markdown again. And then we can have the model keep streaming.
+
+[00:25:44] SF: What's a good use case where you would want to essentially inject something custom like an image after the completion of a sentence? 
+
+[00:25:52] JH: Yeah. The biggest one is images. I think it might even happen if you ask about US presidents or something. You can ask it, "Tell me the last five US presidents." And there are teams that do special stuff leveraging, things that we have in Bing to extract entities from some output. And then it would detect that there's presidents being talked about in this paragraph. And it would add the image for each of those presidents above where they're mentioned.
+
+[00:26:16] SF: Okay. That way, you can kind of tie together external data sets essentially with the produced output from the LLM. 
+
+[00:26:24] JH: Yep. The images is one example. There's other cases. Maybe if we detect that - in the enterprise case where if it's mentioning your colleague, we might detect that it's mentioning a colleague name and then we can make like a contact card when you hover over it. We can add and inject other types of adaptive card elements like that.
+
+[00:26:43] SF: And I guess another potential use case would be like app integration where, I don't know, maybe you want to like link it to your calendar or link it into your email or something like that, right? 
+
+[00:26:51] JH: Yeah. Maybe if you're mentioning a specific event, there's a lot of rich content that you can do. And the nice thing with using adaptive cards is it gives us so much control on the back-end. We have a lot of great front-end engineers doing JavaScript stuff. And they're very keen to do some things. But we want to have more control on the back-end so that we can make sure that we have a consistent experience even for our clients that aren't JavaScript-based, like some of the Office applications might find it easier with more native integrations.
+
+[00:27:18] SF: Mm-hmm. And how did you decide essentially around like which UI elements make sense to use adaptive cards versus like other methods? 
+
+[00:27:29] JH: We like adaptive cards because we were already using it in some things. It's kind of encouraged by the Microsoft Bot Framework, which would be used to build bots that could be easily added to different channels, like Teams. And a bunch of us had experience with adaptive cards and liked that it handled lots of different cases. But it was also very easy for clients to customize. 
+
+Even though in the adaptive card we might prescribe a certain size for an image or certain padding and stuff like that, it's very easy for at least the JavaScript HTML-based clients to add their own CSS to customize the way that would be viewed. 
+
+[00:28:07] SF: Okay. You wrote this article about building AI-powered Microsoft Copilot with SignalR and some essentially other open source tools. I want to talk a little bit about that. First, can you explain about SignalR and what that is? And why was that choice made? And, essentially, how did you use that to create low-latency communication channel? 
+
+[00:28:27] JH: Yeah. SignalR has been really great. It's a bidirectional protocol for talking to your applications. And it lets you easily switch between HTTP long polling, or server-sent events, or WebSockets. And first I had tried to get things working with only server-sent events. And I had done it in other languages like in Python, and I couldn't quite get it working in .net even following some examples. I couldn't - seemed like I was setting the headers and it wasn't working quite right. And every post that I saw about it said, "Oh, just use SignalR. Don't try to use server-sent events manually." You kind of know what it's like when someone's telling you use some new library. Oh, you don't know if it's well-supported. If it will work. Do I want to go down this rabbit hole and then it doesn't work? But then I realized it was part of ASP.NET Core. It was super easy already to use in .net. I didn't need new dependencies. And it was already a standard thing used by many teams. And so, it's really easy to get set up with SignalR. And then it helps us switch between server-sent events or WebSockets. 
+
+Oh, I guess I should explain a bit about server-sent events. That's something that you might see used on like a finance website. If you're just getting the latest stock price every second, they're pushing it down to you. But for us, there are cases where we want users to send some information back up to the server. If they click a certain stop button, then we want to send a graceful disconnect rather than the client just cutting off the connection, because we can't tell if that meant maybe they lost network connection, maybe they closed their browser tab. There are definitely cases where we want this bidirectional communication. 
+
+Then there's WebSockets, of course. And that's the main protocol that we're using. And I've done stuff manually with WebSockets before to control a Nintendo switch remotely from a web browser. And that was pretty neat. But SignalR provided a really helpful abstraction layer on it. And they also have services that you can use in Azure so that your clients don't have to talk directly to your server, but they can talk to this Azure SignalR service instead of talking to your server, because your server, maybe they're going down, or load balancing, or stuff, or redeploying a new version. And you could kind of have this buffer and simplified with this Azure service. That could help if clients are disconnecting. They can maintain a connection to this other service instead of directly to your other servers. We decided to use SignalR. And that's been really helpful for us. 
+
+[00:30:53] SF: And it in terms of like dealing with some of other scale issues you might run into, essentially with Copilot, people are integrating this in various tools and services. And inference can be slow. You have to deal with certain Network latency as well as the compute. How do you actually go about scaling messages and responses to the front-end UI in a way that is going to be satisfying for all use cases and the consumer? 
+
+[00:31:19] JH: Yeah. Let's see. One thing that's interesting that we do is that we create one connection to our back-end per user message. And this might seem a little weird if you've done stuff with WebSockets more manually before. A game or something. Certainly, you'd want to keep that connection open because the user could send input at any time. 
+
+We create one connection per user message. And that's because after somebody sends a message, they might not respond at all, or they might spend a few seconds or minutes even to read the response before they formulate their response. We don't want a connection open to our back-end for too long because it could end up with too many connections on too few machines and not distributing the load evenly to the different machines. 
+
+And then, of course, for some of our clients, if they want to be eager, they're totally welcome to open a connection when the user starts typing. Or once they start speaking, they can very eagerly open that connection and then send the data once they're done typing or done speaking. That's one thing that we do. Yeah. 
+
+[00:32:21] SF: Yeah. I guess you could kind of hide some of the cost of opening the initial connection because the person's probably not ready to send what they're typing until they complete the typing, so that they might be typing out a full sentence. You have all that time essentially to kind of like hide some of the potential network latency issues of creating that first connection.
+
+[00:32:39] JH: Yeah. Exactly. Some of the other stuff for scaling. Right. A lot of the metrics that we look at is not just the time that it takes to generate that full, long response, because that's really variable. But we do look a lot at the time until the first token's rendered. And I like to think about this as like working in fast food, because I worked at McDonald's for one day. That's a story for another time. But I remember them emphasizing that a customer should be greeted within 30 seconds of them walking into the store. This is I think a common metric in fast food. You want to be able to greet your customers early. And that's what I like to think about as this first token-rendered metric. That we want to measure that time when we really start responding to you and that you really get that feedback that something interesting is happening and being generated. 
+
+A lot of the optimizations that we do are really looking at what's happening before we generate that first token. There's a lot of orchestration about like getting the model to decide what to do before it even starts to respond. And if it decides to search the web for something, getting that data or other sources. And some of the responsible AI checks that we do. We do search and checks in parallel, right? There's a lot of optimizations that can happen there.
+
+[00:33:48] SF: Is there certain behavior you're seeing from consumers in terms of how they enter questions or prompts? Are people typically working on a prompt and sort of reading it and editing it before they send it on and they're sort of relatively satisfied with the prompt that they're putting in? Or are they sending a prompt and then sort of like, I don't know, trying to cancel out of it? Or you see them editing it - you send the prompt, sort of change it up, send another prompt? Kind of like how people used to search a lot would be they put in one query, they don't get the result that they want, they edit their query a little bit. Maybe add a little specificity to it. And they keep sort of doing essentially the same query over and over again until they get the type of web page response that they want.
+
+[00:34:32] JH: Yeah. I'm sure there are people looking at this. It's been a while since I looked at stuff like that. Some of the stuff that I've looked at though is with those suggestions at the end. How much are people interacting with those suggestions? Because that could be a good metric of if someone is engaged and if those suggestions are helpful. 
+
+Also, for working more collaboratively with view, there is the Notebook option also at the top at microsoft.copilot.com. And so, you could have a notebook with a sort of more interactive session where you could reformulate your prompt. 
+
+[00:35:03] SF: Okay. And then Copilot supports both voice input - is it voice output as well? 
+
+[00:35:10] JH: Yeah. You can speak to it and have it speak the answer back to you.
+
+[00:35:14] SF: Yeah. I'm curious about like what are some of the challenges that you had there? Because just like text can be slow. Voice is even slower because you're doing essentially - presumably, you're translating a text output and text input into - or, essentially, you're going voice to text, text the voice, or something like that, right?
+
+[00:35:32] JH: Yeah. I've been working in NLP for a long time. And even 10 years ago, I heard people talk about like, "Oh, we should have things more integrated with the voice and listen to the tone that people are using to speak to it. But I've yet to really see systems, big, large-scale systems relying on this. I certainly love to one day. But that's right. Right now, we're translating the audio to text and then processing the text and then generating some speech output. 
+
+One of the interesting things we' done here is that it was very tempting to add sort of a proxy layer. When someone's speaking, you talk to your voice service and then the voice service talks to the existing service that people can chat with text. But the problem with doing proxies like that is that you end up having your proxying service having to scale and sort of match the availability of your text processing service, which makes it kind of hard. And if they only have 99.99 or whatever, three, four 9s of availability, then your availability is going to be less because you're only getting the product of those two. 
+
+Instead, what we did was we kept things separate and our text processing service is able to - as it's generating the response in text, we are sending that off to some other service and generating a predictable URL that we can send to the client and the client can ask the voice service for the audio at that URL when it's ready.
+
+[00:36:59] SF: I guess how do you make that fast? It seems like a lot of stuff going on there.
+
+[00:37:04] JH: Yeah. There's a lot of stuff going on. Let's see. Well, part of what we're doing is that we're not waiting until the entire response is done being generated. Otherwise, if you have to wait till it's done generated and then you start playing the audio, that would be pretty annoying. 
+
+After every sentence or sometimes every couple of sentences, we are taking what we've already generated so far and then sending it off to some other service for it to be encoded and for the text to be turned into audio. And so, that it could start feeling fast to you so. 
+
+The experience would look like you say something or ask a question. You might start see some text streaming. But by the time the sentence is done, it should almost instantaneously be starting to play the audio for it. So then you would hear the audio playing while you're still seeing the rest of the response being generated. 
+
+[00:37:54] SF: And then how good is it at essentially being able to translate what I'm saying into text that's like accurate enough? Like depending on my accent. Whether I mumble. There's a lot of things that are really difficult about going from voice to text.
+
+[00:38:10] JH: Yeah. There's a lot of things that we leveraging that was already in Bing for like transcribing audio. But what's really interesting I noticed with these LLMs is even if it gets the text a little wrong, that the LLMs are often still able to understand from context what you actually meant. Same way when you have like a little typo. They're really good at figuring out what you really meant. And that's really helpful for us because I've worked on systems where we've done a lot phone name analysis and trying to figure out what you might actually be saying. And trying to match some text to a contact in your contact book or something. But these models are really good at figuring out these things on their own.
+
+[00:38:47] SF: Mm-hmm. Yeah. And I guess if there is some sort of mistake, like I'm referring to Apple the company, not apple the fruit. But I get a response that's related to apple the fruit, I'll probably just adjust my prompt in some fashion to get the thing that I want. 
+
+[00:38:59] JH: Exactly. A lot of the new UX in this involves having the patience to keep chatting and to refine things and try to get that right answer. And I think that's where we'll see a lot of people who get really good at this. It's not always about getting the prompt or the input right the first time. It's about having the patience to refine.
+
+[00:39:18] SF: Yeah. And then what is the team structure like? And how is that - when you're working on essentially like an AI product, I'm assuming you kind of need like a different set up, a different set of skills, then you're going to need maybe a traditional sort of enterprise B2B SaaS product that isn't AI-powered.
+
+[00:39:36] JH: Mm-hmm. Let's see. A lot of it is similar. Of course, we have DRI rotations and people on-call. There's core infrastructure teams that would look at certain parts of the code. A lot of it, since it's still new, does involve a lot of design discussions and trying to figure out what's the right way to do this integration? Are we trying to do something to custom? Are we leveraging the full power of the model and using these models and their power to let them decide what we should do? 
+
+And in a lot of cases, people might be concerned about the speed. But then like myself and others that have a lot of experience trying to develop complex dialogue systems where you have a lot of state manage it, we say, "Yeah. Well, but we've gone down the path of trying to do things more manually. And that was really hard too. So let's try to rely on these models. And they will get faster and better. So let's build and depend on that." 
+
+[00:40:27] SF: And then do you think that there's more of requirement to kind of dig into what's happening in the world of research? And when you're working in the space as an engineer versus maybe in traditional engineering, you're kind of getting that information from somewhere else?
+
+[00:40:42] JH: Yeah. Let's see. We could do a lot and experiment with the models that are already available to us. But when we really want things to be faster, we could go to the researchers and work with them to find tune a model that would be better at that specific use case.
+
+[00:40:59] SF: How often are you having to go to like the research team with like requests to help you understand something like that? 
+
+[00:41:05] JH: I think it's more of a collaboration. I think, often, they know what's the latest in the industry and kind of where things are going. It's a constant collaboration.
+
+[00:41:15] SF: Okay. As we start to kind of wrap up here, what's next for Copilot? What are some of the things that you're focused on that you can share? 
+
+[00:41:24] JH: Let's see. I think there's a lot of interesting ideas from existing machine learning paradigms that people are trying to apply. Trying to ensemble models and trying to mix them. Things might not always be about just having one model in your system. But you might have different models that are good at different things and trying to mix them and decide which model is best for what the user is talking about or asking about. 
+
+I'm also very passionate about trying to use local models on your device. Right now, everything is cloud-based. But maybe we can have smaller models that are good and could give you good enough answers locally. And that could be really helpful especially if you want to keep things on your device private. 
+
+[00:42:05] SF: Yeah. I think to your first point around like multi-model, that's a trend that I have been seeing as well and heard a few people speak on is like - and, of course, the trick there is how do you figure out which model to use given the type of situation? But certain models are better at certain types of tasks than others or certain types of questions and stuff. If you can essentially figure out a way to take advantage of the best qualities of every model, then you're going to have a much better system.
+
+[00:42:31] JH: Mm-hmm. And it's certainly very helpful that we provide one answer now. But maybe it's okay if there's different answers from different models and you would select between them depending on your use case. 
+
+[00:42:42] SF: Mm-hmm. Yeah. And if you want to be able to do something like real-time translation, you probably have to do that on device. Because in order to have something that feels real-time with translation, you probably can't be sending stuff across the network. It's just going to be too slow.
+
+[00:42:59] JH: Yeah. You can. I think sometimes where the cloud models might be useful is like if there's a new word in your vocabulary and you want to translate that. But you're right. For a lot of cases, on-device was probably fine too.
+
+[00:43:08] SF: Yeah. Besides like some of the things that potentially running like doing real-time transcription or translation directly on a device, what are some of the things that you're excited about or interested in relation to essentially running models locally?
+
+[00:43:23] JH: Yeah. There's a lot of cool projects out there for helping you run local models. Uh, one of my favorites is one made by my friend, Jeffrey Morgan and his team called Ollama. I really love that because they're super quick at adding new models when they're available. Like 53, this model from Microsoft research got announced. And I think the weights were added within a few hours. And same with some Mistral models and LlaMa 3. They're just really good about being quick and making it easy to run models locally. And I've used that to run Phi-2 and some other models, like embedding models, and do some quick experiments for myself. 
+
+[00:43:58] SF: I could run that essentially locally on my laptop while I'm developing something. 
+
+[00:44:02] JH: Yeah. And you don't need a GPU. Of course, it'll be a little slower. But, yeah, you could try it out with some simple model. And then if you're ready to deploy in the cloud, you could try it out with a more powerful model.
+
+[00:44:13] SF: Cool. Justin, anything else you'd like to share? 
+
+[00:44:14] JH: Yeah. One of the interesting libraries that we've developed for this is a library called object-basin. And this helps us stream JSON to clients in the front-end. There's already ways and standard protocols like JSON patches, where if you have a specific path to an element and you want to add something or replace it, you could set it to a new string, integer, list, or object. 
+
+But what these protocols didn't support and that what we want to do in most cases when streaming updates for adaptive cards is that we want to append some text to the end of a property value. We have a generalized way to let the backend have a cursor and point to somewhere in the adaptive card. And then any new text that we send after there will just get written and appended. And we could re-render the adaptive card. Or if somebody wanted to write a more sophisticated library, they could support appending that text and streaming it as marked down to have it just re-render that specific component. This object-basin Library essentially helps us when we want to stream dynamic JSON from our back-end to a client. 
+
+[00:45:24] SF: Is that something that would allow me to update existing rendered elements so I can essentially adjust something that's part of the history of the chat?
+
+[00:45:33] JH: Yeah. Exactly. It's not just supported for the latest message. We could have it support previous messages too. And we would - depending on your clients, we might have to render that element. Or you could have a more efficient streamer.
+
+[00:45:48] SF: Well, awesome. That sounds great. Thanks for sharing that. I'm glad we got a chance to cover that. It sounds like a cool project that people can check out. But, Justin, I want to thank you so much for being here. This was really fun to learn about your background and also everything that's going on in the world of Microsoft and copilots.
+
+[00:46:03] JH: Yeah. Happy to talk about it.
+
+[00:46:05] SF: Cheers.
+
+[00:46:05] JH: Cheers. Thanks.
+
+[END]
+

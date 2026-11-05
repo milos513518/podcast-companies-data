@@ -1,0 +1,352 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Platform Engineering for AI: Scaling Agents and MCP at LinkedIn
+DATE: 2025-12-10
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/platform-engineering-for-ai-scaling-agents-and-mcp-at-linkedin
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2224514948-infoq-channel-platform-engineering-for-ai-scaling-agents-and-mcp-at-linkedin.mp3
+DURATION_SECONDS: 1970
+TRANSCRIBED_AT: 2026-08-05T11:51:22Z
+----------------------------------------------------------------------
+If you're trying to figure out how to actually integrate AI across your software lifecycle, not just
+in one-off projects, QCon AI in New York this December 16th and 17th might be worth checking out.
+The entire conference is focused on the real-world side of scaling AI. You'll learn from technical
+leaders, senior engineers, and architects who've already been through it, the patterns that worked,
+the MLOps pipelines that scaled, and what they do differently. The conference is built for senior
+practitioners who need actionable blueprints, not just buzzwords. Learn more at QCon.ai. On today's
+episode of the InfoQ podcast, we're diving into a topic that is rapidly transforming how engineering
+organizations build software today, how platform teams are enabling AI, or more specifically, how
+platform teams are enabling AI at enterprise scale. Hi, my name is Wes Rice. I'm the creator of the
+InfoQ podcast and the technical principle at ThoughtWorks, where I focus on platform engineering,
+AI-first software delivery, and the intersection of modern architectures with AI. I'm also the chair
+for QCon AI, which is the newest edition of the QCon family, focusing deeply on how software
+engineers and leaders are shipping responsibly with AI. Today's guests, Karthik Ramgapal and Prince
+Valori, are leading the work at LinkedIn to bring secure, compliant, observable, and developer-
+friendly, multi-agentic systems into the platform. Their QCon AI New York talk is exploring how
+LinkedIn's platform teams are giving engineers the ability to define tasks, orchestrate agents, and
+generate real PR safely using structured specification governance and a secure MCP framework. In
+today's conversation, we'll walk through that, look at specifically how LinkedIn is approaching the
+shift, why platform teams, not just ML teams, are becoming central to enabling AI, what tools and
+abstractions are emerging, how MCP fits into the developer workflow and experience, and what it
+takes to build at enterprise scale, safe, agentic systems. Prince, Karthik, welcome to the show.
+Hey, Wes. Thanks for helping us. Absolutely. I'm excited about QCon AI too. Karthik, I think you
+were one of the first ones I first spoke about getting our talk together. So thank you for
+supporting it and thank you for sharing everything you all are doing at LinkedIn with us. Sure.
+Thanks for the opportunity. So both of you involved in leading efforts at LinkedIn to bring AI and
+multi-agentic systems and tooling into the hands of thousands of developers. What is the key problem
+that you had to deal with that said, hey, this is a problem for a platform team that we need to
+solve? Yeah. So at LinkedIn, we saw two converging challenges, right? The first is a lot of teams
+are experimenting with AI, but in silos. People do proof of concepts, one-off scripts, local tools.
+It is valuable, but it's also very inconsistent because everyone's reinventing the same plumbing.
+Prompt orchestration, data access, safety, evals, deployment. Also, the way people work is changing.
+You no longer have hermit developers and teams who just pull up an IDE, code in there, and they are
+done, right? Engineers are actually spending huge amounts of time on cross-system coordination. They
+triage issues, they pull data from multiple services, they synthesize insights, they trigger
+workflows, and, of course, they write code and they go through the entire coding lifecycle. But what
+this means is that these aren't single-shot queries. They are multi-step, stateful tasks, which
+agents are remarkably good at handling. So when we put these two together, we were like, hey, we
+have an obvious need. If we want AI to meaningfully improve productivity and not just be bling-
+bling, we cannot have every team build their own mini-agent platform. We need a unified, open-aided
+platform so that teams focus on their domain problems and we focus on the system and infrastructure
+problems. Do you find that still gives developers the autonomy to do what they need to do, but
+within these guardrails, how do you balance that paved path with developer autonomy for what they're
+doing? I think it starts with meeting the employees where they are. So we talk a bunch about coding
+agents here, but it isn't just specific to coding agents. We also have agents integrated into
+workplace productivity suites, messaging systems like teams, et cetera. And it's not just inside the
+ID. So first is you try to meet them where they are and you try to fit into their workflow. So that
+itself makes a huge difference in terms of adoption, right? Now, specifically within the context of
+development tools, the developers still use a combination of prompts, which they write, MCP tools,
+we will cover why MCP is so critical later, as well as built-in infrastructure hooks. So what this
+means is that they still have a lot of autonomy and a lot of control in what they do. They just
+aren't reinventing the boilerplate infrastructure pieces. Just to kind of put things in scale, how
+much are we talking about? Are we talking about 1,000 developers, 10,000 developers, and how much
+are we using the tools that we're about to talk about across that scale? So we have like thousands
+of developers who are using these tools every single day, right? So it's very widespread. And more
+importantly, it's like something which we are trying to highly encourage in order to increase
+productivity, but without compromising quality, which means the developers are still in charge. The
+developers are still responsible for the quality of the output. They are just using these tools to
+accelerate their productivity. I mentioned that both of you are speaking in QCon AI here in just a
+few weeks in New York. What are the big things that you're going to be talking about in your talk?
+We're going to be talking about how we built this platform, some of the use cases of this platform,
+and how central MCP is for tool orchestration in general. And more importantly, the message we want
+to convey is that AI agents aren't a feature. AI agents are a new execution model, which means that
+platform teams have to treat them with the same level of sensitivity and support with which we treat
+something else like microservice infrastructure or compute infrastructure with Kubernetes, etc.,
+which means it's shared infrastructure, which is built for scale, reliability, and trust. Without
+it, you end up with fancy demos, but you cannot actually ship something to production at scale. You
+say a new execution model. Talk more about that. Essentially, it's like supporting any other first-
+class infrastructure, just like you have a team for storage infrastructure or machine learning
+infrastructure. In the same way, you need a fully funded, agentic platform team, which is thinking
+about all aspects, right? The process changes, the technology changes, the rebuilding of these
+common building blocks so that people aren't repeating this again and again. And also, there is a
+bunch of new technology coming in here every day, so somebody has to be thinking about how to
+thoughtfully adopt it and incorporate it into the existing workflows in the enterprise. So to get
+beyond just POCs, you really need to be thinking about AI as an operating model, a way of bringing
+it across your systems. Yeah, makes sense. Makes subtle sense. Francis Karklik was talking, he
+mentioned about developers in control. How are you making sure developers are in control and have
+that ownership when you're talking about orchestration of these agents? I think the main point of
+control that developers have is how they communicate with these agents, right? A spec is how we
+translate the developer's intent into something the agent can reliably execute. Now, it's the
+contract between the developer and the system. And at LinkedIn, we deliberately structured these in
+a way that we want the developer to express what they want to change, how the work should be broken
+down, what tools should be allowed, and importantly, what does good look like at the end of it
+through acceptance criteria and other checks. It's that intent that needs to be made explicit, and
+we try to remove ambiguity from it as much as possible, so that's where developers are in control.
+And the agents with this can plan way more deterministically. Reviewers understand the context, and
+we can run automated validations along the way in a similar way that developers used to when they
+work themselves. What scope are we talking about, or does it vary? Are we talking at a use case
+level, or at a given use case, we're doing a specific thing, a task level, where we're doing an
+individual task, or are you talking more at like an epic level, where there's orchestration of many
+different things happening throughout, you know, several different potentially even code bases?
+Eventually, we'll get there with this at the epic level, but where we are is really at a task level,
+right? It is the same level of granularity that a developer generally thinks for themselves when
+they pick up a task and what they want to do and the change that they want to produce. That's
+essentially the same mental model we want to bring here. So you want to treat the agent as a
+teammate, give them the same amount of context that you would generally have for completing that
+task and expect the same kind of output, which in most cases is a pull request with that change. So
+that's really the level of granularity that we have today with these tasks. Okay, so when you say a
+task level, is this like create a repository to be able to do something to actually talk to a
+database or is it like a feature that is actually creating a repository, creating a component,
+creating a service? It can be either. There's nothing stopping us from excluding one or the other or
+including one or the other, but it really depends on what tools the agent has access to and what you
+ask it to do. So it is essentially just bounded by how much context you give it, what you ask it to
+do and what tools you give it. So definitely both. So then you give it a spec around a task for
+maybe a simple use case. What happens from there? Like, do you give it certain tools that you want
+to access to it? Does the platform deliver a set of tools? Like, what does that experience look
+like? we start from a safe starting point, which is the agent has access to certain tools, which we
+deem are basic and give the agent the same level of knowledge as any LinkedIn engineer would have.
+You know, information to proprietary systems, how do you make certain calls, how do you talk to
+certain systems, essentially all the things that our engineers go through during load camp. Now, on
+top of this, it's up to you as a developer what kind of other tools you want to give this agent
+access to because not everything makes sense all the time and you don't want to overload the agent
+with too many tools that are not useful for all the tasks and that just deteriorates quality over
+time. So, just to be mindful of that, you have a starting point and then you can add more on top of
+it. If you're dealing with a very specific use case for a very specific system, you can choose to
+have a tool that will surface additional information or context about that specific system and give
+it to the agent so you get better quality results. So, what's the, I guess, the execution model? Is
+this inside a cursor? Is this inside some IDE that you're running and then triggering? Is this an
+MCP call that talks to? Like, what's it look like? What we mainly try to aim for here is to give
+these agents a very safe sandbox environment for them to execute on. As soon as you as a developer
+says, hey, this is my entire task that I need you to execute, we then orchestrate that flow in a
+remote sandbox environment where the agent is free to run and execute and do what it needs to do.
+But because it's under the platform, there are certain restrictions that the agent cannot cross.
+Like, it cannot talk to certain systems, it cannot make certain calls, but it is otherwise free to
+do what it needs to do with the file system and make changes all in that local sandbox environment.
+So we instantiate the agent there along with the context that you provided with your spec or your
+prompt and then set it up with the tools that you want it to have access to, which is either through
+MCP or native tools that are already available in the platform because you don't want to keep
+redoing some tools that are available locally and reading files and searching and globbing and you
+don't need MCP for stuff like that. But then there are remote things that you would definitely want
+to use MCP for. And that's really the setup that we give it. And then, you know, there's other
+pieces like authentication with GitHub and how it should pull repos and how it should push to
+branches and how it should create a pull request and so on. And that part, again, is handled by the
+platform once the agent is done executing. We then move it on to the next stage and like, okay,
+let's create a pull request out of this change and kind of manage that workflow. And so that's the
+primary one. Everything generates a PR, developers review the PR, merge it. Yep. And a very critical
+piece of this then becomes as a developer, I want to review the PR like I would a teammate's PR. So
+I would ask for changes or request that certain changes need to be made for certain files or certain
+logic that it implemented or certain documentation or whatever it is. I'm able to review that pull
+request and ask for changes in the agent and then picks it back up where it left off, addresses your
+changes and comes back with updates to the same pull request. So that human in the loop aspect in
+the pull request is very critical. One of the things that I found in the process and how much
+autonomy I can get all the way for an agent before I get to that PR is the level I guess of domain
+knowledge that the developer has on what's actually happening. When you have deep domain knowledge
+you can put evals in there to be able to measure and make sure you're going the right way. How does
+the platform at LinkedIn allow that domain knowledge to be encapsulated into evals as it moves
+towards that PR? Like how do you do that? This really comes from a couple of different places. The
+first one is we have a huge plethora of pull requests that we have been reviewing been submitting
+over the last couple of years at least just to make sure that recency has better quality or is more
+relevant to what exists today. There's tens or hundreds of thousands of pull requests that we can
+already use where humans have provided good feedback and other humans have addressed that feedback
+and if you really use all of this data and show an agent two PRs we have enough data for that agent
+to make a decision and say which is mergeable and which is not. So that creates a very good baseline
+for us to go off of and not only that because of all this historical data it can also pretty
+accurately tell you which comments should be added to a certain PR or a certain diff to then take it
+to a level where it can be mergeable. I want to underscore one very important thing right? There are
+also quantitative stochastic verifiable things here. For example does the bill pass? That makes
+sense. That kind of leans into what other patterns are you seeing as you implement agents in these
+workflows? Thinking about the platform orchestrating agents that developers are seeing like the
+stochastic measures that you can do to actually measure its success that's certainly a pattern.
+There are other patterns that you're seeing that become applicable to being able to orchestrate
+agents like this? Firstly during development we need to understand that there are two distinct kinds
+of agents in the picture here. The first is what I call as foreground agents which are the IDE.
+These are like the GitHub copilots right? Where you're in the IDE where we again augment these
+agents we don't build them ground up we just buy GitHub copilot and use it inside the IDEs but we
+will augment it with MCP tools we will augment it with some instructions which essentially get into
+the system prompt which help the developers when they are coding in the IDE and the developers can
+see what the agent is doing and they are more actively involved. So this is the foreground mode. The
+second one which Prince talked about which is where we have built an essential orchestration system
+in the background where we've essentially built the agent ground up is the background agents where
+you try to give it a high level description of the task the agent is going and doing things in the
+background you may not see all of the sausage making all you see is the PR which gets put up and
+after that you have an opportunity to go give comments on the PR and then the agent picks it up
+again and it responds to those comments etc. And both of these are equally important and applicable
+to the different kinds of tasks which you are doing. For example the former is useful when you want
+to be more actively in control and the latter is useful for things like doing refactors or
+migrations or things like that where you just want to see the output and periodically provide input.
+You mentioned like refactorings are good for background tasks. What are some of the other things
+that you're finding a lot of success for maybe the background tasks versus the foreground? One very
+interesting pattern that has emerged is just reduction of toil. Yeah. All the things that are
+essential but never get prioritized and people hate doing those migrations  are sometimes critical
+so you don't really have a choice but there's things like improve your code coverage in your repo
+right? Clean up A-B tests that no longer need to be there in your repo. All of these things are
+increasing complexity of your code base increasing tech debt that you eventually need to pay but
+people have found that using unsupervised background agents for these use cases is really turning
+out to be quite productive because all you need to do is define that context up front for what you
+need the agent to do and then it's a very repeatable pattern. Something else we've seen is in order
+to provide these agents examples for some of these repetitive tasks you can have a human do a few
+PRs or code changes teach the agent the pattern as to how it's similar to how you would teach a
+junior developer on the team then the agent uses those as examples learns from it and does it. The
+other place where the background agents are incredibly useful is development is not just about
+coding you also run systems in production so sometimes you want observability agents which are
+looking at metrics in production which are looking at logs alerts etc responding to outages
+responding to availability dips these are again areas where it's really good to have an ambient
+agent running in the background which is able to escalate to the human when something of interest
+happens or take remedial actions if they are absolutely safe to take. I really like that specific
+example so if you have a lot of refactoring that you need to run across a large code base take a
+particular class refactor that establish that as to a spec and then give that as a one shot and say
+looking at this particular class I need to now apply this to the rest of the code base or migrate or
+refactor whatever it may be they apply that's an interesting pattern I like that a lot you mentioned
+spec driven development using spec to be able ! Are you using spec driven development in the
+foreground as well to define even something that needs to happen to generate code? How are you using
+it in the foreground? The foreground is really where the human is very actively interacting with the
+agent to get the work done right it's still good to have a very detailed spec for what you want to
+accomplish out of it but because of that very high fidelity nature of that interaction with the
+agent you can always keep going back and adding more context to it and getting the agent to refine
+its output and keep making progress and these foreground models are amazing for cases where you need
+to do a lot of active thinking and you want to test out a few things you want to validate with how
+things are working versus not and you're kind of working through a solution that's where these
+foreground agents really shine because they eliminate some of that toil for setting up some stuff
+and tearing it down or running things in the background a lot of that can get eliminated that's
+where foreground agents really shine this is in response to your prior question where you said how
+do you ensure you don't get in the way of developers as Prince said in foreground agents the
+developer really wants to be in control so if we essentially were very heavy handed and restricted
+the control of the developers they wouldn't be happy but at the same time we do not want them to
+make common mistakes or repeat the same things again and again so a bunch of these foreground coding
+agents have instruction like files for example for github copilot it's called copilot instructions
+and it's essentially an empty file so we again generate these files we help developers update these
+files and different repos we provide a standard library of mcp tools for common tasks we encapsulate
+context common to linkedin development in general development in a particular language development
+inside that repo in these files so that all of that context is preserved it's similar to how you
+would train a human to follow certain rules in the same way we essentially train and guide the agent
+to follow certain rules but the human developer still has full agency on what they want these agents
+to do for that particular task we use the background agents to generate those instructions for the
+foreground agents yeah yeah and the mcp tools are actually shared between the background agents and
+foreground agents so we try to get as much leverage as possible very nice very nice so karthik
+earlier you talked about mcp and its role and importance linkedin on the platform i'm sure
+everyone's familiar with mcp but step back for a second what is mcp and why is it so important to ai
+tooling so mcp stands for model context protocol right now there is a huge foundation which is
+responsible for its development it's essentially standardizing tool calling right so before mcp
+every ai team ended up wiring their tool calls very differently because every model vendor has their
+own function calling format people are kind of settling on the open ai format but there are still
+like subtle differences every internal like service is going to expose apis very differently and
+every agent framework is creating its own adapters so what this means is that it's all going to work
+but it's a lot of fragmentation it's closed on adoption it requires a lot of work to put it all
+together so mcp is essentially trying to solve that by giving us a common protocol and as long as
+you implement that protocol any language any agent any tool any model can interact with each other
+so it standardizes this entire workflow and as i said before the standardization is what is really
+cool and enabling us to use the same tools in the foreground agents which we aren't building ground
+up we are just using a product like copilot as well as the background agents which we are pretty
+much writing ourselves ground up yeah so what are some of the tools are some of the mcp agents that
+anybody listening might be able to get access and what are some of the tools that you're creating
+maybe internally to be able to create these workflows i think we have some common ones for things
+like code search or running static analysis executing some internal command line tools structured
+impact analysis to try and look at the impact of our changes we also have a bunch of documentation
+tools which will let agents pull structured knowledge from internal sources right we have semantic
+indexes over internal sources we have observability tools which will help agents pull production
+observability and metrics data in general the way we are thinking about it is this right you go to
+any infrastructure in a tooling team earlier you would ask them to think about building a ux or a ui
+layer for humans to interact right and right now we are telling them hey you also have agentic
+actors in the picture so also think about how you would want to expose mcp tools for agents to
+interact with your systems all right so we're coming up on the end of the podcast there's a couple
+other things that i wanted to ask you both about like i think we could go on for another 30 40
+minutes just talking about this because it's so interesting but the two things i i kind of wanted to
+talk about is like what from a traditional platform perspective are you building into the platform
+specifically for ai and when i'm talking about are things like security compliance observability and
+i thought i'd toss that one to you karthik like what are the types of things that you're building
+into the platform and how does it change maybe for an ai-centric workflow i think let's first start
+with some developer facing stuff right you need some sort of mechanism for managing prompts after
+that you need abstractions for easily defining tools and spinning up mcp servers atop these tools
+etc so that you can actually you know tie the prompts to the tools you also need some standard
+infrastructure for abstracting out inference either with commercial models in-house models etc so
+that is another bit and for security and compliance primarily you need this technology change as
+well as process change right the technology changes the sandbox environment which prince was talking
+about earlier where all of these agents are pretty much running and this sandbox environment has
+restrictions on what you can do and cannot do certain systems for example are simply isolated from
+the sandbox environment only limited context is provided here authentication and authorization are
+limited and all these agents have identities as well so all the work they do is auditable and they
+have a limited set of permissions assigned to them again we are not reinventing the wheel here we
+are essentially reusing a lot of abstractions which work in the human development world and applying
+it to agents then the other important thing is having transparency and control here right everything
+which agents are doing is observable by default which means every step every tool call every
+decision everything they are doing is audited so the human can then go take a look and try to
+understand the chain of thought the chain of actions right now the more important thing though is
+the process change right which is that agents simply cannot make a code change they can propose a
+code change and that code change will go through the exact same reviews and the tests and ownership
+which a human would be exposed to right so the developers can essentially replay the traces inspect
+the reasoning verify what the agent actually saw which is dealt through the thought process look at
+the final changes and after that approve it agents aren't replacing engineering judgment but are
+essentially providing a structured collaborator who is increasing the productivity of the human
+developers involved here yeah absolutely makes total sense prince we talked a little bit about
+developer experience before about background agents versus maybe ide foreground type agents what are
+you seeing from building this platform to really enable the devx the developer experience for
+developers using these tools you know it's funny all the problems with general engineering that we
+used to have with just people or humans around we still have with agents we're having to solve the
+same problems but now everybody's seeing you offer it from a different lens the key problem
+everywhere is you have a lot of context in your head when you're making code changes the agent does
+not and how do you do that how do you elaborate your task or elaborate your task description or have
+all the adjacent knowledge to that task listed out and given to the agent in a way that it can
+comprehend it that really is the key piece of the puzzle I don't think there's like a big solution
+for it but they're going to keep evolving it and keep working on it and that's what developers are
+facing today like if you give me this task I'll do it but I don't know how to explain that to the
+agent you just keyed another question that I really wanted to focus on when you're supervised in the
+foreground and you're using an agent to be able to do some kind of work the developer has context
+between different hops different steps that you're actually doing so they're maintaining the
+knowledge graph of actually what's happening when your background and where you're taking multi-step
+inter tool inter agent communication how is LinkedIn tackling the problem of context between agents
+across engineering if you look at how our collective knowledge base exists or is evolving it's
+constantly changing there's thousands of PRs created every day and merged and that involves our code
+base and involves our semantic understanding of everything what we try to do is maintain a semantic
+understanding of the code base as it exists and as it evolves in a way that it is queryable by the
+agents to understand how something works or how to do something in the same way that a human word by
+searching through wikis or slack or asking your team mate by the next desk but that really is a very
+critical source of information for the agents to get their changes right that is made available to
+the agents as a general rag system that they can query and get more information I was gonna ask so
+what I'm hearing is a rag basically that has the engineering context of the PRs that are going what
+the architecture looks like what your principles are so that it can actually begin to follow us an
+interesting thing here also is we decided to do this end of an experiment it turned out it actually
+works pretty well is we started taking PRs individually and started describing them using AI to
+figure out what changes were actually made so if you let's say you bumped a dependency dependency
+version of a certain system like gradle in a PR it would say that this is what happened in this PR
+and then the agents when they're asked to do something they can query these past PRs and say hey are
+there any PRs that bumped gradle version and they would be able to find all these PRs that made
+those changes and then they could also see what other things are generally impacted when you bump a
+gradle version so it doesn't have to figure it out itself so that's like an interesting experiment
+that paid out pretty well again you all are going to be speaking in New York in a few weeks so if we
+get this out ahead of time come take a look at QCon AI to learn more from Carthic and Prince but
+before we wrap as developers are on this journey you know all of us are using different AI tools and
+our IDE and we're moving to try to operationalize these tools as a platform what advice do you give
+developers as they're on this journey going from the foreground to background I would give three
+pieces of advice to developers right the first is invest in solid engineering and platform
+abstractions that is the only way to look past the hype and to actually get something working in
+production the second is understand the strengths and the limitations of the AI and use it wisely AI
+is good at certain tasks AI isn't good at certain tasks AI right now still isn't at a state where
+it's fully autonomous everywhere it's not a replacement for human judgment so use it appropriately
+and the third piece of guidance is if you try to fit AI into your existing processes which are human
+heavy where stuff is in a documented it's tribal knowledge it's in people's heads it's not going to
+work you have to change the way you work and change some of your processes as well in order for AI
+to be maximally effective yeah that's a really great point I'm doing a talk in a couple weeks and
+that's what I've been trying to focus on is that AI is not a one-size-fits-all solution in our
+conversation really drove down specifically about different approaches that you can use with AI in
+the foreground and background for example great advice Karthik Prince what about you so Karthik
+really hit the nail on the head with those three I would add two more the first one is don't take
+evals too lightly they are very critical for you to know if your system is improving or regressing
+so please don't treat them as phase two they're a core part of the platform we learned this the hard
+way and try now to figure out that we really need to invest in this and understand how these agents
+are improving over time and the second thing is solve for your company's specific context don't try
+to recreate GitHub Copilot or Cursor or Replit inside your company instead ask the right questions
+for what is repetitive what are the high friction engineering tasks that are unique to us where can
+we provide the most value for the problems that are unique to us and that is how you're really going
+to save developers a lot of time well gentlemen thank you for joining us on the infoq podcast and
+again if you're listening to this and you want to hear more Prince Karthik will be in New York on
+the 16th and 17th at QCon AI and you can ask them questions directly gentlemen thank thank you thank
+you thank you so much you you

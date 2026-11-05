@@ -1,0 +1,358 @@
+EPISODE 1607
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: This episode of Software Engineering Daily is part of our on-site coverage of KubeCon 2023, which took place from November 6th through the 9th in Chicago.
+
+In today's interview, host, Jordi Mon Company speaks with Santiago Torres-Arias, who is a contributor to Sigstore, which is a system to register software supply chain actors using federated identity management.
+
+This episode of Software Engineering Daily is hosted by Jordi Mon Companys. Check the show notes for more information on Jordi's work and where to find him.
+
+[INTERVIEW]
+
+[0:00:44] JMC: Hi, Santiago. Welcome to Software Engineering Daily.
+
+[0:00:46] STA: It's my pleasure to be here.
+
+[0:00:48] JMC: You are originally from Mexico. But actually, where do you live now in the US? But is it in DC or elsewhere?
+
+[0:00:55] STA: No. I live in West Lafayette, Indiana.
+
+[0:00:56] JMC: Because you work for a university over there, right?
+
+[0:01:00] STA: Yes. Purdue University.
+
+[0:01:01] JMC: What took you to Purdue and the subjects that you teach there? Was it open-source that took you there? Or was it the other way around? Like you got to university and then discovered open-source?
+
+[0:01:12] STA: I think it's actually both. I really love this question. Because something that really drove me to academia was the fact that I could be neutral in especially like very contentious topics like cybersecurity. And what drove me to open source is that you can be in the conversation in this very contagious topic. I really wanted to mix these two things at the same time.
+
+Something that I really like doing as an academic is to bring these open source projects into the like public arena and then try to benefit everybody while maintaining like some neutrality, which also is good for everybody's like goodwill, right?
+
+What I teach at Purdue is actually I have a course called Open Source Software Senior Design Projects, which is for students to contribute to open-source. And the reason why I'm at Purdue in particular is because it's a university that really values the sort of high-impact research. They're not like trying to publish a lot of papers. But rather just do one big paper that changes the world, right? Famous people there, Neil Armstrong. The guy that walked in the moon. Ian Murdock, the creator of Debian.
+
+[0:02:15] JMC: Oh, wow. Okay.
+
+[0:02:17] STA: Yeah. Yeah. A lot of these names that you go like, "Huh. This little town in the middle of Indiana has like all of this pretty -"
+
+[0:02:22] JMC: Is it a small town?
+
+[0:02:24] STA: It's a small town. I always found it really funny. Because I'm from Mexico City, which is like 30-something million -
+
+[0:02:29] JMC: Humongous.
+
+[0:02:31] STA: Yeah. The National University in Mexico City is bigger than this town.
+
+[0:02:36] JMC: The campus.
+
+[0:02:37] STA: Yeah. Yeah. The campus. It's called the University City in Mexico City. It's like 30-something thousand or 300,000 as a matter of fact, which is like three or four times bigger than this like little town in Indiana. I still can't wrap my head around it.
+
+[0:02:51] JMC: One thing that you mentioned that caught my attention, and actually we were discussing this before the recording, was my thesis of many of the motivations. But by the way, I should say we are at KubeCon North America 2023 in Chicago. Not far from where you live. I mean, a few hours away. But further away from where I live certainly.
+
+And this is the - well, what every single open-source project that is cloud native belongs, right? And I've got a very sort of like not hot take, but a very unresearched thesis about the origin of many of these projects is that it was a loan developer or developer that's struggling on his or her own about releasing an application in Kubernetes. Making CI fast or whatever. And they just decided to build their own thing, their own solution and open-source it. But they were - effectively, the motivation behind it underlying was scratching their own itch. It was a selfish thing that then decided to be open-sourced or delivered for free to as is to do the greater good for everyone.
+
+But the motivation behind people like you to contribute and even create projects of which we're going to talk about later is actually from the get-go like for the greater good, which actually fascinates me a bit. Yeah, how did you get involved particularly in cybersecurity? I mean, what caught your attention about open-source cybersecurity?
+
+[0:04:15] STA: Well, I would have to go back almost like 15 years. When I was doing my undergrad, I was doing electrical engineering and I wanted to do renewable energies. And the reason being is that, and I still believe it I think, global warming, climate change. However you want to call. It is one of the like big challenges that we're having right now.
+
+But back then, there was a presidential election in Mexico. A very, very contentious presidential election. Actually, I found it that it was the first time that somebody was talking about somebody hacking the election. Cybersecurity was influencing the democracy of a large country. And I was already involved in like cybersecurity as a hobby.
+
+[0:04:52] JMC: But wait a minute. Do you have electronic voting ballots over there?
+
+[0:04:55] STA: Well, it was closer to what happened in 2016 here in the US. A lot of like influence campaigns.
+
+[0:05:04] JMC: Oh, okay.
+
+[0:05:04] STA: Bot farms and stuff like this. I don't think anybody really did anything to the tally itself. But the guy who eventually won, Pea Nieto, was found to be actually carrying like massive bot farms and like this information campaigns in Twitter.
+
+Well, back then to me, it was like, "Oh, wow. This is really like - maybe not at the same sort of like scale of a challenge as global warming, but it really is something that could turn things forth very, very sour."
+
+I started looking into like different problems. And this is pretty much why I started floating around. I was into binary analysis. Into more like traditional exploitation stuff. I did a lot of like open source intelligence for a little while. I still do it as a side thing. I think contextualizing everything is very important. It's useful.
+
+But then I realized that this was something that we weren't looking a lot at this. Software supply chain in particular. And I think when you combine software supply chain in open-source, you get this like exponentiation of really problems. We've seen the attacks, right? I think it doesn't need to be repeated anymore. It used to be something that I would like try to convince people back then. But after 2020, things have like really changed the pace quite a bit.
+
+[0:06:12] JMC: Yeah. I would argue that it's my case. My personal and professional interest in supply chain security has become much bigger ever since I think 2020. For sure. Yeah. There are three projects in which you are involved heavily.
+
+[0:06:30] STA: And even co-created some of them.
+
+[0:06:32] JMC: And you just told me that in-toto is actually the oldest of the three. But I'd like to talk first about Sigstore. Because it's probably the most prominent of the three. The three being in-toto, Sigstore and TUF, The Update Framework. Let's talk about Sigstore, which is the most prominent one. How did that come about? Talk to me first about the problem. What was the itch that needed to be scratched? Although this was not a selfish thing. Or was it a selfish thing?
+
+[0:06:57] STA: Well, no. It is not. I don't want to like abuse the pun. But I really think that everything is connected. And actually, all of these projects are connected in the same way that supply chains are connected, right? It is not selfish. It is rather - I believe that this problem in particular requires you to have this very broad reach. If you don't solve all of the supply chain, you don't solve the supply chain. All of these projects connect to each other and that they are providing like little nuggets of security properties to the whole ecosystem.
+
+A fun fact, Sigstore was actually meant to be like a discovery - sort of like storage platform in-toto metadata. When Luke Hinds first wrote it, it was after pretty much a chat we had and I was like, "Wouldn't it be fantastic if we had this sort of like discovery thing?
+
+[0:07:41] JMC: You were working on in-toto and Sigstore initially came about as just an ancillary thing to help it with in-toto in a way, right? It's funny how things start. Yeah.
+
+[0:07:51] STA: Yeah. Yeah. It is really funny looking back at the whole thing that I'm like, "Why didn't I start with Sigstore first?" It's really exponentiated or capacity to like reach all of this open-source projects.
+
+In-toto was maybe 5 years older than Sigstore. And all of that while, we had academic papers. We had like a big repo with a lot of outreach. We're trying to build a very large community. But suddenly, Sigstore comes around and just so prominent as you said.
+
+[0:08:17] JMC: Wait. You start storing metadata that the in-toto project generates in where? In one place? And how does that evolve then into what the full-fledged Sigstore project is?
+
+[0:08:28] STA: Yeah. It started pretty much as like a hackathon sort of thing. It was Rekor, which is one of the transparency logs for Sigstore. Originally, it was something that I and Luke Hinds have discussed as, "Hey, can we store in-toto- metadata on a transparency log?" And then Luke Hinds just took it to the next level, right?
+
+[0:08:47] JMC: What is a transparency log, by the way?
+
+[0:08:48] STA: Well the way that I explain it to my students is imagine a blockchain, but in a blockchain you need to ask for permission to write. And that's pretty much the mining process, right? You spend a lot of resources to get the sort of permission. In a transparency log, you just ask for forgiveness. You write the metadata. And then there's - instead of miners, there's monitors, there's auditors that will find consistency within the log. It's a lose analogy. Well, that's pretty much the best way to wrap my head around it.
+
+[0:09:12] JMC: Okay, wow. But does it require consensus from nodes within the log or -
+
+[0:09:18] STA: Not really. You just have a centralized or sort of a collection of nodes. But they tend to just take the writes as they are. They do very little checking. In general, the consensus that you're building there is not for availability or for like resiliency, but rather just for scalability. What you want to have is very fast writes, very fast reads and like a slow-moving process of like coalescences.
+
+The older entries are more trusted than the new ones. As things move onwards, then you can be a little bit more reassured that nobody put anything funny in there because everybody's looking at it.
+
+[0:09:52] JMC: Okay. That's how it started.
+
+[0:09:54] STA: That's how it started. This is not what it is anymore.
+
+[0:09:57] JMC: Yeah. That's now a component only of Sigstore.
+
+[0:09:59] STA: Yeah. It's a component. And Rekor itself - again, Luke Hinds really took it with a different vision. He implemented the whole thing. He came back like a week later and he's like, "Look at what I did." I was like, "Oh, my God." And then he realized that there need to be a lot more things going on than just like in-toto stuff in the transparency log.
+
+[0:10:14] JMC: Okay. Can you explain what the full-fledged Sigstore looks now? Rekor is just an element. Fundamental one. But there's more things, right? And what does it actually solve? Because the problem initially was to store metadata from in-toto. But now it solves a different problem? A bigger problem?
+
+[0:10:30] STA: Yeah. It still supports in-toto very natively. The GitHub NPM integration, it's actually using in-toto under the hood to like bind packages to GitHub actions. But the problem that Sigstore really, really solves is accessing digital signatures over software information. It can be in-toto stations. It can be signatures over a package of the like 20 different formats that exist. And that's also what I think made it very popular, which is the sort of like non-opinionated. Let's just make it work sort of thing. It's pretty much two components. It's sort of like the storage of information and the sort of like pseudo-blockchain thing.
+
+[0:11:05] JMC: Mm-hmm. The Rekor.
+
+[0:11:06] STA: Which is Rekor. And then you have Fulcio, which is also allowing you to provide binding of identities. Essentially in the way that you would - I don't know. This happens to me. I don't know how you log into like the LFX platform or like pretty much like the 20 different Linux Foundation things that exist. But by now, I just use my logging with GitHub thing, right?
+
+[0:11:24] JMC: Yeah. Social login. Right.
+
+[0:11:25] STA: Yeah. Exactly. Exactly. It's easier to wrap your head around like, "Oh, I'm a developer. I'm doing something with the Linux Foundation. I'm going to use my GitHub account." Right? Why wouldn't we do the same for signing software stuff. Can I log in with GitHub and then I can get an identity or a cryptographic key that I can use to sign software information? Then we have the ability to then look at software and say, "Well, this person did indeed write this software." There's this paper trail that allows us to go to -
+
+[0:11:52] JMC: That is stored in Fulcio eventually.
+
+[0:11:54] STA: The cryptographic key. Yeah. Exactly. The cryptographic sort of like paper trail for identities ends up in this Fulcio log. And the information about the software itself ends up in this Rekor log.
+
+[0:12:06] JMC: Okay. But it doesn't cover the same ground that an SBOM does. It's not aiming to describe what the package contains, the origin of the dependencies, the version. I mean I know that SBOMs can become - and we've been talking about this before the recording extremely broad. But yeah, is it aiming to define what is in the package or not necessarily?
+
+[0:12:28] STA: No. If anything, it's pretty much a storage of information with its cryptographic assurances. You could stick an SBOM in Rekor. And that is probably what you would want to do as well, right?
+
+One problem that I think we haven't gotten to yet that's part of the challenge that I feel we'll be facing this next couple of years is, well, everybody's spitting out the SBOMs right now. How do you find them? How do you know a package has an SBOM? How do you know the SBOM that you're looking at was produced by the creator of this package?
+
+[0:12:58] JMC: That would be the verification of the attestation in this case. Can an SBOM be considered an attestation?
+
+[0:13:03] STA: Yes. At least in the internal ideology. It is.
+
+[0:13:05] JMC: Okay. Okay. yeah. Justin Cormack, the CTO of Docker, which I interviewed yesterday here gave a talk about how difficult it is to verify attestations in general.
+
+[0:13:15] STA: Yes. Which that's pretty much the in-toto -
+
+[0:13:18] JMC: Okay. Okay. That's how Sigstore works, right? Okay. Fantastic. It's a great project actually. I quite like it. And very simple. And I just wish that it becomes even more successful.
+
+By the way, credit to Luke Hinds, right?
+
+[0:13:33] STA: Yeah. Yeah. Yeah.
+
+[0:13:33] JMC: And yourself. And now I presume there's a community behind it.
+
+[0:13:37] STA: Yeah. And I wanted to actually like throw that in. There's so many people working on - it is simple, but it is as simple as like good simple things are. It's a lot of effort to make it easy for everybody to use, and like clear and like universally applicable to all of these different use cases. But there's a lot of people making this thing working every day.
+
+[0:13:59] JMC: The other project that I want to talk about with you before we move on to in-toto, which is probably the most difficult to understand at least for me, hopefully not for everyone that will listen to the end of this interview, is The Update Framework. I didn't know there was a huge problem that required some sort of framework for software updates. But it turns out, yeah. Now that I did read the motivations behind the update framework and I attended a talk by a colleague of yours actually, Marina - I can't remember her name. Marina -
+
+[0:14:28] STA: Marina Moore.
+
+[0:14:30] JMC: Exactly. It was actually quite fascinating. The problem is bigger than I thought so. Could you describe again the problem that the Update Framework is trying to solve?
+
+[0:14:37] STA: Yes. Maybe I'm abusing metaphors. But really, a software supply chain is a supply chain, right? The way to wrap our head around the update framework is pretty much the shrink wrap that comes on whatever physical product you would get. And that shrink wrap gives you a bunch of insurances, right? You can look at things like, "Oh, nobody opened it between the factory." Right? The stamp of proof evidence.
+
+There's other things that a shrink wrap may let you see. For example, if it has like a hologram or a printout that says like do not drink this juice if it's like past August, something. Right? These things, you essentially inspect it on the Update Framework.
+
+The idea there is that this last mile, this sort of like from where you get your software. It could be an app store, a Docker, a -
+
+[0:15:22] JMC: Registry.
+
+[0:15:23] STA: Yes. You want that last mile to be protected from anybody from breaking in and replace things. There's really like a lot of nuance to it, but it's fundamentally that. That sort of like shrink wrap on the software.
+
+[0:15:35] JMC: But what is it? Fundamentally, problems of sort of like man-in-the-middle attacks or someone interfering in the communication between the developer and the registry from where this person is pulling things?
+
+[0:15:50] STA: Yes. Anything can happen this registry, it's really a target. Anybody who wants to get to the crown jewels can really hack into this place and hack everybody. And that's what makes the supply chain attack such a juicy target.
+
+The goal of TUF is to be able to withstand somebody hacking into the registry or somebody hacking into or man in the middle meddling a conversation between you and the registry. Or even, for example, if the registry is using a mirror, like a Cloudflare, or CDN, or something like that. From that CDN to do anything malicious - we actually with a tax security, sig security, we collected a large like corpus of supply chain attacks. And there's a lot of like things that sound like spy stories that happened. One example that I really like is somebody hacked into a mirror of South Korea's delivery for PHP packages and started replacing - there was very, very basic.
+
+[0:16:46] JMC: Wait. This mirror was mirroring another repo that hosted let's say more official fresher? Maybe the original PH - wherever the PHP packages are deployed from the PHP community, right? And there's a mirror in South Korea that, again, copies and streams or whatever those original - and someone took over that mirror, you say?
+
+[0:17:04] STA: Took over that mirror. Then took a package. Actually, one that everybody would install. The PHP, my admin package. I didn't even know it was like a separate package. I thought it came with a thing, right? And introduced a back door in it.
+
+And this is, again, what I find like scary is somebody breaks into this South Korean mirror. Everybody's like, "Oh, my God. Could it be North Korea? Could it be like sort of like geopolitical rival?" And suddenly, everybody's hacked.
+
+When we think about, for example, [inaudible 0:17:29], everybody forgets that it had a supply chain attack component to it. The Russians hacked into this tax software. And they hacked into this tax software during Tax Day. So that a lot of like government offices downloaded that software. Pretty much everybody in Ukraine downloaded that software. Installed it. And then it had like all the power in the world to like take over the whole country. Affected the power grid. It was really like a massive cyber-attack that started this little very nuanced, "Oh, I'm going to find the download link for this like tax software, like this TurboTax for Ukraine." And then, well, all hell breaks loose.
+
+[0:18:11] JMC: How does the upgrade framework prevent this? Or any other - how does it work?
+
+[0:18:16] STA: It is pretty much like shrink wrapping. The basic idea is that there's different people that are trying to provide different properties about a package. When I was saying earlier, if you have an expiration date on a bottle of juice, somebody put that like sort of like stamp in there, right? The Update Framework allows you to do that sort of like stamping of a software repo, the whole software repo saying, "This repo shouldn't be trusted after this date."
+
+There are other sort of people in the project, when you have a deployment of it, that would do things like, "Oh, I'm going to match different elements in this repo so that nobody's like modifying packages." The way to visualize it I feel is imagine that somebody just decided to ship you an Ikea furniture. Okay? All of the pieces there were made by like workers at IKEA.
+
+Now imagine that I realize that I can actually harm you by taking not the screws that should be part of that furniture, but some other Ikea screws that are like shorter or were made for another furniture. You come, you receive your furniture and you go like, "Well, this is all IKEA pieces. I'm good." You build the furniture and then suddenly it all falls down. That's called a snapshot roll that also is something that TUF care of.
+
+TUF was designed to withstand like nation-state attackers, like somebody hacking into a North Korean mirror or - I don't know. Iran trying to hack into like activists that are using the tour browser. It really tries to consider all of this like very adversarial settings. Somebody hacking into the network, into the infrastructure. Being able to inject keys. Being able to impersonate certain people in the supply chain. It has a lot of little roles that are called. Little properties that are provided that sort of like at a top level they don't seem very important, but then you realize that if somebody's able to abuse those, then they can still cause a lot of harm.
+
+[0:20:06] JMC: Who's the end user of the TUF framework or TUF? Is it those deploying and packaging? Whether it's Linux distros? Small packages? Whatever? Is it the developer doing so and sharing it with the world? Is it the registry owner? Who should be -
+
+[0:20:25] STA: It's a little bit of a dance between both the developers. And say somebody submitting a package to [inaudible 0:20:29]. The registry operator, which usually is going to take the bulk of the work is essentially like setting HTTPS on a website and the user that is downloading the packages, right? It could be another developer. But it could really be somebody in the app store, for example.
+
+[0:20:43] JMC: But does the receiving end of this need to do with - what features of TUF can this - I'm thinking of myself. If I want to pull in - I don't know. Dependency or a package for a project that I'm going to do?
+
+[0:20:55] STA: Anything security, the idea would be - it's probably happening right now and you just don't notice it, right? In the same way that when you browse to a website and you see a little lock and you know that something's good. With TUF, at least the best deployments really do have that property.
+
+As a matter of fact, if you have your Cosign or Sigstore, TUF is an enabler of Sigstore. At the very high level, all of the trust roots, all of the cryptographic material is secured using TUF.
+
+[0:21:21] JMC: Okay. So then, is in-toto the umbrella project of these two and maybe Cosign? I didn't know. You just brought Cosign into the picture. But are they all related in a way or not?
+
+[0:21:31] STA: They are. I think everything is connected. And again, it's a network. It's a supply chain of supply chain projects. I think there's no umbrella really. When I spoke about TUF, I was talking about this sort of like last mile between - there's a lot of visibility that we're trying to find between the developer itself and the registry. What's on the left-hand side? That is like the purview of in-toto. And you could think of Cosign and Sigstore as something that adds more transparency to the like TUF story. It also simplifies the flow way, yeah, quite a bit.
+
+[0:22:04] JMC: What was the vision with in-toto? Talk us about its origins and the problem that sort of like motivated its creation.
+
+[0:22:14] STA: It is funny. Because in-toto predates, for example, SolarWinds by 5 years or so. I think the first commit that I pushed to in-toto was like 2015. In August 2015.
+
+[0:22:24] JMC: Just for the record. SolarWinds was a major hack that happened to that company, right? It was a build chain, build process attack, right? I think they can't remember what build tools they were using. But let's say they were using - I don't know. Bazel. Whatever. That got compromised. And knowing to the developers weren't unaware that the applications they were building with that toolchain were already compromised. Because that toolchain was compromised and was inserting malware. Is that a very - basically it. And the company doing so was called SolarWinds, which provided - I can't remember what SolarWinds provided. Was it software also?
+
+[0:23:03] STA: It was software, yeah, that the - if I recall correctly, it was some observability style thing. Pretty much like an agent that you would -
+
+[0:23:10] JMC: That gave access to SolarWinds' clients, to the person or the people behind the malware inserted in that thing. Okay. In-toto is 5 years before this.
+
+[0:23:21] STA: Yes. Pretty much, in-toto was a splinter of the TUF project as a matter of fact. When Docker Content Trust came about, which was one implementation of TUF, we had the TUF project. We started asking ourselves, "Well, now you have TUF. What is the worst that could happen?" "Oh, well, you can hack this other people." And then we're like, "Well, do we need a TUF for that?" And that's pretty much what like set the ball rolling in that regard.
+
+[0:23:44] JMC: Okay. How does then in-toto work? By the way, is this a homage to Africa? To Toto's Africa? Or nothing -
+
+[0:23:50] STA: No.
+
+[0:23:51] JMC: Well, it's a shame.
+
+[0:23:53] STA: We do make a lot of puns around Toto's Africa. It is a pony name. You can definitely find a lot -
+
+[0:23:57] JMC: What's the origin of the name? I should have asked. Because TUF is obviously an acronym. The Update Framework. Sigstore, it's probably a composition of two words.
+
+[0:24:06] STA: Yeah. Signature and storage.
+
+[0:24:10] JMC: Exactly. but in-toto? It's got a dash. In-toto.
+
+[0:24:14] STA: Yes. Another factor of like in-toto history is it was used to be called just toto. Like Africa and also like the dog of The Wizard of Oz.
+
+[0:24:24] JMC: Oh, okay. I didn't know about that.
+
+[0:24:25] STA: The little dog was also called Toto. It is meant to say as a whole. It's a Latin for as a whole. And that's pretty much the vision there. What we want to do is you have a very highly interconnected network of developers all throughout the software supply chain. And you want everybody to tell you what they're doing and to provide you evidence, verifiable evidence of what they did. And at least at a sort of like high level, if everybody tells you what they did, then you can just check if they did what they're supposed to be, right? What they're supposed to do.
+
+And in-toto is a framework for everybody to pretty much like rubber stamp what they did in a cryptographically verifiable way. And then to take this - and this are called attestations, by the way. These attestations, you collect all of them and you try to walk the paper trail of the attestations all the way to the developer, all the way to the designer who came up with the idea and ensure that everybody did what they're supposed to do in a safe environment with the right sort of like settings and configurations. That is pretty much. At a high level, it's just like a cryptographic paper trail of all the operations in the software supply chain.
+
+[0:25:29] JMC: You said that, for example, GitHub Actions uses it to provide attestations to the - well, GitHub actions can be used for many things. But I think it's mostly used to build packages and images. Is in-toto working in the background to connect the package itself with - provide an attestation of who did it in connected to the GitHub account of the creator?
+
+[0:25:51] STA: Yes. It uses both a combination of Sigstore and in-toto. The basic idea is, if you have a package on NPM, you want to know that it came - who build it? And how? The best way to do it is using a SLSA attestation, which is a thing that you can put in in-toto in the same way that you can put an SBOM and all of this other like supply chain like formats.
+
+What you want to know is how did that NPM package got there? Well, you have a you have a GitHub Action that did it. The GitHub Action can take - during their actions, they can take like a record of the source code that they did or like they took in. The build environment. And then a record of the pack package that they produce. And then sign that and submit it along with the package.
+
+When you download a package in NPM that has an in-toto attestation, you can say, "Well, I know that this came from this GitHub repo. And this was the build that triggered this package." I can walk all the way to the source code that produced this.
+
+Imagine if somebody was to break into NPM, they could just replace the package with something else. Now you know that if somebody does that, then you can go into the in-toto attestation and figure out that, "Well, that package didn't come from that GitHub action." Or if it came from a GitHub action, it was not the GitHub action that should have produced this package. Because it's part of another account and so on so forth.
+
+[0:27:06] JMC: Okay. What format does the attestation come in? When you download a binary or when you download an image from Docker Hub or registry and it comes with an in-toto attestation, what format? How do you read that?
+
+[0:27:20] STA: It's a little JSON. It's really not anything too verbose. Metaphorically, again, the way that I like to visualize in-toto is like the TCP layer in a network, right? It's something that every time we're on a video call or like browsing the web, it's like it's this little packet that's in the front of the data that we care about. But it allows it to find its way and allows us to know if something is missing, or reconstruct, or like - in-toto is the same. It's a little thing that goes in front of your software that lets you know a couple of facts about the software. How was it built? What was the license? Did somebody run a vulnerability scan on this? Did somebody produce an SBOM for this? Is this SBOM produced by somebody you trust? Things of that nature.
+
+[0:28:03] JMC: Nice. I think it's a - I mean, I don't want to get into the whole discussion of that we mentioned before or I mentioned before about SBOMs and how comprehensive they can be. But yeah, it's like a small SBOM at least of some of the components. It doesn't go into describing necessarily inside. But what happened to it? Where it came from? From who? And I think that's more or less enough.
+
+I mean, it could provide all the information in the world about that thing. But I think that information is enough to just acknowledge that what you downloaded is in fact what you thought you were downloading or not. And take actions. Are there any tools out there? Or does in-toto allow you to take any action if there is disparity between what the attestation says and the actual thing downloaded?
+
+[0:28:55] STA: Yes. You can do all sorts of things really. And I think it as a community we're starting to move into the sort of best practices world. But really, you can, for example, put in-toto into an attestation controller and say, "I am not going to deploy any containers that don't have an SBOM." Or, "I am not going to deploy any containers that were not built in a secure environment." You can put it on a package manager.
+
+A project that I was very, very - and I'm still very excited about. I really like this project. You can change your Ubuntu or Debian installer to only install packages that have been reproducibly built by different people. And the way that you can visualize this is you download the package and you want to find three in-toto attestations from three different people. And they all need to agree on the same thing. Does this make sense?
+
+[0:29:41] JMC: Yeah. How cool. Okay. Nice. Thanks. This might be a very, very stupid question. It's quite candid. Why are they like three different projects? Why is the reason you would divide Sigstore into what Sigstore takes care of? Are these like organic things that happen and it's the limit of what humans can handle and the community of - the Sigstore community has enough with what Sigstore is now and will become in the future. And the community behind TUF is also limited to the problem space that it solves. Why are these three projects - since there's considerable overlap, and indeed even more so interoperability between the three, don't they become one in a way I guess would be my question?
+
+[0:30:27] STA: Yeah. That's a good question. I think, A, it kind of happened organically that they became like separate projects. I think the major reason though in hindsight is it allows you to be a little bit more agile and a little bit more flexible. You may be able to use in-toto without TUF, or tough without in-toto, or Sigstore without either of the other two and trying to sell this as a whole like, "Hey, here's this big project that does all of these things," would probably make it, A, scary to people. It's already hard to wrap your head around some of this project. Hell, even TUF in the beginning, I was like, "Why do we need all these things?"
+
+I think it also allows for like sort of like a piecemeal, "Hey, let's stop this project. We get some security guarantees. And then like let's explore the space a little bit further." Instead of this like massive monolith of like in TUF, in-toto, Sigstore thing.
+
+[0:31:17] JMC: Yeah. I mean, this feels like a very reasonable answer. Because, yeah, most of the things here in the CNCF happen very - especially at the early stages happen really, really organic. And it's kind of difficult to understand the underlying reasons in a way.
+
+What about the future? Are there new security projects coming into place? Or what is the future for these three projects? What are they going to deliver? What are they focusing on? I know there are communities behind that you don't necessarily speak on behalf of everyone. But since you are co-maintainer of several and co-creator of several, I thought you would be an authorized voice. You just give us a lay of the land of what you think things going for the three of them.
+
+[0:31:59] STA: Things that I'm really excited about. I think we're moving to a different era of software supply chain security. What I think happened between, say, the first commit to in-toto and 2022 was that finding data about software supply chain was super hard.
+
+Making a determination about how and why you trust a piece of software was super-duper hard. because nobody was producing attestations. Nobody was producing SBOMs. We are moving to an era in which now we are starting to see the data. And we can be a little bit more proactive at an ecosystem level.
+
+One project that I'm very excited about is the GUAC project. Mostly stewarded by Parth, and Michael Liberman and Brandon. It's really -
+
+[0:32:42] JMC: GUAC, by the way, G - it's like short for guacamole, if I'm not wrong. GUAC. Does it stand for anything?
+
+[0:32:47] STA: Yeah. The graph for understanding artifact composition.
+
+[0:32:50] JMC: Oh, wow. Okay. I'm glad it's just GUAC for me at least.
+
+[0:32:53] STA: Yeah. Well, in Mexico we don't say guac, we say guacamole.
+
+[0:32:58] JMC: Oh, you say Americans call - they shorten guacamole as guac?
+
+[0:33:01] STA: Yeah. They like doing this. They're like very efficient.
+
+[0:33:06] JMC: Oh, okay. I thought it was just the project being called that way. Okay.
+
+[0:33:09] STA: But yeah, it's a project that I'm very excited about. Because now that we have all of this data, then we can collect all of this data and build a lay of the land of the software supply chain. And you can do things like what are the like effective vulnerabilities in all of my dependency graph? Or can I actually produce an SBOM from all of the evidence that I have collected rather than like at some individual point in the software supply chain? You can do very cool things like, "Hey, I am the Linux Foundation." All of these projects are starting to become critical. I can see it. Everybody's using this as part of the interdependency network. We need to fund this. Or we need to support the developers of this project. Because if they get hacked, then everybody gets hacked.
+
+[0:33:47] JMC: Yeah. Describe in as much detail as you can what GUAC is doing, if you can, please? Because it's very ambitious. And this certainly feels like an umbrella thing in a way at least or a bedrock if you want. But anyway, what does it do?
+
+[0:34:00] STA: Everything is connected. GUAC is essentially what I would call like a discovery platform. A viewer of the whole supply chain. At its core, it's collecting metadata of the software supply chain. This includes in-toto metadata. And I think it's actually very like friendly to the in-toto sort of format. It includes SBOMs. It can include CVEs, VEX.
+
+[0:34:19] JMC: Is there a crawler that is inspecting every single public repo in GitHub? Or is it something that I enable within my software supply chain? Let's say that I work at a big enterprise and I've got NPM dependencies and a tech stack that is based on JavaScript and Kubernetes, for example. Should I just run it through my stack and see what the output is and it will give me something?
+
+[0:34:46] STA: The answer is both. You may have your own private data and you can have your own like GUAC instance in the same way that you could have your own Sigstore instance, right? It does have a component that looks at different data sources and then it tries to combine all of them. It can take a look at a VEX feed and then just like feed it into this graph. It can take a look at Docker Hub and start pulling attestation and container information.
+
+The idea is that you want everything on a single place so that then you can look at it and make determinations about the trust of your software. It allows you to be way more proactive than what we're doing right now, which is pretty much just kind of like reacting to events.
+
+[0:35:21] JMC: Patching. Yeah. Yeah. Well, it feels like you're very ambitious - what's the status of that project? I remember it being launched I think this very year. 2023.
+
+[0:35:33] STA: Yeah. Earlier this year. It's coming together. It's moving really, really fast. I wouldn't be surprised if, say, by the next KubeCon we have, say, a Linux Foundation hosted. And this is just my words, right? But I think the Linux Foundation, it's uniquely positioned to use a project like this as a visor of their whole ecosystem and use it to like grow it better. I wouldn't be surprised if it's mature enough for a group like the Linux Foundation to make the jump and host an instance for all of the software that it's hosting.
+
+[0:36:06] JMC: To finalize the interview, right now, to share with everyone my potentially very ill-informed opinions about the world and like I did just earlier in this interview about my thesis about the origin of most open-source projects in the CNCF. But this, I'm only echoing what many cybersecurity experts say that we are at war. We have been at war, I mean, for all of humanity. But we are in permanent war lately. And it's a cyber hybrid war that is - I guess within that context, nation-states are attacking I would argue mostly the West. But it is true that, for example, Stuxnet was an attack, if I'm not wrong, between Israel and the US to Iran in this case. There's retaliation. But there's constant digital attack. And that is because it is aggressive. It achieves goals. But it's also usually - correct me if I'm wrong, but usually harmless, right?
+
+We've seen instances of, I believe, a hack in the US gas pipeline in the East. I don't know if anyone died from that. But I'm sure that many people went really cold. Because I think the heating system of many houses just went - many, many, many houses went down.
+
+We're getting closely to this hybrid cyber war, increasing cyber war becoming a potential threat to human lives, which is actual war, I would argue. Is that your main concern about where the world is going or in terms of software supply chain, by the way? Because as I just said, these are cyber-attacks. They are based on networks, on software packages, on social elements of - they attack the human elements of those either programming or managing networks and so forth. That is my biggest concern. What is your biggest concern of the software supply chain right now?
+
+[0:37:59] STA: I think you're actually spot on. And something that I'm trying to like develop in my research lab right now is we think that the software supply chain will stay in the software domain forever. But it's a cyber-physical supply chain at this point. You can attack the software supply chain and you can cause a massive physical damage, especially like at a nation-state, right? Like the heating with the Colonial Pipeline that you were just talking about.
+
+But you can also have the opposite as well. Or you can have both, right? You could hack the software supply chain that makes physical goods. Maybe computing equipment that eventually introduces a back door in the cloud and all of the data centers. Maybe this could be happening right now. That is what I'm like, in a sense, scared. But it's also a nice field to be in.
+
+[0:38:43] JMC: Yeah. Motivation, right?
+
+[0:38:44] STA: Yeah. It's very exciting. When I was doing this work earlier on and I was collecting all of these stories, this South Korean hack, I realized that it really keeps you on your toes. There are very smart people trying to do very clever sort of cyber attacks. And we need to overcome them, right? We need to think like them. We need to think outside of the box. We need to find all of these different vectors and patch them. The cyber-physical supply chain is something that worries me. And I think that will be probably the next sort of like big surprise for everybody.
+
+[0:39:15] JMC: If anyone, by the way, is interested in this, I interviewed Miko Hypponen, hopefully I pronounced it correctly, just a year ago. And his book - I mean, the interview is about the book. If you want to just get a sense of what the book is about. His book,If it's smart, It's Vulnerable, which is what I think he coined as Mikko's law. I think if you actually look up Mikko's law in Wikipedia, it will come - I mean, the definition of it will be something like, "If it's smart, it's vulnerable," something probably more elaborate. But basically, that's the basic tenant.
+
+He's been a cybersecurity specialist for ages based out of - he's Finnish. And he works for a company called, now, I think WithSecure. Before called F-Secure. And his book is a marvelous collection of nation-state attacks, [inaudible 0:40:00]. For example and other things. And it's a description of the problems that we may face when software supply chains get hacked, which I think is going to get increasingly tougher to keep safe.
+
+But anyway, hopefully, we've got more people like Santiago involved in not only academia, but as you see, open source. Plenty of projects. And we see also the demand side of the market. In this case, Santiago is behaving as a supplier of these things. Adopting it. And hopefully, the Linux Foundation does take care of these things and sets an example of what good software practices and security practices are. Yeah, we only just become more aware of the actual situation. And we just take action.
+
+Santiago, thanks so much for walking us through the three projects. Credit to all of those that you've mentioned and that we haven't. It's impossible to acknowledge every single member of these three communities. Because there's plenty of people contributing, and maintaining and doing all the good stuff.
+
+You've certainly been a good [inaudible 0:41:01] for the three. And hopefully, everyone has a good understanding of what the three projects are and start using them. Thanks so much for being with us.
+
+[0:41:09] STA: Thank you. It was a very, very nice conversation.
+
+[0:41:11] JMC: If anyone wants to reach out to you, by the way, where can they find you?
+
+[0:41:15] STA: I am on Twitter as like my two last names, Torres-Arias S. I am on GitHub as well. I have a website, badhomb.re. I'm also on Mastodon.
+
+[0:41:27] JMC: Badhombre dot what?
+
+[0:41:28] STA: Badhomb.re.
+
+[0:41:30] JMC: Oh. Is that a national domain? RE?
+
+[0:41:33] STA: No. It's a real estate. You have to pretend to be a real estate agent to get -
+
+[0:41:36] JMC: I've got - by the way, my surname. I've got two surnames. Because I'm Spanish. The Spanish name convention has two surnames. My surname is Companys. I mean, you don't pronounce it that way, but it's spelled as company with an S at the end. I took the domain .company. Although, I'm obviously not a company. I'm using the same tricks as you. Okay.
+
+[0:41:54] STA: Right. Right. Right. It's more memorable, right?
+
+[0:41:57] JMC: Yeah. Yeah. Of course, badhomb, ending in a B, .re.
+
+[0:42:01] STA: Yes.
+
+[0:42:02] JMC: Gotcha. Okay. Thanks so much for being with us.
+
+[0:42:04] STA: Thank you.
+
+[END]
+

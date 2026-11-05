@@ -1,0 +1,694 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 709: Bryan Cantrill on the Data Center Control Plane
+DATE: 2026-02-26
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/02/se-radio-709-bryan-cantrill-on-the-data-center-control-plane/
+AUDIO: https://traffic.libsyn.com/secure/seradio/709-bryan-cantrill-oxide-computer-control-planes.mp3?dest-id=23379
+DURATION_SECONDS: 3895
+TRANSCRIBED_AT: 2026-11-04T10:37:04Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Hey, this is Jeremy Jung for Software Engineering Radio, and
+today I'm talking to Brian Cantrell. He's the co-founder and CTO of Oxide Computer Company, and he
+was previously the CTO of Joyent, and he also co-authored the D-Trace tracing framework while he was
+at Sun Microsystems. Brian, welcome to Software Engineering Radio. Awesome. Thanks for having me.
+It's great to be here. You're the CTO of a company that makes computers, but I think before we get
+into that, a lot of people who build software now, that the actual computer is abstracted away.
+They're using AWS or they're using some kind of cloud service. So I thought we could start by
+talking about data centers, because you were previously working at Joyent, and I believe you got
+bought by Samsung, and you've previously talked about how you had to figure out, how do I run things
+at Samsung's scale? So how was your experience with that? What were the challenges there? Yeah. So
+at Joyent, Joyent was a cloud computing pioneer. We competed with the likes of AWS and then later
+GCP and Azure. And we were operating at a scale. We had a bunch of machines, a bunch of DCs. But
+ultimately, we were a VC-backed company and a small company by the standards of, certainly by
+Samsung standards. And so when Samsung bought the company, and the reason, by the way, that Samsung
+bought Joyent is Samsung's cloud bill was, let's just say it was extremely large. They were spending
+an enormous amount of money every year on the public cloud. And they realized that in order to
+secure their fate economically, they had to be running on their own infrastructure, which did not
+make sense. And there was not really a product that Samsung could go buy that would give them that
+on-prem cloud. In that regard, the state of the market was really no different. And so they went
+looking for a company and bought Joyent. And when we were on the inside of Samsung, we learned about
+Samsung scale. And Samsung loves to talk about Samsung scale. And I got to tell you, it is more than
+just chest-thumping. Like Samsung scale really is, I mean, just the sheer, the number of devices,
+the number of customers, just this absolute size. They really wanted to take us out to levels of
+scale, certainly, that we had not seen. The reason for buying Joyent was to be able to stand up on
+their own infrastructure. So we were going to go buy, we did go buy, a bunch of hardware. And I
+remember just thinking, God, I hope Dell is somehow magically better. I hope the problems that we
+have seen in the small, you know, I just remember hoping. And hope it was, of course, a terrible
+strategy. And it was a terrible strategy here too. And the problems that we saw at the large were,
+when you scale out, the problems that you see kind of once or twice, you now see all the time. And
+they become absolutely debilitating. And we saw a whole series of really debilitating problems. I
+mean, in many ways, like comically debilitating in terms of showing just how bad the state-of-the-
+art is. And we had, I mean, it should be said, we had great software and great software expertise.
+And we were controlling our own system software. But even controlling your own system software, your
+own host OS, your own control plane, which is what we had at Joyand, ultimately, you're pretty
+limited. I mean, you've got the problems that you can obviously solve, the ones that are in your own
+software. But the problems that are beneath you, the problems that are in the hardware platform, the
+problems that are in the componentry beneath you, become the problems that are in the firmware.
+Those problems become unresolvable. And they are deeply, deeply frustrating. And we just saw a bunch
+of them. Again, they were comical and retrospective. And I'll give you a couple of concrete examples
+just to give you an idea of what kind of what you're looking at. One of our data centers had really
+pathological IO latency. We had a very database-heavy workload. And this was kind of right at the
+period where you were still deploying on rotating media on hard drives. So this is... So an all
+flash by did not make economic sense when we did this in 2016. It'd be interesting to know when was
+the last time that actual hard drives made sense, because I feel like this was close to it. So we
+had a bunch of pathological IO problems. But we had one data center in which the outliers were
+actually quite a bit worse. And there was so much going on in that system. It took us a long time to
+figure out why. And because when you're IO, when you're seeing worse IO, I mean, naturally, you want
+to understand what's the workload doing? You're trying to take a first principles approach. What's
+the workload doing? So this is a very intensive database workload to support the object storage
+system that we had built called Manta. And the metadata tier was stored and we were using Postgres
+for that. And that was just getting absolutely slaughtered and ultimately very IO bound with these
+kind of pathological IO latencies. And as we were trying to peel away the layers to figure out what
+was going on, and I finally had this thing. So it's like, okay, we are seeing at the device layer,
+at the disk layer, we are seeing pathological outliers in this data center that we're not seeing
+anywhere else. And that does not make any sense. And the thought occurred to me, I'm like, well,
+maybe we are... Do we have like different or different rev of firmware on our HGST drives? HGST, now
+part of WD, Western Digital, were the drives that we had everywhere. So maybe I had a firmware bug.
+I did not be the first time in my life at all that I would have a drive firmware issue. And I went
+to go pull the firmware rev and I'm like, Toshiba makes hard drives? So I had no idea that Toshiba
+even made hard drives, let alone that they were in our data center. I'm like, what is this? And as
+it turns out, and this is part of the challenge when you don't have an integrated system, which not
+to pick on them, but Dell doesn't. And what Dell would routinely put, just make substitutes. And
+they make substitutes that they... It's kind of like you're going to like, I don't know, Instacart
+or whatever, and they're out of the thing that you want. So someone makes a substitute. And
+sometimes that's okay, but it's really not okay in a data center. And you really want to develop and
+validate an end-to-end integrated system. And in this case, Toshiba doesn't... I mean, Toshiba does
+make hard drives, but they are a... Or they did. They basically were not competitive, and they were
+not competitive in part for the reasons that we were discovering. They had really serious firmware
+issues. So these were drives that would just simply stop acknowledging any reads from the order of
+2,700 milliseconds. Long time, 2.7 seconds. And that was a drive firmware issue, but it was
+highlighted like a much deeper issue, which was the simple lack of control that we had over our own
+destiny. And it's an example among many where Dell is making a decision that lowers the cost of what
+they are providing you marginally. But it is then giving you a system that they shouldn't have any
+confidence in because it's not one that they've actually designed. And they leave it to the
+customer, the end user, to make these discoveries. And these things happen up and down the stack.
+And for every... Whether it's... And not just to pick on Dell, because it's true for HPE. It's true
+for Supermicro. It's true for your switch vendors. It's true for storage vendors. Where the one that
+is left actually integrating these things and trying to make the whole thing work is the end user
+sitting in their data center. There's not a product that they can buy that gives them elastic
+infrastructure, a cloud, in their own DC. The product that you buy is the public cloud. When you go
+in the public cloud, you don't worry about the stuff because it's AWS's issue or it's GCP's issue.
+And they are the ones that get this to ground. And they... And this is kind of the eye-opening
+moment, not a surprise. They are not Dell customers. They are not HPE customers. They are not
+Supermicro customers. They have designed their own machines. And to varying degrees, depending on
+which one you're looking at. But they've taken the clean sheet of paper. And the frustration that we
+had kind of at Joyen and beginning to wonder, and then Samsung and kind of wondering what was next,
+is that what they built was not available for purchase in the data center. You could only rent it in
+the public cloud. And our big belief is that public cloud computing is a really important
+revolution. And infrastructure doesn't feel like a different deep thought. But cloud computing is a
+really important revolution. It shouldn't only be available to rent. You should be able to actually
+buy it. And there are a bunch of reasons for doing that. One, and the one we saw at Samsung, is
+economics, which I think is still the dominant reason. It just does not make sense to rent all of
+your compute in perpetuity. But there are other reasons too. There's security. There's risk
+management. There's latency. There are a bunch of reasons why one might want to own one's own
+infrastructure. But that was very much the... So the genesis for Oxide was coming out of this very
+painful experience. And a painful experience that... Because I mean, a long answer to your question
+about like, what was it like to be at Samsung scale? Those are the kinds of things that we... I
+mean, in our other data centers, we didn't have Toshiba drives. We only had the HGST drives. But
+it's only when you get to this larger scale that you begin to see some of these pathologies. But
+these pathologies then are really debilitating in terms of those who are trying to develop a service
+on top of them. So it was very educational in that regard. And I'm very grateful for the experience
+at Samsung in terms of opening our eyes to the challenge of running at that kind of scale. And
+during that time at Joyent, when you experienced some of these issues, was it more of a case of you
+didn't have enough servers experiencing this? So if it would happen, you might say like, well, this
+one's not working. So maybe we'll just replace the hardware. What was the thought process when you
+were working at that smaller scale? And how did these issues affect you? Yeah, at the smaller scale,
+you see fewer of them, right? You just see it's like, okay, we... You know, what you might see is
+like, that's weird. We kind of saw this in one machine versus seeing it in 100 or 1,000 or 10,000.
+So you just see them less frequently. As a result, they are less debilitating. I think that it's
+when you go to that larger scale, those things that were unusual now become routine and they become
+debilitating. So it really is, in many regards, a function of scale. And then I think it was also,
+it was a little bit dispiriting that kind of the substrate we were building on really had not
+improved. And if you buy a computer server, buy an x86 server, there is a very low layer of
+firmware, the bias, the basic input-output system, the UEFI bias. And this is like an abstraction
+layer that has existed since the 80s and hasn't really meaningfully improved. But beyond that, like
+this lowest layer of platform enablement software is really only impeding the operability of the
+system. You look at the baseboard management controller, which is the kind of the computer within
+the computer. There is an element in the machine that needs to handle environmentals, that needs to
+handle operate the fans and so on. And that traditionally has this, the spaceboard management
+controller. And that architecturally just hasn't improved in the last two decades. And it's a
+proprietary piece of silicon, generally from a company that no one's ever heard of called A-Speed,
+which is written all in caps. So I guess it needs to be screamed. A-Speed has a proprietary part.
+There is a root password, infamously. The root password is encoded effectively in silicon. And for
+anyone who kind of goes deep into these things like, oh my god, are you kidding me? When we first
+started Oxide, the Wi-Fi password was a fraction of the A-Speed root password for the BMC. It's kind
+of like a little BMC humor. But those things, it was just dispiriting that the state of the art was
+still basically personal computers running in the data center. And that's part of what was the
+motivation for doing something new. And for the people using these systems, whether it's the
+baseboard management controller or it's the BIOS or UEFI component, what are the actual problems
+that people are seeing? Oh, man. You're going to have some fraction of your listeners, maybe a big
+fraction, where they're like, yeah, what are the problems? That's a good question. And then you're
+going to have the people that actually deal with these things, like their heads already hit the
+desk, being like, what are the problems? What are the non-problems? What works, actually? That's a
+shorter answer. I mean, there are so many problems. And a lot of it is just like, I mean, there are
+problems just architecturally. These things are just, so I mean, the problems spread to the horizon,
+so you can kind of start wherever you want. But I mean, as a really concrete example, okay, so the
+BMCs, the computer within the computer, that needs to be on its own network. So you now have like
+not one network, you have two networks. And that network, by the way, that's the network that you're
+going to log into to like reset the machine when it's otherwise unresponsive. So going into the BMC,
+you're able to control the entire machine. So now I've got a second network that I need to manage.
+What is running on the BMC? Well, it's running some ancient, ancient version of Linux that you got.
+It's like, well, how do I patch that? How do I manage the vulnerabilities with that? Because if
+someone is able to root your BMC, they control the system. So it's like, this is not... And now
+you've got to go deal with all of the operational hair around that. How do you upgrade that system?
+Updating the BMC. I mean, it's like, you've got this like second shadow bad infrastructure that you
+have to go manage. Generally not open source. There's something called open BMC, which people use to
+varying degrees, but you're generally stuck with the proprietary BMC. So you're generally stuck with
+ILO from HPE or IDRAC from Dell or the Supermicros BMC, the ASP BMC. And it is just excruciating
+pain. This is assuming that, by the way, that everything is behaving correctly. The problem is that
+these things often don't behave correctly. And then the consequence of them not behaving correctly
+is really dire because it's at that lowest layer of the system. So, I mean, I'll give you a concrete
+example. A customer of theirs reported to me, so I won't disclose the vendor, but let's just say
+that a well-known vendor had an issue with their temperature sensors were broken. And the thing
+would always read basically the wrong value. So it was the BMC that had to invent its own different
+kind of thermal control loop. And it would index on the actual inrush current. They would look at
+the current that's going into the CPU to adjust the fan speed. That's an interesting idea. That
+doesn't work because that's actually not the temperature. So that software would crank the fans
+whenever you had an inrush of current. And this customer had a workload that would spike the
+current. And when it would spike the current, the fans would kick up and then they would slowly
+degrade over time. Well, this workload was spiking the current faster than the fans would degrade,
+but not fast enough to actually heat up the part. And ultimately, over a very long time and a very
+painful investigation, this customer determined that my fans are cranked in my data center for no
+reason. We're blowing cold air. And it's like, this is on the order of 100 watts a server of energy
+that you shouldn't be spending. And that comes down to this kind of broken software hardware
+interface at the lowest layer that has real meaningful consequence in terms of hundreds of kilowatts
+across a data center. So this stuff has very, very, very real consequence. And it's such a shadowy
+world. Part of the reason that your listeners that have dealt with this, their heads will hit the
+desk, is because it is really aggravating to deal with problems at this layer. You feel powerless.
+You don't control or really see the software that's on them. It's generally proprietary.
+proprietary. You're relying on your vendor. Your vendor is telling you that, boy, I don't know.
+You're the only customer seeing this. I mean, the number of times I've heard that, and I have
+pledged that we're not going to say that at Oxide, because it's such an unactual thing to say.
+You're the only customer saying this. It feels like, are you blaming me for my problem? It feels
+like you're blaming me for my problem. And what you begin to realize is that, to a degree, these
+folks are speaking their own truth because the folks that are running at real scale, at hyperscale,
+those folks aren't Dell HP Supermicro customers. They are actually, they've done their own thing. So
+it's like, yeah, Dell's not seeing that problem because they're not running at the same scale. But
+when you do run, you only have to run at modest scale before these things just become overwhelming
+in terms of the headwind that they present to people that want to deploy infrastructure. Yeah. So
+maybe to help people get some perspective, at what point do you think that people start noticing or
+start feeling these problems? Because I imagine that if you just have a few racks or... Do you have
+a couple racks? Or do you want just one rack? Because no, no, no. I would think, I think anyone who
+deploys any number of servers, especially now, especially if your experience is only in the cloud,
+you'll be like, what the hell is this? I mean, just again, just to get this thing working at all,
+it's so hairy and so congealed, right? It's not designed. I mean, nobody who is setting up a rack of
+servers is going to think to themselves like, yes, this is the right way to go do it. This all makes
+sense. I mean, it's a bag of bolts. It's a bunch of parts that you're putting together. And so even
+at the smallest scales, that stuff is painful. Just architecturally, it's painful at the small
+scale. But at least you can get it working. I think the stuff that then becomes debilitating at
+larger scale are the things that are worse than just like, I can't, like this thing is a mess to get
+working. It's like the fan issue where you are now seeing this over hundreds of machines or
+thousands of machines. So it is painful at more or less all levels of scale. There is no level at
+which the PC, which is really what this is. This is the personal computer architecture from the
+1980s. And there is really no level of scale where that's the right thing to go deploy, especially
+if what you are trying to run is elastic infrastructure, a cloud. Because the other thing is like,
+we've kind of been talking a lot about that hardware layer. Like hardware is just the start. Like
+you actually got to go put software on that and actually run that as elastic infrastructure. So you
+need a hypervisor. Yes, but you need a lot more than that. You need a distributed database. You need
+web endpoints. You need a CLI. You need all the stuff that you need to actually go run an actual
+service of compute or networking or storage. I mean, and even for compute, there's a ton of work to
+be done. And compute is by far, I would say, the simplest of the three. When you look at like
+network services, storage services, there's a whole bunch of stuff that you need to go build in
+terms of distributed systems to actually offer that as a cloud. So I mean, it is painful at more or
+less every level if you are trying to deploy cloud computing on-prem. And for someone who doesn't
+have experience building or working with this type of infrastructure, when you talk about a control
+plane, what does that do in the context of the system? So a control plane is the thing that is
+everything between your API request and that infrastructure actually being acted upon. So you go
+say, hey, I want to provision a VM. Okay, great. We've got a whole bunch of things we're going to
+provision with that. We're going to provision a VM. We're going to get some storage that's going to
+go along with that. That's got a network storage service that's going to come out of. We've got a
+virtual network that we're going to either create or attach to. We've got a whole bunch of things we
+need to go do for that. For all of these things, there are metadata components that we need to keep
+track of this thing that beyond the actual infrastructure that we create. But then we need to go
+actually act on the actual compute elements, the host OS, what have you, the switches, what have
+you, and actually go create these underlying things and then connect them. And there's, of course,
+the challenge of just getting that working is a big challenge. But getting that working robustly,
+getting that working is, you know, when you go to provision a VM, all the steps that need to happen
+and what happens if one of those steps fails along the way? What happens if, you know, one thing
+we're very mindful of is these kind of, you get these long tails of like, generally our VM
+provisioning happened within this time, but we get these long tails where it takes much longer.
+What's going on? Where in this process are we actually spending time? And there's a whole lot of
+complexity that you need to go deal with that. That whole distributed system, that itself needs to
+be reliable and available. So you need to be able to, what happens if you pull a sled or if a sled
+fails? How does the system deal with that? How does the system deal with getting another sled added
+to the system? Like, how do you actually grow this distributed system? And then how do you update
+it? How do you actually go from one version to the next? And all of that has to happen across an air
+gap where this is going to run as part of the computer. So it is fractally complicated. There is a
+lot of complexity here in the software system. And all of that we call the control plane. And what
+exists at AWS, at GCP, at Azure, when you are hitting an endpoint that's provisioning an EC2
+instance for you, there is an AWS control plane that is doing all this and has some of these similar
+aspects and certainly some of these similar challenges. And for people who have run their own
+servers with something like, say, VMware or Hyper-V or Proxmox, are those in the same category?
+Yeah, I mean, a little bit. I mean, it's kind of like vSphere, yes. VMware, no. So it's like VMware
+ESX is kind of a key building block upon which you can build something that is a more meaningful
+distributed system. And when it's just like a machine that you're provisioning VMs on, it's like,
+okay, well, that's actually... You as the human might be the control plane. That's a much easier
+problem. But when you've got tens, hundreds, thousands of machines, you need to do it robustly. You
+need something to coordinate that activity. And you need to pick which sled you land on. You need to
+be able to move these things. You need to be able to update that whole system. That's when you're
+getting into a control plane. So some of these things have kind of edged into a control plane. So
+VMware, now Broadcom, has delivered something that's kind of cloud-ish. I think that for folks that
+are truly born on the cloud, it still feels somewhat like you're going backwards in time when you
+look at these kind of on-prem offerings. But it's got these aspects to it, for sure. And some of
+these other things, when you're just looking at KVM or just looking at Proxmox, you kind of need to
+connect it to other broader things to turn it into something that really looks like manageable
+infrastructure. And then many of those projects are really... They're either proprietary products
+like vSphere, or you are really dealing with open source projects that are not necessarily aimed at
+the same level of scale. You know, you look at, again, a Proxmox, or you look at an OpenStack. And,
+you know, OpenStack is just a lot of things, right? I mean, OpenStack has got so many... OpenStack
+was kind of a free-for-all for every infrastructure vendor. And, you know, there was a time people
+were like, aren't you worried about all these companies together that, you know, are coming together
+for OpenStack? I'm like, haven't you ever worked for like a company? Like, companies don't get
+along, by the way. It's like having multiple companies work together on a thing, that's bad news,
+not good news. And I think, you know, one of the things that OpenStack has definitely struggled with
+what actually... There are so many different kind of vendor elements in there that it's very much
+not a product. It's a project that you're trying to run. But that very much is in... I mean, that's
+similar certainly in Spirot. And so I think this is kind of like you were alluding to earlier, the
+piece that allows you to allocate compute, storage, manage networking, gives you that experience of,
+I can go to a web console or I can use an API and I can spin up machines, get them all connected. At
+the end of the day, the control plane is allowing you to do that in hopefully a user-friendly way.
+That's right. Yep. And I mean, in order to do that in a modern way, it's not just like a user-
+friendly way. You really need to have a CLI and a web UI and an API. Those all need to be drawn from
+the same kind of single ground truth. Like, you don't want to have any of those be an afterthought
+for the other. You want to have the same way of generating all of those different endpoints and
+trees into the system. And if you take your time at Joyent as an example, what kind of tools existed
+for that versus how much did you have to build in-house as far as the hypervisor and managing the
+compute and all that? Yeah. So we built more or less everything in-house. I mean, what you have is,
+and I think over time, we've gotten slightly better tools. For example, at Joyent, when we were
+building a cloud at Joyent, there wasn't really a good distributed database. So we were using
+Postgres as our database for metadata. And there were a lot of challenges. And Postgres is not a
+distributed database. It's running with a primary, secondary architecture. And there's a bunch of
+issues there, many of which we discovered the hard way. When we were coming to Oxide, you have much
+better options to pick from in terms of distributed databases. There was a period that now seems
+maybe potentially brief in hindsight, but of a really high-quality open-source distributed
+databases. So there were really some good ones to pick from. We built on CockroachDB, on CRDB. So
+that was a really important component that we had at Oxide that we didn't have at Joyent. So I
+wouldn't say we were rolling our own distributed database. We were just using Postgres and dealing
+with an enormous amount of pain there. In terms of the surround on top of that, a control plane is
+much more than a database, obviously. And you've got to deal with... There's a whole bunch of
+software that you need to go right to be able to transform these API requests into something that is
+reliable infrastructure. And there's a lot to that, especially when networking gets in the mix, when
+storage gets in the mix. There are a whole bunch of complicated steps that need to be done. So at
+Joyent, we, in part because of the history of the company, and like, look, this just is not going to
+sound good. But it is what it is, and I'm just going to own it. We did it all in Node at Joyent,
+which I know sounds really right now just sounds like you built it with Tinker Toys? Okay, did you
+think it was, you built the skyscraper with Tinker Toys? It's like, well, okay, we actually, we had
+greater aspirations for the Tinker Toys once upon a time. But let's just say that that experiment,
+that experiment did ultimately end in a predictable fashion. And we decided that maybe Node was not
+going to be the best decision long term. Joyent was the company behind Node.js back in the day. Ryan
+Dahl worked for Joyent. And then we landed that in a foundation in about 2015, something like that,
+and began to consider our world beyond Node. A big tool that we had in the arsenal when we started
+Oxide is Rust. So indeed, the name of the company is a tip of the hat to the language that we were
+pretty sure we were going to be building a lot of stuff in, namely Rust. And Rust has been huge for
+us, a very important revolution in programming languages. I think what has been surprising is the
+sheer number of layers at which we use Rust in terms of we've done our own embedded firmware in
+Rust. We've done in the host operating system, which is still largely in C, but very big components
+are in Rust. The hypervisor propolis is all in Rust. And then, of course, the control plane and the
+distributed system on that is all in Rust. So that was a very important thing that we very much did
+not need to build ourselves. We were able to really leverage a terrific community. We were able to
+use, and we've done this at Joyent as well, but at Oxide, we've used Illumos as a host OS component,
+which our variant is called Helios. We've used Beehive as that kind of in-kernel hypervisor
+component. We've made use of a bunch of different open-source components to build this thing, which
+has been really, really important for us. And open-source components that didn't exist even like
+five years prior. That's part of why we felt that 2019 was the right time to start the company,
+which is when we started Oxide. And you had mentioned that at Joyent, you had tried to build this in
+Node. What were the issues or the challenges that you had doing that? Oh, boy. Yeah. Again, we kind
+of had higher hopes in 2010, I would say, when we sat on this. The problem that we had just writ
+large, JavaScript is really designed to allow as many people on Earth to write a program as
+possible, which is good. I mean, that's a laudable goal. The problem is it's much more difficult to
+write really rigorous software. We actually want to be able to write rigorous software. And it's
+actually okay if it's a little harder to write rigorous software. That's actually okay if it leads
+to more rigorous artifacts. But in JavaScript, I mean, just as a concrete example, there's nothing
+to prevent you from referencing a property that doesn't actually exist in JavaScript. So if you
+fatfinger a property name, you are relying on something to tell you, by the way, I think you've
+misspelled this because there is no type definition for this thing. And I don't know that you've got
+one that's spelled correctly, one that's spelled incorrectly, that's often undefined. And then when
+you actually go, so you've got this typo that is lurking in what you want to be rigorous software.
+And if you don't execute that code, you won't know that's there. And then you do execute that code.
+And now you've got an undefined object. And now that's either going to be an exception or it can,
+again, depends on how that's handled. It can be really difficult to determine the origin of that
+error, of that programming. I mean, that is a programmer error. And one of the big challenges that
+we had with Node is that programmer errors and operational errors, like, you know, I'm out of disk
+space as an operational error, those get conflated. And it becomes really hard. And in fact, I think
+the language wanted to make it easier to just kind of drive on in the event of all errors. And it's
+like actually not what you want to do if you're trying to build a reliable, robust system. So we had
+no end of issues. We've got a lot of experience developing rigorous systems, again, coming out of
+operating systems development and so on. And we brought some of that rigor, if strangely, to
+JavaScript. So one of the things that we did is we brought a lot of postmortem diagnosability and
+observability to Node. And so if one of our Node processes died in production, we would actually get
+a core dump from that process. A core dump that we could actually meaningfully process. So we did a
+bunch of kind of wild stuff. I mean, actually wild stuff where we could actually make sense of the
+JavaScript objects in a binary core dump. Things that we thought were really important. And the rest
+of the world just looks at this being like, what the hell is this? I mean, it's so out of step with
+it. The problem is that we were trying to bridge two disconnected cultures of one developing really
+rigorous software and really designing it for production diagnosability. And the other really
+designing it to software to run in the browser and for anyone to be able to kind of liven up a web
+page, right? It's kind of the origin of LiveScript and then JavaScript. And we were kind of the only
+ones sitting at the intersection of that. And you begin, when you are the only ones sitting at that
+kind of intersection, you just are, you're kind of fighting a community all the time. And we just
+realized that there were so many things that the community wanted to do that we felt are like, no,
+no, this is going to make software less diagnosable. It's going to make it less robust. And then you
+realize like, I'm the only voice in the room because we have got desires for this language that it
+doesn't have for itself. And this is when you realize you're in a bad relationship with software.
+It's time to actually move on. And in fact, actually several years after we'd already kind of broken
+up with Node. And it was a bit of an acrimonious breakup. There was a famous slash infamous fork of
+Node called IOJS. And this was viewed because the community thought that Joyent was being, was not
+being an appropriate steward of Node.js and was not allowing more things to come in to Node. And of
+course, the reason that we, of course, felt that we were being a careful steward and we were
+actively resisting those things that would cut against its fitness for a production system. But
+suddenly the community saw it. And I think we knew before the fork that's like, this is not working
+and we need to get this thing out of our hands. And what are the wrong hands for this? This needs to
+be in a foundation. So we'd kind of gone through that breakup. And maybe it was two years after
+that, that I, a friend of mine who was running the Node Summit, I was actually, unfortunately, not
+passed away, Charles Buehler. But Charles is a venture capitalist, great guy. And Charles was
+running Node Summit and came to me in 2017. He's like, I really want you to keynote Node Summit. And
+I'm like, Charles, I'm not going to do that. I've got nothing nice to say. I'm the last person you
+want to keynote. He's like, oh, if you have nothing nice to say, you should definitely keynote.
+You're like, oh, God. Okay, here we go. He's like, no, I really want you to talk about it. You
+should talk about the Joyent breakup with Node.js. I'm like, oh, man. And that led to a talk that
+I'm really happy that I gave because it was a very important talk for me personally called Platform
+as a Reflection of Values. And really looking at the values that we had for Node and the values that
+Node had for itself. And they didn't line up. There's nobody in the Node community who's like, I
+don't want rigor. I hate rigor. It's just that if they had to choose between rigor and making the
+language approachable, they would choose approachability every single time. They would never choose
+rigor. And that was a big eye-opener. I would say if you watch this talk, because I knew that the
+audience was going to be filled with people who had been a part of the fork in 2014, I think was the
+fork, the IOJS fork. I set a little bit of a trap for the audience. And the trap, I said, you know
+what? I kind of talked about the values that we had and the aspirations we had for Node, the
+aspirations that Node had for itself and how they were different. And I'm like, look, in hindsight,
+a fracture was inevitable. And in 2014, there was finally a fracture. And do people know what
+happened in 2014? And you could listen to that talk. Everyone almost says in unison, like, IOJS. I'm
+like, oh, right, IOJS, right. That's actually not what I was thinking of. And I go to the next slide
+and is a tweet from a guy named TJ Hollowaychuk, who was the most prolific contributor to Node. And
+it was his tweet, also in 2014, before the fork, before the IOJS fork, explaining that he was
+leaving Node and that he was going to go. And if you turn the volume all the way up, you can hear
+the audience gasp. And it's just delicious. Because the community had never really confronted why TJ
+left. And I went through a couple of folks, Felix, a bunch of other folks. Early Node folks that
+were there in 2010 were leaving in 2014. And they were going to go, primarily. And they were going
+to go because they were sick of the same things that we were sick of. They had hit the same things
+that we had hit, and they were frustrated. I really do believe this, that platforms do reflect their
+own values. And when you are making a software decision, you should select values that align with
+the values that you have for that software. That's way more important than other things that people
+look at. I think people look at, for example, quote-unquote community size way too frequently.
+Community size is like, eh, maybe. It can be fine. I've been in very large communities, Node. I've
+been in super small open source communities, like Lumos and D-Trace and a bunch of others. There are
+strengths and weaknesses to both approaches. Just as like there's a strength to being in a big city
+versus a small town. Me, personally, I'll take the small community more or less every time. Because
+the small community is almost always self-selecting based on values. And just for the same reason
+that I like working at small companies or small teams, there's a lot of value to be had in a small
+community. It's not to say that large communities value us. But again, long answer to your question
+of where did things go south with Joyent and Node. They went south because the values that we had
+and the values the community had didn't line up. And that was a very educational experience, as you
+might imagine. Yeah. And given that, you mentioned how because of those values, some people moved
+from Node to Go. And in the end, for much of what Oxide is building, you ended up using Rust. What
+would you say are the values of Go and Rust? And how did you end up choosing Rust, given that? Yeah.
+I mean, well, so the value for, yeah. And so Go, I mean, I understand why people moved from Node to
+Go. Go, to me, was kind of a lateral move. There were a bunch of things that I, Go is still garbage
+collected, which I didn't like. Go also is very strange in terms of there are these kind of like
+these autocratic kind of decisions that are very bizarre. I mean, generics is kind of a famous one,
+right, where Go kind of as a point of principle didn't have generics, even though Go itself,
+actually the innards of Go did have generics. It's just that you, a Go user, weren't allowed to have
+them. And I just think that the arguments against generics were kind of disingenuous. And indeed,
+like they ended up adopting generics. And then there's like some super weird stuff around like the
+very anti-assertion, which is like, what? How is someone against assertions? It doesn't even make
+any sense. But it's like, oh, nope. Okay. There's a whole screed on it. Nope. We're against
+assertions. And then, you know, against versioning, there was another thing like, you know, Rob Pike
+has kind of famously been like, you should always just run on the latest commit. And you're like,
+does that make sense? I mean, we actually built it. And so there are a bunch of things like that.
+You're just like, okay, this is just exhausting. And I mean, there's some things about Go that are
+great and plenty of other things that I just, I'm not a fan of. I think that the, and like Go cares
+a lot about like compile time. It's super important for Go, right? It is very quick compile time.
+I'm like, okay, but that's like, compile time is not like, it's not unimportant. It's doesn't have
+zero importance, but I've got other things that are like lots more important than that. What I
+really care about is I want a high performing artifact. And I wanted garbage collection out of my
+life. I got to tell you, garbage collection to me is an embodiment of this like larger problem of
+where do you put cognitive load in the software development process? And what garbage collection is
+saying to me, it is right for plenty of other people and the software that they want to develop. But
+for me and the software that I want to develop, infrastructure software, I don't want garbage
+collection because I can solve the memory allocation problem. I know when I'm like done with
+something or not, I mean, it's like whether that's in C with, I mean, it's actually like, it's
+really not that hard to not leak memory in a C-based system. And you can give yourself a lot of
+tooling that allows you to diagnose where memory leaks are coming from. So it's like, that is a
+solvable problem. There are other challenges with that. But like when you are developing a really
+sophisticated system that has garbage collection, is using garbage collection, you spend as much
+time trying to dork with the garbage collector to convince it to collect the thing that you know is
+garbage. You're like, I've got this thing. I know it's garbage. Now I need to use these like tips
+and tricks to get the garbage collector. I mean, it's like, it feels like every Java performance
+issue goes to like minus XX colon use the other garbage collector. Whatever one you're using, use a
+different one. And using a different approach, it's like you're in the worst of all worlds where the
+reason that garbage collection is helpful is because the programmer doesn't have to think at all
+about this problem. But now you're actually dealing with these long pauses in production. You're
+dealing with all these other issues where actually you need to think a lot about it. And it's kind
+of, it's witchcraft. It's this black box that you can't see into. So it's like, what problem have we
+solved exactly? So the fact that Go had garbage collection, it's like, no, I do not. Like, and then
+you get all the other like weird fat was and you know, everything else. I'm like, no, thank you. It
+goes a no thank you for me. I get that why people like it or use it, but that was not going to be
+it. I'm like, I want C. But I, there are things I didn't like about C too. I was looking for
+something that was going to give me the deterministic kind of artifact that I got out of C. But I
+wanted library support and C is tough because there's the, it's all convention. You know, there's
+just a bunch of other things that are just thorny. And I remember thinking vividly in 2018, I'm
+like, well, it's Rust or bust. I'm going to go into Rust. Rust. And when I did what a lot of people
+were doing at that time, and people have been doing since, of, you know, really getting into Rust
+and really learning it, appreciating the difference in the model for sure, the ownership model
+people talk about, that's also obviously very important. It was the error handling that blew me
+away. And the idea of like, algebraic types, I never really had algebraic types. And the ability to
+have, and error handling is one of these really, you really appreciate these things, where it's
+like, how do you deal with a function that can either succeed and return something, or it can fail?
+And the way C deals with that is bad with these kind of sentinels for errors. And, you know, does
+negative one mean failure? Does zero mean failure? Some C functions, zero means failure.
+Traditionally in Unix, zero means success. And like, what if you want to return a file descriptor?
+You know, it's like, oh, and then it's like, okay, then it'll be like, zero through positive N will
+be a valid result. Negative numbers will be, and like, was it negative one? And I said, error no, or
+is it a negative number that didn't? I mean, it's like, and that's all convention, right? People do
+all those different things, and it's all convention. And it's easy to get wrong, easy to have bugs,
+can't be statically checked, and so on. Then what Go says is like, well, you're going to have like
+two return values, and then you're going to have to like, just like constantly check all of these
+all the time, which is also kind of gross. JavaScript is like, hey, let's toss an exception if we
+don't like something. If you see an error, we'll throw an exception. There are a bunch of reasons I
+don't like that. And you look at what Rust does, where it's like, no, no, no, we're going to have
+these algebraic types, which is to say, this thing can be a this thing or a that thing, but it has
+to be one of these. And by the way, you don't get to process this thing until you conditionally
+match on one of these things. You're going to have to have a pattern match on this thing to
+determine if it's a this or a that. And if it in the result type, the result is a generic, where
+it's like, it's going to be either the thing that you want to return, it's going to be an okay that
+contains the thing you want to return, or it's going to be an error that contains your error. And it
+forces your code to deal with that. And what that does is it shifts the cognitive load from the
+person that is operating this thing in production to the actual developer that is in development.
+And that to me is like, I love that shift. And that shift to me is really important. And that's what
+I was missing. That's what Rust gives you. Rust forces you to think about your code as you write it.
+But as a result, you have an artifact that is much more supportable, much more sustainable, and much
+faster. Yeah, it sounds like you would rather take the time during the development to think about
+these issues. Because whether it's garbage collection, or it's error handling at runtime, when
+you're trying to solve a problem, then it's much more difficult than having dealt with it to start
+with. Yeah, absolutely. And I just think that why also, if it's software, again, if it's
+infrastructure software, I mean, the question that you should have when you're writing software is,
+how long is the software going to live? How many people are going to use this software? And if you
+are writing an operating system, the answer for this thing that you're going to write, it's going to
+live for a long time. If we just look at plenty of aspects of the system that have been around for
+decades, it's going to live for a long time, and many, many, many people are going to use it. So why
+would we not expect people writing that software to have more cognitive load when they're writing
+it? To give us something that's going to be a better artifact? Now, conversely, if you're like, hey,
+I kind of don't care about this. And like, I don't know, I'm just like, I want to see if this whole
+thing works. I've got, I'm just stringing this together. I don't like, no, the software is like,
+we'll be lucky if it survives until tonight. But then like, who cares? Yeah, garbage collection. You
+know, if you're prototyping something, whatever. And this is why you really do get like different
+choices, different technology choices, depending on the way that you want to solve the problem at
+hand. And for the software that I want to write, I do like that cognitive load that is upfront. And
+although I think, I think the thing that is really wild, that is the twist that I don't think anyone
+really saw coming is that in a, in an LLM age, the cognitive load upfront almost needs an asterisk
+on it because so much of that can be assisted by an LLM. And now, I mean, I would like to believe,
+and maybe this is me being optimistic, that in the LLM age, we will see, I mean, Rust is a great fit
+for the LLM age because the LLM itself can get a lot of feedback about whether the software that's
+written is correct or not, much more so than you can for other environments. Yeah, that is a
+interesting point in that I think when people first started trying out the LLMs to code, it was
+really good at these maybe looser languages like Python or JavaScript. And initially it wasn't so
+good at something like Rust, but it sounds like as that improves, if it can write it, then because
+of the rigor or the memory management or the error handling that the language is forcing you to do,
+it might actually end up being a better choice for people using LLMs. Yeah, absolutely. It gives you
+more certainty in the artifact that you've delivered. I mean, you know a lot about a Rust program
+that compiles correctly. I mean, there are certain classes of errors that you don't have that you
+actually don't know on a C program or a Go program or a JavaScript program. I think that's going to
+be really important. I think we are on the cusp, but maybe we've already seen it, this kind of great
+bifurcation in the software that we write where the rigorous software becomes much more important.
+We have this foundational software that we're going to rely on as much more bedrock, and then we're
+going to have much more software where that rigor is not as much of a constraint because the
+constraints are the ability for it to be customized to my need and done very quickly. And it's going
+to feel like, I think, two different worlds. And I think in an exciting way, I think it's going to
+be, I think that the future is definitely exciting for software to build. Another interesting
+decision about the Oxide computer is you chose an operating system that I think most people aren't
+familiar with, rather than a Linux or a free BSD. You chose, I believe it's a Lumos? Is that how you
+pronounce it? Yeah, yeah, yeah. Yeah, I mean, yes. So Lumos, which very much inherits from Open
+Solaris, which inherits from the Solaris heritage, which was Sunos 4.x before that, was the Solaris
+itself is this unholy love child of Sunos 4.x and the true kind of BSD lineage and the AT&T lineage
+in Unix and SVR 4.x. In many ways, I know that people haven't necessarily heard of it, but it is
+true Unix in a real historical sense, in a way that Linux and even the BSDs are not. And there are
+aspects where it shows it, but in terms of it is an idiosyncratic decision. It's not one that we
+took a lightweight. People assume like, oh, you know, it's a bunch of old Sun folks. Like, of
+course, they're going to pick a Lumos. And we've had a lot of operational experience with SmartOS at
+Joanne. But it's more nuanced than that, I would say. It is true that a bunch of the technologies
+that we have developed over the years, we developed them for good reasons. And we don't want to be
+without them. I mentioned the postmortem diagnosability of JavaScript. Postmortem diagnosability is
+really important to us and to me. Debuggability is really important. And debuggability is not
+something that other operating systems have taken that seriously, just to put it bluntly. You can
+judge a lot about an operating system by its built-in debugger. And there's not really a built-in
+debugger present for Linux. But it's more than just that. If you look at Linux in particular, Linux
+is a kernel. And this is something that Torvalds makes clear in his defense at more or less every
+juncture. Linux is a kernel. And this is the very famous, the Stallmanism of what you were calling
+Linux, I call it GNU Linux. And it's obviously, on the one hand, a little bit ridiculous. On the
+other hand, not wrong in that the software that you need to actually have a functional system is a
+lot more than just Linux. You need a libc, right? And there's actually more than one libc. Is it
+going to be muscle? Is it going to be glibc? There are some other alternate libcs. And part of the
+problem is, if you're going to use a Linux kernel as the basis for a host operating system, that's
+nowhere near enough. Because you need to now build an entire distro, effectively, of all these
+different tools on top of that. And the maintenance burden of that is off the charts. And it's
+actually funny, one of our colleagues, Laura Abbott, came from Red Hat. And I'm like, well, this
+will be interesting because, again, my mind was open, more open than it had been in a long time
+about, like, maybe we should use Linux. I don't know. And Laura felt strongly that we shouldn't. But
+for reasons that were different, Laura was very concerned about what the distro management burden
+would be. And she had really seen that upfront at Red Hat. And she's like, do not make this decision
+lightly, that you've got to make all these other decisions. And something I really like, I remember
+at the time being like, okay, yeah, I know, I get that. But then in a year since, I'm like, oh, wow,
+that's a really big deal. That's a bigger deal than I realized. So we don't have to do that. We get
+an operating system that's got a lot of stuff built in. And of course, it means that we've also...
+Talk about small communities. Definitely a small community. And there are challenges there too. But
+it is one that has allowed us to get the technologies that we really need. CFS, containers, D-Trace,
+virtual networking, a bunch of things that we really needed, we had in place, and then allowed us to
+also move the system in a dimension that we needed and wanted to move it. So for us, it's been the
+right decision. But I think, again, the internet is kind of disbelieving that we actually were at a
+real juncture there. But we were. We, Ham and Hart, were. Actually, at the moment where I was like
+most potentially intrigued, or at least wanted to explore something like Linux, Torvalds was just on
+an absolute bender against CFS, which he's done occasionally. And I'm like, dude, this is the wrong
+time to be on this. This is CFS temper tantrum, which he's again done a couple of times. But it was
+kind of the... And a problem with Linux is that CFS is not a first class file system. It's always
+been on the outside because of this kind of these ridiculous licensing concerns. And it was a
+reminder of like, oh yeah, write this. Yeah. Okay. I think, yeah, we'll go our own way. Thank you.
+And this choice of your operating system as a user of an Oxide computer, would they... You... No,
+you don't know. Okay. I mean, it's just like you don't know... If you're a user of AWS, you've got
+no idea what Nitro is, or Annapurna, or these other things that are like, do you know whether they
+use KVM at AWS? No, you've got no idea. I mean, do they use KVM or Zen? It's like, the answer is
+like, well, it depends on your instance type and the age of the thing. But as a user, that's opaque
+to you. What you've got is like, you want to hit an API endpoint, you want to provision an instance,
+and you want to run an operating system of your choice. You want to run Windows or Linux or FreeBSD
+or whatever as a... In your cloud, that's what you actually want to go to. And that's what we enable
+you to do. And the oxide machine itself, I don't think we've really explained physically what it is.
+You know, what are people going to be receiving? Yeah, exactly. What is it? How is it different?
+Yeah. What would I actually be buying and getting into my data center? So maybe you could talk a
+little bit about what that actually is. So you get a crate. You get a very large crate. And in that
+crate is a rack. And that rack, it's an oxide designed rack. And that rack has two switches and 32
+compute sleds that are in it. And that rack has been designed holistically. So we have designed all
+these parts to work together. We've got some very basic things. We've got a DC bus bar in the rack.
+So we've got a power shelf that rectifies from AC to DC. And then we run DC up and down the back of
+the rack. And our compute sleds blind mate into that DC power. That is basic. And all of the
+hyperscalers have a DC bus bar based system. You can't buy a DC bus bar based system from Dell HP
+Super Micro. Because in order to have a bus bar based system, you really need to be designing at
+least the rack level. Because the rack needs to be... You can't just buy an oxide sled. You need to
+buy the rack that is going to contain it. And then we very much designed the rack around the switch.
+So the switch, we actually have a cabled backplane. And in addition to blind mating into power, our
+compute sleds blind mate into networking. So the networking is a passive cabled backplane. And it
+means there's no actual cabling in the sled itself. So if you want to take a sled out, you just take
+a sled out. There's no cables. One of the challenges with the kind of traditional server design and
+the baseboard management controller has got to be on two different networks. Well, ours is on two
+different networks too, but you don't see any of those because it's all sitting on that cable
+backplane. And our switch, which has that Intel Topeno at its core, there's actually another switch
+that serves as the switch for the service processors on the system. And that's all coherently
+interconnected. So what you get is a real product. And that thing wheels into the data center, you
+get power applied, and you're on the tech port doing the basic configuration we need, which is
+basically like, we need to know who to talk to for time, more or less. We got to find... There's
+some real basics that we need. We need a BGP session. And we need to be able to actually connect to
+a network. But once we can do that, we're off. And you're provisioning VMs. You're provisioning
+storage. You're provisioning networks, virtual networks, just like you're on the public cloud. And
+one of the things that's been really, really fun, because this is really painful with traditional
+infrastructure. It's this kind of bag-of-bolts approach. It can take a comically long time. Well,
+I'm talking like easily months to get... The gear has arrived, get to the point where devs are on
+there. You're like, what takes months? It's like, well, glad you asked. It's like, we got the wrong
+switch from this vendor. That server came with the wrong rack rails. We're missing the cabling over
+here. We got it all together and the software vendor... The software didn't work. And the software
+vendor is pointing at the switch. It's like, these things just can take a long time to get up and
+running. With the oxide rack, that thing wheels in, you power it on, you plug it in, you get a B2P
+session, and you're provisioning VMs. And one of the experiences that's been really fun is to be
+with customers as they are doing that for the first time and be like, oh my god, I'm on that...
+We're provisioning infrastructure. I can just let my devs at it. We just got this thing powered on
+like two hours ago. And that is really, really neat and very vindicating of the approach that we've
+taken. It's really exciting. And for a listener who's never had to do it the traditional way, what
+are all the different things that they would need to get into this rack to have the equivalent? You
+got to go buy a switch from a switch vendor. You got to go buy... You're buying your compute from
+someone else. Maybe you're buying storage from someone else. You're cabling it together. You got
+your service... Your BMC is going to be on a network. So you got a separate switch for that. You've
+got to have... And then that's all just the hardware that you've got to get software on. Like, what
+are you doing for... Are you getting OpenStack? Are you doing VMware? Are you doing something else?
+And it's like, then that's all got to work. You've got to get that imaged on there. You've got to...
+And it's like, you're just kind of building this thing as you go. I mean, there's just nothing that
+is... You're the one kind of literally cobbling this thing together. And it's just not a product
+experience. Yeah. And I think the interesting part was something you talked about earlier too, is
+that if something isn't behaving the way you expect, for example, the IO latency or maybe some kind
+of compute issue, it seems like in most of those cases, you really have no one to turn to. You can
+go to Dell or HP and they'll probably just shrug. Well, yeah. There was kind of a tweet when we were
+starting the company that we were all, I think, may have made it into a slide deck or two, where
+someone said that they were dealing with a support issue with Dell and EMC and they felt like they
+were talking to their divorced parents. It's not necessarily malicious. Because a lot of... The
+problem is that you have these systems that are each well-designed on their own, or they're well-
+designed. That is giving way too much credit. They're designed on their own. And then they have an
+issue when you put them together that each can plausibly blame on the other. And this happens a lot
+where you have... It's like, actually, these two things are kind of behaving somewhat reasonably on
+their own, but you put it together and the result is terrible. And the problem is, it is the end
+user that is left being like, well, who helps me with my terrible problem? It's like, great. You
+each have made a convincing case that it's not your problem. So, I guess it's my problem, I guess.
+And that is what is really, really frustrating to people. And I'm curious, back when you were at Sun
+and Sun was selling their own servers, if somebody had a problem with one of those servers, was that
+a case where they could go to Sun and then Sun would actually go and figure out, okay, what's the
+problem here? On its best days. Yeah, on its best days. Its days were not always its best days.
+Certainly, the vision that I always had for Sun Systems is that you'd be able to do that. It was not
+always the case. I started a storage group inside of Sun called Fishworks in 2006. And we partly
+wanted to really make good on this idea of systems thinking. The fish in Fishworks stands for fully
+integrated software and hardware. And we learned a whole set of painful lessons because we were
+still relying on quote-unquote commodity hardware there and got bit by a bunch of firmware we didn't
+control. So, throughout my career, I have tried to make good on this promise. But I really feel it's
+only at Oxide that we've been able to control our fate sufficiently from top to bottom to really
+make good on it. And it shows in the experiences that people are having, which is really great. And
+it sounds like maybe that's primarily because the software running on each of these components is in
+your control. So, you're able to trace through and see where the actual problem is rather than
+having all these proprietary vendors. Yes, it is that for sure. It is that we just like have more of
+the components that are in control. Don't want to understate the importance of that. I think it's
+also just the sense of responsibility that we take that our view is like, we're going to own this
+problem no matter what. And we've had now a couple of concrete examples where we have customer
+issues that at the end is like not a... Is it an Oxide problem? It's like, well, no, it fell in a
+gap between Oxide and a system we were talking to. And I think it's a point of pride that we take
+responsibility for taking that all the way to root cause. Sorry to be plugging in our own podcast
+here. Whenever... The internet jokes that we are actually a podcasting company that is merely
+creating computers for content creation. And I'm not sure they're wrong. And so, whenever we have
+any kind of crisis at Oxide in terms of debugging a problem or what have you, we're like, God, this
+is going to be great content. And we had one of these, an episode that we called Hell is Other
+Networks, where we had a customer where we took this particular switch and talking to the Oxide
+Rack. And the Oxide Rack and the router were making reasonable decisions on their own, but you added
+it up and it was a nightmare. We were able to get that debug to root cause. And even though our
+behavior was reasonable and its behavior was reasonable, but we want to be able to take
+responsibility for that. So I think it is twofold. It's the fact that we control these layers of the
+stack, but then it's also very much the sense that we have suffered at the other end of this. And
+what we want to be able to do is really take on that responsibility and get a customer actually
+righted wherever the problem may lie. I think that's a good spot to end it on, but anything else you
+wanted to mention? No, it's great. I know I'd be hitting on a bunch of things. Thanks for the wide
+ranging conversation. This was great. So if people want to check out what's going on at Oxide, check
+out your podcast. Yeah. Oxide and friends, you can join us live in the discord. We'd love to have
+people join us live, but check out the podcast feed and check out the RFDs. Those are all out there
+as well. And then check out the repos. Everything we've talked about today is open source. So people
+can dive in there and see what we're actually doing. We really pride ourselves on that transparency.
+So we leave nothing to the imagination. I think that sometimes people are like, okay, maybe you guys
+could share just a little bit less. So maybe transparency to a fault, but there's a lot to go dive
+into if you want to dive into Oxide. Yeah. I think for the people who are actually managing these
+data centers and working with traditional vendors, transparency is exactly what they want to hear.
+It is. It is. Yes. I think that that transparency is... We did have an early customer that had an
+issue and we wanted to get back to them and let them know, like, hey, we're working on your issue.
+The customer's like, no, no, I know you're working on it. I'm watching the GitHub issue, actually.
+It's great. And it's like, oh, okay. We love that. We love the fact that people can see what we're
+working on. We have always felt there's much more to gain than there is to lose. Very cool. Well,
+Brian, thank you for chatting with me today. This was fun. Absolutely. Thanks for having me. This
+was a lot of fun. And sorry to take you into the filth that is the modern data center. All right.
+Well, this has been Jeremy Jung for Software Engineering Radio. Thanks for listening. Thanks for
+listening to SE Radio, an educational program brought to you by IEEE Software Magazine. For more
+about the podcast, including other episodes, visit our website at se-radio.net. To provide feedback,
+you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter, or
+through our Slack channel at seradio.slack.com. You can also email us at team at se-radio.net. This
+and all other episodes of SE Radio is licensed under Creative Commons License 2.5. Thanks for
+listening.

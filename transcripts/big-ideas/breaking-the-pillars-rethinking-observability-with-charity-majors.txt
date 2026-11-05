@@ -1,0 +1,479 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Breaking the Pillars: Rethinking Observability with Charity Majors
+DATE: 2026-03-18
+SHOW: Big Ideas in App Architecture
+LINK: https://www.spreaker.com/episode/breaking-the-pillars-rethinking-observability-with-charity-majors--70700421
+AUDIO: https://cohst.app/pdcst/3T5O6U/api.spreaker.com/download/episode/70700421/cockroach_labs_ep3_audio_v2.mp3
+DURATION_SECONDS: 2998
+TRANSCRIBED_AT: 2026-09-17T04:45:47Z
+----------------------------------------------------------------------
+What is up everyone and welcome to the new episode of Big Ideas in App Architecture. I'm your host
+David Joy and today I'm going to be sitting down with Charity Majors. She's the CTO and co-founder
+of Honeycomb. We will get into Charity's career working with projects like Parse and working at
+Facebook to building Honeycomb. We also get into what she learned working with Facebook's internal
+tooling, Scuba, and what it showed her about observability and what it could become. We talk about
+why teams get more surprised as their systems scale and the reason behind database choices and what
+debugging even means when AI makes your system probabilistic. So this is a great conversation and we
+go into some really opinionated, really interesting conversation areas. So jump in and have a great
+time listening to this episode. All right, so welcome to the podcast, Charity. How are you doing
+today? Oh, I'm doing good. Good to be here. Yeah, I was just complimenting you on how cool your
+setup is right before we joined. Look at all those colors, everybody. It's fantastic. You see the
+little 3D printed Honeycomb light? Yeah, I see that. Yeah, that's cool. I need an extension cord so
+that it's all lit up. It's all lit up, yeah. Did you custom make that? I did not custom make that,
+but one of my co-workers did. Got it, yeah. I know a lot of people today are getting into 3D
+printing and I see all these YouTube videos and I think my Instagram jam is now a bunch of people
+making so many cool things. I think it's amazing. The era we live in today. I know. Ever wondered if
+you could go back in time and drop a 3D printing machine? How would you change human society? I have
+not had that particular thought, but now I do. Yeah. Well, welcome again to the podcast. I hope
+you're having a great day. For everyone listening in, Chidi, why don't you give everyone a little
+bit of an intro of what you do today and your role at Honeycomb and things like that. Sure. I am the
+co-founder and CTO of Honeycomb.io, the original observability company. I'm also the co-author of
+Database Reliability Engineering, Observability Engineering. And today, the very last chapters of
+the second edition went out to tech reviewers. So second edition will be out in, I think, Dead Tree
+Edition will be out in June, but chapters will be coming much sooner. Nice. Very cool. Yeah. It's
+awesome. It's an honor to have you on the podcast, actually. And I'll give you the background, okay?
+And it's always great to listen to somebody and say, hey, this is what I do. And it's like you have
+to condense your entire life into a 15-second intro, which is completely unfair. But let me tell you
+my story of Charity Majors, okay? I used to work at a company called Data Stacks before I joined
+Congress Labs, all right? And you are pretty familiar with it. Charity used to work at a company
+called Parse, which in 2012, 2013, if I recall correctly, it suddenly became like the poster child
+of Cassandra. Yeah. If I'm not wrong, is Christine still your co-founder for Honeycomb? Yeah. Okay,
+cool. So I think Christine wrote or was behind Parse Analytics, which used Cassandra. And I think we
+were at Cassandra 2 or something or 1. I operated the whole thing. You did that? Yeah. Yeah. So I
+was early on, before I joined Data Stacks, was like following Cassandra as an open source database
+at that time. And then I saw that Parse was like one of the babies. And then obviously, Cassandra
+came out of Facebook. Parse got acquired by Facebook. And I think this whole story. Yeah. So when I
+saw, I would see charity majors here and there. And then when I joined Data Stacks, I mean, I think
+there was a point where we had a cross-section where I read a lot of stuff that you wrote. And I
+think by the time you had started Honeycomb. So that's my background. And it's so surreal that
+somebody whose content and blogs and information you read about, you get to talk to them. Here we
+are. It's an honor, actually. This is amazing. I know. This is so fun. Thank you for telling that
+story. Yeah. No, that Parse Analytics product in a very real way is responsible for Honeycomb and
+thus observability. Because Christine, like, we have this whole origin story, right? Christine, the
+dev, charity, the ops, you know? Christine single-handedly built Parse Analytics on top of Cassandra
+using all the best practices. But when you're using metrics, you have to decide up front what
+questions are you going to let people ask. And our Parse users kept writing in and being like, but I
+want to ask this, but why can't I ask this? And Christine would just be like, oh, so frustrating,
+you know? Yeah, yeah. And I was on the, anyway. And here we are. Yeah, I mean, it was an error. I
+mean, I think, like, it was an error for sure. I mean, I think people, people who, I mean, whoever
+listens to it who remembers this would know how crazy it was. Like, I remember, I think I read a
+blog at the time where I think Parse was, like, blowing up so much that, like, you had probably a
+million apps running. You had a million mobile apps hosted on MongoDB. Yes. Literally yesterday on
+X, I, the founder of, I won't name it, but was tweeting about how the old way of understanding your
+software was you read the code. The new way is you read the, and I'm just like, in what world did
+you go? Well, I read the code. I understand what it does. Well, at Parse, you know, at Parse and at
+Heroku, we were hosting developers' code. So we had to understand it from first principles and
+instrumentation. We couldn't just go ask the developer what they were trying to do when they shipped
+it. You know, and that was the whole mindset. And I forget that's not everyone's mindset. The
+primary debugging tactic that most teams have to this day is who shipped that dev? Right, exactly.
+Go find them. Ask them what it's supposed to do. Get them to fix it. That's the fastest, shortest,
+you know? And, like, I haven't been in that mindset for 13 years, you know? Yeah. No, I mean, I
+think it's, like, what you're saying is very interesting because at that time, I don't know where it
+became true that, I think it became a standard in many ways. Everybody was trying to say this is the
+right standard, the Kubernetes standard, the container standard, the observability standard included
+logging, metrics, tracing. Three pillars, metrics, logs, and traces. Well, except for exceptions and
+errors. Every signal type goes to its own siloed storage to this day. Yes, exactly, yeah. But, like,
+that, I think people don't realize that's not a best practice. That's an artifact of operational
+infrastructure. You're mostly operating code that you can't change. So you just have to take
+whatever it emits. If it sends you metrics, you just got to put it someplace. If it sends you logs,
+you just got to put it someplace. And it's shitty, but it's what you've got, right? That is not for
+your crown jewels, for your software, the software that makes you money. That's not what you want to
+do. You have power over this code. You should instrument it in a way that does not spray your
+signals apart, that keeps it together because the context is what makes that data powerful. Right,
+yeah. And I think observability has become so much critical. And I do feel with the agent scale at
+which things are coming, where we are going, it's going to become way more critical. So I would love
+to dive into your perspective on all of that in this episode. And for everyone listening, obviously,
+you see the small connection that I've had with charity from far. By the way, I was not even in the
+US. I live in the US now. I was in India. And I would read these things, find it on the internet.
+And the communities used to be so weird at the time. We have so much more organized now. So it's
+great. But before we get to Parse, tell us a little bit about Young Charity and what really excited
+you to pursue this path. And how did this happen? You know, I grew up in the backwoods of Idaho. I
+was homeschooled. Religious compound, basically. And I got a piano scholarship to college when I was
+15. And no doubt, I had never used computers. And my first year of college, and I was just like,
+dude, I grew up poor. I am not. Nope. Nope. And, you know, I got a job as assistant. And I've been
+on call since I was 17, you know. So I traded one keyboard for another. But that was an era when you
+could just get into computers as a tinkerer. So you did that. You worked as a tinkerer. You worked
+at Parse and then eventually joined Facebook. Got hit by a completely different scale. Tell us a
+little bit about how that Parse into Facebook experience was. And how you got experience with scale
+and observability and start of everything there. You know, so I had been at Linden Lab during the...
+There was a time and place where Facebook seemed like the redheaded stepchild. And, like, Second
+Life was seen as, like, the next big thing, right? So the scale wasn't super unfamiliar to me. Like,
+acquisitions are hard. They're always hard. Like, culture clash. They're kind of non-consensual.
+Like, I didn't go to work for Facebook for a reason. And then my company was like, two-hour bus ride
+each way. There was a lot of culture clash. And a lot of things that I... I was always one of those
+engineers who didn't care about the business stuff. Didn't want to hear about it. Didn't hear shit,
+right? I was a back-end infrastructure. And that, too, I think, is an era that is passing. And
+people who feel that way should be mindful that it's not a growth area. I wish I had paid a lot more
+attention to business outcomes and product development and design and, you know, that sort of thing.
+But we got acquired by Facebook. And a couple years later, they shut it down. I left before they
+shut it down. But ultimately, I'm going to say, tough experience. But I'm very grateful to have had
+it. I've often said, I don't think I learned anything new about technology while I was at Facebook.
+I learned a lot about management. I learned about... Like, you don't get to be a company that has
+tens of thousands of people without learning how to operate well. Right. That's what I learned.
+Yeah, completely makes sense. And I think, you know, when I was researching also, I kind of saw that
+that was your pivot to go from, hey, this is... I need to go learn or figure out what I've done at
+this company and apply it at another company. And I think those were your beginnings. Honestly,
+you're applying more intention than the process. I left Facebook, looking around for the next thing.
+And I have the... Like, VCs were like, would you like to vote? I'm like, well, I'm not going to
+say... Yeah, sure. Like, as a woman, a dropout, a queer person, like, this is an opportunity. Of
+course, I'll take it. I'll try it. We're definitely going to fail. But, like, you know, it's a fun
+way to spend a couple years. Obviously, people don't usually start companies. And VCs don't usually
+fund them. And for very good and obvious reasons, because we're not optimists. We expect everything
+to fail. That's not really the outlook that you want in a CEO or a founder. You want the people who
+are like, this could be a billion dollar business someday. And that was never me. So, I had to
+learn. I agree. Yeah. But I think, like, when I was, like, looking at what Honeycomb has started to
+do and I think some of the new content that I'm seeing, it's, like, so exciting. Like, it's just a
+different way with which you are looking at observability. I don't even think people get it. No,
+they don't. Correct. So, walk us to what you saw as to, like, what was the problem and then why you
+felt like, hey, man, we need to do something completely different and project a different way to
+help the way the world is going to be. And I think you are, like, primed now with what's going on
+with all the AI stuff. We were built for this. It's very exciting. We were built for this era. We
+didn't even know it. We were built for this era because what people are struggling with the most
+right now is not AI or non-determinism or the novel aspects. They're struggling with the software
+aspects. But it's 10 times as much, 100 times as much, 10 times faster than before, 100 times faster
+than before. Right? Like, their systems have evolved to accept a rate of change like this. Right?
+And it's held together with duct tape and string and stupid human tricks like intuition. And I've
+been there for 10 years. So, I built it so I can guess where the problem is. And as that rate of
+change ticks up, all the duct tape is flying off the bus. And Honeycomb, you're absolutely right. We
+are not really descended from the mainstream tools. The traditional observability cloth or
+something. Yeah. You know, we were the ones who introduced the concept of observability for
+software. And then it got co-opted by all the other companies. But we had, the DNA of Honeycomb is
+much more like a combination of product analytics, business analytics, and, you know, just, it's
+just arbitrarily wide structured data blobs that can be hundreds of dimensions wide. That can also
+be traces because traces are just structured logs with IDs, you know. And that packs all the context
+so that you don't have to decide what questions you're going to need to ask in the future at the
+time that you're storing it. You can, you can make all those decisions at some, which is exact. What
+do you need to understand your AI? You need context, speed, and flexibility. The ability to slice
+and dice and zoom in and zoom in. That's what you need. That's what you need. That's what we built,
+you know. So it really is. I gave a keynote to our company last month. And like I said, I'm not an
+optimist. I'm not an early adopter. I've seen hype trends come and go many times in tech. The last
+few were a bust. So like it really wasn't until last fall that I realized, guys, this is our chance.
+This is our opportunity. This is the moment we've been waiting for. For all of Honeycomb's
+existence, our essays, our blogs, our thought leadership have had a lot more reach and influence
+than our product has. And it's always puzzled me. Why is it people out there who love what we say,
+love what we write, why don't they then immediately go sign up for the product? Because it's the
+same thing, right? The product encodes our philosophy. Our philosophy comes from our product.
+They're the same thing, right? Yet there are people who have been listening, reading our stuff for
+10 years who are like, oh, it never occurred to me to try Honeycomb, right? Well, I think it's
+because the delta between where they are and where we're talking about is wide. And it's come across
+like, eat your vegetables. If you want to do it the right way, do this. Instrument your code this
+way. Look at your graphs after you do all these like tests in production, you know, all these
+things. And now with AI, it's competitive pressure. It's not us saying, eat your vegetables. It's,
+oh, shit, we're not going to actually reap any value from our AI investments unless we can build the
+guardrails so that we encode the knowledge of the system into the system instead of into, you know,
+intuition. And so you've said some really cool things. And I think, I mean, as I was saying, my
+point was really like when I was researching Honeycomb, I think the philosophy and the experience
+that you bring from the even the observability engineer book that you wrote, right? And the second
+version that's coming. It's so rich in looking at something that everybody thinks is the way you
+should look at. But you kind of have opened it up in a much more wider way. So the perspective that
+you were bringing with the AI agents and things like that, if you do you see like the scale at which
+AI agents are growing is going to just break existing observability? Oh, yeah. Yeah. The three
+pillars model. Yeah, it doesn't it doesn't work. You know, this is and this is not just me as a
+vendor like. No, we hear this from customers and prospects like constantly like when we're trying,
+we're trying. It just doesn't work because that connective tissue, the context. Is the most
+important part of the data. And when you're splitting your signals up into different silos, you're
+discarding it. Right. Data becomes more valuable with more context and it becomes not linearly more
+valuable, becomes exponentially more valuable. And so when you're like, we're going to put the
+metrics over there. We're going to put the logs over there. We're going to put the traces over
+there. You know, and then like I think existing vendors are trying to kind of monkey patch all this
+by then building bridges between those pillars, which and this is why if you look at sort of like
+cost, which is most people's entry into they're just like cost has been rising 48 percent per year,
+year over year for the past 15 years straight. Like Gartner printed something, talked about a
+representative customer of theirs in 2009 was spending $50,000 a year on monitoring. And in 2024,
+they spent $24 million. And it's continuing to go up at that rate. And that's because you're storing
+the same data again and again and again and again in different formats and then trying to build
+bridges between these data types. And it doesn't work. It just doesn't work. Like it just doesn't
+work. You want your data to be you can't put Humpty back together. Yeah, absolutely. Yeah. And so
+with that, I mean, this is a great segue to the question I wanted to ask is that how is Honeycomb
+doing it differently compared to these other vendors? Like would be great to know a little bit of
+what your vision is and how that's been applied to the product. It's not rocket science. It's like
+we're not that smart. Back at 20 years ago, Columner stores, a couple decades ago, they became
+productized for business teams, right? But they were super expensive. So you had to be very
+selective about what data you would put into that. But that's what powers your sales teams, your
+marketing teams. You know, you can't yet they couldn't do it if their signals were all spread out.
+It's really only in software engineering that we're just like, I can have this together. You know,
+software engineers are using hand-me-down tools from ops teams who have to use those tools because
+they can't modify the code. Right. But it's just it's a columnar store. It is. I will brag a little
+bit. We do have by far we have the best storage engine in the world for observability workloads.
+It's the only one that's custom built for observability, which means that we can make we can power,
+you know, we could power Facebook scale workloads, you know, because it's horizontally partitioned,
+distributable. And we can like that. If you want to run a query, our 95th percentile, I think query
+response time is under a second. So it's interactive. It's fast. You know, it's just because one of
+the problems with the old model is you've got to index and schema and make decisions about what you
+want to be able to ask fast questions about in the future. Problem is, if you can't predict what,
+you know, the whole lot. But with a columnar store, everything is an index. Right. And you can pack
+as much context you are up to, like, the limit of the number of Linux file handles that can be open.
+Right. So it's like thousand. Right. So there's no penalty and there's no penalty for cardinality.
+Right. A lot of companies are paying out the nose because my cardinality data is the most
+identifying data in your system. Unique IDs, names, you know, descriptions, super high cardinality.
+And most companies are just discarding it because they can't afford to keep it. So just again and
+again and again, we're built for this, you know. No, it's very cool. And I mean, at our company, I
+was recently talking to our CEO and, you know, we were talking about the world that we anticipate.
+And I think one of the things that we have started to recognize is that there is a limited amount of
+power available and there's a limited amount of data centers available. But we are actually trying
+to expand on that. What that signals is that there will be more and more people trying to fetch
+data, read data, write data, do all these different things. And you need to have a way to observe
+all of this. And so the joke is, where are we going to put these data centers? Obviously, some
+people say we claim we'll have data centers in the space. Oh, really? Yeah. I mean, I mean, that's
+what that's the whole Elon we've been talking about. I cut out my Elon Musk feed a couple of years
+ago. Yeah. But regardless of that, I think it's very clear. Like I recently got to know one of the
+big data center investments is happening in a port back in India. And like just data centers are
+exploding everywhere. But I think if you go back to the root of it, it's this AI scale that you're
+talking about. Like somebody I was talking to recently told me he's running. That individual is
+running 16 agents on three or two Mac machines. And this is where I think the interesting questions
+are less about scale and more about the rate of change. Right. I mean, they're both interesting.
+There are so many, but like the things that really make me lean in and go, ooh, I think it's the
+rate of change. Yeah, exactly. And so I was asking him, like, so if you're running all these, if
+you're making all these different changes and if you're running all these different agents, how are
+you handling everything else that needs to support it? Like, so I was asking him, what kind of
+applications is your agents hitting? And he was telling me, like, four of his agents do four
+different tasks and he's basically broken their context, but hit the same application. Yeah. And I
+was like, how, I was like curious, like, how do you identify them? How does it go into your
+database? Do you track it anywhere? How are you observing it? Nothing. Like, he's like, no, I'm
+just, something breaks. I go back and try to fix it. I try to figure it out. So even at a very, very
+low level, I'm seeing like every small, everyday individuals are getting into this and citizen
+developers are growing. So what would the impact of that be on, you know, Facebook like companies
+who might open up a gateway? Okay. Interact with agents. So like, of course the scale is there, but
+obviously the human behavior is changing with respect to agents. So very interesting. So I was
+curious as to what you feel about that here. Boy, that's a big question. What do I feel about the
+intersection of AI, scale, rate of change, developers and big companies, surfacing agents for us to
+talk to? David. Do you want to try and narrow that down? Yeah, yeah. No, no. Or should I just
+breath? Right, right. Yeah. No, my point of view is like, I feel like this will have massive
+implications to performances, right? And then performance is engineering and, you know, system
+design will become so much more critical. And you cannot do system design without looking at how to
+tackle the observability, right? This is something that I, something that occurred to me a couple of
+weeks ago is right now we are in the process of starting, we are building the first AI native
+sociotechnical systems. Nice. You know, none of us are AI native like three years ago, right? It
+just came and now we're starting to build AI natives by looking at, okay, what do we, what lessons
+can, there are a lot of analogies to the cloud, you know? So, I, in fact, I wrote a piece on my sub
+stack called something like 2025 was to AI what 2010 was to the cloud. You know, the year that it
+stopped being a toy and people, the center of gravity shifted, right? It went from, oh, this is a
+cloud of the place where we can input our actual workloads to, oh, everything else is legacy. And we
+need to start building, you know, for the cloud. And so, what are the patterns? What are the new
+patterns, right? What are the new assumptions? What are the architectural details that we all
+thought were just like baseline that were specific to on-prem environments? And I think this is
+really interesting. And to your point exactly, I think one of the lessons that we have learned or
+should have learned, I don't know, one of those two, is that data is made powerful by context and
+you need to keep it together. Preserve the relationships in your data storage that do exist in the
+real world, right? Because that's what AI needs. Preserve the relationships, some kind of
+ontological mapping to reality, semantic conventions, you know, and the data thing and the
+observability thing. If you can, and some people are like, ah, but it's a black box. No, you can
+read the trace. You can, yes, it's somewhat non-deterministic, but you still, you're not exempted
+from trying to understand it if you're trying to make it better. Yeah. And I think one of the things
+is like, people are bad at observability. Oh, yeah. Like, I mean, that's the point. Like, I mean, if
+you go back to some of the stuff you've written in the past and this, I was reading it. And I think
+one of the things that came out was that it's not natural for, like, we are, humans can observe
+stuff, but we are not good at observing stuff that's breaking all the time and like anticipating
+patterns. So you want to develop that a little bit? Yeah. I think historically, this has been kind
+of, it's a running joke in SRE that everyone in SRE has ADHD, like almost literally. And everyone in
+SRE is someone who, through personality or training or both, immediately looks at what will fail.
+It's just like, you showed me a cool idea and I'm like, ah, this is going to fail. It makes us
+really fun at parties. Like, there are a lot of people who find talking to SREs about their ideas
+deeply frustrating. And I have really had to personality retrain, transplant myself a bit because
+it's just not always helpful. But yeah, we don't, as human beings, most people don't immediately
+focus on, okay, how is this going to break? What can I anticipate? And so far. And there's been
+quite a feedback loop in the past because people didn't actually have the tools to do that well. So
+even if you did anticipate and you did instrument and all these things, if all you had was
+dashboards and aggregates, there's kind of no point. You know, because you couldn't, you couldn't
+really, you would tell if something really big and bad happened, but you couldn't understand
+precisely the impact of your change. And one of the reasons that, you know, a quote I've been
+trotting out a lot lately is that AI is like alcohol. It is both the cause of and solution to most
+of life's problems. That's right. Yeah. I would say that one of the eat your vegetables messages
+that I've been seeing for like 15 years is instrument your code as you write it. Commit your code.
+Then go look at your instrumentation to close the loop. Understand it. Right. But if you instrument
+your code and you go and you look at it and all you have are like, okay, 99.8%, you know, with AI,
+we now have the ability to auto instrument using OTEL and open source patterns, you know, it's
+better than we can do ourselves. And build that loop into our code so that it can come in and tell
+us, oh, that endpoint that you shipped yesterday, errors are super elevated for that. You know, it
+can, it can become a conversation with your code. And if you use something like Honeycomb, this is
+not true of three pillars, just to be clear, but you can do this with precision. And so like what I
+am excited about with agents in particular is the ability to make this loop into the product and
+into your workflow so that, I guess I'm excited. Mouth, not as fast as brain, but like you ship a
+diff, right? You have that intent in your head. This is the intent you have. Okay. So you generate
+code. You generate tests, right? Test the intent. Cool. You deploy to production where you have
+things like progressive deployments and feature flags. You can test safely in production. So then
+your agent goes and looks precisely at the change that you made. What is your intent? What do you
+expect to happen? What is the comparison to baseline on all the dimensions? And it can let you know,
+looks good. Okay, let's roll it out to a 10% of hosts, right? And at every step that can, is it
+doing what I expected it to do? Is it anything else? You know, and so you can promote it. And then
+imagine, you know, that whole thing about never deploy on a Friday. You're abusing your teams if you
+blah, blah, blah, blah. Yeah, that is a trope. If you can't understand, if you can't see the impact
+of your change, right? But if you can see it precisely, if you have confidence that you can see the
+delta, you know, you, you, in order to move swiftly, you have to have confidence. Confidence is what
+allows you to move swiftly. So anyway, agents, you know, imagine you just ship, you, you just
+shipped a little feature, right? And your little agent's going to check up on it and let you know if
+something bad happens precisely. Because even if it's, you know, say you're, you've got, you're
+running a system that's shipping a million requests per second. And this change that you shipped is
+maybe 50 requests per second, right? It's drowned out in big dashboards. But if you have precision
+tools, you can compare that to, you know, the combination of the build ID, the feature flag, you
+know, the, the change you make compared to baseline. Exactly. Yeah, exactly. And then imagine that
+the change that you shipped was something more like a caching change. Right. Well, that might not
+surface for weeks, months. Yeah. Agree. You know, but you can have your little agent check back up
+on it and be like, oh, this is a caching thing. Well, you should check up on this for a long time
+and look for these things, you know? Right. Yeah. I'm excited for that. Yeah, I agree. I agree with
+you. And I think what you said is that that's the vision that excites me because I am bad at
+observability. Right. I'm, I'm, I don't know if you know the four temperaments. I am a sanguine. I
+don't think about risk. I think about jumping in this thing. Right. So I'm, I'm that guy. So I
+don't, I need a pessimistic person with me saying that this is what could go wrong. So from that
+point of view, when I see a lot of people developing stuff, what you said, but what you're doing
+with Honeycomb to look at with precision that, hey, this is what we will do. We, you have somebody
+sitting with you looking at what you're doing and looking at that impact of that small little
+change. And it has the context too. So that's, that's the cool part. That's what excites me about
+what you guys are building. And instead of slowing you down, which I acknowledge that if you're a
+software engineer using the standard tool stack, eating your vegetables could easily double, triple,
+quadruple the amount of time it takes you to do your job. Right. That's, there are a few exceptional
+teams out there with the amount of engineering discipline and leadership and that have never, but,
+but for the most part, it's been, out of reach for most people. And now I feel like it's finally
+becoming accessible to the media and engineering team to bake these things in, to reduce the risk,
+to improve the precision. So that, you know, honestly, I, this is what made me finally get on AI
+train is just this excitement about this is our first chance to bring our engineering values to the
+mainstream. Yeah. Yeah. No, I'm excited. I'm excited about all of that. And I think people are
+underestimating the role of observability in the future. A hundred percent. Like, without a doubt.
+Yeah. Yeah. Yeah. No, just replace observability with validation. Yes. That's the outcome, right?
+Outcome engineering. By the way, my friend, Corey Andreka made this amazing site. Oh, 16 G stands
+for outcome engineering. Nice. It is phenomenal. It's like the 60, it's like Martin Luther, uh,
+just, you know, staple, get to the church door. You know, this is, it's about outcomes. And in order
+to track, track that intent, you have to be able to validate the outcome. That's observability.
+Yeah. Yeah. Well, so as we, like, I would love to understand some of the things that you can help in
+the listeners' minds, right? What do you think are a few things that you have seen that people do as
+a pattern that you feel they should like start to change now with where things are going? You can,
+there's no, there's no, you can even shill and say, honeycomb, go try this out, look at this blog
+and things like that. Don't worry about that. But I think that'll be great for you to kind of help
+people understand because you, in many ways, you're like the observability queen I'm talking to
+right now. So it'll be great for us to kind of know and learn from you. So, yeah. Oh, thank you.
+That's very sweet. I will, I think I will shill a little bit. And I do think that people, yes,
+obviously, honeycomb is, there's a second generation of observability tools. I called it
+Observability 2.0 for a while, and I feel very embarrassed about that. It's like the most hackneyed.
+But like the wide structured events, you know, single source of truth instead of the three pillars.
+It is so clear to me that the three pillars days are numbered, no matter how many tens of millions
+of dollars of marketing and sales. But like it just, it just doesn't work. And as you know, people
+should absolutely check out honeycomb. Um, I, if they aren't using open telemetry, adopt open
+telemetry because it is vendor neutral. Um, it makes it so much. Will Larson once said the sole
+scalable solution to technical debt is migrations. And migrations are very hard if you've never done
+them or you don't do them a lot. But it's a muscle that you can build, you know, and when it comes
+to your observability tooling, you need to invest in the ability to, to, to, because things are
+changing fast and you do not want to be stuck on the vendor that you were using 20 years ago.
+Because if you are, or even 10 years ago, you're probably using the wrong thing. It's, Gartner
+actually said in our last call, I don't think this is online anymore, sadly. They were like,
+observability is one of the only categories where there is no single dominant player for more than
+20 years ever. Like it always changes because it has to change. Right. Kind of makes sense. Hotel is
+kind of the, the, the, the, the lock in the door. I think that opens the ability to migrate, which
+is what gives you optionality, which is what gives you leverage in your budget conversations. Uh,
+the other thing that I will show is the second, I, I appreciate the nice thing you said about the
+first edition of the book. I'm not that proud of the first, I took us three and a half years and
+there was at no point that I was like, this is a great book. Ship it. I, it was like, it was more
+like, it's been three years. I can't keep doing this. I can't, I can't even look at it. What if
+you're just print it? Like I can't even read, you know, that was the vibe. Um, I feel differently
+about the second edition. I, we have some incredible guest authors. Um, some of the sharp, I mean,
+Matt Coyne writing about mobile in front end, Jeremy Morrell writing about instrumentation. Um, some
+of our direct competitor, you know, ClickHouse has a great chapter about how to use observability,
+build a ClickHouse stack for observability. Like I, my dog in this fight is not honeycomb. It is the
+old ways don't work y'all. You don't have to buy honeycomb, but you should be thinking about the
+sort of Ollie 2.0 model. Um, anyway, and my particular section of the book, I got together with the
+coauthors, uh, last June and I pitched them on. Great. Let's add a new section of the book. Part
+six, uh, observability governance written for observability engineering teams. On the kinds of
+topics that they struggle with, uh, cost control and migrations and tooling and all this stuff. And
+from June, July, August, September, I wrote, wrote, wrote, I was about done and I'm like struggling
+with the last chapter on buying software. And that's when I wrote a blog post and I'm like, Hey
+internet, I could use some help. And I asked people to email me their stories about buying software,
+choosing tools, just in general, you know, and, uh, the internet responded. I got, I got many, many,
+many, many emails. And my progress in writing ground to a complete halt. And I, for over six weeks,
+I was just like staring at drafts. And a week before Thanksgiving, I was up late, just kind of
+f***ing around with the emails, using claw, like water, this beat. And it hit me. Everything I had
+written was wrong, probably useless. I mean, do observability teams need advice? Yes. Who does, who
+the, who the hell doesn't need help, right? Of course they need help. But it wasn't going to do any
+good because all these emails I was getting from people were describing a terminally f***ed up
+buying process from the top down. CTOs, VPs, SVPs, distinguished engineers, principal engineers,
+directors, staff engineers, observability teams, no shared idea of what observability is, should be,
+what problem is trying to solve, what problem is should be trying to solve, whether, you know, and
+it just like no shared context. And so like just the stories of pain. I mean, I, I, uh, an
+engineering org that spent six months doing all these POCs came to a very strong conclusion, sent
+the contract off. And one of the losers, CEOs called up their CEO and he overruled them. Didn't even
+talk to them, didn't consult with them, just like signed a different contract. And again, and, and,
+and less dramatically. I mean, I think that inertia just like it's paralyzing. So much has changed
+and it's become so, it's, do you realize most people don't realize this, but observability is now
+typically the second highest cost behind cloud spend. When it comes to tools or spending on
+software, there's cloud and then there's observability and observability is usually 20 to 30% of the
+overall infrastructure bill. It's astronomical, right? And yet 15 years ago, it was 50, 50 K. It
+was, it was a, it was an ops tool cost center rolled up to the CIO. So things have changed, right?
+Okay. So I get all these emails. I realize what I've written is not actually helpful. And, and
+before Thanksgiving, I kind of had my Saul on the road to Damascus, sort of conversion moment. And
+so I, or the last three and a half months, I, I, I threw everything out and I rewrote it from
+scratch. And now my section of the book is still called observability governance, but it opens,
+it's, it's, it's for technical decision makers from the top down. Right. So it starts with like an
+open letter to CTOs being like, observability is not so 2019. So pre AI, it's actually, it's how
+your team, your organization learns and all of your AI initiatives are backed up behind, you know,
+the, the, the blocker is no longer writing code. It's understanding. Exactly. Yeah. That's pretty
+prudent actually. Yeah. So we start with the open letter. And then because every term, every
+technical term is so overloaded with sales and marketing bullshit. The next couple of chapters we
+talk about, we just use systems thinking terms, right? Feedback loops. Feedback loops can be
+amplifying. That's what causes change or they can be balancing, which is what causes, you know,
+stability. But observability is the thing that connects cause and effect to create a loop. No
+observability, no loop, no feedback loop. And if that, and if that observability is laggy, lossy,
+delayed, then you're balancing loops instead of causing stability. They either freeze up or they
+oscillate. Absolutely. Yeah, yeah, yeah. Absolutely. Without observability, they're not positive
+loops. They're doom spirals. No, I, what I was going to say was I kind of, I never thought about it
+like this, but when you said an open letter to the CEOs, I think it's very important for this kind
+of idea to rise up in the minds of the, you know, not just leadership. I think so. Yeah. I think so.
+Yeah. Because this is tied to the outcomes that you're driving, right? It's tied to your customer
+experience. It's tied to the customer experience and then drives revenue. So people don't think like
+that, but it's good that you did that shift. Exactly. Exactly. There is this perception. One of the
+problems with technical executives is that it's really hard to outgrow the things that you learn
+when you are hands-on. You know, I feel this myself all the time. It's like the shit that when I was
+in the thick of it at Parse, right? 10, 15 years ago, I know that so deeply. And the stuff that I
+haven't been hands-on with for the past few years, I know a lot less deeply, right? And most CTOs
+and VPs, when they were hands-on, they had monitoring and logging and it was an ops tool and it was
+a cost center and it was related to reliability and outages and incidents. But, which is important.
+All that stuff is important. But the developer feedback loop is about building and creating value
+and learning. Like, these are two different, the ops feedback loop and the developer feedback loop
+are two different things. And observability for developers is right in the critical path of building
+and understanding and serving your users. Yeah, yeah. No, absolutely. And well said, actually. And
+these are like, I think we don't think about these things enough because we are just so focused on,
+let me build my feature. Okay. Now this feature needs to scale. Everyone's overloaded. Right, right.
+So, yeah, I tried to make it as simple as I possibly could. Just simple and intuitive and vendor
+neutral. So, that's what I'm shilling. Yeah. No, it's very cool. I mean, it's awesome. Like, you
+know, for everyone listening in. So, the two things that you want, go check out Honeycomb,
+obviously. Some of the cool things that chat is. I believe you have a pretty active Twitter and
+Substack too. So, go check that out. We'll put that in with the post that we do. And obviously, go
+check out the Observability Engineering Part 1 if you want to. But according to Charity Part 2 is
+much more cooler. So, go check that out. Yeah. It's been an absolute pleasure having you on Charity.
+I mean, as we leave, like, now let's just talk about it. I think you brought this up. And I always
+love talking to veterans in the industry. Sort of like, what's your advice to junior engineers?
+Right? Like, it'll be good for you to spray some of those thoughts out as well. And for those young
+people who are listening from people like Charity, like, what is it that they should be focused on
+learning? And what should be their mental model? I really struggle with how to give advice to young
+people. Because the world was so different when I was, you know, 17, 22. I honestly feel like the
+most useful and relevant advice rarely comes from people who are this far ahead of you. It's usually
+from people who are in your shoes five years ago. Makes sense. And I, you know, Kent Beck has
+written some amazing things about how junior engineers are going to be more AI natives than we are.
+Right? But to get those skills, it depends on people being willing to hire them. So, instead of me
+trying to give any advice to junior engineers and screwing it up, I'm just going to send them
+empathy and good vibes and hoax. And instead, I'm going to say a different thing, which is every
+company I know of that is invested into hiring and training junior engineers over the past couple
+years has, number one, not regretted it. They have been very grateful, like, vocally happy about it.
+And number two, it has not come from the top down. It has been championed bottom up by other
+engineers, by senior engineers, staff engineers, usually not even managers, but, like, senior
+engineers and staff engineers who are, like, we are cannibalizing our future by not investing in the
+next generation. I will personally take on the responsibility of mentoring these kids, interviewing
+them, you know, give me, give me some, you know. So, I would say, if you're a senior IC, don't feel
+like you have no power because you have power and you might be the only one who will make this
+happen. Yeah. Very cool. Well said. No, I have more positive, you know, perspective, like, similar
+to what you said. Like, I think it's more incumbent on the veterans to kind of look at the way the
+tech is going to shape the world. And always remember that we all learn from somebody's blogs. We
+all learn from somebody's stack overflow. And we all learn from places like that. And that's the
+kind of culture that we experience. So, we should kind of remember that as we progress. 100%. I
+would echo that. It is, once you've seen what good looks like, it seems obvious. Yeah. Yes. It's
+obvious and intuitive. It's obvious that if you ship code in 15 minutes, it's obviously this is
+easier, right? It's not obvious to people who haven't seen it. And it often looks harder and out of
+reach, right? So, I think humility is called for. I think empathy is called for. And I think just
+trying to reach people where they're at instead of asking them to try and reach you where you're at.
+Well said. Awesome. Well, thank you again, Charity, for coming on. It was such a pleasure talking to
+you about so many different things. Especially, like, I really loved your perspective on, like, the
+way AI observability has kind of shaped the world. And also how executives need to start thinking
+about this, not as an afterthought. So, I really appreciate that. And for all the listeners, go
+check out Charity, her company, Honeycomb, and the book that it's coming out. Is it already out or
+is it coming out? The Dead Tree version will be out in June. Chapters, preview chapters are coming
+out in O'Reilly and the Honeycomb blog between now and then. Very cool. Yeah. So, check it out. And
+we'll post all the links in the podcast description as well. So, thank you, everyone, for joining us
+once again. Appreciate it. And Charity, thank you once again. Thanks. Thanks, guys.
+Thanks, guys, guys.  you

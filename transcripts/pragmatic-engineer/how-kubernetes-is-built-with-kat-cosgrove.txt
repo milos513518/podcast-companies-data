@@ -1,0 +1,456 @@
+How Kubernetes is Built with Kat Cosgrove
+2025-05-14
+Kat Cosgrove shares what Kubernetes actually does, how it’s structured and scaled, and why it’s become one of the most successful open-source projects in the world.
+https://newsletter.pragmaticengineer.com/p/how-kubernetes-is-built-with-kat
+SOURCE: publisher_substack (Substack podcastUpload.transcription -- publisher text, not machine-transcribed here)
+DIARIZED: yes -- 2 speaker labels from Substack
+SPEAKERS: SPEAKER_00 66.5% (00:27:57) | SPEAKER_01 33.5% (00:14:04)
+NOTE: labels are anonymous (SPEAKER_nn). No name is inferred from them here.
+1375 segments | 11,437 words | 148 turns
+CHURN: 108/148 turns flagged -- 15 under 1.5s, 106 sandwiched inside one other speaker's run (structural in a two-speaker interview: nearly every interior turn is). Marked inline.
+READ: 13/148 turns are BOTH short and sandwiched (8.8% of turns, 0.2% of voiced time) -- that is the mislabelled-backchannel shape. Marked ** inline.
+==============================================================================
+
+[00:00:00] SPEAKER_01:  (prev -- / next SPEAKER_00)  [CHURN: short; 1.2s, 1/1 segments under 1.5s]
+What is Kubernetes?
+
+[00:00:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 54.3s, 4/16 segments under 1.5s]
+Kubernetes is a tool that makes it easier to manage and scale an application that exists as a swarm of containers. So it will handle things for you like automatically scaling up resources, whether that's networking or storage or whatever, based on demand. And it handles that for you without you having to think about it. You define upper limits, for a particular type of resource, and it'll go up to that as needed. It scales automatically. This is particularly useful if you're trying to keep costs down and keep availability high. The rise in complexity of applications built as microservices is what necessitated something like Kubernetes. You could do all of this before the scaling of applications running as microservices in clusters or swarms. Before we had Kubernetes, it was just very difficult and it was very manual. Kubernetes is just an abstraction on something that we used to do manually.
+
+[00:00:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 62.4s, 6/22 segments under 1.5s]
+Kubernetes is the second largest open source project in the world after Linux. So what is it, why is it so popular, and how is it built? Today I sit down with Cass Cosgrove, who is the leader of the Kubernetes Release Team subproject. Cass started off as a software engineer specializing in embedded Linux and got involved with Kubernetes by learning K3S, a minimized version of Kubernetes that is designed for smaller, memory-limited embedded devices. Kat was a contributor to Kubernetes for years before becoming a lead on different parts of the project. In our conversation, we cover the architecture of Kubernetes and what Kubernetes pods are, why Kat thinks Kubernetes won and became the de facto infrastructure management solution, in part because of its strong focus on documentation, how to propose changes to Kubernetes via the KEP process, and how Kubernetes release happens in the span of 12 to 14 weeks. and many more topics. If you're interested in backend infrastructure or how a well-organized large open source project operates, then this episode is for you. If you enjoyed the show, please subscribe to the podcast on any podcast platform and on YouTube. Kat, first of all, just welcome to the podcast.
+
+[00:01:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.1s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Thank you for having me.
+
+[00:02:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.3s, 5/15 segments under 1.5s]
+Unless you're a Kubernetes infrastructure person who actually deals with Kubernetes day in, day out, most software developers, including myself, I've never dealt Kubernetes directly. However, so many of the systems that I deploy to, a lot of the APIs that run today are probably on Kubernetes. I'm pretty sure, for example, use Render. I'm assuming they're going to use Kubernetes. At Uber, we use Kubernetes, and apparently they're one of the biggest deployments. What is Kubernetes? What is the relationship with Docker, if there is any? And as an average developer, when would you be exposed to it, if ever?
+
+[00:02:41] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+So I think the average developer, especially if you're a web developer or an application developer, you don't need to worry about what Kubernetes is. You're never going to have to touch it directly. And it's a specialization. Being like a Kubernetes cluster admin or an SRE or something, that's a specialization. And I don't think that the average developer needs to know or care what Kubernetes is. You certainly don't need to know how to use it. You can know what it is, but you don't need to know how to use it. There's so much going on. It's complex. It's notoriously difficult to learn. I don't think that there is a reason to dive into it super deep as an average developer, unless you're trying to make a career switch into Kubernetes, which I couldn't blame you for because it's very lucrative. But Kubernetes is a tool that makes it easier to manage and scale an application that exists as a swarm of containers. Yeah. So it will handle things for you like automatically scaling up resources, whether that's networking or storage or whatever based on demand. And it handles that for you without you having to think about it. You define upper limits for a particular type of resource and it'll go up to that as needed. It scales automatically. This is particularly useful if you're trying to like
+
+[00:04:11] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+keep costs down and keep availability high, for instance. So this is direct from the Kubernetes documentation, and this is what Kubernetes components look like. This is a very, very simple... cluster. This box over here on the left is your control plane, and you aren't going to interact directly with this a ton. This is mostly automated. Over here on the right, where it says node, node, node, those are all pods. And within these pods run the kubelet, which is another little control thing. It's interacting with the Kubernetes API to stand up and down all of your containers. And all of your containers exist within here too. So if one goes down, like a pod fails for whatever reason, whether it the code itself, the application crashes, or it runs out of resources or something else weird happens, your deployment will stand it up again, automatically for you. You won't notice it, your users won't notice it, probably.
+
+[00:05:24] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+This episode was brought to you by WorkOS. If you're building a SaaS app, at some point your customers will start asking for enterprise features like SAML authentication, SKIM provisioning, and fine-grained authorization. That's where WorkOS comes in, making it fast and painless to add enterprise features to your app. Their APIs are easy to understand and you can ship quickly and get back to building other features. WorkOS also provides a free user management solution called AuthKit for up to 1 million monthly active users. It's a drop-in replacement for Auth0 and comes standard with useful features like domain verification, role-based access control, bot protection, and MFA. It's powered by Radix components, which means zero compromises in design. You get limited customizations as well as modular templates designed for quick integrations. Today, hundreds of fast-growing startups are powered by WorkOS, including ones you probably know, like Cursor, Vercel, and Perplexity. Check it out at workos.com to learn more. That is workos.com.
+
+[00:06:21] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+This episode is brought to you by Modal, the cloud platform that makes AI development simple. Need GPUs without the headache. With Modal, just add one line of code to any Python function and boom, it's running in the cloud on your choice of CPU or GPU. And the best part, you only pay for what you use. With sub-second container starts and instant scaling to thousands of GPUs, it's no wonder companies like Suno, RAMP, and Substack already trust Modal for their AI applications. Getting an H100 is just a pip install away. Go to modal.com slash pragmatic to get $30 in free credits every month. That is modal.com slash pragmatic. And then so how does a pod and let's say virtual machine connect or like in this case, when we say container, it's probably a virtual machine, right?
+
+[00:07:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+Nope, there is a difference between a container and a virtual machine. Containers are virtualizing the operating system and applications running within it. A virtual machine is larger and beefier, and it is likely also virtualizing hardware. There are different types of virtualization, and Kubernetes relies on many types of virtualization.
+
+[00:07:35] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+Virtual memory is probably the most recent breakthrough in virtualization, I guess, and we cracked that in the 60s, but that's what allows things like containers to exist, virtualized memory. Um, but yeah, a container is a type of virtualization. A virtual machine is a type of virtualization. It's just much, much easier. Um, you, you can run Kubernetes inside of a VM. Like there's nothing stopping you from doing that, but, uh, containers are not VMs themselves. They're, they're smaller, they're more lightweight. They're easier to share around. Um, they're, they're much more configurable as well.
+
+[00:08:14] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Right.
+
+[00:08:14] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+Yeah. Yeah. They're, they're, You can just chuck one. The popularity of Docker is largely because of the shareability of Docker files and things like the Docker registry. And now there's a million and one container registries. But shareability, the small compact size of containers is what makes them so attractive. It's why we generally, not always, develop applications as microservices now rather than monoliths. That's the... Containers is what allow us to do that. And the rise in complexity of applications built as microservices is what necessitated something like Kubernetes. You could do all of this before the scaling of applications running as microservices in clusters or swarms. Before we had Kubernetes, it was just very difficult and it was very manual. Kubernetes is just an abstraction on something that we used to do manually. And now since we are automating a lot of it with a very, very complex overlord like Kubernetes, we can scale our applications much larger, much faster. And we can build much more complex applications as much more complex chunks of microservices instead of having to throw a monolith in. So this is like most advances in technology since the ENIAC machine in the 1950s.
+
+[00:09:43] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_00)
+Kubernetes is just an abstraction layer on something that we used to do by hand that sucked, that was hard to do by hand. And now we've automated it. And the tradeoff there is...
+
+[00:09:56] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+When you dig into it, it's confusing. It is confusing.
+
+[00:10:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 22.9s, 10/16 segments under 1.5s]
+Can we talk about the history? What happened? What was before Kubernetes? And as I understand, the roots are somewhere with Google, right? Because I think it's good to understand what is it that, you know, either sysadmins or other people were doing. And then, you know, why we decided or why some engineers decided like, all right, let's actually build a better tool. And now the whole world just seems to have caught on saying, actually, yeah, we actually want more of this.
+
+[00:10:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 79.6s, 7/22 segments under 1.5s]
+Yeah, so Google has a history and a reputation of over-engineering things, right? They do. So internal to Google, a long, long time ago, there was a tool called Borg. That is a Star Trek reference, right? You will be assimilated. It's still around. It's still around. And Borg was used internal to Google to manage their own clusters, their own microservices. And somebody decided one day, ooh, this is really good. I think we're onto something. We should open source this. And so they did, and they talked to the Linux Foundation who stood up the Cloud Native Computing Foundation as a directed fund of the LF. And Kubernetes was the first project donated to the Cloud Native Computing Foundation. That was in July, almost 11 years ago. And the first commit was by Joe Beta. A fun thing on the name Kubernetes. It means helmsman in Greek and a typical ship's wheel. Our logo has eight spokes, but ours has seven as a reference to seven of nine from Star Trek. It's like a nod to Borg, the original name.
+
+[00:11:44] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.3s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:11:44] SPEAKER_00:  (prev SPEAKER_01 / next --)
+Yeah. But it took off pretty quickly. Before that, there were other ways to manage clusters, right? There's Mesosphere and there was Docker Swarm and a couple of others. Like this was very clearly something that the market wanted, that developers needed, that SREs needed, that we didn't really have SRE as a term back then. Back then.
+
+[00:12:07]
+Yeah.
+
+[00:12:08] SPEAKER_00:  (prev -- / next SPEAKER_01)
+We certainly do now. SRE is just like a super fancy sysadmin now. But yeah, it was born out of Google solving their own problems and going, you know what? no, people need this, and they decided to ship it for free. And now we're the second largest open source project in the world behind Linux, which we rely on.
+
+[00:12:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 50.0s, 6/20 segments under 1.5s]
+And as a fun history, I talked with Dave O'Connor, who was one of the first SREs inside of Google when it was internally called like that, but externally the term wasn't popular until much later. And he said this interesting story of how At the time when he joined Google, they already were managing thousands or tens of thousands of servers. And the problems that they were facing is they went to a hosting provider where they wanted to host their servers. And they told them how many they need to manage. And the hosting provider was used to manage maybe 100 at max. And it was very manual. And then he said that they just needed to create the processes, the tools, etc. So my... Is it fair that the understanding is that we had this explosion in both physical servers, then we had virtualization virtual servers, Google figured out how to do it, and then they just turned around and said, okay, let's open it up.
+
+[00:13:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.3s, 1/2 segments under 1.5s]
+Pretty much. Yeah, that's pretty much what happened.
+
+[00:13:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.3s, 5/9 segments under 1.5s]
+Right now, I think it's a really positive thing on Google, but why do you think the motivation might have been for Google? It is amazing that they did it, and the industry has greatly benefited from it. But they could have just said, okay, let's just keep doing what we're doing with Borg and not bother too much. Because they still have Borg, right? Yeah.
+
+[00:13:44] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.3s, 5/7 segments under 1.5s]
+They do still have Borg. As far as I know, they still have Borg. I haven't asked a Google engineer about the state of Borg in a minute. They have. I recently asked. As far as I know, it's still a thing. Do you mean like why didn't they just like productize Borg and sell it?
+
+[00:13:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 27.9s, 4/11 segments under 1.5s]
+Either that or just why did they think this would benefit the industry and maybe also their business? Now that we have Google Cloud, I can see how, for example, Kubernetes might have indirectly helped. But I'm just thinking just from a selfish perspective, this is a really unselfish thing from a corporation to do. I'm trying to understand. There's usually a longer term motivation potentially. Or maybe it was just engineers being geeky and thinking this is really, really helpful.
+
+[00:14:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 74.3s, 4/21 segments under 1.5s]
+I know those engineers quite well, and they are massive dweeps, and I love them. Awesome. So yeah, I totally get how people would think that open sourcing something as successful as Kubernetes may not be a smart business decision. But look at the sheer amount of influence Google has gained over the cloud native space over that. They still have employees sitting on the technical oversight committee for the CNCF. They have Linux Foundation governing board members. They have CNCF governing board members. They have people... I don't think they have somebody sitting on... Oh, no. They do have somebody currently sitting on the Kubernetes steering committee. They still have a degree of control. The way we govern ourselves as a project, no one company can have more than two representatives on the steering committee. So they can't wrest control of the project from the people. anymore, like any more than AWS or Microsoft or Red Hat can. But it has given them a pretty extreme degree of influence. I mean, we're here on this podcast talking about the fact that Google gave us Kubernetes, Google's directly responsible.
+
+[00:15:41] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 25.6s, 1/7 segments under 1.5s]
+That's fair. I'm trying to understand because I think it's great that this is happening. And I think the more we understand what the benefits are and why other companies potentially should follow for example spotify that was backstage their developer portal and what they told me is they think it will make it cheaper on the long term for them to actually maintain themselves because now they're going to get other developers from other companies or independent engineers bringing the ideas
+
+[00:16:07] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 69.8s, 4/20 segments under 1.5s]
+and also standardization is is another thing so yeah if your project is good people will come contribute to it um i We open source maintainers have mixed feelings about this, but it is a way to get free labor, right? Nobody pays me to maintain Kubernetes. It's not my job. I don't have a cloud provider writing me a paycheck for running the Kubernetes releases. So we do do all of this work for free. Another benefit is that open source software is inherently more secure than closed source proprietary software. That security angle is real hard to argue with. Kubernetes just addressed a nasty CVE very recently in Ingress Nginx, and that would be much slower to address on proprietary software with a smaller team that can't work around the clock. You can't force your employees to work around the clock if it's a small group of people that are all in one time zone. And open source projects, especially one as large as Kubernetes, we can respond around the clock.
+
+[00:17:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.7s, 1/4 segments under 1.5s]
+And how large is Kubernetes, both in terms of the widespread in the industry, the complexity of the software and the team, as you refer to?
+
+[00:17:32] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+First, I think I need to explain the different types of people involved in an open source project. Generally, you have users who are people who just consume your tool. You have contributors who are writing code or writing documentation Or in the case of the release team doing some like project management type of role, but they don't have any control over the future or direction of the project and have like maybe limited permissions within repositories or orgs. Maintainers have titles within a project. So SigDocs, Technical Lead, Release Team, Subproject Lead are both titles. You exist in an owner's file and you have control over governance and policy decisions about the project that affect everybody. There are a couple dozen SIGs within Kubernetes, all with two to three chairs and two to four technical leads. Those people would all be considered maintainers. then sub-project owners exist below that before you get down to regular contributors. So there's probably... It's a large project. And everybody in SIG leadership is a project manager, functionally. We're all doing administrative work. We're all managing people. We're all affecting the direction of our various areas of the Kubernetes project. And there's probably...
+
+[00:19:02] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+150, 200 people who would be classed as maintainers and then more than a thousand contributors a month.
+
+[00:19:10] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 1.8s, 2/2 segments under 1.5s]
+It is a month. Wow.
+
+[00:19:12] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+It's massive.
+
+[00:19:13] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+So about like a few dozen, let's say like 20 to 40 SIGs.
+
+[00:19:19] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+leaders, about 150, 200 maintainers, and like a little pyramid almost. And then the contributors who are, I'm assuming contributors, some of them will be regular, some of them will be just one-off.
+
+[00:19:29] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 78.7s, 8/25 segments under 1.5s]
+Yeah, some of them are one-off. Sometimes we get drive-by contributions like any other big project, and some people just stick around as contributors. And you go through what we call a contributor ladder. So you show up as a contributor at first, you work as a contributor for a while in whatever area interests you most, and And if you stick around long enough and you want it, you will eventually become a maintainer. You'll end up leading a sub project or you'll end up as a technical lead or a SIG chair. That's what happened to me. I was on the Kubernetes release team for three years and then I led a release myself. Kubernetes version 130 was my release. And after that, the SIG release chairs offered me the sub project. And now I just keep running them. And now I'm a maintainer. And because I had run the docs sub team for the Kubernetes release a couple of times, SIG docs asked me to be a technical lead. And that's just, that's how it works. Anybody can show up. Anybody can open an issue. Anybody can... Open a pull request and dive in and help out. You don't even really have to be a Kubernetes expert to be useful. You just have to know how software works or know how to write documentation or know how to manage a team.
+
+[00:20:50] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.1s, 3/6 segments under 1.5s]
+So Kubernetes, widespread-wise, as I understand, most of the large infrastructure runs on Kubernetes. If it's large, it's the one that makes the most sense. I'm not even sure there's a competitor that is open source that is equally capable.
+
+[00:21:09] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 33.6s, 3/12 segments under 1.5s]
+Not that I would say is equally capable. There are certainly other ways to manage clusters. Docker swarm is still a thing. Mesos is still a thing, but yeah, like your people are most commonly using some kind of managed Kubernetes service. Like, um, anything on AWS or GKE, right? Or like Azure has their own service too. I'm pretty sure Oracle does. Red Hat certainly does. And then there are flavors of Kubernetes like VMware's Tanzu, right?
+
+[00:21:43] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 41.4s, 3/13 segments under 1.5s]
+And so given that this project is so successful, how does the funding work? I'm going to assume that some of the contributors, as you mentioned, are actually paid full time working at certain companies who have critical infrastructure running on Kubernetes. And these companies figure, well, it's cheaper for us to pay a contributor to... ensure that our use cases are met. But for example, in your case and some of the other contributors, how does it make sense to spend a considerable amount of your time? We're talking about software engineers who are highly skilled spending here, and there will be some goodwill, but what are other ways that the project remains as sustainable as it is?
+
+[00:22:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 66.2s, 8/23 segments under 1.5s]
+Unfortunately, for a lot of us, this is a hobby, right? I enjoy it. Many of my friends are other maintainers or other contributors. Some of my closest friends are also maintainers. I flew to New York just to hang out with two of them a couple weeks ago. No reason. Not work. Just hanging out with them. And that's not too terribly uncommon. People just think it's fun. Some people also do it as a career bump. This is something that the Kubernetes project doesn't really love to admit, but we are a very, very large and very, very influential project. And having it on your resume can be a career bump, especially for people who are fresh out of college or very early in their career, which is why Shadowing on the Kubernetes release team is such a popular entry point for contributors. We get hundreds of applications for the Kubernetes release team every cycle, and about half of them are students. And that's pretty common, too. They want the career experience.
+
+[00:23:33] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 1.7s]
+That is encouraging to hear, by the way.
+
+[00:23:35] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+Yeah, it's a lot of students. It is so many students. And we do get students onto the team. Obviously, I can't overload the release team with people who have no experience, but we try to fit a handful of them in every single cycle. Which feels good. It's a good entry point for people. So we get to watch them grow up through the project until ultimately they go get a job and leave and we never hear from them again, which is fine and doesn't make us feel bad because we really have more contributors on the release team side than we know what to do with. We cannot have them all on the team. But as for people who are paid for it, that's usually cloud vendors, actually. The big clouds pay a lot of people just to be contributors or just to be maintainers, either because they need something done or they want the influence or because they want the clout. Some people get hired by some company just because they have a maintainer title within the project. And that's it. It's purely clout. And I don't object to that either, as long as somebody's getting paid to do this instead of doing it for free. But the CNCF doesn't pay us. The Linux Foundation doesn't. doesn't pay us. The CNCF does pay our infrastructure costs. So we're not starting a GoFundMe or putting money out of our own pockets to pay for our testing or whatever. The CNCF pays that. That's part of what you get when you donate a project to the CNCF.
+
+[00:25:05] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+They take on some of your infrastructure costs, depending on where you are in the sandbox incubating graduated scale. But yeah, most of us do this for fun. Which is not the most healthy thing in the world. And you have to set like really, really, really firm boundaries.
+
+[00:25:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Well, yeah, there's that thing that comes into mind. And also there's this famous XKCD comic where there's this big pile of rocks and there's this small thing which says someone's side project. So given how critical Kubernetes is becoming... Globally, I think it's a bit of a mixed feelings. On one end, I think it is cool to hear that it sounds like it is a very independent project that doesn't really have any one vendor going over it. On the other, there is this downside of like, well, you know, like...
+
+[00:25:57] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+Yeah, it just makes feelings.
+
+[00:26:00] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+It makes me wince for small projects, but everybody starts as a small project. However, Kubernetes is so large and so influential and we have so much momentum. That XKCD comic is not going to become a problem. There is a queue of people waiting in the wings who would love to replace me. And part of our, as a project, our philosophy is that part of our job as maintainers is to be looking for somebody to mentor into replacing us. We have a lot of anti-burnout policies in place. um leading a release like being being the actual point person for a release the the person who ultimately reports reports to me is a very stressful very public miserable job to do it is 14 weeks of having to manage and 14 weeks that's the release cycle that's the release cycles yeah like 14 to 16 weeks it depends on when it is in the year but 14 to 16 weeks is about how long it takes us And it's 14 weeks of directly managing an unruly group of like 30 people who are trying to manage interactions with potentially hundreds of contributors between them. And it sucks. And by the end of it, you are so tired. So we don't allow you to be involved in the release cycle after you leave one. You've got to take a cycle off. Also, SIG release's charter dictates that we will delay a release.
+
+[00:27:29] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+We will push it back before we make our team work nights or weekends. We're never going to ask you to work more than you are comfortable working. And we're very supportive of stepping back if you can't handle it. It doesn't affect your place in the project. You can come back the next cycle or whenever you're ready. We're very encouraging of taking breaks. So we don't really like to allow the burnout to build up to a point where we might topple over like that XKCD comic. Yeah. Um, we're always replacing each other.
+
+[00:28:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 28.5s, 3/11 segments under 1.5s]
+So like eventually this part is, is just very encouraging to hear. And this is something that I would, I would assume that a lot of commercial companies like a commercial setup would, uh, let me just say hesitate in, in, in many cases again, because of that thing. So, so I guess maybe we're seeing two parts of it, but this is just, it's the first time I'm actually hearing for such a large, such a critical project to actually have it in place, which is just music to my ears.
+
+[00:28:30] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 20.9s, 2/7 segments under 1.5s]
+We're unusually well-structured for an open source project. We're, we're unusually well-structured for like an actual product within a company. Actually, we, are very, very well organized by necessity because we're massive and we deal with so many people coming in and out constantly. We have no choice but to be super, super well organized.
+
+[00:28:52] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 27.3s, 4/12 segments under 1.5s]
+So why do you think Kubernetes, you've seen the story mostly from the inside and starting from the side, why do you think Kubernetes is one so big? Why has it become the de facto choice from any medium size, sometimes even small size infrastructure, by the way? I've talked with Linear and they chose Kubernetes very early on. Apparently, they thought, you know, some people thought this would be like overkill, but it actually turned out to be a great decision for them.
+
+[00:29:20] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.1s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:29:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.1s]
+What do you think this project specifically won? What did Kubernetes do so well?
+
+[00:29:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 79.4s, 5/20 segments under 1.5s]
+I think we caught on early because of hype, right? Because of the Google name brand behind us and the association with Docker, which was already very popular. It was a familiar company donating a project that relied on a tool many were already familiar with. And that got us initial, like, hype cycle, right? But then I'm going to toot my own horn and say that the continued popularity of Kubernetes is at least in part due to our truly exceptional documentation. If Kubernetes does something that you can touch as a user, as a cluster admin, we have documented it. Kubernetes uses something in the release cycle called a Kubernetes enhancement proposal, a KEP. This was inspired by Python's PEPs, right? And one of the things we require for a KEP to be considered complete and thus includable in a particular release is that if it has a user-facing change, at all. Even if it's just a feature flag, it must be documented or we do not allow it in the release. Today, as we're recording this, is actually the docs freeze for Kubernetes version 1.33. So today, a lot of camp owners will either merge documentation or I will revert their PRs.
+
+[00:30:48] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.1s, 3/4 segments under 1.5s]
+Wow. That sounds like tyranny. Does it? Does it?
+
+[00:30:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.4s]
+You're never left digging through Kubernetes code to figure out what this is?
+
+[00:30:59] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.4s, 2/7 segments under 1.5s]
+It sounds amazing as a user and as a developer. I'm cringing. You know, as a dev, like you really just don't want. There's so many excuses we make up for not writing documents. A code will document itself. If it's the documentation, it's not, we're rich and et cetera. No, I'm really impressed.
+
+[00:31:16] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 33.4s, 4/11 segments under 1.5s]
+Seriously. Yeah, I know the devs hate it. I know. But our priority isn't making the devs happy. It's building a usable, sustainable project that people want to keep using. That means we got to document that. I hated writing docs when I was an engineer, too. I did. I've slung some truly horrendous code that was entirely undocumented. And I myself looking at it probably could not tell you what on earth it's doing. So we can't have that in a project this large.
+
+[00:31:50] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 21.5s, 5/11 segments under 1.5s]
+Yeah, and the problem is that this is complex, right? So it sounds like you're managing to balance. Because what I understand is Kubernetes is just going to become more and more complex. It does. You can tell them more about it, but there's going to be more edge cases, more hardware, more setup, more exotic this and that. But when you have proper documentation, at least that helps with it. If you don't have it, there's no chance.
+
+[00:32:12] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 22.8s, 1/7 segments under 1.5s]
+Yeah, there's absolutely no chance. And so that has gotten us over the hump of Kubernetes is hard to use. It is hard to use. It's hard to learn, but it could be so much worse. And the availability of good documentation is... I give a lot of credit to that. Also, GKE has really great tutorials for learning Kubernetes.
+
+[00:32:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.0s, 1/2 segments under 1.5s]
+GKE is Google Kubernetes Engine, right? It's their hosted solution?
+
+[00:32:38] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 43.9s, 5/13 segments under 1.5s]
+Yeah, it's their hosted solution. And they absolutely have the most feature-rich Kubernetes-hosted option by virtue of having had. several years of a head start on that. But yeah, they're tutorials. They're just like how to learn Kubernetes are actually quite good for just dipping your toes in the water and our own documentation, our own quick start guides. That's another benefit also of being an open source project. Just like an open source project, the software is more secure. Our documentation can be better. We have a small army of people contributing to it and improving our documentation. on a constant basis. So we don't really tend to slip.
+
+[00:33:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.0s, 3/6 segments under 1.5s]
+I'm not sure if this applies, correct me if I'm not, but a lot of open source projects say like, look, if you want to start contributing and you're not sure just yet, you can always just start with the documentation.
+
+[00:33:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.6s, 2/2 segments under 1.5s]
+Yes. It's an incredible entry point.
+
+[00:33:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.5s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Which is a win-win.
+
+[00:33:36] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+Yeah. Docs are a pretty typical entry point for people who are nervous about contributing to open source for the first time, which is a fear I absolutely get. I was terrified the first time I opened a PR in a Kubernetes repo.
+
+[00:33:50] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+It's nerve-wracking, especially if you're super early in your career. You know that you've got all of these people with way more experience than you laser-focused on what you just did. And did you apply a label incorrectly? Are you going to get chewed out for that? But yeah, docs are an easier entry point for that. It feels like a little bit less pressure. And that's pretty common across open source projects, not just Kubernetes. The unique thing about Kubernetes and getting started is the release team. We will let absolutely anybody apply to be on the release team. And it's... 20, 25 spots every cycle, three times a year. So it's pretty competitive, but we will let absolutely anybody apply. You don't have to have contributed to Kubernetes at all before. Every cycle, I've got to add two or three people to the org because they've never...
+
+[00:34:43] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 38.7s, 3/12 segments under 1.5s]
+But just to emphasize, do I understand correctly? For example, we recently had an episode with Linux where in order for you to lead a release, you will need to put in many, many years outstanding contributions and so on. And there's no guarantee of doing so. Correct. But for other open source projects, it is also common to have this kind of tenure-based thing. Because what you've said, I've not heard it. And any other projects say, like, we will actually open up the spots and you can apply. And taking up people with little tone of experience sounds like an approach I've just not heard before.
+
+[00:35:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 81.2s, 4/23 segments under 1.5s]
+The application process we have and the way the release team works is unusual for an open source project. No, tell me more. So we talk about that a lot. I will absolutely talk about the structure of the release team. So the Kubernetes release team has two halves. There's the release team, which I manage, and release engineering. Release engineering is doing the actual cutting of the releases. But the part of the team I manage is made up of several sub teams and a release lead. The sub teams are communications, which is responsible for handling things like feature blogs. So that's working with cap owners or sig leads to make sure that a particularly interesting feature that will make it into that release has a blog that goes out on the Kubernetes blog on a certain schedule. Oh, nice. Yeah, it's very cool. We usually have like between eight to 12 every cycle that end up. And release comms does not write that blog. They're just responsible for managing that it happens. They're also responsible for managing interactions with the Cloud Native Computing Foundation to schedule the release webinar and with the media to handle the webinar. Yeah, we have a release webinar. We also have to manage the media to deal with press embargoes and schedule media interviews for the release lead and anybody else.
+
+[00:36:44] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.1s, 2/3 segments under 1.5s]
+This sounds like a publicly traded company doing its earnings call. It does, doesn't it? Yeah.
+
+[00:36:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+We also have release docs. I'm so impressed. Yeah, it's a lot. Release docs manages making sure that every one of those caps that has user facing changes has documentation by its deadline. Enhancements. Manages all of those caps and makes sure that they have met all of the requirements, the checkboxes in the cap, which is like, has the lead opted in? Is your code complete? Is it tested? Did you get a production readiness review? That kind of thing. And release signal, which is responsible for watching our CI signal boards and chasing down SIGs and cap owners to squash bugs to make sure that we don't have a master blocking test failing right before we cut beta 2. They're also responsible for the go-no-go signal on whether or not we can cut a release. And this requires... 20 to 30 people every single cycle. Five of them are leads and are selected. Then the rest are shadows that go through the application process and get pulled in. That is unusual. Most open source projects do not operate that way. Most open source projects, I think, don't need to. That's a consequence of the fact that the project is so large and we have so many contributors. We couldn't manage this with a consistent group of like five to 10 people without catastrophically burning them all out.
+
+[00:38:18] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+We just simply couldn't do it. And even with the rotating cast, the release team can be a burnout factory because it's so much people management. It's so much project management. It's so much arguing with people and juggling like maybe conflicting priorities between teams. So we don't like people to stay on the release team for too long. We want to see you move up through the ranks a little, maybe lead a sub team and then leave. Find somewhere else in the project to go. Because if you stick around, you will burn out. I did not, obviously, which is why they gave me the bigger hat.
+
+[00:38:53] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 32.3s, 2/10 segments under 1.5s]
+It is very interesting for me to reflect on how much project management and just how much work management is happening within Kubernetes. Whereas when we did the deep dive with the Linux kernel, it was a bit of the opposite. But again, it was pretty clear there that in the case of Linux kernel, a lot of this work that you're mentioning is happening at the actual releases. Let's say, you know, like Red Hat and whoever picks it up. But I think it's just a good reminder of this work for any large project. It's there. You could shift it here and there, and you can play with it.
+
+[00:39:26] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 34.1s, 4/12 segments under 1.5s]
+It has to happen. No project with more than two people contributing to it is getting by without some kind of project management work. It's just that we don't have the title project manager. All maintainers are project managers to some degree. We all have some administrative or governance policy position within the project. It is project management. If you are a maintainer, we just don't call them that. Yeah. So, like, the Linux kernel has them, too. Like, somebody is doing that work. They're just not.
+
+[00:40:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.6s]
+They don't like that word, I think.
+
+[00:40:04] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.0s, 4/6 segments under 1.5s]
+That was my sense. Yeah, they don't. I think a lot of engineers are resistant to doing work that they don't consider real engineering. Yeah. You know, get over it.
+
+[00:40:17] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 21.2s, 9/14 segments under 1.5s]
+We're kind of seeing this, by the way, like now, you know, like software engineers, like we don't like to say that we do product work, but now product engineer is becoming a thing, which is a software engineer who will talk with customers as well. And who and, you know, same thing. I think there used to be a time, not these days, but maybe 10 or 15 years ago, testing was we had dedicated, you know,
+
+[00:40:38] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.1s, 1/2 segments under 1.5s]
+testers or whoever and then. Yeah.
+
+[00:40:42] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 37.2s, 4/15 segments under 1.5s]
+engineers wouldn't or would object to do testing. But then we would write unit tests and then integration and automate. And they're dispersed. So I think there's clearly a play with words. And what I'm personally seeing is a competent tech professional, may that be a software engineer or someone who is elsewhere, will just take on more and more responsibilities. A great product manager these days will know how or will understand code. They might not code by choice. But they can read it. Same thing, but even just talking with you, you've been a software engineer, you've actually built critical infrastructure, and now you're doing something where we're doing less of that.
+
+[00:41:19] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 57.2s, 4/16 segments under 1.5s]
+Yeah, I haven't written a line of code in months. I don't have a reason to. you could if you wanted to or if you needed to yeah like for fun sometimes like i'll do some hobby projects at home or whatever but i don't have a reason to write code i used to be an engineer i can read and understand it just fine i can write it if i need to um but it's not it's not part of my job anymore and like we you see this within engineering at real companies right the more senior your engineering title is the less code writing you're actually doing a principal engineer should not have their fingers in the code nearly as much as somebody who's like an SDE2, right? Like they don't. They're making architectural decisions about the product or they're mentoring juniors. So like same deal within an open source project. I'm the open source project equivalent of a principal engineer. I don't write code anymore. I make decisions about how we get this thing out the door.
+
+[00:42:17] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+This episode is brought to you by Cortex.io. Still tracking your services and production readiness in a spreadsheet. Real Microservices is named after TV show characters. You aren't alone. Being woken up at 3 a.m. for an incident and trying to figure out who owns what service, that's no fun. Cortex is the internal developer portal that solves service ownership and accelerates the path to engineering excellence. Within minutes, determine who owns each service with Cortex's AI service ownership model, even across thousands of repositories. Clear ownership means faster migrations, quicker resolutions to critical issues like Lock4J, and fewer add-here pings during incidents. Cortex is trusted by leading engineering organizations like Affirm, TripAdvisor, Grammarly, and SoFi. Solve service ownership and unlock your team's full potential with Cortex. Visit cortex.io slash pragmatic to learn more. That is C-O-R-T-X dot I-O slash pragmatic. Yeah, we used to have a joke internally within, I think, my team or my broader team back when I was a viewer. It just went around. What's the difference between a junior or an entry-level engineer, a senior engineer, and a staff engineer? It's like you get a code review, entry-level engineer comes in, And says, oh, you know, the order is not alphabetized as per our rules. Like, we should change the order of the variables. Senior engineering goes in and on the same call line leaves the comment, actually,
+
+[00:43:43] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+we should probably move this out into its own class because it should be encapsulated. The staff engineering comes in. Why are we even doing this? There's a service that does exactly this thing. You should be using that one.
+
+[00:43:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.2s, 1/2 segments under 1.5s]
+And, you know,
+
+[00:43:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 26.2s, 10/16 segments under 1.5s]
+the thing that goes back to that, the earlier career, you should focus on the code for sure. But after a while, you need to see the bigger pictures. And I often saw some of the most impactful engineers on my team in a given, let's say, quarter, if I had to use a business value, they did not by writing code, sometimes by deleting code or sometimes pointing out the work we should just avoid by, I don't know, like merging with something or just saying no, pushing back on product, et cetera, et cetera, et cetera.
+
+[00:44:25] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.3s]
+Yeah, no one wants to say no is a skill, for sure.
+
+[00:44:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 36.8s, 4/14 segments under 1.5s]
+Yeah, but it's a baseline, right? You need to know that, but there's a lot more afterwards. So in Kubernetes, if I'm a software engineer or contributor who has an idea, is contributing some code, what does that look in terms of release? How will it eventually get released? That's one part of my question. And the other part is... Does Kubernetes work in a similar way to some other open source project where you kind of open up and you depend on what contributions are? Or do you have a roadmap saying, hey, we'd like to encourage people to build this functionality or solve for this problem?
+
+[00:45:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 52.8s, 9/19 segments under 1.5s]
+Yeah, so Kubernetes, like I mentioned earlier, has a process called a KEP, Kubernetes Enhancement Proposal. And if there is a feature that you want within Kubernetes, you go open a KEP. It's just an issue in the Kubernetes enhancements proposal or enhancements repo. And there's a template for it. You go open your cap and then a discussion will ensue with whatever SIG owns that. So if it is something within, I don't know. If it's a storage thing, SIG Storage will own that cap and they will come way in and we'll have a discussion about whether or not this is actually useful, whether or not this is viable, whether or not we have the resources to try to get this done right now, which is going to depend on other contributors looking at your proposal and going, oh, yeah, I would like to work on that.
+
+[00:45:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.8s, 1/3 segments under 1.5s]
+And when you say discussion, is it email? Is it async? Is it actually like video call?
+
+[00:46:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+So because we're an open source project, we prefer to do everything in public in a place where everybody can see it. So that discussion will happen on the GitHub issue or in Slack in a public channel. We very much discourage things from happening behind closed doors unless it's very sensitive, like extremely sensitive in a security type of way, or it could negatively impact somebody's career. So code of conduct stuff is always handled behind closed doors. But discussions about features, that is all very public. GitHub issue or the Slack channel for, for instance, stake storage. If the decision is, yeah, we would like to do this, then work begins. your SIG lead will need to opt in. It's just adding a label, SIG lead opt in to the KEP, and that tracks it for inclusion in a release, at which point you have a whole bunch of deadlines that you have to hit. Code freeze is the big one, obviously. That's, is your code in? Then if it needs documentation or whatever, there's documentation freeze, there's test freeze. These deadlines all exist across the span of 14 weeks. And if you hit all of those marks, your feature is included in the release as an alpha at first. We do allow iterative stages. So you don't have to get the whole thing MVP out the door with your first alpha.
+
+[00:47:35] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+You can have an alpha too. Alpha features are off by default, but can be turned on with a feature flag. Once you meet certain requirements to graduate your feature to beta, like you're expecting minimal architectural changes to the way it functions and interacts with the rest of Kubernetes, we'll graduate you to beta. And you are on by default, but can be turned off with a feature flag. Once it's very stable, very usable, and you feel like you're ready to go GA, we graduate to GA.
+
+[00:48:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 1.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+General availability, right?
+
+[00:48:07] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.3s]
+Yeah, we move it to GA in the next release, and it is on by default and cannot be disabled.
+
+[00:48:14] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.1s]
+And then by that time, feature flag is removed, right?
+
+[00:48:16] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.5s]
+Yeah, there's no feature flag at that point.
+
+[00:48:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.3s]
+At any given point in time, roughly how many feature flags does Kubernetes have? Is it going to be in the hundreds or thousands?
+
+[00:48:26] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.0s, 3/4 segments under 1.5s]
+Yeah. At minimum, dozens. I can go look. Let me share my screen and I will show you all of the feature gates we have.
+
+[00:48:34] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.5s, 1/3 segments under 1.5s]
+I love it. This is what I love about open source. You couldn't do this with commercial closed software.
+
+[00:48:42] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 37.8s, 11/18 segments under 1.5s]
+No, not at all. So all of our feature gates are documented. This is usually all the documentation that an alpha requires because it's just like turning a thing off or on. Um, uh, you can, you can see here what the default is. So whether it's functional, whether it's alpha or beta, uh, when it was introduced and, uh, until when, um, some of these are, you know, deprecated and will be removed in the future. Some of them, uh, haven't been graduated since then, but there are, uh, Uh, quite a lot. It doesn't look like hundreds, but it looks like several dozens.
+
+[00:49:20] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.2s, 1/5 segments under 1.5s]
+It looks, wow. And so those are all features that are, that are big enough to eventually, some of them will graduate. Uh, hopefully most of them will graduate eventually.
+
+[00:49:32] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+Yep. And these are all graduated or deprecated and will be removed at some point. Um, Yeah, so it's quite a lot. We talk about what the feature stages mean here. Really, every aspect of this project is so well documented. Even the way the release team runs, the way the project is governed, it's all documented. We don't keep anything as tribal knowledge.
+
+[00:49:59] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+We write everything down so that there's no arguing about it. But yeah, there's a ton of them.
+
+[00:50:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 26.6s, 4/9 segments under 1.5s]
+Also, you documenting this much, it just gives me the idea that if anyone wants to get a bit of a cheat of how a well-run project this size runs for further inspiration, you can just check it out. You can rip off the ideas that make sense. And also you can adjust it for your size or for, again, you can experiment, right? I feel you always want to experiment, but getting inspiration of something that works is a good starting point.
+
+[00:50:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 47.9s, 11/22 segments under 1.5s]
+Yeah, please do. I mean, and just like, you know, not all products, not all applications need to run on Kubernetes at first. That can very much be overkill from an infrastructure standpoint. Not all open source projects need to be run like Kubernetes to begin with. There are some things that are just good practice that you should ingrain from the very beginning. If it's a user-facing change, it needs documentation. But you don't need a structured release team. the way we have it for your four-person open source project that is releasing one minor update a year. That's unnecessary. And you've got a couple dozen users. But for something the size of Kubernetes or close to the size of Kubernetes, yeah, that's super useful. Rip us off. Absolutely rip us off. That's part of why we document it all.
+
+[00:51:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.6s, 1/3 segments under 1.5s]
+Exactly. This is beautiful, like having this win. And also you don't really need to explain it again and again.
+
+[00:51:28] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 31.2s, 6/12 segments under 1.5s]
+Correct. We can just point people at the docs. Yeah. The way every role on the release team has to be run is exhaustively documented. So every single role has a handbook that goes week by week and tells you what to do. which is part of why our releases are so smooth. If something goes wrong, probably it's documented and we know how to solve it. Of course, every release, we get something new and exciting that goes wrong to document, but that's happening less and less over time as we run out of edge cases. So...
+
+[00:52:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.3s, 6/15 segments under 1.5s]
+One thing I'd like to ask you, because I'm really interested on how I was going, how do you think the Gen.AI tools, LLMs that more and more engineers are using to write code, help them write code, will impact how... Kubernetes is developed. Because it's so extensively documented on one end, I'm sure these tools can ingest a lot of things. I wonder if they could be useful. Are you seeing them being useful in, let's say, using features or for the release team to build your own tools to do some of your work easier? Okay,
+
+[00:52:38] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 17.3s, 1/5 segments under 1.5s]
+so my personal opinion, I'm going to stress the word personal there, is that the overwhelming majority of Gen.ai tools are a scam. They are a scam. They are designed to filch money out of VCs or the public or whoever else.
+
+[00:52:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.6s, 1/2 segments under 1.5s]
+The people who fund the VCs, the liquidity partner or LPs. Yeah.
+
+[00:53:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+The investors. I think most of them are a scam. I think a very small minority of them are genuinely useful. And the rest are just, it's a nothing burger. Yeah. As a maintainer within SIG release, we have no use for generative AI or LLM tools. Most of the issues we are dealing with are people problems. Gen AI and LLMs are not going to resolve that. We're people managers. That's what we're doing. So generative AI, not useful there. With my SIG docs hat on, we actually explicitly have a policy of you are not allowed to use tools like that. Um, we caught somebody submitting a blog that had been written with some, some kind of chat GPT tooling and we pulled it and told them not to do that again. Uh, we got a drive by PR from a paid product that claimed to simplify, um, writing documentation, maintaining documentation and handling things like style guide compliance. Kubernetes does have a documentation style guide. We got a drive-by PR from them that stipulated, hey, if you accept this, we grant you a free license for this tool as long as we can use your logo. But here's the thing, it didn't work. It was making changes to a bunch of generated files that a human should never touch. And it wasn't actually enforcing style guide compliance. It made a bunch of mistakes.
+
+[00:54:31] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+So even, even when the tool sounds useful, um it it is often not like it doesn't actually do what it says it's doing on the tin and also drive by pr um in exchange for a logo on that doesn't seem right that is that's really poor behavior if there if you own a product and you're listening to this do not do that please we hate it so much because it creates more work for us because we have to have a discussion as leadership about what we're going to do with that like you caused three meetings please don't do that to me However, where I do want to see it is in things that are just toil for us. So things like application of GitHub labels on issues or PRs. I would like something to automatically, if the wrong language works, label gets added to a PR, I would like a tool that removes that label and applies the correct linguistic label or the correct area label, or it probably can't make assumptions about priority. But things like handling labeling, that's really annoying work that we have to do on just about every PR if a new contributor doesn't understand how our labels work. They may not apply any of them, and somebody like me has to go in and do it. So tooling like that would be useful, but we haven't found somebody offering that to us.
+
+[00:55:59] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 74.9s, 10/26 segments under 1.5s]
+Yeah, just to add another perspective on the scam part, I understand where you're coming from, by the way, in terms of it is overhyped. I think it's overhyped in so many ways, and I'm a little frustrated that we're We're talking so much about what it could do one day instead of what it is happening. I'm very much focused on how we're using it today. An interesting input I got from John Osterhout, the author of Philosophy of Software Design. He's a professor at Stanford. And he is actually contributing to the Linux kernel. He's implementing a protocol that one of his PhD students came up with. And he told me, I asked him if he uses Gen.AI much, and he said he doesn't accept... he said it was really helpful for him to start contributing to Linux because he said it's so under-documented. His criticism was that there's so little documentation that he actually turned to ChatGPT to try to make sense of it, and it helped him. And his takeaway was... He actually said, I don't really want to popularize this, but I wish they would have added some more comments because then I could have done it without the tool. So I'm actually getting the sense of Kubernetes is very well documented, which will obviously help people who are using these tools to learn. I mean, you can probably just go to the source, to be fair.
+
+[00:57:14] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 10.9s]
+You can, but I totally get using something like ChatGPT to explain... something complex to you. That is a good use of an LLM to me.
+
+[00:57:26] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.3s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:57:26] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 34.3s, 3/12 segments under 1.5s]
+It's one of the most widespread uses with devs. No, that's great. I don't think you should be using it to generate a blog article or generate the documentation. You certainly shouldn't be using it to translate your docs. The Kubernetes documentation is localized into a couple dozen different languages. And that's all done by humans, right? So I do not think that you should be using generative AI to do that. But using it to explain a complex topic or like look at some code and give you an idea of where it's going, like what it does, that's useful. Like that's a great way to use generative AI to me.
+
+[00:58:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 19.5s, 1/6 segments under 1.5s]
+when do you think Kubernetes is a great choice to use? And when do you think it can actually be an overkill? I get this a lot where especially small startups are thinking, should we start with Kubernetes or will it just be such an infrastructure overkill that we shouldn't use it? So where would you draw that line or how do you see teams making this decision?
+
+[00:58:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+I would say that you should think about
+
+[00:58:27] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_00)
+how quickly do you think you're going to need to scale rapidly, like really rapidly?
+
+[00:58:34] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+If you think that you're going to need to do that pretty abruptly, then I would use Kubernetes earlier because migrating over to it can be a pain. What you need to really think about is not so much the Is Kubernetes itself as an infrastructure tool overkill? It's can you afford the people you need to manage it correctly? A mismanaged Kubernetes cluster is a very dangerous thing. Kubernetes is not secure by default. You do require an expert. So my best piece of advice for running Kubernetes early is do not roll your own cluster. Don't do that. Do not do that. Use some kind of managed Kubernetes service that handles a lot of the work for you. And then hire an SRE with experience with GKE or AKS or whatever tooling you're using. But just don't roll your own cluster. Kubernetes is easier to use than it was before. I don't think it's as much easier. overkill early as it used to be like obviously obviously if you're just running a blog or something putting that on kubernetes is ridiculous my personal website does run on kubernetes but that's it's a bit right like i don't need it to right it's a
+
+[00:59:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.5s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+pet project
+
+[00:59:59] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 24.6s, 3/10 segments under 1.5s]
+Yeah, it's a pet project. It's fun. It's easy for me to deploy something to a cluster. I can do that faster than I can do it with EC2. But that's because that's where my experience is. For most people, that's not true. So run it on some kind of managed service. And if you think that there is a point where you're ever going to need to scale super fast, migrate to Kubernetes before that happens.
+
+[01:00:24] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.1s, 2/6 segments under 1.5s]
+I think the addition there is if you need to scale super fast, you can always choose to just stay on a cloud provider and just pay massive amounts. You will be overcharged for it. So I guess Kubernetes makes sense when you actually want to control your costs a lot more, right?
+
+[01:00:41] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 37.8s, 3/12 segments under 1.5s]
+Yeah, because it's scalable. It's not like... It scales up and down, right? Like your costs aren't going to be consistent. And that can make things a little bit difficult to predict. But there are companies and tools that help you manage that aspect of running Kubernetes. But it won't be consistently high, at least, because of that up and down scalability. But yeah, just do it earlier rather than later for me. But if it's just a blog, if it's just a website or whatever, it's just a web application, you probably do not need Kubernetes if it's just a web app.
+
+[01:01:20] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 12.6s, 1/5 segments under 1.5s]
+And so for those who are interested in getting started with Kubernetes for building their own things as a user, where would you recommend them to look? And what about for people who would be interested in dipping their toes and contributing? What's a good place to start?
+
+[01:01:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 86.7s, 5/25 segments under 1.5s]
+For starting to use it, I very much recommend our own documentation and GKE's tutorials. GKE's tutorials come with a little sandbox so that you can actually do the thing, which is very helpful. That's the way I prefer to learn. Personally, I need to be told how to do the thing and then actually do it. That's not true for everybody, but that was a really, really great resource for me early on. And our own documentation has quick start guides for a variety of ways of getting going with Kubernetes. So I have always just used Minikube. There are many ways to get a cluster going and it'll walk you through most of them. If you would like to get started contributing to Kubernetes, you can come talk to me in the Kubernetes Slack and I will be happy to help you find a place. But I will probably recommend that you start with documentation in an area that is of specific interest to you. So if you're particularly interested in storage or networking, I will hand you a storage or networking piece of documentation that I think needs updating. If you like more of a people-managey thing, I will be happy to talk to you about the Kubernetes release team. However, again, we get hundreds of applications and there's like 25 spots. So I would not write on that exclusively as a way to get involved in the project. But yeah, come talk to me on the Kubernetes Slack workspace, Kat Cosgrove, and I am more than happy to help you personally.
+
+[01:03:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 12.1s, 3/5 segments under 1.5s]
+What wonderful. And we've already talked, I think, about the professional benefits that can easily come by being associated with a project Kubernetes in terms of an active contributor or maintainer.
+
+[01:03:15] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 16.2s, 3/6 segments under 1.5s]
+Yeah, it's definitely a thing. Release team members put Kubernetes release team comms shadow on their resume. It's on people's LinkedIn. If you look at the number of people on LinkedIn who say they work at Kubernetes, myself included, mine says I work at Kubernetes.
+
+[01:03:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.6s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+You do, right?
+
+[01:03:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 48.5s, 10/22 segments under 1.5s]
+I do. Yeah. Yeah, I maintain the thing. So I do work there. But yeah, people put it on their resumes. It's It's popular, especially if you're a student about to graduate or you're very early in your career. It can definitely give you a resume boost. But what it also gives you is access to a very, very large network of people with significantly more experience than you who are generally quite friendly. So it's a really good networking opportunity. We all hang out a lot. We all talk to each other a lot. Right before CubeCon, our big conference that we have twice a year, there is a maintainer summit. And we all get together and hang out and talk to each other for a whole day. That's our own little miniature conference. So there is also the networking opportunity there too. It's not just the resume fodder.
+
+[01:04:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 9.1s, 1/3 segments under 1.5s]
+Yeah, and I like that you say networking because I feel people are starting to realize, engineers are starting to realize with the job market becoming a bit more frosty that,
+
+[01:04:32] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+oh,
+
+[01:04:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.3s, 3/6 segments under 1.5s]
+having a network could be useful. And then there's a question of how do you get a network? And just my two cents is the best network I've ever had is it's not people who are kind of like, I know them with drive-by. It's people who I actually worked with.
+
+[01:04:43] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Like did something together and,
+
+[01:04:45] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.7s, 2/5 segments under 1.5s]
+and, you know, you can either do it at your full-time job as just assuming you have one or on a project where you spend extended time and solve the problems, which project like Kubernetes or different open source project.
+
+[01:04:57] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 25.7s, 1/7 segments under 1.5s]
+Yeah, for sure. If I've worked with you on the Kubernetes project for a little while, I am happy to connect you with anybody else I know. If you're looking for a job at Docker or at AWS or Microsoft or whatever... I know executives there by virtue of having done this for so long. And I'm happy to make connections. If I've worked with you for a while, I will not.
+
+[01:05:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.2s]
+And if that person has actually just, you know, good, solid work.
+
+[01:05:28] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.7s]
+So I think it's just one more thing.
+
+[01:05:30] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.6s]
+If just don't do anything half ass, just like, yeah, don't have a whole ass.
+
+[01:05:33] SPEAKER_00:  (prev SPEAKER_01 / next --)  [CHURN: short; 0.5s, 1/1 segments under 1.5s]
+Everything.
+
+[01:05:34]
+Yeah.
+
+[01:05:36] SPEAKER_01:  (prev -- / next SPEAKER_00)
+I think the earlier people realize that, the better. So to wrap up, I've just asked some rapid questions and I'll shoot and then you tell me what comes to mind. What is your favorite framework or programming language?
+
+[01:05:52] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.0s, 3/4 segments under 1.5s]
+Python, which I shouldn't say because I'm managing the Kubernetes project, which is written in Go, but it's Python.
+
+[01:05:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 1.2s, 2/2 segments under 1.5s  ** READ, do not trust the label]
+That was really fast. How come?
+
+[01:06:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 30.8s]
+It was not the first language I learned, but it was one of the earlier ones. And I like that even if it's not good at everything, I can make it do just about anything. So that versatility is really valuable to me as a prototyping tool. So I will prototype something in Python. And if Python is not the best tool in my toolbox for that particular application, I'll then go actually rebuild it and go on. Or whatever is most applicable.
+
+[01:06:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 30.6s, 2/10 segments under 1.5s]
+I'm coming around to Python. I never really use Python. I use other languages, C Sharp, JavaScript, etc. But you know what's getting me around to Python? It's now that I'm going to a lot of the getting started guides on, let's say, AI tools, etc. They usually have it in all languages, like from Python. Usually Python is the first one. And what I've noticed is Python is the... the the least verbose and the easiest to read and i just liked reading it so now i just set up my my thing so i'm i'm actually changing my mind on that slowly i'm
+
+[01:07:03] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 10.2s]
+starting to see the the pull yeah you can almost just write pseudocode and that's like very close to valid python yeah which which rules so it's awesome yeah you got
+
+[01:07:13] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.2s]
+to do something quick and dirty python what is a book that you would recommend
+
+[01:07:18] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 29.9s, 7/12 segments under 1.5s]
+Well, so I don't read workbooks at all. I actually have a personal policy of not reading books for anything other than fun. Like I only read for pleasure and I read quite a lot. Right now, I'm rereading A Fire Upon the Deep by Werner Vinge, which is very weird, very, very, very strange, hard science fiction. It's one of my favorite books. I would absolutely recommend that if you like hard sci-fi.
+
+[01:07:48] SPEAKER_01:  (prev SPEAKER_00 / next --)
+Well, Kat, thank you so much for going into the details of, I guess, talking through the surprisingly open nature of Kubernetes and very well-documented nature of it. Thank you. Happy to. I hope you enjoyed this deep dive into how Kubernetes is built, how releases work, and all the organizational work that goes into keeping a project like this running. I found it particularly interesting to learn just how well everything in Kubernetes is documented, including how the project is organized and run. If you ever find yourself inside a large project, feel free to steal ideas on how to organize things from Kubernetes. Thanks a lot for Cap for sharing all these details. You can connect with her on the links listed in the show notes below. We previously did a deep dive into how Linux was built and into a few other related topics. You can find all of these The Pragmatic Engineer deep dives in the show notes linked below. If you've enjoyed the podcast, please do subscribe on your favorite podcast platform and on YouTube. This helps more people discover the podcast and a special thanks if you leave a rating. Thanks and see you in the next one.

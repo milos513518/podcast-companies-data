@@ -1,0 +1,241 @@
+EPISODE 1616
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: An embedding is a concept in machine learning that refers to a particular representation of text, images, audio or other information. Embeddings are designed to make data consumable by ML models. However, storing embeddings presents a challenge to traditional databases. Vector databases are designed to solve this problem. Pinecone has developed one of the most prominent Vector databases that is widely used for ML and AI applications. 
+
+Marek Galovic is a software engineer at Pinecone and works on the core database team. He joins the podcast today to talk about how vector embeddings are created, engineering a vector database, unsolved challenges in the space and more.
+
+This episode of Software Engineering Daily is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him. 
+
+[INTERVIEW]
+
+[0:01:01] SF: Marek, welcome to the show.
+
+[0:01:02] MG: Welcome, Sean. Thanks for the invite.
+
+[0:01:05] SF: Yeah. Thanks so much for being here. I feel like we got a ton to cover. Maybe let's get the intros out of the way. Who are you and what do you do? 
+
+[0:01:11] MG: I'm Marek. One of the software engineers at Pinecone. I mostly work on the core database team. And so, maybe like a bit of a story. When I was like 14, I started coding mostly websites. That was like primary school. And then to high school, worked on websites, worked on like full-stack software development. After which I got into Shopify. First like as an intern and then transitioned, doing more of a data science work and machine learning on the risk algorithms. 
+
+That sort of switch from being like a developer into more of a data scientist. Then realized I actually want to like do this more seriously. And so, I went back to university and did some research in AI, machine learning. Mostly adversarial machine learning and sort of like figuring out how to make machine learning models robust against like other attacks. 
+
+Yeah. After COVID started actually, I start started thinking about vector databases and sort of like use this for vector search, which took me to like start a vector database, open-source vector database as a sort of site project. After, Pinecone reached out to me and sort of I joined a company. Yeah. Now work with them.
+
+[0:02:15] SF: Awesome. Yeah. I mean, I feel like that was sort of fortuitous timing for you to go back to school and spend some time like learning how to do – make AI models more robust given essentially like this huge trend that we're seeing in the industry. Because now I think people are desperate to find anybody that has like real sort of ML engineering chops. And there's plenty of opportunities out there for folks like yourself.
+
+[0:02:39] MG: Yeah. That was unplanned, but very fortunate for sure.
+
+[0:02:42] SF: Yeah, exactly. Well, sometimes the best things are sort of unplanned. All right. I want to talk vectors. I feel until recently, most people sort of barely knew what a vector was. Let alone vector search and vector databases. And I think maybe if you did some university-level linear algebra, geometry and things like that, you've come across vectors at some point and maybe kind of vaguely remember what they are. But with the explosion and interest in AI, it's really brought all this stuff I think to the forefront. Vectors are sort of in this peep hike cycle right now. And it's like they got this new PR agency in charge vectors or something. It's like riding this wave essentially that's going on. But I think a good place to start things off is just was some basics of what is a vector? And then what are vector embeddings? And why are they needed for AI? 
+
+[0:03:31] MG: I mean, if I were to be rhetorical from like university point of view, most people learn about vectors is like being typical numbers or list of numbers. And like from physics you would know like you have first vectors. You have like points in space, which essentially vectors. 
+
+But like for the purposes of AI, vectors really represent like a compress representation of an object. You can have like a token in LLM. That's like work. And you have a representation of that token, which is a vector. Essentially some point in a high dimensional space. 
+
+Similarly, for images, you can imagine vector being a compressed representation of an image. Really, you sort of built this like list of numbers that represent some meaning of the object that they like correspond to. I think that would be like a best representation for people who don't really have a background in machine learning. Sort of to think about vectors as being just a compressed representations of some objects. 
+
+[0:04:22] SF: Yeah. Essentially, a point in space that represents some sort of object, which could be a piece of text. Could be an image. Could be something else. Some sort of other object. 
+
+[0:04:30] MG: Yeah. The other important part of vectors is that they have semantic meaning, right? If you have an image of a dog and a car and another dog, the two images of the dogs will be closer to each other than the image of a dog and the image of a car.
+
+[0:04:42] SF: Yeah. My understanding of essentially the value of essentially converting things objects into vectors into these points in space is, essentially, two points that are close to each other or some other measurement of similarity between the vectors says something about the semantic similarity of those particular objects if you do essentially the encoding of the embedding correctly. 
+
+[0:05:02] MG: Yeah. 
+
+[0:05:03] SF: What is that process to create these embeddings or these vectorized versions of objects? How do we essentially take something like text and convert it into a numerical representation? What are some of the algorithms or approaches that are used to do that? 
+
+[0:05:19] MG: Right. Maybe I can give an example for text where, in the most basic case, like if we train in LLM, is that you take a piece of text. This is just like download it from the internet some purpose of the text. And then train the LLM to sort of predict the next token in the text. It considers some context in the past. And given the context, it predicts the next word. That sort of like discerning process turns out produces vector representations that are in some sense meaningful. They carry some semantic meaning for the token that they represent.
+
+Maybe specifically for like question answering, what people didn't do they take a pre-trained model, which was sort of like train with this next word prediction training objective and they sort of try to optimize this so that very explicitly answers to specific questions are closer to each other than answers to unrelated questions. 
+
+Sort of this contrastive laws where you take a triplet of maybe like an answer or maybe a question, a relevant answer, an answer that's not relevant. And then you try to minimize the distance between the question and the relevant answer and maximize the vector distance between the question and the nonrelevant answer. That's sort of like this sort of triplet loss objective can be used both for like text and also images, right? You can take like known close images or similar images and dissimilar images and just optimize this objective. 
+
+[0:06:34] SF: How do you go about actually optimizing that objective? Making sure that the resulting vectors, those points in space that are close to each other are actually semantically similar for whatever sort of problem that you're trying to address. 
+
+[0:06:45] MG: Yeah. This is like the process that I described you. You sort of have a data set of – maybe you pre-trained – let's say you pre-trained LLM on a large, unstructured corpus of text. And then you have a smaller data set of questions and answers that you know are relevant. 
+
+At each training step, you sort of sample question and answer and maybe an answer that's not relevant. And then you usually like embed the question, the answer and the nonrelevant answer and you try to minimize the distance between the relevant pair and maximize the distance or a training objective for the nonrelevant part. This minimization and maximization of course depends on what sort of distance function you use. But that's generally the idea. 
+
+[0:07:24] SF: Okay. Okay. I see. Essentially, once you've done the training, you're using this as further sort of testing to kind of like fine-tune the model or tweak the parameters so that you're getting essentially some sort of like similarity score, just similarity score that's going to make sense for whatever problem that you're trying to solve. 
+
+In terms of vector search, what is vector search? And then how is that different than other search technologies or search approaches that we might be familiar with? Like bag of words or keyword-based search? 
+
+[0:07:49] MG: Yeah. I would say that vector search is different from those in a sense that it's soft, right? In key retrieval, you are very – you only search for items that contain a specific key. Of course, you normalize the tokens. Sort of do you remove some very common words? But deep down, you only retrieve documents that hardly like contain very specific keywords. In vectors, that's different. Because you sort of – the vectors themselves, we talked about contain semantic meaning. Your retrieval is sort of soft in that sense. Not hard. 
+
+[0:08:19] SF: By soft, you mean it's sort of like a fuzzy similarity versus necessarily an exact match of similarity.
+
+[0:08:25] MG: Yes.
+
+[0:08:26] SF: And then what are some of the unique challenges when it comes to vector searches? Is it essentially just the sheer size of the vectors? Where are some of the problems or hard problems to solve? 
+
+[0:08:35] MG: I mean, sheer size would definitely be the first one I will talk about. Because I just did a crude map before. And so consider like a data set of billion items, right? If you have a bunch of columns that are scaler value, so just floats and literally scalar values, that data set would be on the order of like hundreds of gigabytes. Whereas for the same data set of billion items and vectors that are produced maybe by like [inaudible 0:08:56] or some very common embedding model, that data it would be like single digit terabytes or more. And so, just literally like representing the data for like same number of items but vector data is just order of magnitude bigger in that sense. 
+
+The other thing maybe to talk about here is that academic research. You have papers talking about like building vector search indices for static data. You are given a data set up front. You are free to pre-compute whatever you want. And then sort of the goal for the papers mostly is to like build either the smallest index or the fastest index for the data set. And this is like the benchmark they use to sort of publish paper and compare different algorithms between each other.
+
+What we found is that this is not really – or like the most of the real-world use cases are. In real-world, of course you care about speed. You care about performance. But on the other hand, you also care about is like cost effectiveness and like scaling very easily. 
+
+Also, compared to vector search, in a vector database you want to be able to update the items on the fly. You're going to be like able to modify the items. Insert new data. And that data to be like available to you pretty much as soon as you write it to the database. And that's sort of like very unique and sort of hard to achieve in like a very cost-efficient manner.
+
+Also, another point here is that – so far, as we talked about like vector search being sort of soft or fuzzy and standard search techniques being hard, vector databases are really the first instance of a database that's approximate. In SQL database, you want to get an exact answer for the query. And you're – well, okay. There's eventual consistency and so on. But in most cases, you care about an exact answer. 
+
+Vector databases like – because the data is so big and it's very computationally intensive, the database itself is approximate. You're not giving like exact answers. Because that just would be invisible over large number of items. 
+
+[0:10:43] SF: In terms of handling the size of how big these data sets that can grow in terms of representing the vectors, are there different essentially compression techniques used to rather than using a full floating point number, we can use essentially like a reduced size representation of the number or other ways of essentially compressing the data? 
+
+[0:11:02] MG: Yes. For sure. In academic papers, this is sort of mostly done with pre-computing, which is what I said about like having static data sets and pre-computing your representations. And again, use less memory, it can be faster because you can quantize vectors more. 
+
+And the challenge really here is to be able to do that quantization and do that compression of vectors on the fly without like being able to handle fresh data as it comes and being able to do that compression. 
+
+[0:11:25] SF: And then in classical databases, there are lots of different ways of indexing information, like B-trees, hash indexes, tries depending on like what problem you're trying to solve. How is a vector index created? What algorithms are you typically used for indexing? And how are those sort of different than maybe conventional database indexing? 
+
+[0:11:45] MG: Yeah. I can maybe describe graph algorithm here. Because that's something that's very popular in like open source community. And so, in like a start of database, say you build a B-tree. You insert items. You produce split pages and you sort of shuffle that on disk. In vector databases, what you're trying to do is, when you have a data set, you sort of are trying to use the index to very quickly find the region of the space that contains relevant items, right? 
+
+And so, in graph what would mean is that when you enter the graph, you hit some entry note and then you're sort of trying to traverse the graph into the interesting region of the space. You sort of trying to take very long-range connections. And like the distance between the neighboring item is very large to sort of quickly skip over the boring stuff. And then once you find the interesting stuff, you sort of try to get the sort of close neighbors or near neighbors for that vector and sort of explore that part more. 
+
+For example, if I were to take HNSW, that's exactly what it does. The higher levels are essentially very sparse skip list that skip over the boring stuff. And then once you go to lower levels, you actually start having like more dense neighborhoods for the vertices. And then you start sort of exploring more to like improve your recall. Yeah. That would generally be the idea.
+
+[0:12:55] SF: Yeah. Essentially, if I wanted to find what collection of vectors are similar to my input, I'm starting at a particular node and then I'm doing essentially casting out maybe like in a breadth-first search or breadth-first manner out to the other nodes and then walking essentially the graph to where the most similar items are based on whatever my similarity score is. And then finding essentially this compact region that represents the most relevant information or most similar vectors.
+
+[0:13:25] MG: Yes. Think of like a binary tree, right? You only consider nodes that are in range they're looking for and is like one-dimensional. Generally, this is the same idea. But instead of having like scalers or one-dimensional vectors, you have like 5, 12, or thousand dimensions.
+
+[0:13:40] SF: Yeah. Lots of other performance challenges, scale problems that you're going to run into. Where does essentially like a vector database come into place with this? Do we need essentially a new type of database to support vector indices and vector search queries? Some of the machine learning work that I've done in the past, now I'm not dealing with like massive scale. I've been able to represent those using sort of conventional databases. At what point do you sort of need to introduce something like a vector database and what value is it giving you? 
+
+[0:14:09] MG: I'll try to motivate this answer from a different point of view. In like LLM workloads, LLMs is like people started training them and sort of making bigger and bigger LLMs. What it turned out to happen is that the LLMs have an emergent ability. They're able to do tasks that weren't explicitly trained on. And this sort of like in context learning where you can give an LLM a few examples of what it's supposed to do and then it's sort of able to imitate that behavior going forward.
+
+And this is sort of like not explicitly optimized. This is sort of something that emerges just from the sheer scale of the LLM and like the amount of data that is seen during training. Where vector database is specifically come into play here is that you can use this ability to adapt its behavior or sort of bias the behavior of LLM by giving some context that's relevant for whatever the user typed in or like the user provided. 
+
+And this is like general idea of retrieval augmented generation, where you sort of have some interactions with the LLM. You query vector database. Get some relevant context. And this is sort of like context that's useful that the LLM can use to sort of bias it answers and be more helpful or hallucinate less and then sort of provide that context to the LLM to generate better answers.
+
+[0:15:22] SF: Outside of this, like essentially using a vector database to provide better context in the application of using like an LLM, are there other applications where you might use a vector database? 
+
+[0:15:33] MG: Yeah, for sure. The other maybe like obvious use case here would be image search. You can represent images by vectors as we talked about semantically similar vectors. And then you can index your corpus of images in the vector database and sort of search. Sort of like do reverse image search using vectors. 
+
+Other very popular use case for vector databases is recommend your systems. You can have a vector that represents your user, your user interests. And then you have some vectors representing either your movies, your products. Essentially, your content. And then you can use the similarity between user interests and vectors representing items to sort of recommend the most relevant items for the user. That's next use case that's pretty popular.
+
+[0:16:14] SF: And then we've talked a little bit about sort of the how vector search and vector database. You're really getting sort of like a soft set of results that we think that these things are similar, but they're not necessarily like an exact match. And that's kind of the value that you're getting, is you can essentially look at these things that are objects that are similar in the same way that like a person might determine that two things are similar. 
+
+But what is the tradeoff in terms of the way that you measure similarity? There's a trade-off I would imagine in terms of accuracy and speed. And it's also in terms of the way that you actually measure the similarity between vectors, there's different ways of that you can look at the angle between the vectors. You can look at the distance between the points and so forth. How do you actually choose the right similarity measurement and balance that between essentially the accuracy and the speed that you're looking for? 
+
+[0:17:03] MG: Right. For the purposes of vector database, you sort of want to use the metric that the model has been trained on. If your embedding model uses a cosine similarity metric, you should use that for your vector index. Because then you're going to get the best results. The organization of vector in the space sort of makes sense in that metric. You want to use the same metric. The other question that you asked was – sorry. I forgot the – 
+
+[0:17:25] SF: The trade-off between accuracy and speed. I'm assuming you can kind of sack rice some level of accuracy or precision in the results in order to get a faster answer essentially. 
+
+[0:17:35] MG: Yeah. This also ties into what I was talking about like academic research. You can essentially spend more resources and build a better index or an index that gives you higher recall at the cost of – usually the cost for that is one higher memory usage. And second, your QPS or the number of requests you can serve or searches per second goes down. Because you're spending more compute resources per query to actually satisfy that and provide a better recall. 
+
+There's a pretty strong law of diminishing returns, where for any one percentage point you gain in your recall, your QPS might drop by like an order of magnitude. There is a point at which it doesn't make sense to push recall further. Of course, you can do it. The most extreme case is the exact search. Scan all the items. But that's super slow. There is like a continuum of sort of choosing the best recall and best QPS. And at the same time like minimizing the number of resources or the amount of resources you use to actually serve that index. 
+
+[0:18:33] SF: How do people typically go about like testing what the right sort of like parameters and limits that they're going to use for their particular application to know that it's basically like good enough to satisfy whatever their requirements are?
+
+[0:18:46] MG: In general, like from a banking point of view, we actually want to provide you a vector database where you don't have to tune your hyperparameters. As a developer, you don't want to care about changing the hyperparameters or some algorithm that like you may need to read five research papers to actually understand how to team that properly. 
+
+We as a company take that responsibility on us and try to like set a very reasonable defaults that work in most cases. And also, make sure that we are robust to cases that may be adversarial for that index. If you were to do that yourself, of course, you can – for reasonably scale data sets, you can pre-compute a set of exact neighbors and then compare your approximate index to your set of exact neighbors. This is very hardly feasible for data that are like billion items and more.
+
+[0:19:30] SF: Yeah. Basically, you could do something where you look at doing sort of the brute force vector comparison if your data set is small enough or your test set small enough and then see how that compares to essentially whatever similarity metrics or index that you're using.
+
+[0:19:45] MG: Yeah.
+
+[0:19:46] SF: I guess maybe a good place to talk is also what other technologies are typically involved in sort of the toolchain that's going to be involved with like a vector database? If we're thinking about something like ETL for warehousing, you have this kind of like whole toolchain of orchestration, your data sources. And there's all kinds of tools that are involved in that. What is the typical toolchain in the world of sort of vector search or vector databases? 
+
+[0:20:12] MG: Yeah. The other part that sort of you need to transfer your object, your text, your images into vectors is as the model. The obvious complimentary part for vector database would be some sort of inference engine or model inference provider. Be that OpenAI. Be that Anthropic. Be that Cohere. Or open-source solutions. That sort of transforms your data, your text, your images into vectors. 
+
+Then you have a vector database part where you load the vectors into database. You search it. You have some from them that maybe like queries that database and then provides the results. 
+
+I think, in general, these components fit onto the same ETL pipeline where you have some ingestion of data. Then you call the model. Convert your data into embeddings. Load it into vector index or vector database and then serve it. I think like the general pattern is the same. Just the tools are different. 
+
+[0:21:02] SF: I see. Okay. Looking at sort of the non-vector database world, there are you know databases that are designed to solve specific problems. It could be – they're really good for like high-throughput reads, high-volume writes. In the world of like a vector database, where is sort of the big load problem? 
+
+We talked about some of the scale issues of just representing the data. Is that kind of where the main challenge comes from? Or are there other places that you might need to essentially concentrate a lot of effort in being able to address specific sort of hard-to-solve problems in the world of vector databases? 
+
+[0:21:40] MG: Yeah. I would say it's both. Because in like a vector database, you're trying to sort of do – amortize as such work up front to build the index and to maintain the index so that queries are very cheap. You wouldn't need a vector database if you just were to scan all your data. You can just scan all the vectors and you really wouldn't need any compute. But then queries would be very computational-heavy. 
+
+You sort of shift that compute from the query time into some index-building time where you actually pre-compute some stuff from the data. Build an index and then sort of use that index to serve queries more efficiently. In general, this is the most computationally demanding part of a vector database.
+
+[0:22:19] SF: I see. And then in terms of – we talked about one of the applications. And I think one of the really popular applications right now of vector databases, of being able to use it to provide some sort of in-context to give further instructions when we're running a prompt through an LLM. 
+
+There's limits essentially to the amount of data that we can send in a set of instructions to an LLM. Does the vector database give me some tooling out of the box that helps me like choose essentially the right set or like limit of context that's going to be most valuable for serving by prompt? 
+
+[0:22:56] MG: Yeah. In general, you're retrieving some number of most relevant items from a vector database, right? You can limit that to fit your context window. Instead of only retrieve the stuff that helps the model to sort of gain the most knowledge or like make the generation more grounded. In a sense, what people also do is instead of plugging the results from a vector database directly into an output of LLM, they may be over-fetch by a factor of 10. You need 10 items, but you really fetch 100. And then use some second-stage model. Actually, it's very much more computationally expensive. 
+
+From your corpus of, I don't know, 10 billion items, you retrieve the 100 that are most relevant and then use a much more expensive model to sort of re-rank those hundreds into five or 10. And then you provide that set of 10 into the model that actually generates the answer to the user.
+
+[0:23:48] SF: Okay. Yeah. We're using essentially a secondary model which could be more expensive to operate, but it's going to be much smaller because it's really specially designed to essentially let us identify what's the right context to send in essentially the set of instructions in the prompt. 
+
+[0:24:02] MG: You can also provide like real-time information into that model. Maybe you have a vector database of all the products and then you provide some in-session information for the user into that reranking model to make the answers or make the results more relevant. 
+
+[0:24:16] SF: Okay. And then I want to transition a little bit to talk about Pinecone specifically. There's lots of I think growth and interest in the world of vector databases we've touched on. But how does Pinecone essentially compare to some of the other vector databases on the market? What is sort of the differentiator that you're getting? 
+
+[0:24:36] MG: Yeah. First of all, maybe I would say that we built Pinecone from the ground up to be a vector database. We sort of didn't adapt a vector search engine to be a database. We really built it from the ground up to be as a database. And also, as maybe most listeners know, we don't provide an out-person solution. Pinecone is fully hosted. We provide it as like essentially software as a service. We manage the infrastructure for you. We manage the index for you. 
+
+And so, we try to be very, very operationally simple. We try to move the operational burden from developers and maybe from like users to us and so sort of give you the API to sort of just interact with the database.
+
+[0:25:10] SF: I see. All right. Essentially, it's operating as a managed service. And then we've talked about earlier, essentially you're kind of abstracting away a lot of the complexity of figuring out like how do I sort of tweak the parameters to get the optimal index is kind of just off-voted for me.
+
+[0:25:27] MG: Yeah. And the other important part is that the database just scales, right? So you can start inserting more data. You don't have to worry about like changing each one of your index. Figure out how to scale it. We as a database that to scale for you.
+
+[0:25:38] SF: What are some of the like biggest engineering challenges that you've had to overcome during your time at Pinecone? What are some of the hard problems that you're trying to solve as a company? 
+
+[0:25:47] MG: I guess the sort of the problem is really the scale. When I joined two years ago, we used to talk about like million scale indexes being as big. And like that went from just single to millions to now regularly talking about like tens of billions and hundreds of billions of items in an index being sort of something you can handle pretty easily. That's one thing. 
+
+And the other thing is just the sheer number of customers. Not every customer is going to have an index that hundreds of billions of items. But there are a lot of customers with like million scale indexes. And sort of being able to just provide very good service to tens of thousands of customers very cheaply has been the other challenge. There's like these two axes where customers are very big. But also, just the sheer number of customers grew orders of magnitude more.
+
+[0:26:34] SF: Yeah. I mean the growth in customers is probably a high-quality problem as a company. 
+
+[0:26:39] MG: Yeah. That's a good problem to have. But problem nevertheless.
+
+[0:26:43] SF: Why do you think that there – was it an underestimate in terms of like how big these indices would go? You're talking just a few years ago of like in the millions. Now you're in the billions. Do you not foresee it essentially getting this big? Or was there some unforeseen event that led to such a like huge growth and explosion in terms of the size of these indices for certain types of companies or use cases? 
+
+[0:27:05] MG: I would say we did foresee it, but we maybe didn't expect it to go as fast as it really did, right? As an engineer, you sort of built a system for a specific purpose or a specific specification. And our specification is interviewed customers and talk to customers has already been like hundreds of millions up to a billion. And that was sort of like we build a system to scale to that point. 
+
+And it's possible to scale that system even further. And the system that we build actually handles workloads that are bigger than like what the first of it being. But at that point, the cost of that system starts going. Once you know that the system is going to handle much bigger workload, you can design it differently to actually be much more cost-efficient for the customers. And that's really what we want to do. We want to provide a very cost-efficient way to serve really, really big indices.
+
+[0:27:57] SF: Was there significant like refactoring from the engineering side in order to handle these like larger indices? Or was the approach essentially sound and it really came down to more of like an infrastructure scaling problem? 
+
+[0:28:10] MG: I would say both. You need to change infrastructure and the way you organize the system. Algorithms sort of translate to a degree from like smaller approaches to bigger approaches. But the way you sort of map that algorithm onto like a distributed system is not a single node. We don't serve the index as a single node. The way you use the algorithm and sort of map it on a distributed system changes once you go from like hundreds of millions to tens of billions and more.
+
+[0:28:41] SF: Okay. And then what do you see outside of even some of the challenges that we talked about specifically with Pinecone? What are the biggest challenges in vector search today? What are the kind of big, gnarly problems that people haven't really solved yet? 
+
+[0:28:53] MG: Yeah. I think, in general, it's going to be cost-effectiveness and being able to serve very large indexes with reasonable QPS in a cost-efficient manner. We talked about LLMs having in-context learning abilities and sort of being able to use external context or external memory to sort of ground their generation. And then the grounding can be like your company docs, whatever, your product documentation. You want that cost to be smaller than cost of fine-tuning LLMs or just serving LLMs. I think that's one of the biggest challenges. Making sure that we just are cost-effective. 
+
+[0:29:30] SF: Yeah. I think one of the analogies that I really like that I came across in terms of like understanding sort of how vector search and vector databases can enhance or used in the context of LLMs is – and you just mentioned it there. It's like an external memory. It's kind of similar to – as a human, you might ask me a question and I might be like, "Oh, I got to look that up." And I can use Google search or look it up in a library in the old days and like use that essentially as my external memory. And we use that all the time to like augment the way that we answer questions or respond to things. And essentially, the LLM plus the vector database is the same such function that like a human is using those resources for.
+
+[0:30:09] MG: Yeah. LLM actually works similarly to human brain, right? It's sort of attends to interesting parts selectively. It has like the ability to attend to whatever is the past context. But it selects only the most relevant part. And so, if you extend that context by some external knowledge, which is just not present in the LLM. Because you would either have to fine-tune it or like retrain the – or fine-tune the LLM every day to sort of keep it up to date. If you can provide the dynamic memory externally, the LLM can decide to then use that memory to sort of provide better generations. 
+
+[0:30:42] SF: Yeah. And so, I think some of the value there is that, generally, the foundation models, they're built at a fixed epoch. They might be two years at a date in terms of like the latest things that are going on. So then you can use this in context learning to provide more up-to-date information as well as more domain-specific information. It could be using your internal company documents or something like that to help like be an additional resource for providing an answer. 
+
+[0:31:10] MG: Yeah. 
+
+[0:31:11] SF: What do you see as kind of like the future in the space? Where do vector databases, vector search go from here? 
+
+[0:31:17] MG: I think it's the one like providing good service and sort of providing – being really a database. As you write the data to the database, you want to provide fresh results. At the same time, you don't want to pay the cost. Every change to the database shouldn't incur the cost of like rebuilding the index from scratch. You want to like provide fresh results in the cost-efficient manner. 
+
+And also, I think just a developer experience of building a generative AI application or an ML application can be much simpler than it is today. So you want to provide tools to sort of make embeddings of text or images very, very easy. You want to have the vector database just be there. You don't want to worry about scaling it. You don't worry about like availability approaching the nodes and so on. That part should be very simple. 
+
+And also, I think developers should only pay for resources they really use. And you don't want to pay for this idle computer that's sitting there and not doing any useful work. 
+
+[0:32:12] SF: Yeah. I mean, I think that's like the secret sauce of a lot of the public cloud is sort of essentially paying for the workloads that you use rather than paying for like a server sitting in a closet somewhere. 
+
+Do you think that there will be a time where there's like a convergence of essentially vector databases into sort of the existing world of like structured SQL sort of databases or maybe even like the NoSQL world? I think that there's been a shift that's been happening overtime over the last five years or so of bringing like the warehouse and the lake closer together with like the lake house architecture or even some of the things that Snowflake is doing now around both like structured, semi-structured and unstructured data. Do you think that we'll see a similar trend in terms of converging around vector databases living within some of these other cloud providers or data management systems? 
+
+[0:33:05] MG: I don't think so. Because the way you build a vector database is very different from the way you would build a traditional database. Instead of – in a traditional database, you're a data and you sort of build your index to sort of make lookups in your data more efficient. In a vector database, your index really is the database, right? It's not a bottom piece. Sort of like you would add maybe HSW to Postgres or whatever. Your index really is the database. Then you then build everything around that.
+
+[0:33:33] SF: Yeah. Essentially, the technology is just like so fundamentally different. It doesn't necessarily make sense to kind of like shove a vector database into Mongo or something like that.
+
+[0:33:42] MG: It's possible. First, it will work up to some scale. But once you start pushing it or like trying to use it for real-word use cases, of course, you end up in the same scenario. You need to provide high-availability. You need to scale. And just voting on an in-memory index into an existing database really scale best few million items.
+
+[0:34:03] SF: Yeah. I mean, we even see that I think in the like conventional database world for specialized problems. There's essentially specialized databases like Rockset for analytics and ClickHouse and things like that. Where if you're dealing with particular types of data, or particular types of problems, or particular scale, you're not just going to throw a MySQL database at every single problem or something like that. 
+
+[0:34:24] MG: Yeah. Another example I would give here is time series databases. Of course, you can do time series in Postgres or in MySQL. But a purpose-built database for time series is going to work much better. 
+
+[0:34:34] SF: And then as we start to wrap up, is there anything else you'd like to share? And also, how can people get in contact with you if they have questions or follow-ups? 
+
+[0:34:43] MG: Sure. If anything we talked about seems interesting to any of the listeners, we're hiring very good people for the platform team and the data team. Yeah, reach out to me. Or Pinecone page would be good place. Yeah, I think that's it.
+
+[0:34:57] SF: Awesome. Well, Marek, thanks so much for coming on the show. I thought this was a really interesting conversation. I'm sure the listeners will learn a lot.
+
+[0:35:05] MG: Yep. Likewise. 
+
+[0:35:07] SF: All right. Cheers.
+
+[END]
+
+ 

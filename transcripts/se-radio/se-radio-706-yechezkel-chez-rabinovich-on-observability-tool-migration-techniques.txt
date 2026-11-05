@@ -1,0 +1,352 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 706: Yechezkel "Chez" Rabinovich on Observability Tool Migration Techniques
+DATE: 2026-02-04
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/02/se-radio-706-yechezkel-chez-rabinovich-on-observability-tool-migration-techniques/
+AUDIO: https://traffic.libsyn.com/secure/seradio/706-chez-rabinovich-observability-tool-migration-techniques.mp3?dest-id=23379
+DURATION_SECONDS: 2343
+TRANSCRIBED_AT: 2026-11-04T10:39:46Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Prije
+Shamanath. Today I will be discussing observability tool migration challenges with Yeskel
+Rabinovich, also known as Chess. Chess is the CTO and co-founder at GroundCover, which provides
+full-stack observability for Kubernetes. Chess was previously the Chief Architect at the healthcare
+security company CyberMDX and spent eight years in the Cybersecurity Division of the Israeli Prime
+Minister's office. Chess is a repeat guest at Software Engineering Radio, having previously spoken
+about Kubernetes observability in Episode 591. Chess, welcome to the show. Thank you. Thank you for
+having me. Today we'll be talking about what are the challenges and what are the techniques one uses
+to migrate observability tools. Before we jump into the topics, I just wanted to touch on a few
+episodes where we have covered observability previously in Software Engineering Radio. So Episode
+556, where Alex Boughton spoke on open telemetry. Episode 507, where Kevin Hu spoke about data
+observability. And Episode 675, where Brian Demers spoke on observability on the toolchain. Quite
+good episodes to refer back to understand more details about observability. Let's start with what
+drives the need for firms to migrate from the existing observability toolset. Do you have a story or
+an example where a firm needed to migrate from their existing observability toolset? Yeah, actually
+a lot. Basically, every customer of GroundCover, not all of them, but most of them are coming from
+some legacy vendors. Most R&Ds already use observability platform. So when they want to move to the
+new observability platform, more modern, that rely on bring your own cloud and eBPF, the main
+challenge is how do we migrate all the hard work we did as an R&D organization, right? You can think
+about it as dashboards, right? Most of R&D has some kind of top 10, top 20. We often see hundreds of
+dashboards across the entire R&D. It could be monitors. So imagine that you rely on specific alerts
+to wake you up at night to make sure your software is actually behaving as you expect it to be and
+that your customers get their SLAs. And it also could be integrations that you did or even
+observability pipeline configurations. All those configurations and integrations have been in the
+work for maybe 5, 10 years from different people in the organization. Some of them already left. So
+even the knowledge of what we have is sometimes missing. So all that makes the decision to move
+forward to new observability platform a lot more challenging. Right. So it is a challenging problem.
+But what is the primary driver? Do you have an example where a customer actually came to you to
+ground cover and said, because of these reasons, we wanted to move from our legacy observability
+tool set? Yeah. We recently had a customer with a thousand monitors, which they didn't know how they
+built it. So the people that actually created those monitors are no longer in the organization. So
+imagine how frightening it is to now trying to migrate those monitors without knowing if what you're
+doing is actually the right thing. There is no way. So let's take a simple example of think about
+monitors that alert when specific log happens. It could be like a free text search. It could be
+specific attribute with specific value, let's say status error. So now when you migrate those
+monitors, imagine that you have a mistake and basically you don't know that you are not covered by
+your monitors. So that's pretty scary. This specific customer, their requirement was to have a fully
+automated process that will make sure their monitors are being migrated successfully. And in order
+to do that, it actually, it goes really deep. You need to understand the log structure and the
+transformation that each log is going through in order to ensure that those monitors are still
+covering you and basically that you can sleep good at night. A thousand monitors, that's quite a
+lot. Is that the norm? Do you have quite a few customers with that many dashboards and monitors? I
+think the average customer has a few hundreds of monitors and at least dozens of dashboards. I think
+it really depends if the customers are using infrastructure as code to generate those monitors
+because it's usually very hard to create it manually. But yeah, we're seeing numbers of hundreds of
+monitors. Because we have a customer with 5,000 monitors. That's the high bar. I think the biggest
+we have is 10,000 monitors. Wow. If you've taken all that effort to build 1,000 monitors and you
+know that migrating is going to be quite challenging, why go into that effort? What was the reason
+of saying that this just no longer works for me? Yeah, that's a good question. And it comes back to
+the reason why we started Garmcover. We were on the other side using some legacy vendor. And
+basically, you have two main challenges. One is that you need to generate the data. In order to have
+all the data, you need to instrument your application. I'm talking about APM, open telemetry or
+whatever SDK you're using. That's really cool. But you don't know what you don't know. So if you
+didn't instrument your application, you basically don't have the information that actually what's
+going on. That's one reason. You want more data. And the other reason that it's very, very
+expensive. Old way of doing observability is basically send all the data to some SaaS provider. But
+the reality is that it's very expensive. Not just even from licensing fee. Think about the egress
+fee that you need to pay in order to send all that data. And that leads to some kind of a vicious
+cycle. So before that, we said we want more data, right? And then we instrument our application, we
+get more data, and then the bill comes. And it's very, very expensive. So now we are reducing the
+data that we just instrumented. And that caused frustration. And most organizations have roles in
+the R&D or DevOps that main concern is to make sure observability cost is under control. What we
+built in GroundCover is the first bring your own cloud platform, observability platform, which means
+that the data plane is inside the customer account. So imagine that we provision a new AWS account
+or GCP or Azure, whatever hyperscale you're using. We deploy the backend. We have a control plane
+that manages it. But all the data plane is inside the customer environment, which means it's a lot
+more efficient. And it allows us basically not to charge our customers by volume of data. So that
+also helps in terms of the anxiety that most customers have around pricing. So that's one thing. And
+the other thing that we did is we have our own eBPF sensor, which generates a lot more data. And
+because the customer doesn't pay by volume, those two new techniques are actually amplifying each
+other in a very nice way. Right. So if I understood it correctly, the primary reason for firms
+aspiring to migrate from their existing observability toolset is that most of the legacy
+observability toolset relied on a lot of data. And having that much data made it very expensive.
+Whereas new toolset like GroundCover are able to not send the data to your particular cloud, whereas
+you can use the firm's own cloud or use it on-prem, which reduces the cost. And that's one of the
+primary drivers for firms aspiring to migrate out. Is that right? That's correct. And even more than
+that, too, because we're not making money out of volume, that liberates the product team to
+basically be on the customer side. Right. So imagine that you're trying to sell an observability
+platform and you make money out of data and you see the customer sending garbage data. Right. We all
+know the phrase like garbage data in garbage out. But from a seller perspective, if you're making
+money from that garbage data, you're in a conflict. Right. Like we all want to believe that the
+vendor will encourage the customer to stop sending it. But the reality is that they have zero
+incentive and actually have their business. So when we started GroundCover, we decided that we will
+always be on the customer side in terms of value. So our product team is constantly trying to reduce
+the infrastructure costs and making sure the customer has the right data that he needs. So think
+about like a simple example. You have an observability pipeline that drop logs by pattern, by
+specific pattern that it's spammy. You have two options to do that. Right. The old way, the legacy
+way is to make the customer send the data to the SaaS platform and charge by ingest, which could be
+very, very expensive. In GroundCover, we push down the filters to the sensor. So basically, the
+sensor at the node level will not send those logs because we don't make money of it anyway. So why
+would we waste time and energy and money by serializing those logs, shipping it over network, and
+then dropping it at the other edge? Because we're doing the same thing from both sides, we can just
+drop it at the node level and reduce a lot of cost and energy. So that's just one example of why
+disalignment matters, why the new model actually matters to all our customers. And what are some of
+the typical pain points you have seen during the migration process? And if you can maybe bring it to
+life with any examples that might come to mind? Yeah, sure. There's something that we called in the
+company observability for observability. So what it means is that the customer want to migrate,
+right? But they have 50, 60 integrations active, and they don't even know what integrations they
+have, right? Because most of the integrations are configured somewhere else, and they just send
+data. And it's been done by dozens of people across the organization. So we had customer with, I
+think it was 40 or 50 integrations with different cloud providers and different configurations. And
+basically what we did in the migration process is we first start with discovery of what data you
+have. So it's looking at observability data from an observability perspective, in a way. So we
+inspect the data, analyze it, and say, okay, we found 50 active integrations according to the data
+that we're seeing. And now we automatically translate each and every integration from each and every
+vendor to basically adapt to how it looks at ground cover integration. So the customer get like a
+report displaying those are the integrations that we found, those were the integrations that will be
+added, and just click next, and that will be done. So think about how much hard work you have to do
+just to get all those configurations from an existing integrations you have. This is almost
+impossible to do manually without mistakes. So that's like one simple aspect that actually starts
+the process of migration from most of a customer. Yep, sounds very complicated and difficult task.
+Let's move to the next section where we discuss on approaches of migration. So what approaches have
+you seen firms take for migration? Is it a phased approach or is it a big bang approach? And are
+there other approaches that you have seen as well? That's a really good question. And we actually,
+we have our own opinion about what you should do first and how. But we also very adaptive to what
+the customers want, because sometimes the organizational needs are much more important than what we
+think are the right way. But usually what happens is we first start with discovery. So we will fetch
+all your assets, dashboards, vitals, log pipelines, even policies in terms of user management and
+permissions. And we first just visualize it. It's like getting you onboarded on what are we going to
+do here? Those are our tasks. From this point, you have a few options. We usually encourage to start
+by the most important assets. So how do we know what's important? We can get some metadata. So you
+can imagine that dashboards that are being edited in the recent week or month are probably more
+important than dashboards that haven't been touched for more than a year. So we get that
+information. And also we can get information like how many views do you have for that dashboards?
+And basically create some kind of a prioritization of the assets. So monitors that are firing right
+now or fired in the last week are probably critical for our organization because they're actually
+happening, right? If there is a monitor that's never been fired in the last year, it's probably less
+important. So that's one view that most of our customers find really, really effective. But we have
+another view, which is focus around what's missing. So let's say we miss some metrics. We got like
+5,000 metrics. We mapped them and we fetched 4,900, right? So we're missing 100 metrics. Now, how do
+you know which one is important? So basically what we do is we fetch, again, all the assets that use
+those metrics or those signals. And then we rank them by how popular they are by the usage. So if
+there is one metric that is missing to accomplish 80% of the dashboard, let's focus on that. So
+basically those are the two angles that we're trying to attack this hard process. And the main thing
+is to build trust, right? We start this process. Some say it's like moving a bank. Some say it's
+like moving an apartment. I don't know which size I am. But the common thing is it's very stressful
+and there is a lot of fear around it. And our job is to give you the confidence we can do it. So we
+bring the tools to help you analyze what is going on, what is the progress, what's needed to achieve
+more progress. And the last part is the feedback loop that is very, very important. So if you added
+that missing integration, you automatically visualize the data, you automatically see that those box
+checked. And that's those kind of little games that help you make progress in this quest, build the
+confidence that we can do it together. And the last piece is bring all the R&D, like all the
+stakeholders, and present them the process, the results of what we did, and let them play with it
+and give the feedback. That's how we usually close a POC or onboarding of a new customer. And do you
+have any story or example where a particular migration did not go as per plan? What were the
+challenges? What went wrong? And how did you fix it? I think the most challenging part is getting
+all the observability pipelines right. Because usually when you work with customers, you see they
+have some kind of layers of software in their organization, right? We all have this service that we
+know we should fix, or we should change those log lines, but no one is getting to it. And it's
+pretty scary because it's an old monolith that 80% of the company rely on and nobody wants to touch
+it. So around those software components built a lot of, I would say, legacy pipelines that we need
+to discover. So a good example was that we had one customer that had a few versions of the same
+service running together simultaneously. So they already started doing the work of migrating this
+service to a new logging solution, but they roll it out gradually, very, very gradually. So our
+platform discovered those logs, and we identified that basically the new logs as what is going on.
+And we mapped those monitors and dashboards according to the data that we saw. What we missed is
+that at the same time, we had the same service running on an older version with a different
+structure of logs. So we basically got tricked by different versions of that service, and we missed
+some observability transformations that caused some dashboards not to load. We were missing data in
+a way. The data was there, but not in the structure and form that we expected it to be. The good
+thing is that this team was very, very engaged, and they knew exactly what they're looking for. And
+they proved us, show us, this is the dashboard. We only see half of the data, and we're like, okay,
+let's dive and see the actual raw data. And once we did that, we realized they had so many
+transformations happening in so many places. But we learned from this experience, and now our
+inspection on the data is so much better, thanks to that specific case. I really like those cases
+where we learn from our customers new things that we can leverage and share with our new customers,
+basically, that enjoy the hard work. Yeah, it just brings out the complexity of the migration task
+and the challenges around it. How do you suggest migration workflows can be reframed to reduce fuel?
+That's a question we are dealing with a lot. We had a few analogies that we started. When we
+started, we tried to give the notion of moving an apartment, right? So you can think about it as a
+chore, but you can also think about it like a new start, right? So I don't know about you, but when
+I move an apartment, I try to sort things and maybe reorganize it in a new way that is actually
+better, that I always wanted to do, but I never had a chance. I also take the time and rethink if
+those items that I've been kept for 7, 10 years and never touched, do I need it? Maybe I don't
+anymore. So moving an apartment was one analogy that we played with. Another one was like a quest,
+right? So like an adventure that you explore. So imagine people with a torch going into a cave or
+into the forest and basically discovering data that they didn't know about or dashboard that they
+don't know about that they don't even work. Because we're seeing customers having dashboards that
+don't work in their legacy vendor. And they don't know it's not working. So when they migrate, they
+expect it to work, but it actually didn't work anyway. And it's our responsibility to prove it or
+just explain it, right? So you can think about it like a quest that you discover things and you
+always get surprised. Some of us think about it like moving back, right? Something that sounds
+really scary. But then you think about it, wait, I can just transfer my credit card and all the
+commitments I have. But it's still very, very scary. You need someone to help you and guide you in
+this process. But you know it's feasible. You know it's been done before a lot. And I think that's
+one of the narratives that we're trying to change. I'm basically saying you, we're not saying it's
+easy. I'm not saying it's not scary. We're saying that we spent a lot of time and work to make this
+process very, very effective. And that's what we do. And the data is there. And we'll get you
+through it. So you can count on us to tell you not just what passed, also what failed. And that's
+our responsibility to tell you, you know, those dashboards are broken. Let's fix it together. Those
+dashboards are broken. It's not just tick, we finished. Now you deal with the dashboards that are
+not working. It's like us together trying to understand how can we fix this dashboard. Now that
+we've covered why firms want to migrate from their legacy observability stack, what are the
+challenges they face and approaches that could be taken for the migration. I want to touch on the
+next section, which is around the frameworks available. And one of the most well-known framework is
+open telemetry. Can you start off by explaining to our listeners what is open telemetry? Yeah, sure.
+Open telemetry is a set of definitions and schemas that represent observability signals. Open
+telemetry also go further and actually have the implementation. But the basic is the semantics. It's
+basically to agree between all people about what is a trace, what is a log, how do we describe a
+metric. And then the project itself continue and also implement a lot of SDKs and binaries that
+handling observability data. So you can think about the OTIL collector as an implementation of those
+semantics. You also have the OTIL SDK. Basically, those SDKs are the framework, the runtime that you
+use in order to generate those signals, those observability signals. That's an open source project
+that it's being heavily focused on from the CNCF and it's getting a lot of traction in the last
+maybe five, seven years. This is the main open source approach that we're seeing today. And what
+problem is it trying to solve? Yeah. So before open telemetry, every vendor has its own
+implementation. So if you think about it, open telemetry is the first step in order to migrate or
+allow customers to migrate easily between vendors. Because if the data signals are the same and we
+only decide where to send it, that will make the migration process a lot easier. Because all those
+things that we talked before, integrations and data pipelines and all that are already baked in, in
+a vendor neutral piece. So that will make the migration process a lot easier. We're still seeing
+gradual adoption. So we're seeing customers having a mix of old legacy vendors and auto in a hybrid
+motion. But the trend is clear. I think most companies now trying to move to open telemetry. And
+that's the one big step you can take in order to prepare yourself for migration, right? To basically
+be a vendor neutral and allow your signals to be shipped to a different vendor. Right. So what
+you're saying is that if you are vendor neutral and you're using the OTEL standards, migration
+becomes much easier. And I can guess the answer in terms of what problem GroundCover is solving over
+here. It's basically solving for firms which are not on OTEL standard. So any legacy that's able to
+migrate over to a new observability tool set. Is that right? Not necessarily. So OTEL is only about
+the data structure and generating it. But still, each vendor has its own dashboarding schemes. So,
+you know, you can have two vendors with different dashboards standards and features. And now someone
+needs to convert those dashboards from one vendor to another. And that's still not defined by OTEL.
+There are some initiatives trying to standardize also visualization layer. But honestly, we're still
+far from it becoming the standard. So monitor's definition, pipeline definitions, and dashboard's
+definition, and also integrations are still for the majority proprietary per vendor. We'll move to
+the next section, which is around validation and success measurement. After the migration, how do
+you know it's working? What are the success metrics that you use for the migration itself? Yeah,
+that's a very hard question. I'll start with the difficult part. Imagine you have a monitor that's
+never been fired. So the data is completely missing, right? Like you run the query and you don't get
+any examples. How do you know that this monitor is being transferred correctly if you don't have any
+example of that data? And the answer is it's very hard. What we're trying to do is we are focusing
+on engagement with the user. So we take the assumption that if a monitor has never been fired in the
+last month or two or three, maybe it's less important. So we might not get to 100%, but we get to
+99% of what matters. But most cases are around validation of the queries. So if we're seeing a
+widget of a time series from a vendor, we simultaneously can run those queries on our data and
+basically create a dashboard that should look exactly the same or very similar in terms of nuance of
+the UI. And we present that as a preview to the customer. And you can imagine that we display the
+users like those two dashboards and you can decide if it's good enough or not. And if the preview is
+good enough, you can just tick it. We mark this done and we basically push it to your account. So we
+basically manage it as a task that we like to do. We have all the dashboards, things that we think
+that are still pending for data, things that we think that are ready to migrate. And we give you a
+preview of each and every asset that we think is ready. And once you approve this is correct, you
+can just get it in our platform. Obviously, you can do it in bulk so you don't have to do it one by
+one. Sometimes our customers, they verify a few from each environment or a few of each type and then
+they migrate all that group. And some of our customers willing to spend two, three hours just going
+over, you know, comparison between us and the vendor and making sure 100% is correct. I personally
+think that the hybrid approach of take the top 20, top 30, how much is it for you? Make sure those
+are 100% right because those will be probably the heart of your organization and the rest we can
+work it out as we go. I think that's from my experience, this is the most effective approach of how
+not to mainly invest a few days for migrating and still get most of the value. From the migration
+process of doing it automatically. Yeah, makes sense. So for the hybrid approach where you take the
+top 10 or top 20 dashboards or monitors and ensure that it's correct, how do you ensure that it is
+correct? Is it by dual running with the legacy system? Yeah, exactly. So we instruct you to dual
+ship all the data for the migration process. And then we display live evaluation of each monitor and
+each dashboard. So you can get, you expect it to be 100% the same. That's what we usually do. We
+don't cut the old vendor before you make sure it's 100% the same. And what does a successful
+migration look like from the team's perspective? How does their life become easier? I think the
+previous approach was to professional services, right? If you're lucky enough to have a big enough
+deal for that vendor that they will allocate professional services, or even if you pay for it, you
+will get 10, 15 people walking for you, migrating manually all the dashboards and monitors. And then
+they will make mistakes because they're human. And you can imagine how tedious it is to migrate 200
+monitors manually. And then you'll have to manually go over it and approve it as the customer. And
+from what I've heard from customers, this process doesn't give you the confidence. Once you know
+there are other people doing it for you and they don't know the data as you know, I feel like this
+becomes a bit scary. So from our perspective, our focus is to find out what is the most critical
+dashboards and monitors as we spoke before. And we make sure 100% of that is migrated successfully.
+And we know how to test it. So we go over all the metrics. We parse all the query languages. We're
+talking about custom query languages that we parse and also transpile that works semantically the
+same. And we know how to present it to you. So we can analyze this dashboard that requires those 20
+metrics. Here are those metrics in our platform. This is the number of series we have. This is how
+the widget look. This is how the dashboard look. I think in general, again, this is a trust thing.
+We manage to convey and give you the trust that you need in order to make the switch. Me personally
+think that if we manage to migrate 85% of your total assets and prioritize by value and how urgent
+those monitors are, so priority of the monitors and popularity of those dashboards, I think that's a
+very successful migration. Because as the moving apartment analogy kind of hint, some of those
+dashboards, some of those broken maybe dashboards, maybe it's better to keep them out of the new
+platform. It's also an opportunity to refresh and start with a better dashboard. I think the number
+of unsupported assets is definitely a good metric to look at to understand the health of migration
+itself. What are the other metrics and signals that engineering teams can use to track the migration
+health? I think the number of integrations are a key factor. I think you don't want to lose the raw
+data because you don't know what you're missing. So even if you miss a dashboard, right, like that,
+it's only going to cost you time to rebuild the dashboard, which could be annoying, but the data is
+still there. I think no one likes to think that they lose critical data. So number of integrations
+is crucial. The monitors, you know, so how many firing monitors you have right now. This will give
+you an assurance that ground cover will wake you up at night to things that you think are matter. So
+number of integrations, number of error or non-migrated assets, number of active monitors, that's
+critical. And obviously you can look at the volume of ingested data, which somehow usually a lot
+higher in ground cover. So that's actually making it a lot harder because ground cover used to bring
+your own cloud model of observability platforms. Customers tend to send more data. And then we
+compare, you know, your legacy vendors and it shows one terabyte a day. At ground cover, you get
+five terabytes a day, 10 terabytes a day. And it makes the comparison a bit hard, but we know how to
+work with that. Like usually it's data that will be from different environments. And so it will be
+easy to isolate. So end of a dev environment or CI that usually people don't send to their
+observability to their legacy vendors, they will send to ground cover. So that's another aspect that
+we want to compare and make sure we didn't miss anything. I'm a bit confused by the last point about
+the volume of ingested data. So basically you said, if I've got that right, right, you said that you
+look at ingested data and you give an example that ground cover uses, it could be five terabytes,
+whereas the legacy system could be using one terabyte of data. Yeah. I'm struggling to understand
+how is that used as a success metric for the migration or how do you measure the success of the
+migration using that metric? So we want to make sure the customer has all the data it used to have.
+So if you had one terabyte, the minimum of data that you want to see in ground cover is one
+terabyte. As I said before, most customers send more because they usually send more data to bring
+your own cloud than they would send to SAS vendor. So our job is to try to identify what
+environments or labels you're sending now to ground cover and you didn't before. So the most common
+use case will be environment name. So dev, you probably skip that for your legacy vendor or CI or
+staging. But if you look at fraud, your environment, the production environment, you usually send
+those logs. The next one is log level. So you might send only warning and up, right? Warning, error,
+fatal, critical, all those logs that indicate for a problem. With ground cover, there is a good
+chance you're sending info or debug or even trace. So what we're trying to do is identify those
+labels and narrow down the filters that we compare. So if we realized there is a new environment in
+ground cover that you didn't have before, we will exclude it from the comparison to make sure each
+and every environment and each and every log level and each and every workload has either more or
+the same data value. Got it. We have covered a lot of ground here. And as we come towards the end of
+the episode, can you tell me what's keeping you excited nowadays in the observability space? Yeah, a
+lot of things happening in the observability space. I think AI, as you know, everyone is talking
+about AI. But in the observability space, there is two factors that can go in. So one is AI for
+observability, right? That's what most people think when you talk about AI is how do I leverage AI
+to help me understand my data, understand my issues. So root cause analysis can happen with an agent
+running alongside humans, pointing out to important information and trying to figure out hypothesis
+and compare your hypothesis as human to what they see. That's one angle and, you know, everyone is
+talking about it now. But another interesting part is most companies are now trying to understand
+how they leverage AI to help their customers solve more problems and do it faster and better. So a
+lot of engineers around the world are now trying to understand how to build agents, how to use LLM
+inside their backends and their products. And that brings a new challenge for engineers. How do we
+observe agents? How do we observe LLM calls? How do we make sure they're doing what they're expected
+to do? And again, just, you know, we all know that. But the world of unit tests has changed
+completely because those agents are not deterministic. So, you know, in the past, if we had a trace
+and we expected a specific status code or specific API response, those days are kind of gone. Like
+we need to go to more complex evals, as people now start to call it. So LLM observability or, you
+know, AI observability, which is the complementary of observability for AI, is becoming a lot more
+interesting. And we are seeing a new product trying to help engineers ship a better AI software. And
+to me and to the ground cover team, this is something that we are heavily focused on. How do we make
+sure our product is built for the next few years where engineering team are focused around shipping
+AI more and more? Sounds very exciting. Brave new world. Thanks a lot for your time, Chess. It's
+been a real pleasure. This is Bridget Shamanath for Software Engineering Radio. Thank you for
+listening. Thank you for having me. Thanks for listening to SE Radio, an educational program brought
+to you by IEEE Software Magazine. For more about the podcast, including other episodes, visit our
+website at se-radio.net. To provide feedback, you can comment on each episode on the website or
+reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at seradio.slack.com. You can
+also email us at team at se-radio.net. This and all other episodes of SE Radio is licensed under
+Creative Commons License 2.5. Thanks for listening.

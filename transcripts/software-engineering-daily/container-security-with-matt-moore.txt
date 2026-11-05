@@ -1,0 +1,274 @@
+EPISODE 1746
+
+[INTRODUCTION]
+
+[00:00:01] ANNOUNCER: Software supply chain attacks exploit interdependencies within software ecosystems. Security in the supply chain is a growing issue and is particularly important for companies that rely on large numbers of open-source dependencies. Chainguard was founded in 2021 and offers tools and secure container images to improve the security of the software supply chain. 
+
+Matt Moore is the founder and CTO of Chainguard. He started his career in compiler optimization at Microsoft and worked at Google before starting Chainguard. He joins the show with Gregor Vand to talk about container security. 
+
+Gregor Van is a security-focused technologist and is the founder and CTO of Mailpass. Previously, Gregor was a CTO across cybersecurity, cyber insurance, and general software engineering companies. He has been based in Asia Pacific for almost a decade and can be found via his profile at vand.hk.
+
+[INTERVIEW]
+
+[00:01:07] GV: Hi, Matt. Welcome to Software Engineering Daily.
+
+[00:01:10] MM: Thanks for having me.
+
+[00:01:11] GV: Yeah. Matt, you are at Chainguard. And I think let's just dive in a bit before you founded Chainguard. You've had a pretty interesting history before this. Maybe could you just tell us a bit about what you were doing before founding Chainguard? 
+
+[00:01:28] MM: Yeah. I started out my career doing something within software engineering pretty different. I really got into compilers in college. And I actually came out to the Seattle area to join Microsoft where I worked on compiler optimizations for, I think, seven years, 7 and a half years. And did all kinds of super low-level stuff. 
+
+After that, I sort of got a bit jaded on the compiler space. And I made the switch to Google where I met you know my other co-founders over another 7, 8 years where we worked on assorted different projects. I started out sort of staying in the developer tools side of things and in the language tools side of things. But it was different enough from what I was doing and it got me out of my comfort zone that I liked it and I wanted to keep going. 
+
+And so, as Google's developer tools org started to sort of transition towards much more cloud-focus. As Google started to shift a lot more of its internal infrastructure teams to have more of a cloud focus, there was this opportunity to start to do stuff with Google Cloud. And so, I jumped at the opportunity to do that. And, actually, really not that long after I joined Google, I started doing that. 
+
+And so, that's one of the things that got me exposed to containers super early. Really just as Google was starting to - I can still picture this meeting where my senior director at the time was like, "There's this thing called Docker that we're starting to hear about. We need someone to go and investigate it." And this predates Kubernetes. This predates really any of the hyperscalers paying much attention to Docker. 
+
+But, yeah. I mean, basically, that caught my attention. And I played around with it. It was really compelling. And I quickly realized that if we wanted our customers to be using this, we needed a container registry for them to post their applications in. And so, I started go Google's container registry team. I think this is back in 2014. And that got me exposed to the early Kubernetes folks before it was Kubernetes. That's how I met my co-founder, Ville. Ville sort of worked on sort of both sides of the container registry. He originally was the tech lead for Google's Cloud storage product. And he was one of the very early people collaborating on what was at the time called Project 7. 
+
+And so, the container registry builds on cloud storage. And so, I got to blame him for all of my storage woes. And he got to blame me for all of his container registry woes, which I of course just blamed on the storage layer. This also is what got me exposed to our CEO, Dan. He, at the time, was working in the serverless org on basically a reimagining of the app engine product on top of VMs, right? How could you give folks a more flexible way of running app engine-like VMs? And Docker came along. And it actually sorts of reset how they were doing it because it was such a compelling way of encapsulating applications that they sort of completely changed how they accepted stuff from users. And so, that got me exposed to him because he was one of the folks dealing with that migration of that early product to containers. 
+
+And so, over the years, we sort of bounced around and worked on all kinds of different projects together. After launching the container registry and getting a lot of these sort of adjacent products using it, I went on to start Google's container scanning product and scanning for vulnerabilities as well as other kinds of sort of interesting things customers wanted to know about the containers that they're publishing to the registry. 
+
+And so, one of the funny things was looking at what we do now. Pretty much every image folks were pushing to our registry that we were scanning had 100 or so CVEs. And it sort of funny, because the first question everyone asks is, "Well, how do I make them go away?" And a lot of them come from the base images. And the base images weren't fixing a lot of these things. And so, folks got frustrated and they were like, "What am I supposed to do about these?" Don't show them to me was one of the fun answers. And we were like, "Well, we can't really do that," because they're legitimate results that you need to know about and you need to do the analysis of whether or not you're actually affected by these things. 
+
+But, yeah. This is one of the things that led to Dan and I starting the Distroless images project at Google. And so, the Distroless images sort of have this philosophy of - the analogy I love to make is the sort of distinction between the JRE, the Java Runtime Environment, and the JDK, the Java Developer Toolkit. Right? The JDK has all kinds of sort of creature comforts for the humans, the developers. It's stuff that enable you to develop the application. But the JRE exists for the application. It doesn't have those creature comforts for the humans. It just has what the app needs to run. 
+
+And so, I like this analogy because that's sort of like what the Distroless project was trying to do. Container environments were basically full Linux distros. Thus, the name. Right? They had shells. They had package managers. And one of those many sets of vulnerabilities that shows up in things, it seemed like the package managers themselves, things like D package always seemed to have some sort of vulnerability that wasn't patched. And you sort of look at it and you're like, "Well, how many applications running in production at runtime are installing packages." You don't need these things. 
+
+And so, the Distroless project aimed at sort of creating base container environments that were designed to be what the application needs. Not what the human needs. And so, there's still a video of me presenting this back in 2017 at SwampUp. And I think it actually holds up really well. But a lot of the ideas that sort of went into that underpin what we're doing today. 
+
+In fact, someone went back about a year ago after we launched Chainguard images and left a comment on a YouTube video saying, "And then Chainguard was born." It's really funny. But, I mean, a lot of the things were doing a Chainguard tie back to that but also tie into a lot of the other stuff we're doing. 
+
+I mentioned container scanning. And we have our own container registry. But one of the many activities that we collaborated on at Google were Google would periodically look at how it could run more of its own workloads on top of Google Cloud. And Google has an incredibly intense internal security standards. And so, there were these efforts called G on G, or Google on Google. And Dan and I would get pulled into these periodically because we had a good understanding of containers. And we would talk about stuff like container signing, and how to do verification, how to do policy, how to do all these things. 
+
+And so, some of the early attempts at this were before Kubernetes had anything like admission control or good ways of doing policy. And so, it was painful. And Kubernetes and the ecosystem has come a long, long, long, long way. But some of those activities I think inspired a lot of things. 
+
+One of the funny things I think back to is like that container scanning service that we launched to do vulnerability scanning had a table called bill of materials where it would do SCA. It would extract all of the stuff. And so, stuff that's now super popular and buzzwordy like software bill of materials. These are things we were doing back in 2016, 2017 as part of sort of the internals of the container scanning. 
+
+Yeah. Fast forward to more recent times. And I left Google with Ville to very briefly join VMware. And it was either while I was there while I was sort of taking a break after that that Dan and Kim started a bunch of stuff in the supply chain security space. They helped start the op SSF. They launched projects like SLSA, Sigstore, Scorecards. And, really, things like SLSA are sort of projections of some of the internal compliance stuff that I mentioned. 
+
+Google had these fancy internal frameworks that were called things like BCID, Board Caller ID. And I think it later became Binary Authorization for Borg. Where after many years of evaluating these policies and opening bugs, they actually got the nerve to actually allow people to block deployments. But people are surprised because that's like the default mechanism in Kubernetes. But it took Google many years before they had the confidence to actually like put up roadblocks around some of this stuff. 
+
+And so, SLSA and the Sigstore stuff for doing keyless signing I think is really, really one of the most fun things in my opinion about Sigstore. I think it really changes the game with respect to software signing. But our product sort of marries a lot of these different things together.
+
+And so, reflecting back on this, I remember telling people at RSA, because they were surprised, "As a company, we aren't even 3 years old. We'll be three in early October." But a lot of the ideas behind the product we've built, it's a culmination of us working on parts of this problem for a decade. And so, in fact, when I did the math on how long ago 2017 was for the Distroless video, I was like it aged me a little bit. I was like, "Oh, my God. That was seven years ago." 
+
+[00:11:28] GV: Seven years. That feels like seven days probably at this point. 
+
+[00:11:32] MM: Yeah. Sometimes it feels, between Covid and startup life, my sense of time will never come back. Sometimes a week will feel like a year. And sometimes a year will feel like a week. But, yeah. 
+
+[00:11:46] GV: Yeah. Just kind of going back a second, I mean this is just like a fascinating history of how container registries almost even came to be. I mean, this is just fascinating to hear you talk about this. I can remember when I first heard about Docker, it feels weird to even think there's a time that we didn't know what Docker was. And I, for sure, learned about it later than you. And then just kind of going on to talking about SLSA and OpenSSF, and we had an episode on a little while ago with the guys that made GUAC. I don't know if you've - GUAC. 
+
+[00:12:15] MM: Oh. Yeah. 
+
+[00:12:16] GV: It goes with SLSA. Yeah. 
+
+[00:12:18] MM: Mike Lieberman.
+
+[00:12:18] GV: Exactly. Yeah, we had Mike on. That was a really great episode. I feel like we're coming almost full circle here where we're kind of getting to learn all the bits that have kind of come together to why we have some of these tools in existence, which is fascinating. 
+
+Chainguard, it builds itself as safe source for open source. You were kind of just getting into it there. But like what was that moment when you - I think you said it's around 3 years ago now when you thought, "Right. We should actually start a platform, a company that deals with this problem." 
+
+[00:12:49] MM: That's a good question. I mean, if you think about what was happening 3 years ago, that's right when SolarWinds happened. And, overnight, supply chain security went from this hypothetical thing that felt like a science project that only the tinfoil hack crowd really worried about to something everyone worried about. 
+
+I remember right after we launched, we launched right before a CubeCon. And the day zero event for CubeCon was - I forget what we were calling it at the time. It was like software supply chain security day or something like that. But it's the day zero around SigStore and some of the OpenSSF projects. 
+
+And I remember people attending that, that I think there was someone there from like Sherwin-Williams Paint. And I remember thinking like it's a paint company. Right? What are they worried about? And he talked about their e-commerce platform. They have software and they're worried about breaches to that. 
+
+And so, if you think about it, basically every company on the planet these days is in some way, larger or small, a software company. I'm always floored when I find out how many software engineers banks have. I think some of the big ones have somewhere to the tune of like 60 to 100,000 software engineers writing software for them. And so, software is sort of eating the world and I guess until AI eats it. 
+
+But, yeah. I mean, I think that it really caught folks' attention. And then I forget how long after it, I want to say it was like 6 months to a year later, Log4j happened. And that was probably one of the worst vulnerabilities in recent memory because of just how pervasive it was. How easy it was to exploit? And it was a zero-day, right? It took them a while to get the right patch. But, yeah. I mean, seemed like it was basically everywhere. 
+
+And so, I think the combination of - I mean, Log4j happened after we started. But I think those things really caught people's attention and made them realized that something needed to happen here. And that includes the government. There was the executive order around SBOMs as a result of the SolarWinds attack. 
+
+[00:15:18] GV: Yeah. No. Super interesting. And the problem in security is that it's actually when attacks happen that then companies get a lot of attention. It's this double-edged sword where, of course, none of us want to see attacks happen or zero days appear. However, it does give boost to certain companies and bring some out into the public sphere more. It's just, I guess, how the security ecosystem sort of has to work in a sense. 
+
+Maybe if we can just - at a high level, how does Chainguard work? What does it do? Some of the listeners probably haven't got on the website yet. And we've been talking obviously a lot about the concepts here, which is obviously related to container security and open source security. But, yeah. What does Chainguard do at that sort of high level? 
+
+[00:16:05] MM: Yeah. Our main product is Chainguard Images. And Chainguard images basically are a collection of hardened minimal container images. Ultimately, I think one of the things that resonates the most with our customers is that baseline of 100 CVEs that you get and you just have to sort of deal with. And by deal with, I mean, depending on your compliance framework, sometimes it's very painful. 
+
+Our aim is to make - where customers came to us when we were doing the container scanning service at Google, and we're like, "Well, what do we do about these?" And we weren't providing them with the base images. We couldn't fix them. Now we are. And so, basically, we want to make it so that when folks find issues in their base image, all they have to do is get the latest version of that base image from us. We want to make things coming out of scanners actionable. 
+
+It's actually one of the really interesting things. Some people think we sort of compete with the scanners. And I always say, "No." People are required by compliance to run the scanners. They just hate their scanners right now. And not because the scanners are doing badly. It's because it's their job to tell you everything that's wrong with your container. And so, in some sense, we complement the scanners better than most other images. We make them look good. Because whenever they're showing something, it's now actionable. Either it's something in your software that you're introducing and you should actually go fix that. Or it's something that is coming from the base image and we have SLAs around fixing those things. 
+
+And in many cases, we have them fixed before they even show up in the scanners. Because the scanners have to update their vulnerability database. They do this a couple times a day. And, oftentimes, we'll have things fixed before they'll even show up in the scanner. Because we pick up a fix from upstream or whatever else. And we are sort of constantly building our images. And so, as soon as those updates land, we can get those fixes out to our customers very, very, very quickly. 
+
+And so, basically, in order to do all of this, we've built our own Linux distribution that we call Wolfi. It's a glibc-based distribution, which we chose for just incredibly broad compatibility. All of the major, major distributions, all the Debian, Ubuntu, as well as Red Hat, Amazon Linux, etc., CentOS, SUSE, all of those are glibc-based distributions. 
+
+Alpine is one of the notable exceptions. And Alpine has had this sort of long history of weird compatibility quirks. And so, a lot of people struggled or have struggled in the past using Alpine in certain context because they dropped their application and it behaves subtly differently. And it could be performance. It could be how it implements some facet of the sort of libc interface. 
+
+I remember when we were building the original Distroless images, Dan making a joke. There are these pages that compare different libc implementations. And he was like, "They're missing the most important column in the comparison," which is, "is it glibc?" Because there's this thing that's called Hyrum's Law. I believe it's named after Hyrum Wright. Or he's very conveniently named after the same person. But he worked on large-scale refactoring at Google. And I think this was a quote from him that went into - I think it was in the software engineering at Google book. But it talks about how, basically, any sort of observable facet of behavior becomes part of the API contract. 
+
+And so, if you have some weird quirk in how something works, invariably at scale, someone will start to rely on behavior for their application to continue to work. Even if it's not part of your documented API surface. By changing it, you potentially break someone. And so, I think glibc has become so ubiquitous as the sort of standard libc implementation that it's sort of aligns around that. 
+
+We chose glibc for that broad, broad compatibility. And we bootstrapped our own distribution, Wolfi, on top of that so that we could - again, when we were starting Distroless, we wanted to do something sort of like what Google did internally for its runtime environments. But we didn't have an entire language team to go and like bootstrap Java for us. 
+
+And so, pragmatically, we were like, "Okay. Well, what if we just sort of extracted the necessary bits out of Debian packages and treated Debian as sort of our Java language team or our Python language team?" We did that. But that obviously comes with limitations. We don't control the debs. And so, if we needed a patch-up flight in order to fix a CVE or whatever else, we aren't in control. The set of versions that are available, we're not in control. 
+
+If you look right now, the upstream Distroless project I think only has Python 3.11. Because that's all that's in Debian. No Python 3.12. No Python 3.10. I think support goes back to like 3.7 or 3.8. And so, you're subject to those sort of limitations. But since we sort of have our own distro, we can build everything that our users want us to have. And we can fully patch everything as soon as patches are available upstream. 
+
+And so, that allows us to be sort of very vertically integrated. I like to make the analogy of Apple producing MacBooks. They own the hardware. They own the software. They own the full stack. And so, they can make these really deep decisions to optimize how like the MacBook's frame is oriented and do some really cool stuff that other laptop manufacturers struggle to compete with. 
+
+But I think we build all the way from source through to distributing container images to our users. And, really, that allows us to release stuff very, very quickly once it's available. I think that's a common misconception from folks. They think, "Oh, it's not fixed upstream." It's actually very rare that things aren't fixed upstream. Because, usually, when you go through responsible disclosure, the fixes come out basically at the same time as the CVE comes out. 
+
+And so, if there isn't a patch for it, it usually means one of two things. One, it's end of life. In which case, you get to either not get fixed or wait for your vendor to backport a patch assuming they're supporting it. Or it's something that's being contested by the maintainers, which is something we see more and more. People report bogus CVEs. They run some random scanning tool. And then without even talking to the maintainers, get some CVE numbering authority to issue a CVE for something that maintainers are like, "This isn't a vulnerability." 
+
+And I think one example that sticks out in my mind was someone filed a CVE. I forget against what. But, basically, the program didn't free memory before exiting the process. And this was very intentional. Because, it turns out, the kernel is very good when your process goes away at freeing that memory. And so, they were like, "We don't need to free it. We're exiting the process. The OS is fantastic at this." And so, it was like a knack. This is not a vulnerability. But someone just ran some tool that was like, "Oh. Yeah, this doesn't free this pointer." And then got a CVE numbered against it.
+
+[00:23:43] GV: Yeah. That was going to be one of my, I guess, main questions, which is the Chainguard image is continuously updated. And I believe one of the main outcomes that you say you can deliver to customers is zero CVEs. Just in that case, CVEs sometimes are fairly benign, if not completely bogus actually. How do you sort of look at that? 
+
+[00:24:08] MM: Y\eah. That's a great question. I think there's a few categories as you say. If it's bogus, I think, by virtue of the fact that we are a distro and we have a vulnerability feed, we can actually - for any vulnerability that is disputed by the maintainers, we can actually knack it in our vulnerability feed. And we publish our feed in a way that's sort of compatible with the Alpine security feeds to make it really easy for scanners to add support. But we actually have a very rich backing set of advisory data, which you can see on images.chainguard.dev, which is also where we have our sort of public inventory of images for folks to poke around with. 
+
+You can see when we discovered things in various images. And as well as whether it was deemed to be affected or not affected. And I think to the point about things being benign, or another one is not reachable, I think that it's a good question. I think, typically in those cases, we could say not affected in certain cases where it's not reachable. 
+
+I think one of the things that always concerns me about that is what if it becomes reachable and you've knacked this thing? That becomes problematic. And so, really, unless you were doing that reachability analysis every time the software comes out, you are sort of tempting fate that you may now be reachable and you've become desensitized to that vulnerability being in your system. 
+
+And so, the way I look at it is, if it's benign or if it's not reachable, it's relatively harmless to fix it. It may affect the urgency with which you roll out that fix. But you should still fix it. And I think once we sort of embrace that philosophy, that like always picking up patches and always rolling out patches was the right thing to do. Even if it's in I'm building some Go app and it's in a dependency that is used under certain circumstances and like the functionality isn't sort of reachable with that particular application, the scanners are going to show the result. And just because it's not reachable now, it doesn't mean it won't be reachable later. 
+
+We bias towards patching those things even if they are not reachable. One, to quiet the scanners. But, two, because I firmly believe that there's a defense-in-depth argument to just patching it anyways. And so, yes, you proved it's not reachable. But now you have two layers of defense. It's not reachable and it's patched. 
+
+One of my favorite quotes about sort of proving stuff, reachability analysis, I'm doing a formal proof that this code is not reachable. there's this great Donald Knuth quote, "Beware of the above code. I have only proved it correct. I have not tried it." And I think it speaks to the fallibility of even proofs. Proofs are often written by humans. Even if it's not written by a human, if it's written by software, software has bugs. And so, there could be some small quirk in the language semantics. The program could be doing something very subtle that throws the sort of human trying to reason about reachability off. 
+
+And so, the spirit of defense in depth, my favorite visual is basically these layers of Swiss cheese, where the more layers you have, the harder it is to get through them all. And so, it's not necessarily that you're deploying layers to your defense that you know have holes. But all software has bugs. All software has vulnerabilities. You just may not know where they are. 
+
+And so, by deploying all these complimentary layers, you improve your posture. Because a malicious actor has to get through more of those layers in order to exploit the thing. And so, if there is a bug in your reachability analysis or if there is a bug in your logic reasoning about whether or not something's reachable, you can sort of rest assured that, "Hey, you've patched it anyways." 
+
+Yeah. I think for benign stuff, I think that's sort of our philosophy. Benign and not reachable. We could say not affected for things like not reachable. But, typically, we patch them anyways. And the fact that it's not reachable could affect the priority with which you roll out a fix. But we are giving you sort of, I think, the best of both worlds. And, ultimately, the goal is to eliminate the toil on your side of having the scanner showing those results. And so, yeah. 
+
+[00:28:31] GV: Yeah. That makes a ton of sense. But as you've just been able to articulate over the last 5 minutes, there's nuances. But I think the Swiss cheese kind of model is one of the best ways to kind of visualize it. That's very helpful. 
+
+Let's just switch gears a little bit away from, say, the CVE side. Can you explain again for our listeners - I think some might be super familiar. Some not. Whatsoever. Could you explain the concept of reproducible builds and just of in the context of Chainguard images? And why is this even important? 
+
+[00:29:06] MM: Yeah. Reproducible builds. I really like the way our CEO, Dan - I don't know if he got this from someone else. But I always attribute this quote to him. He refers to reproducible builds as supply chain security cheat code. And the reason for this is, if you have reproducible builds, then I can sign something saying, "Hey, this is what went into this. Or this is how I produced it." Or whatever else. You then have to trust me in order to believe that claim about a particular build. 
+
+Reproducible builds take that to a new level. Because regardless of who is claiming that this build is the result of a particular process, I can basically take that set of instructions, run it. And if I don't get exactly the same thing, then I don't believe you. It's effectively the best kind of auditability. Or it's a provable provenance I guess would be a good way of putting it. You can basically guarantee that it was produced a particular way. And you don't have to trust someone necessarily. 
+
+I mean, there's sort of the bootstrapping part of it where like, "Okay. Yes, they say it was produced this way." And you need to sort of take and run those instructions. And, hopefully, you have a safe way of doing that. But if you don't get the matching result, then you know whether or not you should or shouldn't trust that entity, I guess. 
+
+[00:30:40] GV: Yeah. And I guess we did cover a little bit on the episode with the GUAC guys. But, provenance. You mentioned that there. Again, could you just speak a little bit to that as well? 
+
+[00:30:50] MM: Yeah. A lot of folks conflate a couple different facets of supply chain security. There's software bill of materials. And some folks sort of scope creep this to include some aspects of provenance. But the way I think about bill of materials and provenance, the bill materials is sort of like the back of a piece of food. The packaging says the list of things that went into it. High fructose corn syrup and blah-blah-blah. Red dye 5. Olives, nuts, etc. Whereas the provenance is really more about the sort of recipe and the tools that handled the ingredients to turn it into what it was. 
+
+I see it more like a cookbook. It tells you how much of ingredient X to put in. In what order? What is the process of combining them and preparing those ingredients in order to turn it into the soufflsor, whatever you're producing? And I think both of those form really interesting facets of supply chain security. Because I think there's the simple food recall thing. There's a bad batch of red onions. Figure out who got which lots of that red onion from the vendor who was affected so that you can effectively do a recall. 
+
+But there could be other aspects of it. It could be that one particular person working in a kitchen or one particular piece of machinery was contaminated. Someone didn't wash their hands. Or something else. And so, if you have multiple facilities producing stuff, it's not about the ingredients at that point. It's about how those ingredients were handled in the production of the final product. 
+
+And so, where something like Log4j is detectable with something like SBOMs, I could figure out where I have that. At which versions? There are other things that an SBOM doesn't necessarily cover because it's not about the ingredients that went into them but the process with which the final result was sort of handled. And so, this would be I think like the Codecov attack was something along these lines, where there was a bad image that was published or a bad artifact that was published that was running over people's builds. And so, it wasn't necessarily what was going into them. But the thing you were actually running over those inputs that could potentially tamper with the end result of the bill. 
+
+I think provenance is also something that's really important. And I think this is tied into SolarWinds as well. The SolarWinds attack, they were able to compromise build server. And so, all of these things I think become really interesting. And the pieces about compromising build servers and whatnot, people don't treat their developer platforms, and their build systems, production systems the way - at least most folks don't. The way you would run production. Least privilege. Constantly rotating credentials, and the hardware itself, isolation across different things. You name it. 
+
+And so, I think this is one of the things that makes it such a juicy target, is if folks can get in and stay in because you're not regularly rotating machines and you're giving those things incredibly powerful credentials, they may be a step removed from the crown jewels. But if they can influence the builds that end up running in that environment, that's almost better. And that's why supply chain attacks have become such a compelling way of compromising things. That and the same build system might cater to many, many different teams. And so, if you can get into it maybe through one of them and persist, you might be able to affect a lot more teams. 
+
+And so, I think this extends to your suppliers as well. SolarWinds wasn't the target. I mean, they were, sort of. They were the initial target. But they became the distribution vehicle. They were then used to attack their customers. And so, that sort of amplification as software is distributed is one of the things that I think makes this really, really scary. 
+
+And I think that one of the things that positioned Google I think really well years ago was the Aurora hack and how they responded to it. And if you haven't watched the Hacking Google series, there's a playlist on YouTube, it's really, really interesting. And it basically talks about how - it starts with the Aurora hack. But it covers several of them over the series. 
+
+Basically, it made Google wake up to the fact that nation-states; China, Russia, North Korea, Iran, frankly, even the United States, aren't just attacking other countries. They're attacking private companies as well. And I think in the case of Aurora, the Chinese government was trying to get access to Gmail in order to track down dissidents or something like that. 
+
+And so, this realization for Google was fortuitously a decade before SolarWinds happened. And they reacted to it by really, really intensely raising their internal security across the board. And I mentioned, even the US government, you sort of have to worry about. Because in the Snowden leaks, there were things in there talking about - I think there was like a sticky note or something that talked about where Google decrypted the traffic coming into its data centers. 
+
+Yeah. I mean, they really upped their game over - I mean, Aurora happened before I even joined. It was at this point a really long time ago. But I think that that sort of philosophy of turning your own security into an investment in that security, into a differentiator I think really is something that we are trying to instill in ourselves as well. 
+
+I mean, Heather Adkins has this fantastic line in the Hacking Google Series, where it's embracing the inevitability of someone getting in. She says something like it's not my job to keep people out of Google. But it's her job to make it hard. She goes on to say, "It's my job to make sure that, when they inevitably do get in, they have a really, really bad day." And so, to me this is the Swiss cheese. I mean, if you get in past that first layer of Swiss cheese, whatever that happens to be, it would be fantastic if you didn't have the tools lying around. Just poke around in the container file system with privilege and long-lived credentials that allow you to sort of move laterally or start to do other things, like persist. 
+
+One of the common techniques that's become more and more common to evade runtime detection tools is what's called living off-the-land attacks, where runtime detection tools are looking for binaries that shouldn't be there. Well, it turns out, people are leaving a whole bunch of really useful things around in their containers. Even just a shell, like bash. Bash has support for things like network socket. You can do things like interact with the network just because bash is in there. 
+
+Depending on how they're scanning for stuff. If the package manager is in there, you can install stuff. And if stuff coming through the package manager is kosher, then they won't necessarily detect that. But, yeah. I mean, if you're not running as root, it makes it harder to use a package manager. But not having the package manager there at all is I think a really useful thing. All these things make it harder and harder and harder for folks to compromise things. 
+
+And, in fact, a lot of compliance frameworks - and, honestly, there are times I wonder how anyone got something like FedRAMP before we existed. Because it talks about things like you have to have timelines to fix all your CVEs. But a lot of these frameworks like FedRAMP and, I'm pretty sure, PCI talk about removing all unnecessary packages. And it's like, "Okay. Well, how many people are removing the package manager from the images? How many people are removing the shells? How many people would even know how to do that without a shell?" 
+
+And so, I think that where a lot of these compliance frameworks talk about like properly minimizing images and not including things that you don't need, I don't know of anyone who achieves that other than us and other sort of things that have started to try and live in the spirit of the sort of distroless philosophy that we started a few years ago now. I won't say how many.
+
+[00:39:40] GV: Yeah. I think, probably by now, the listeners have a pretty good sense of all the things that Chainguard can help them with. I mean, there's a number of things you've probably mentioned in the last 10 minutes. I can imagine a lot of people are going - just had no clue. I should even have to think about this kind of stuff. And there we go. 
+
+Let's talk a bit about DevEx. And what does that look like for a team or a developer getting started with Chainguard and Chainguard images? I imagine they're having to bring an image into an existing project is probably a more likely scenario than a sort of greenfield. Just walk us through kind of what are some of the potential pitfalls they might hit having to bring in a Chainguard image. Or, actually, there's none. What does that look like? 
+
+[00:40:23] MM: Yeah. That's a good question. I think there segments a few ways. Our catalog of images, there's sort of two main categories I like to break things down into. There's application images, which are images you just take and run. I mean, it's stuff that like you probably aren't even building. You're probably taking it off Docker Hub or wherever else and running it. 
+
+The only reason you might be building this is you have to rebuild it and try and get rid of CVEs for some sort of compliance thing because upstream hasn't fixed - hasn't rebuilt with the latest fixes or whatever else. These are things that are really easy to drop our stuff in. Basically, we have drop-in replacements for many, many, many, many different applications where you know we own fixing all the CVEs in them so that you don't have to. And this could range from the upstream project didn't release a patch release just because there was a new Go tool chain that fixed the vulnerability in the standard library. 
+
+It's actually become surprisingly common how often the Go standard library has some CVE. And then, all of a sudden, it shows up in the entire cloud native landscape basically. Are all of those projects cutting patch releases every single time the Go tool chain releases something? Probably not. Another one is like do they fix things in their transitive dependency stuff? Anyway. 
+
+Application images, those are the easiest things to start with. Because however you're consuming those upstream images, usually you can just take ours and drop them in to the Helm chart or whatever else and start there. Then with our base images, which is our other category, which are the ones that are typically the most developer-facing, we have sort of two flavors. We've talked a lot about distroless and that sort of minimal runtime environment. This can be kind of challenging for folks to adopt because it doesn't necessarily drop in super cleanly into a Docker file workflow. I mean, especially not if you're installing more packages on that base. 
+
+And so, I wrote a blog post a couple months ago sort of talking about this where one of the funny things about distroless is, by minimizing things, that's not actually what makes the CVEs go away. What makes the CVEs go away is the fact that we're building everything from source and pulling in all those patches. Even our distro full images that have a package manager, have a shell, they're zero CVEs. 
+
+Jason Hall wrote a great blog post talking about using our images with Google Cloud workstations. Basically, a whole user environment. It has like VS Code in it and other stuff. And it's big because it has so much tooling in it. But because everything is built from source with all the latest patching in there, it's zero CVEs. 
+
+What gets you zero CVEs is really the patching. The distroless aspect makes it so it accumulates CVEs more slowly because there's less stuff to catch a CVE. And so, in terms of reaching that initial zero CVE goal, you can actually adopt what we call our dev variants. The vast majority of our images, by default - we're big believers in sort of secure by default. Our default is distroless because we believe these are more secure. They have less stuff in them, etc. I won't cover all of the virtues I've been talking about for a whole podcast so far. 
+
+But we do have a sort of distrofull version of these that we call our dev variants. Basically, take any of our tags, add -dev to the end. And it has a handful of additional packages, including APK tools. We use the APK package manager. It has all the POSIX utilities. I think we include BusyBox right now. You've got a shell. You've got you know a cat, tar, etc. And so, you can use these to drop into your Docker files as a starting point. Get to zero CVEs. And then, as a bonus around, you can then figure out whether you can go from there to something that actually drops the shell in the package manager. If that's possible, depending on what you're doing. 
+
+And so, I would say in terms of developer experience, we try and ease the on-ramp a little bit by saying, "Look, if you weren't ready to go distroless but you want zero CVEs, that's what our Dev variants are for." You can use the -dev image to have some of those creature comforts around like a shell, which you need a shell for any one of the run lines in a Docker file. And so, if you use that at all, you're going to need the dev variant. 
+
+But as folks have sort of - multi-stage Docker files came out a month or two before my distroless talk. In fact, I even mentioned Docker did me a huge favor. Because it used to be really hard to use these things in Docker files. But after multi-stage Docker files, folks have started to embrace this a little bit more, where you have that initial build container that has a lot more of the sort of creature comforts as I've been calling them in it. And you build up a whole bunch of stuff. 
+
+And then for that final container, a lot of people use from scratch, which is a great practice if folks are ready to be able to do that. But that only works if you can statically link the binary. C++, Go, Rust. But it's not going to work with Java, Python, any of these other languages. Yeah, this basically gives you an option where if your Java app is just producing a jar and then overlaying that on a Java runtime to run that JAR, that WAR file, or whatever else, you can use a multi-stage Docker file to produce this with a distroless runtime as the result. 
+
+I think one of the other things that is near and dear to me is sort of alternate build tools. I'm not a big fan of Docker file. It's super pragmatic. And I think, in many ways, enabled the popularity of the container ecosystem. But, really, Docker images are just tarballs in JSON. It's the file system and a little bit of what to run in that file system. 
+
+And so, you don't need Docker files to reduce Docker images. And there's a lot of - when I gave the original distroless talk, really, the only one I think really existed at the time was I taught Bazel how to produce Docker images. And this was mostly to get internal Google teams to be able to produce containers and publish to the registry. 
+
+But since then, Bazel and I had a falling out. And so, I've worked with a few other tools. There's a tool called KO. It's now part of the CNCF. It's for producing streamlined Go containers. And it actually pairs really well with Kubernetes. You can say ko apply, and it builds and deploys your Go application to Kubernetes. 
+
+And so, I call these sort of last-mile build tools. There's KO. There's Jib, which is another project started at Google for doing this with Java. It's a plugin for Maven and Gradle. And it's both a nautical analogy. But it's also a backronym for Java Image Builder. The Jib project is another one of these sort of last-mile image builders. Slap a jar on top of some base image. 
+
+And so, I would say these last-mile builders tend to be very well-suited for producing things that work with distroless in this sort of style. And another class of last-mile builder is probably something like buildpacks. Buildpacks, I think for certain language run times, you could use the Go static image. But, generally, the builder base pattern that they use I don't think is super amenable to going distroless, at least the last time I looked. But, yeah.
+
+[00:48:11] GV: And what if anyone goes to the website, it's chainguard.dev. Is that right? 
+
+[00:48:16] MM: Yeah. Chainguard.dev is our marketing site. You can learn more about us there. If you're curious what images are in our inventory, which is constantly expanding, images.chainguard.dev will drop you on a little search box. Type in your favorite project and you can see what we have. 
+
+Another thing that we do, since we get a lot of federal interest, we have FIPS-compliant versions of a lot of software. We're starting to produce STIGs for a lot of stuff, which is big in FedRAMP Rev 5. And that's also - images.chainguard.dev also surfaces our advisory feed. 
+
+[00:48:52] GV: I mean, yeah, that search box, I've used it. That was kind of fun just to sort of see what's there. How do you, I guess, choose which images you take on as a Chainguard image? 
+
+[00:49:04] MM: That's a good question. Basically, it's very customer-driven these days. I mean, we have customers who come in with a lot of overlap with our existing inventory. But, basically, we look at what they want that we don't have. And we see how hard it would be for us to add it to the inventory in order to get them to zero CVE. 
+
+I think there are a few areas that we've been looking at a bit proactively. One of those areas is AIML images. We've got several of those now. I mean, that's particularly topical given just how hot the AI space is right now. But I think that those images are also notoriously bad. I mean, it's sort of unfathomable how big these images are. Your typical container images - a big container image for most folks would be like a gig. Maybe two. 
+
+I've never met a data scientist that wouldn't put 15 gigabytes into their container image. I mean, these things just end up being enormous because they've got just tons and tons of stuff in it. And so, I think they were especially bad back when like Python 2 was still a thing. Because they'd have Python 2, and Python 2 versions of everything. Python 3, and Python 3 versions of everything. 
+
+But, yeah. I mean, these things are regularly like 15 gig-ish. Give or take. Several gigs. Our CUDA images are, by our standards, enormous. But they're substantially smaller. I want to say they're to the tune of five gigs or something like that. And so, they're much, much, much, much, much smaller. Which, I mean, I would still love for them to be even smaller than where they are right now. But they're much smaller than upstream. And we are working to sort of keep those fully patched and whatnot. 
+
+Just like all of our other images right now, they're in beta. And we have a handful of those. But if folks are doing stuff with CUDA to get GPU acceleration. And I think where this is really interesting is, if folks are doing inference in regulated environments where they're going to have to care about those vulnerabilities, they should definitely talk to us. Because getting rid of vulnerabilities is what we do. And we are starting to do that for these AIML images. And you know what? That's one thing you definitely don't want to get popped by like a Bitcoin miner, because they will have a field day with all of your GPUs. 
+
+[00:51:37] GV: Yeah. We had a good anecdote from Supabase who had that exact - and I believe it was to do with how you can actually run that via Postgres. And someone was able to run a Bitcoin miner in Postgres, which was pretty insane. As we sort of look to kind of wrap up, just a couple of questions. I'm kind of adding a slightly new segment. I'm just kind of curious, what's the sort of day in the life of you as the CTO of Chainguard? What does a typical day look like for you? 
+
+[00:52:07] MM: That's a good question. I would say it's changed a lot. I think one of the funny things about being a founder and a company growing as quickly as we are, is my job's completely different than it was six months ago. Maybe even 3 months ago. I spend a good chunk of time talking to customers. Both sort of pre and post-sales. Customers want to know stuff about how we do what we do. I would say that's one piece of it. 
+
+Another big piece is hiring. I spend a lot of time doing interviews because we're growing. And so, I think that's another key piece of it. And then beyond that, basically day-to-day engineering. I think I like the analogy sort of laying tracks in front of the train. Balancing between sort of making sure everyone is heading in the right direction. And as well as figuring out where we want to go and how we get there with the other sort of product and engineering leaders. I think those are the key things I juggle between. And, yeah, my calendar dictates which one I spend time on on a given day.
+
+[00:53:09] GV: Yeah. I think it's often, I don't know, under-reported how much time a CTO spends hiring and what goes into that. That sounds a very realistic answer. Yeah. Finally, if you could go back in time and give yourself advice to yourself when you're just starting out in tech, what would you now say to yourself? 
+
+[00:53:29] MM: That's a really good question. The thing I always worry about with this sort of hypothetical is the sort of butterfly effect. I like where I'm at now. But I worry I wouldn't be here if I got some great advice. Like buy Apple stock or something. But I think it would be something along the lines of doing better to get out of my comfort zone earlier and experimenting more. 
+
+I think I spent the first like seven and a half years of my career doing more or less the exact same thing. I mean, I was obviously growing. But I think that I needed to get out more. And I loved what I was doing. And I think that I learned a lot of valuable lessons doing it. But in terms of sort of breadth of exposure, I think that limited me a bit more than I think I'd like. 
+
+I don't know what things existed at the time that I was missing out on. This is really early days of cloud and stuff like that. I'm not sure any of the stuff I would have been tinkering with then would have been that interesting. But, yeah. I mean, I think it was the move to Google and then continuing on that trend of getting out of my comfort zone, and experimenting, and exploring, and whatnot that I think really grew me the most in my career. And like I said, I feel like a lot of the ideas across that sort of breadth of activities all feed into aspects of what we are doing. And so, having that breadth of experiences I think is valuable. And I wonder how much more I would be able to draw on if I had even more experiences. 
+
+[00:55:11] GV: I like that a lot. I can definitely identify with sort of first - I think in my case probably, almost 10 years of my career where actually most of the growing on the engineering side was site projects. It wasn't the day-to-day work. It was the site projects. And a lot of those side projects, what I picked up from those is very much in what I do day-to-day now. I find that interesting that that's all kind of come together. I couldn't agree more that finding more time and opportunity to experiment, to play around inside the day job, outside the day job. From an engineering perspective, I think that's a great way of looking at it. 
+
+Matt, it's been fantastic to have you today. I've learned a lot. I'm sure our listeners have as well. Just to recap, where can people get started with Chainguard and anywhere else they can follow you or not follow you? Either's fine. 
+
+[00:56:02] MM: Yeah. I mean, images.chainguard.dev or chainguard.dev, great places to get started. And, yeah. You mean like follow me on Twitter, X? 
+
+[00:56:12] GV: Yeah. I mean, I'm noticing more and more guests actually don't have a sort of following of a description. But if you do, then happy to plug it.
+
+[00:56:19] MM: Yeah. I have a Twitter handle. But I do not use it as much as I used to. It's mattomata. Unfortunately, Matt Moore, which is where I go by everywhere else, including GitHub, was taken by one of those other damn Matt Moores. Yeah. 
+
+[00:56:38] GV: Awesome. Well, yeah. Thanks again so much for coming on, for the time.
+
+[00:56:41] MM: Yeah. Thanks for having me. 
+
+[00:56:42] GV: Yeah. I feel we covered only a fraction of what we could have ultimately. Yeah, I hope to have you on again in the future.
+
+[00:56:49] MM: All right. 
+
+[00:56:50] GV: All right. Thanks a lot.
+
+[00:56:50] MM: Thank you.
+
+[END]
+

@@ -1,0 +1,504 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Tech Talk: Test in Production and being On-Call with Charity Majors
+DATE: 2018-08-31
+SHOW: CoRecursive
+LINK: https://chtbl.com/track/7D91G/traffic.libsyn.com/secure/corecursive/019_-_Observabilty.mp3
+AUDIO: https://traffic.libsyn.com/secure/corecursive/019_-_Observabilty.mp3?dest-id=628353
+DURATION_SECONDS: 2879
+TRANSCRIBED_AT: 2026-08-05T18:10:00Z
+----------------------------------------------------------------------
+Welcome to Co-Recursive, where we bring you discussions with thought leaders in the world of
+software development. I am Adam, your host. Metrics, dashboard, it's called Diet of Fire. And every
+software engineer should be on call. Boom. Hey, today's interview is with Charity Majors. We talk
+about how to make it easier to debug production issues in today's world of complicated distributed
+systems. A warning, there is some explicit language in this interview. I originally saw Charity give
+a talk where she said something like, fuck your metrics and dashboards, you should just test in
+production more. It was a pretty hyperbolic statement, but she ended up backing it up with a lot of
+great insights. And I think you'll find this interview similarly insightful. If you are a talented
+developer with functional programming skills, I've got a job offer for you. My employer, Tenable, is
+hiring. Hit me up via email to find out more. I'll also drop a link in the show notes. Tenable is a
+pretty great place to work, if you ask me. Okay, I'm hearing you a little. Can you actually hear me?
+Oh, I can hear you now. Oh, really? Yeah. Okay, let's call this the beginning. Cool. Charity, you
+are the CEO of Honeycomb.io. Accidental CEO. Accidental CEO. Well, thanks for joining me on the
+podcast. Yeah, my pleasure. It's really nice to be here. Thanks. So I used to be able to debug
+production issues. Like something would go wrong. Some ops person would come and get me. And then
+we'd look at things and we'd find out whatever. There's some query that's running on this database
+that's just like causing a bunch of issues and we'll knock it out. Or, okay, we need to turn off
+this feature and add some caching in front of it. Yeah. Yeah. And, you know, I always felt like a
+hero. It mostly works. Yeah. Yeah. And now I've woken up into this dark future where, first of all,
+now I get paid before the ops person sometimes. And then, uh, like things are just crazy
+complicated. Yeah. There's like more databases than people, it seems. And like every, every product
+that Amazon. 10 microservices per developer. Yeah. Yeah. So, uh, that's what, that's what I wanted
+to have you on because I feel like maybe I'm hoping that maybe you have an answer, uh, for all this
+mess. Oh, yeah. Well, I do. The answer is everything is getting harder. And we need to, um, approach
+this not as an afterthought as an industry, but as something that we, um, invest in. We expect to
+spend money on, we expect to spend time on. Um, and we have to upgrade our tools. Like the model
+that you described where, you know, you have your trusty, rusty ops buddy who kind of guides you
+through the subterranean passages, you know, but also like our system used to be tractable. You
+know, you could have a dashboard, you could glance at it. You could pretty much know in a glance
+where the problem was, if not what the problem was. And you could go fix it, right? Whether it's
+like launching GDB or looking at what it shipped, um, or like, you know, pairing somebody with a
+bunch of infrastructure knowledge, query, query sniffing, whatever. Um, finding the component that
+was at fault was easy. And so you just need to localize knowledge in that code base or technology or
+whatever. Um, as you mentioned, um, this basically doesn't work anymore for any moderately complex
+system. Um, the systems often loop back into themselves, their platforms. Like when you're a
+platform, you're inviting all your users' chaos to come live on your servers with you. Like, and you
+just have to make it work, right? And make sure it doesn't hurt any of your other users. Um, complex
+co-tenancy problems like that. Um, there's ripple effects. There's thundering herds. There's God
+knows how many programming languages and how many stored. And databases don't even get me started. I
+come from databases, right? So I am. Yeah. Anyway, um, the way I, I have been thinking of it is
+like, we're just kind of hitting, everyone is hitting a cliff, um, where suddenly, and it's pretty
+suddenly, all of your tools and your tactics that have gotten you to this point, they no longer
+work. Um, and so like, this was exactly what happened to us. So my co-founder, Christine and I are
+from Parse, which was the mobile backend as a service, um, acquired by Facebook. And I was there, I
+was the first infrastructure engineer. And Parse is a beautiful product. Like, we just made
+promises, you know, you can write, this is the best way to build a mobile app. You don't need to
+worry about the backend. You need to worry about the storage model or anything. We make it work for
+you. It's magic. Which you can translate as a lot of creation's work. Um, and around the time we got
+a craft at Facebook, uh, I think we're serving about 60,000 mobile developers, which is not trivial.
+And this is also when I was coming to think with dawning horror that we had built a system that was
+effectively undebuggable by some of the best engineers in the world. Like, both of our backend teams
+were spending like all of our time tracking down one-offs, which is the kiss of death if you're a
+platform. Like, so we'd be like, parse this down, like, every day. And I'd be like, parse this down,
+dude. Like, behold, my wall is full of dashboards. They're all brain. Like, check the Wi-Fi. You
+know? Arguing with your users is always a great strategy. Um, so, but like, I'd dispatch an
+engineer. I'd go try and figure out what was wrong. It could be anything. We let them write their
+own queries and upload them. And we just had to make them work. Right? Let them write their own
+JavaScript and upload them. We just had to make it work. Um, so like, we could spend more time than
+we had just tracking down these one-offs and it was just failing. Um, I tried fast forwards with all
+the things I tried. Um, the one thing that finally helped us get a dent, um, helped us get ahead of
+our problems was this janky ass unloved tool at Facebook called Scuba that they had used to debug
+their iSQL databases a few years ago. It's aggressively hostile to users. It just lets you slice and
+dice on any dimensions in basically real time. And they can all be high cardinality fields. Um, and
+this didn't mean anything to me. So I was, um, but like, we got, we got to handle our shit. And then
+I moved on, right? Cause I'm an awesome, like onto the next fire. And it wasn't until I was leaving
+Facebook that I kind of went, wait a minute. I no longer know how to engineer without the stuff that
+we've built in Scuba. Why is that? Like, how did it warm its way into my soul to the point where I'm
+like, this is how I understand what's happening in my production systems. And I, like, it's like,
+it's like getting glasses and then being told you can't have them anymore. Just like, how am I even
+going to know how to navigate in the world? So like, we've been thinking about this for a couple
+years now. And, um, I'll pause for breath here in a second, but like, I don't want to say that like,
+Hayekom is the only way to do this. Hayekom is the result of all of this trauma that we have
+endured. Like when our systems hit this cliff of complexity and we really thought at first it was
+just platforms. It was going to hit this. And then we realized, no, everyone's hitting it because
+it's a function of the complexity of the systems. You can't hold it in your brain anymore. You have
+to reason about it by putting in a tool where you and others can navigate the information. So how
+did Scuba, is that what it was called? Scuba? Yeah. So what did it, like, what did it consume?
+Structured data. It's agnostic about it, mostly logs. But it was just the fact that it was, it was
+fast. There was no like, you know, having to construct a query and walk away to get coffee and come
+back. You know, because when you're debugging, it has to be, you're asking lots of small questions
+as quickly as you can, right? You're following cookie crops instead of crafting one big question
+that you know will give you the answer. Because you don't know what's going to be the answer. You
+don't even know what the question is, right? Also, high cardinality. And when I say that, I mean,
+like, imagine you have a table with 100 million users. High cardinality fields are going to be,
+like, the highest will be anything with a unique ID, right? Social security number. Very high
+cardinality would be last name and first name. Very low would be gender and species. I assume it's
+the lowest of all, right? So the reason, I was laughing when you said, fuck metrics. I've said that
+many times. The reason that I hate metrics so much, and this is what 20 years of operations software
+is built on, is the metric, right? Well, the metric is just a number. Then you can append tags to it
+to help you group them. You're limited in cardinality to the number of tags you can have, generally,
+which is 100 to 300. So you can't have more than 300 unique IDs to group those by, which is
+incredibly limiting. Some newer things like Prometheus, like you put key body pairs in there, which
+is a little bit better. But bottom line, it's very limited. And you have to think, you have to
+structure your question, your data just right. Like all the advice you can get on how to try not to
+have these problems, which when you think about it, is stupid because all of the interesting
+information that you're ever going to care about is high cardinality. Request ID, raw query, you
+know? You just need this information so desperately. And so that, I think, was the key one thing for
+Scuba. It was the first time I'd ever gotten to work with a data system that just let you have
+arbitrary... So imagine, you know, a common thing that companies will do as they grow is, well, they
+have some big customers who are more important to them. So they pre-generate all the dashboards for
+those customers because they can't, they don't have the ability to just break down by that one in 10
+million user IDs and then any combination with anything else. When you can just do that, so many
+things get so simple. To make sure I understand it. So like if I'm using, like with metrics, I have
+like Datadog, right? And I have like a, I have a Datadog metric and it, and like I have basically
+I'll measure like this request on my microservice or whatever. Like how long does this normally
+take? Right. So it has like some sort of just the time that it takes from start to end on that. And
+I can put it on a, on a graph or whatever. So high cardinality, if I understand it as saying like,
+let's, let's not just count the single number. Let's, let's count everything. Let's, what's the user
+that requested it? It's, it's more like, so every, every metric is a number that is devoid of
+context, right? It's just a number with syntax. But the way that Scuba and Honeycomb work is we work
+on events, arbitrarily wide events. You can have hundreds, well-intrimated services usually have 300
+to 500 dimensions. So like all of that data for the request is in one event. The way we typically
+will instrument is that, you know, you initialize an event when the request enters the service. We
+pre-populate with some useful stuff, but then throughout, while the request is, is being served, you
+just toss in whatever you think might possibly be interested someday. Any IDs, any shopping cart
+information, any raw queries, any normalized queries, any timing information, every, you know, every
+hop to any other microservice. And then when the request is going to exit or error, you just shipped
+that event off to us or to Scuba. And then you can, then you have all this information that is all
+tied together, right? The context is what makes this incredibly powerful. Like a metric has zero
+context. So like when, you know, over the course of your request in your service, you might fire off
+like 20 or 30 different metrics, right? Counters, badges, whatever. But those aren't tied to each
+other. So you can't reason about them as all of these things are connected to this one request. This
+is so powerful because so much of debugging is looking for outliers, right? You want to know which
+of your requests failed, and then you want to look for what they have in common. Was it that, you
+know, there is a, you know, some of the TCP, but like statistics were overflowing only on those? Was
+it that those are the ones making a particular call to a host or to a version of the software? Like
+just being able to just, just a slice and dice and figure that out at a glance is why our time to
+resolve these issues went from like hours or days or God knows to like seconds, just seconds or
+minutes just repeatedly. Because you can just ask the questions. So I would say that to summarize,
+like the thing that makes it powerful is that the fact that you have all that context and you have a
+way to link all of these numbers together. And the fact that you've been asked questions, no matter
+how high the cardinality is. And so you can combine them, right? You want to look at the combination
+of this unique request ID, this query from this host at, you know, this time or whatever. And it's,
+it's like precision. It sounds like what I normally do with like logs. Like I have them all gathered
+somewhere in Splunk or something and I'm searching for things. It's much more like, cause logs are
+just what typically unstructured events. They're just straights, right? And if you're structuring
+your logs, then you're already like way ahead of most people. If you're structuring your logs and I
+would say, I would encourage you to structure them very widely, you know, not to issue lots of log
+lines per request, but to like bundle all that stuff together so that you get the additional power
+of having it all at once. Otherwise you kind of have to reconstitute it. Like give me all the log
+lines for this one request ID and you have to do stuff. Um, if you just pack them together and it's
+much more convenient, convenient, and then that's basically what Honeycomb is. Plus the column or
+store that we wrote in order to do the exploration. You can also think of it like BI systems. You
+can think of it like BI systems. I don't know. BI for systems, business intelligence. Oh, okay. For
+systems. Like, because like you were talking in the beginning about debugging with an ops team in a
+dashboard, right? Um, and the ops person was just kind of like along for the ride and filling in all
+of this intuition, all of this, you know, scar tissue, all of the, you know, you weren't able to
+explore that information because it wasn't a tool. It was in someone else's brain. Um, this is why
+like the best debugger on the team is almost always the person who's been there the last, right?
+Because they've amassed the most context built up in their brains, which is, I love being that hero.
+Like I love being the person who just gazed at a dashboard and go, it's red. Like I just feel it in
+my bones, but it's not actually good for us as teams, right? It's just, I can't take a vacation.
+Nobody else can explore the data. And I've now had the experience three times where the best
+debugger on the team was not the person who'd been there the longest. This was at Paris, at
+Facebook, and at Honeycomb. Because when you've taken all of that data about the system and put it
+into a place where people can explore it with a tool, then the best debugger is going to be the
+person who's the most curious and persistent. I like what you said about the intuition. And I find
+that like, um, you know, I, I described that problem of debugging something. And I know that there's
+a person on my team, John, and I feel like he just has a really good model of how the system works
+in his head. Yeah. Yeah. The problem is that systems are getting too large and too complicated and
+changing too quickly and they're overflowing our heads like across the board. But I, what you just
+said, there is another thing that I'm so, so excited about, um, which is like our tools as
+developers. They have not treated us like human beings. They have treated us like automatons, you
+know, like how many Vim sequences do you know by heart? Way too many. I know way too many. Um, it's
+been like this point of pride, which is kind of stupid. Um, so like the thing that we're really,
+like, this is all just table stakes. The stuff that we're really passionate about is building for
+teams, looking for ways to bring everyone up to the level of the best debugger or the person with
+the most context and most information about every corner of their systems. Right. Because like, if I
+get paged about something and I'm like, uh, shit, this is about Cassandra. I don't know. Fuck all
+about Cassandra. Um, but Christine does. And like, we have, didn't we have an outage that was like
+five or six weeks ago and I think she was on call then? I'm just going to go look at what she did. I
+want to like, what questions did she ask? What did she think was meaningful enough to publish the
+Slack? What got tagged as part of a postmortem? What comments did she leave for herself? You know, I
+just want to, cause I learned Linux by reading other people's bash history files and just trying all
+the commands. I love, you know, tapping into that sense of curiosity, almost that snoopiness that we
+have when people are really good at their jobs. We just want to go see how they do things. Um, I'm
+so excited about, about like tapping into like the social, you know, once we've gotten the
+information off our heads and how do we help people explore it? How do we make it fun? How do we
+make it approachable? Um, and how do we make it so that, you know, we forget less stuff? Cause when
+I go to debug a gnarly problem, I'm going to do a deep dive and I'm going to know everything about
+it for like a week. And then it starts to decay, right? I would ask me two or three months later and
+I'm just like back to zero. Um, but if I can just have access to how I interacted with the system,
+what columns did I query? You know, what, what notes did I leave for myself? What were the most
+useful things that I did? Um, and if I and my team can access that information that we've forgotten
+a lot less and that's nice. I, I find like we have, I have a bunch of dashboards that somebody has,
+has kindly made and painstakingly put together. And, um, they, they, um, they have helped me before,
+but, but not that much. Yeah. And, and fundamentally you're consuming them very passively. You're
+not actually interrogating the system. You're not throwing a hypothesis or asking a question. Um,
+and the best way to actually get good at systems is to force yourself to ask some questions, you
+know, to predict what, what, what the answer might be. Like every time that you look at someone
+else's dashboard or even your own dashboard from a past outage, it's, it's like an artifact, right?
+Mm-hmm. It's, it's not, you're not exploring it. It's a very passive consumption. And because it's
+so passive, we often miss when a data source isn't there anymore. Or when, you know, it's like the
+dog that didn't bark. I can't even count the number of times that I've been, you know, there's a
+spike and I'm just looking through my dashboards, looking for the root cause and realizing that, oh,
+we forgot to set up the graphic software on that one. Or, oh, it stopped sending, you know, or just
+something like that. Cause you're not actually actively asking a question. You're just kind of
+skimming with your eyeballs, just like scanning. I was getting tired. Agreed. I, I, you said
+something, I, I was saying, I watched this talk a few years and you said something about how we
+should be doing more. So testing in production or something like that? What does that mean? I think
+what I, what I'm trying to say is that we do test in production, whether we want to or not, whether
+we admit it or not. Every config change, like even if you devote a lot of resources to try and keep
+staging in sync with production, assuming it's even possible, your security, you know, conditions
+and blah, blah, blah. It's never exactly the same. Your config files are different. Every unique
+combination of a deploy plus the software you use to deploy plus the environment you're deploying to
+plus the code itself is unique. There's just, there's literally no way, as anyone who's ever typoed
+production knows, you know, there's some small amount of it that is, it is a test because you're
+doing it for the first time. Um, and I feel like most teams, because of, there's this whole, you
+can't test in production. We don't do anything in production that isn't tested. Like they're just
+not admitting reality. And that causes them to pour too many of their very scarce engineering cycles
+into trying to make staging perfect. When those, those cycles would be better used, making, maybe
+making guardrails for production, making, you know, investing in things like good canary deploys
+that automatically roll back with bad and promote with good. Like that part of the industry is
+starved for resources. And I think it's because we, we're, we don't have unlimited resources and the
+right place to take it from is staging. I think because, well, because staging, um, is, is just
+fragile and full of, yeah, it's just not a good use of time. I think that, and I'm not saying we
+shouldn't test before production. Obviously we should run tests, but those are for your known items.
+Um, in the future, known unknowns are not really the hardest problems or even the most frequent
+problems that we have. It's all about these unknown unknowns, which is a way I think of, of talking
+about this cliff that we're all going off. You know, it used to be known unknowns. You get paged,
+you look at it, you kind of know what it was. You go poke around and you solve it. Now it's like,
+when you get paged, you should honestly just be like, uh, what is this? You know, I haven't seen
+this before. This is new. Or you don't really know where to start. Um, partly because of the sheer
+complexity and probably just because, um, there are so many more possible outcomes or possible root
+causes. Um, you just need a different, you need to stress resiliency in the modern world, not
+perfection. And I think that I'm sort of joking and trying to push people's buttons when I say I
+test in production, but also sort of not. I mean, it's for real. Like that, how does it Google Cloud
+Platform just have last week? What did they do? So it can fit change. Worked great in staging. They
+pushed it to prod, took the whole thing down. You can't test everything. Um, so you have to invest
+in catching things. Failure should be boring, right? That's why we test in prod. And you could say
+experiment in prod. I don't know, whatever. But I think that like for the known unknowns, you should
+test before production. But there are so many things that you just can't. And so we should be
+investing more into tools that let us test. And I think that a really key part of that has been
+observability. We haven't actually, it's easy to ship things to production. It's much harder to tell
+what impact it has had. And that's why I feel like something like Honeycomb, where you can just poke
+around, is necessary. Like, I think that, I hope that we look back in a couple years at the battle
+days when we used to just ship code and wait to get paged. Like, how fucking crazy is that? That's
+insane that we used to just like wait for something bad to happen at a high enough threshold to wake
+us up. We should have the muscle memory as engineers that, like what causes things to break? Well,
+usually it's us changing something. So whenever you change something in prod, you should have muscle
+memory to just go look. Did what you expect to happen actually happen? Did anything else obvious
+happen at the same time? Like, there's something so satisfying, so much dopamine that you can get
+straight to your brain just by going and looking and finding something and fixing it before anyone
+notices or complains. So we have, like, in the real world, we have a fixed amount of resources. And
+if we're trying to decide, like, what percentage of effort should go towards, like, recovering from
+production issues and what should go towards preventing them? Oh, this is such a personal question.
+It's based entirely on your business case, right? Like, how much appetite do you have for failure?
+It's going to be different for a bank than for, you know, and how old are you? Who are your
+customers, you know? Startups have way more appetite for risk than companies that are serving banks,
+you know? It's very, very... There's no answer that's exactly the same for any two companies, I
+think. But it sounds like what you're saying to me is that we should put a lot of effort into
+recovering from production issues. Into resiliency. Yeah, into early detection and mitigation.
+Recovery is an interesting word. Often, I think, it's just understanding. There are many changes you
+have to make. Say you're rolling out a version of the code that is going to increase the RAM
+footprint. And it's not a leak. You know it. But you don't actually know how much because you run it
+in staging. And again, you're not going to have the same kind of traffic, the same variance. So you
+don't actually know. So I'm arguing that you need to roll things out. You need to have the tooling
+to make this a very, very mundane operation, right? It should roll out to 10%, get promoted, run for
+a while, get promoted to 20%, 30%. And be able to watch it so that you know if it's about to hit an
+out-of-bounds or something. Because I think it's important, like, actually. Well, I think it's just
+as a developer, it gives confidence when you can actually just roll back. But not everything is, not
+everything can be rolled back, I guess. Yeah, especially like when the closer you get to the laying
+bits down on disk, the more many things are rolled forward only. Then you start to get sweaty palms.
+I don't know. It depends. It depends. But there's, I've seen some hair-raising database migrations.
+Oh, God. I come from databases. I have done things with databases that would turn your hair white.
+So you mentioned earlier that you build your own database. Oh, no, no, no. I've spent my entire
+career telling people not to write a database. So I'd like to be very clear on this point. We have
+written a storage engine. Oh. That's my, I'm sticking to it. Tell me about your storage engine. Oh,
+it's as dead simple as we could possibly make it. It's a columnar store that is really freaking
+fast. We target one second for the 95th percentile of all queries. Why did you need your own data
+store? Well, that's a great question. Believe me, we tried everything out there. So the operations
+engineering community for 20 years has been investing in time series databases built on metrics.
+Right? And we knew that this was just not a data model that was going to enable the kind of
+interactive, fast kind of interaction we wanted to support. And furthermore, we knew that we wanted
+to have these really wide, arbitrarily wide events. And we knew that because we're dealing with
+unknown unknowns, we knew that we didn't want to have any schemas. Because anytime you have to think
+about what information you might want to capture and fit it into a schema, it introduces friction in
+a really bad way. And then you have to deal with indexes. You know, like one of the problems with
+every log tool is you have to pick which indexes you have to support. Some of them even charge by
+indexes, I think. But then if you need to ask a question about something that isn't indexed, well,
+you're back to like, oh, I'm going to go get coffee while I'm waiting for this query to run. Right?
+And then if you didn't ask the right question, you've got to go for another walk. And it's just,
+it's not interactive. It's not exploratory. So we tried everything out there. Druid came a little
+close, but it was, yeah, it still didn't have kind of richness. Yeah. We knew what we wanted. And so
+we had to write it. We wrote it as simply as possible. We were using Golang. It is descended from
+Scuba at Facebook, for sure. Scuba was just like 10,000 lines of C++. And it was entirely in memory
+because they didn't have SSDs when they wrote it. And it shills out to R-Sync for replication. It's
+janky as fuck. But the architecture is nice. It's distributed. So, you know, there's a fan-out model
+where a query comes in. It fans out to five nodes, does a column scan on all five aggregates, pushes
+them back up. There's too much to aggregate. Then it fans out again to another five nodes and
+repeats. So it's very scalable. We can handle very, very high throughput just by adding more nodes.
+So you're saying it doesn't have any indexes or it indexes everything? Well, columns are effectively
+indexes, right? Yeah. So everything is equally fast, basically. It's sort of like index everything
+because everything's a column. Yes. Yeah. And you can have arbitrarily wide. We use a file per
+column, basically. So up to the Linux file, open file handle, when it's just like 32K or something.
+Yeah. It becomes not tractable for humans long before then. Hmm. I like this idea that there is this
+very janky tool at Facebook that changed the world. Oh, they can't kill it. It's too useful. But it
+has been not invested in. And so it is horribly hard to understand. It's aggressively hostile to
+users. It does everything it can to get you to go away. But people just can't let it go. Do you
+think that more people should embrace the chaos and have more of a startup focus? Yeah, I do. Yeah.
+I thought you were going a different direction with that question. But yes, that too. Okay. Which
+way did you think I was going? Oh, I thought you were going to ask if more people should build tools
+based on events instead of metrics. Oh. And yes, I'm truly, you're very, I'm, you know, opening the
+door. We've given talks in how we built our storage engine. As an industry, we have to make the jump
+from very limited, like, the thing about metrics is also they are always looking at the aggregate.
+The aggregate and the older they are, the less fine-grained they are, right? That's what they drop
+data is by aggregating at the right time. We drop data by sampling instead because it is really,
+really powerful to have those raw events. This is a shift that I think the entire industry has to
+make. And I almost don't care if it's us or not. That's a lie. I totally care if it's us or not. But
+there needs to be more of us, right? There needs, this needs to be a shift that the entire industry
+makes because it's the only way to understand these systems. It's the only way I've ever seen. We
+should talk about tracing real quick because tracing is just a different way of visualizing events.
+Tracing is the only other thing that I know of that is oriented around events. What I was starting
+to say was that metrics are great for describing the health of the system, right? But they don't
+tell you anything about the event because they're not fine-grained and they lack the context. And as
+a developer, we don't care about the health of the system. If it's up and serving my code, I don't
+give a shit about it. What I care about is every request, every event. And I care about all of the
+details from the perspective of that event, right? And we spend so much time trying to work
+backwards from these metrics to the questions we actually want to ask. And that bridge right there
+is what is being filled by all of this intuition. And jumping around between tools, like jumping
+from the metrics and aggregate for the system, then jumping into your logs and trying to grub for
+the string that you think might shed some light on it. And everything becomes so much easier where
+you can just ask questions from the perspective of the event. Tracing is interesting because tracing
+is just like Honeycomb except for it's depth first, is how I think of it. Honeycomb is breadth first
+where you're slicing and dicing between events, trying to isolate the ones that have characteristics
+that you're looking for. And tracing is about, okay, now I've found one of those events. Now tell me
+everything about it from start to finish. And we just released our tracing product. And what's
+really freaking cool about it is you can go back and forth, right? You can start with, all right, I
+don't know the question. All I have is a vague problem report. So I'm going to go try and find
+something, find an outlier, find an error that matches, you know, this user ID query, whatever. Oh,
+okay, cool. I found it. Now show you trace. Trace everything that, you know, hits this hop or this
+query or whatever. And then once you've been like, oh, cool, here's, I found, I found one. Then you
+can zoom back out and go, okay, now show me everyone else who was affected by this. Show me everyone
+else who has experienced this. And we've been debugging our own storage engine this way for about
+three or four months now. It is mind blowing just how easy it makes problems. Yeah, that sounds
+powerful for sure. I guess we're kind of getting the tools back that we lost when we split up into a
+million different services in some ways. Yeah, totally. It's kind of like distributed GDB. So I
+don't talk to too many ops people on this podcast. I wanted to ask you, what do you think developers
+have to learn from like an ops culture or mindset? Oh, that's such a great question. First of all, I
+heard you say that you're on call and you get paid for the ops people. Bless you. This is the model
+of the future. And I want to make it clear that I don't want to... Ops has had a problem with
+masochism for as long as I've been alive. And the point of putting software engineers on call is not
+to invite them into masochism with us. It's to raise our standards for everyone and the amount of
+sleep that we should expect. I think I feel very strongly about this. The only way to write and
+support good code is by shortening those feedback loops and putting the same people who write
+software on call for it. So it's just necessary. In the glorious future, which is here for many of
+us, we are all distributed systems engineers. And one thing about distributed systems is that it has
+a very high operational cost, right? Which is why software engineers are now having to learn ops.
+I'll often say that I feel like the first wave of DevOps is all about yelling at ops people to learn
+how to write code. And we did. Cool. We did. And I feel like now for just the last year or two, the
+pendulum has been kind of swinging the other way. And now it's all about, okay, software engineers,
+it's your turn. It's your turn to learn to build operable services. It's your turn to learn to
+instrument really well, to make the systems explain themselves back to you. It's your turn to pick
+up the ownership side of the software that you've been developing. And I think that this is great. I
+think this is better for everyone. It is not saying that everyone needs to be equally expert in
+every area. It's just saying that what we have learned about shipping good software is that everyone
+should write code and everyone should support code. It's something like 70%, 80% of our time is
+spent maintaining and extending and debugging, not greenfield development. Which is fundamentally,
+like software engineers do more ops than software engineering. So I think it makes sense to
+acknowledge that. I think it makes sense to reward people for that. I am a big proponent of you
+should never make someone a senior engineer. Don't promote them if they don't know how to operate
+their services, if they don't show good operational hygiene. You have to show that this is what you
+value in an org, not what you kick around and deprioritize. And people pay attention to signals like
+promotions and pay grades and who thinks they're too good for what work. Definitely. I think there
+is an ops culture. Maybe it's just my perception. You mentioned masochism. I don't know where the
+causation and correlation go. I don't know if developers are going to become more... There's a
+certain attitude sometimes. And I don't think there's anything wrong with this. But call me when
+something's on fire. That's when I'm alive, right? Is when things are breaking. Yeah. Believe me,
+I'm one of those people. I love it. I love it. I'm the person you want to call in a crisis. If the
+database is down, we're not sure if it's ever coming up again, the company might be screwed. I am
+the person that you want at your side. And I've spent my career working myself out of a job
+repeatedly. I guess that's why I'm a startup CEO now. But that aside, you can both enjoy something
+and recognize that too much of it is not good for you. I enjoy drinking. But I do try to be
+responsible about it. Yeah. I don't know. I mean, I think that the things that you call out and
+praise in your culture are the things that are going to get repeated. And if you praise people for
+firefighting and heroics, you're going to get more of that. And if you treat it as an embarrassing
+episode that we're, you know, yeah, glad we got through it together. We privately thank people or
+whatever. But you don't call it out and praise it. And you make clear that this is not something you
+value, that it was an accident. And you take it seriously, you know, and you give people enough time
+to execute on all the tasks that came out of the postmortem instead of, you know, having a
+retrospective, coming up with all the shit and then like deprioritizing it going on to feature it.
+That doesn't say, yes, we value your time and we don't want to see more firefighting. I think that
+these organizational things are really the responsibility of any senior management and senior
+engineers. It's a tricky problem. I wanted to ask you, you are now CEO. Do you still get to, you
+know, work as an individual contributor? Do you still get to fight fires and get down in the
+trenches? I'm not, I'm not. Well, I am fighting fires, but not of the technical variety. I wanted to
+be CTO. That's what I was shooting for. But circumstances. I don't know. I mean, I, I believe in
+this mission. I've seen it change people's lives. I've seen it make healthier teams. And I am going
+to see it through. I really miss sitting down in front of a terminal every morning. I really,
+really, really do. But I've always been highly motivated by what has to be done. You know, I'm not,
+I don't play with technology for fun. I get in the morning and I look at what, what needs to be
+done. So I guess, I guess this is just another variation on that. This is what needs to be done. I
+spent a year trying to get someone else to be CEO. I'm done. I can't find someone. That's fine. I'm
+in it for now. I'll just take it as far as I can. It's a very pragmatic approach. I always worry,
+like, you know, that if they, if they take my, whatever, my text editor away from me, like, I'll
+never get it back. Just because I've seen it happen to other people. For sure. Sure. I've written a
+blog post about the engineer manager pendulum. Um, because I believe that the best technologists
+that I've ever gotten to work with, um, were people who had gone back and forth a couple of times.
+Um, because the best tech leads are the ones who have spent time in management. They're the ones
+with the empathy and the, um, the knowledge for how to motivate people and how to connect the
+business to technology and explain it to people in a way that motivates them. And the best managers
+I've ever had, I mean, wine managers were always never more than two or three years removed from
+writing code, doing hands-on work themselves. And so I feel like it's a real shame that it's often a
+one-way path. And I think it doesn't have to be if we're assertive about knowing that what we want
+is to go back and forth. Certainly what I hope for for myself. Yeah. There doesn't seem to be a lot
+of precedent for, for switching back and forth. There isn't. But, um, since I wrote that piece, I,
+uh, I still get contacted by people every day just saying, thank you. This is what I wanted. I
+didn't know it was possible. I'm totally going to do it now. I actually wrote it for a friend of
+mine at Slack who was considering going through that transition. I was just like, yeah, you should
+do it. And I wrote the post for him and he went back to being an IC and he is so much happier. So he
+went back to being a contributor rather than a, you know, a management role? Yeah. He was a director
+and he's having an immense amount of impact in his senior IC role. Cause he, he's been there for so
+long. He knows everything. He can do these really great industry moving projects. Oh, that's
+awesome. How are you doing for time? Do you have to run? Um, I don't know. Let me see. Oh no, I can
+do a few months late. So do you like dashboards or not? Um, I think that some dashboards are
+inevitable. Like you would need a couple of just like top, top level. All right. I think that a
+couple are inevitable, but they're not a debugging tool, right? They're a state of the world tool.
+As soon as you have a question about it, you want to jump in and explore and ask questions. And I
+don't call that a dashboard. Some people do. Um, but I think it's too confusing. Interactive
+dashboards are fine. Um, but you do have to ask that question. Ask those questions. You need to
+support, you know, and what about this? And what about for that user? And what about, you know, I
+don't care what you call it as long as you can do that. I do. I also think that like, um, a huge
+pathology right now of these complex systems is that we're over paging ourselves. And we're over
+paging ourselves because we don't actually trust our tools to let us ask any question and isolate
+the source of the problem quickly. So we rely on like these clusters of alerts to give us a clue as
+to what the source is. And if you actually have a tool with this data that you trust, I think that
+the only paging alerts you really need are like, uh, requests per second errors, latency, um, maybe
+saturation. Um, and then, and then you just need a dashboard that at a top level, at a high level
+shows you that. Um, and then whenever you actually want to dig in and understand something, then you
+jump into a more of a debugging framework. So these issues you talked about before, uh, like a
+specific user, um, I, like you would never get paid for that. How would that come to your attention?
+That is a great question. That is a great point. So many of the problems that show up in these
+systems will never show up in your alerts or else you're over alerting, right? Because they're
+localized. This is another thing that's different from this, about the systems that we have now
+versus the old style of systems. Like it used to be that everyone shared the same tools and, you
+know, they shared a tier for the web, for the app, for the database. And so they all had roughly the
+same experience. With these new distributed systems, you know, I mean, like say you had a 99.5% real
+liability in your old system. Well, that meant that everyone's erroring like 0.5% of the time. So I
+mean, on the new systems, um, it more likely means that, um, system is like a hundred percent up for
+almost everyone, but everyone whose last name starts with SHA who happens to be on this chart,
+they're a hundred percent down, right? You get the same, like if you're just getting the top level
+like percentages, your paging alerts are not going to be reflective of the actual experience of your
+users. So then you're like, well, you can generate alerts for every single, like, you know,
+combination of blah, blah, blah, blah, blah. And then you're just like going to have black alerts
+for the whole time. So honestly, like a lot of, a lot of the problems that we are going to see are
+going to come to us through support or through, you know, users reporting problems. And over time,
+as you're interacting with the system, you'll learn what the most common high signals are. Maybe
+you'll want to have like an end to end check that, uh, traverses every shard, right? It's every
+shard, um, or something like that. It's, it's different for every architectural type. Um, but I
+don't remember what the question was. Yeah. Oh, I was just like talking about the difference in
+systems. Yeah. You can't, there are so many ways that systems will break, but only affect a few
+people now. Um, so it makes the high cardinality, um, questions even more important. And like you
+were mentioning, you know, developers should, should be able to operate their systems. I, I think
+like, um, actually developers should spend time doing support. It's, it's not, it's horrible. It's
+not fun. Yes. But, uh, but it really empathy for your users. Yeah. And so the, the issue, like with
+whatever you said, users with the last name SH, like that'll come in, you know, that'll come in.
+It's a support ticket. And if, if I'm busy and I'm a developer and that, I'll be like, that doesn't
+make sense. Are you sure? And then like, but if I actually have to, if I'm the one who has to deal
+with this ticket, you know? Yeah. No, totally. Like, yeah, we're big fans of, you know, having
+everyone rotate through, you know, on call, rotate through support, um, triaging. It doesn't even
+have to be that often, you know, maybe once a quarter or so is enough to keep you very grounded.
+It's like an empathy factor. I think. It really is. Yeah. You know, and, and like one of the hardest
+things, one of the things that separates good senior engineers for me is that they know how to spend
+their time on things that have the most impact, right? Um, business impact. Well, what does that
+mean? Well, often it means things that actually materially affect your user's experience. And
+there's no better way than just having to be on a support rotation. Because if you don't, if you
+aren't feeding your intuition with the right inputs, you're going to be off. Right. I like to think
+of like the intuition as being something you have to kind of cultivate with the right experiences,
+um, and, and the right shared experiences, right? You want a team to kind of have the same idea of
+what makes important, important. And as a team, like, I feel like there, there's healthy teams and
+unhealthy teams. Um, but I mean, some teams, uh, really, uh, gel and I always feel like, uh, the ops
+people tend to be more cohesive than, than other groups. A lot, a lot of it is because of it's like,
+it's like the, uh, band of brothers effect, right? You go to war together, you have each other's
+backs, you know, getting woken up in the middle of the night. There's just a, every, every team, I,
+every place I've ever worked, the ops team has been, you know, the one that just has the most
+identity, I guess, uh, the most character and identity, the most in jokes, usually very ghoulish,
+you know, graveyard humor. Um, but I think that, I think that the, um, the impact of a good on call
+rotation is that there is this sense of shared sacrifice. And I would liken that to salt in food. A
+teaspoon makes your meal amazing. A cup of it means that you're, you're crying, you know, uh, like a
+teaspoon of shared sacrifice really pulls a team together. Yeah, I can see that. Yeah. You want,
+you, you don't want it to be, you don't want it to be like the person can't sleep at night. No, no.
+But like if, if one of the people on your team has a baby, then everybody just like immediately
+volunteers, they're not going to let them get woken up by the baby and the pagers. They're just
+going to fill in for them until they're for the next year. You know, that, that type of thing, like
+lowering the barrier to, it should just be assumed that, you know, you want to have each other's
+backs, that nobody should be too impacted that, you know, as, as an ops manager, whenever somebody
+got in the middle of the night, I would encourage them not to come in or to sleep in, or I would
+take the pager for them for the next night or something like that. It just, looking out for each
+other's welfare and wellbeing is, it's a thing that finds people, I think. Definitely. Well, it's
+been great to talk to you. Was there anything, I don't know, I liked your, uh, I liked your
+controversial statements about, you know, fuck metrics. What else you got? Metrics, dashboards, can
+all die in a fire. Yeah. And every software engineer should be on call. Boom. All right. There's the
+title for the, uh, the episode. There you go. I'm going to make a lot of friends here. All right.
+That's the show. Thank you for listening to the co-recursive podcast. I'm Adam Bell, your host. If
+you like the show, please tell a friend. Do you like the show?

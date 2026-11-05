@@ -1,0 +1,543 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 744: Danilo Krummrich on Rust in the Linux Kernel
+DATE: 2026-10-29
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/10/se-radio-744-danilo-krummrich-on-rust-in-the-linux-kernel/
+AUDIO: https://traffic.libsyn.com/secure/seradio/744-danilo-krummrich-rust-linux-kernel.mp3?dest-id=23379
+DURATION_SECONDS: 3253
+TRANSCRIBED_AT: 2026-11-04T02:41:42Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Gregory
+Kappemmer. Today's guest is Danilo Krumich. He's a principal software engineer at Red Hat. He's a
+Linux kernel maintainer and he's a member of the Rust for Linux core team. Hey, welcome to Software
+Engineering Radio. Hello, Greg. Nice to be here. Thank you for being willing to join the podcast.
+I'd like to go ahead and dive right in. We're going to be talking about the Linux kernel and how you
+and your team members have been introducing Rust into the Linux kernel. So at the start, I just
+wanted to dive in with a few very quick definitions. First of all, I mentioned that you're a member
+of the Rust for Linux core team. Can you tell us a little bit, what is that Rust for Linux core
+team? So the Rust for Linux core team is not something that is super official organization or
+something. It's really just the core contributors that have been building major building blocks in
+the Rust subsystem and building major Rust infrastructure that regularly come together to meet and
+discuss topics. Okay, that's helpful. Now, the other thing that I learned is that you are involved
+with a project that's called the DRM subsystem that is a part of the Linux kernel. Can you tell our
+listeners a little bit about what DRM is and how that's important in the context of Linux? Of
+course. So DRM basically means direct rendering manager and it's the subsystem that deals with GPUs
+in the Linux kernel. So from a layering perspective, it is kind of the lowest layer for GPU drivers.
+And I think the best way to think about it is it's the operating system of the GPU. So GPU drivers
+deal with things like job and command submissions, scheduling, dependency management, memory
+management, address space management. And the DRM subsystem itself basically provides the building
+blocks for this operating system that every driver builds for the GPU. So it provides common
+components and provides the glue code to other subsystems. So what we're going to be focusing on is
+something called Nova. And my understanding is that Nova is built in Rust for Linux. And my question
+is, how does Nova connect to DRM? So I think one can say that Nova is built in Rust for Linux. In
+the end, it's just, it happens to be a driver that is built with the Rust programming language, but
+it is technically part of the DRM subsystem. So it's a GPU driver. Okay. So Nova is a GPU driver.
+And my understanding is that before Nova, there was previously a driver for NVIDIA GPUs that was not
+implemented in Rust. Can you tell us a little bit about that? Right. So the upstream driver that was
+there before Nova and is still there, of course, is the Nouveau driver. And it is a driver that has
+a long history, supporting a lot of old GPUs still. It is in development for, I think, about two
+decades. And over the time it was in development, there have been new requirements, new
+architectures, new ways of how NVIDIA GPUs work. And that basically lead to a point where it became
+more difficult and difficult to maintain the driver, which is one of the motivations for Nova. Okay.
+So if I'm understanding you correctly, Nouveau is the version for NVIDIA GPUs implemented in C, and
+then Nova is the version for NVIDIA GPUs implemented in Rust. Is that the right way to think about
+it? That's correct. Okay. Okay. So are there specific GPUs that you're targeting in Nova? Although
+our focus isn't really on GPUs per se, can you give our listeners a sense of what kinds of GPUs
+you're targeting? Right. So Nova draws a clear line of which GPUs are supported. And this ties back
+to what I just said about the architecture of how the GPUs work did change over time. So Nova starts
+supporting GPUs from the Turing architecture onwards, which are the GPUs which have the so-called
+GSP, which means GPU system processor built in, which is the main microcontroller of the GPU that
+runs the NVIDIA resource manager, which is how the firmware is called, which itself manages GPU
+engines, resources, and so on, on behalf of the kernel driver. So when I previously said the GPU
+driver in the DRM subsystem is kind of the operating system of the GPU, that's correct. But a lot of
+the stuff that's actually going on is also within the firmware in modern GPUs. So that's also part
+of this operating system, if you want to think that way. Okay. That's really helpful. Now, we're
+going to do a really big deep dive when it comes to the specifics about how you used Rust in Nova.
+And we're going to talk about what's built there now, how you created it, how you're testing it, how
+you evaluate performance. But before we go into those details, I think it's really critically
+important to stress you had to start fresh with Rust. So can you tell us a story about how you hit a
+wall when it came to implementing Novo in C? And at a high level, what is it that really motivated
+you to try to do Nova and Rust? So back when I started to work at Red Hat, I came in touch with DRM
+drivers and the DRM subsystem, which was the first time in my career as a kernel engineer. And I
+worked in the beginning on a component that was called GPU VM. So it's the GPU's virtual address
+space manager. It's one of those building blocks to build those drivers or those GPU operating
+systems to keep that terminology. And when I worked on this component, the project I implemented it
+for first or that I used as a pilot to evaluate the design of the component was Nouveau. And this
+was the way I got in touch with the Nouveau driver. And together with this component, I also wrote a
+new UAPI for Nouveau, which was targeted at supporting Vulkan compatible user space drivers on top
+of Nouveau. So I got into Nouveau, worked on Nouveau quite a bit and also discovered the limitations
+for supporting such an API. And it basically comes down to the layering of the architecture within
+Nouveau that just has a lot of history. And with this history, the layering doesn't really work out
+in a way that it's easy to build a correct Vulkan compatible UAPI implementation on top of the
+existing infrastructure in a way that does not cause problems. So most of those problems are locking
+infrastructure problems, locking layering and so on. It would go a little bit too deep into details
+to discuss that part. But this was clearly hitting a wall in terms of how the architecture of the
+driver turns out to be future proof. And this is one of the motivations where I became more
+responsible for the Nouveau driver by being a contributor and working on those things that we should
+look for a different way to approach it. There were other reasons for that as well. One of the other
+reasons was also that the GSP firmware happened to be pretty unstable over a long period of time,
+which made sense for NVIDIA because they were distributing their driver in a way where they make
+changes to their firmware, make changes to their out-of-tree kernel driver, make changes to the user
+space and then distribute everything as a single package. But of course, for an entry driver that
+has to remain compatible with firmware binaries, this is not an option. So dealing with that part
+also causes a lot of pain. And in addition to the existing hardware abstraction layers in Nouveau,
+where we now also need firmware abstraction layers that keep changing over time, it adds much more
+complexity and even more open-coded or hand-weaved Vtable mess that was just not scalable to
+continue with. And so we approached going for a new driver. Okay, thank you for all of those
+details. I wanted to double-click on two phrases that you used to make sure that we're all on the
+same page. First of all, you mentioned the phrase Vulkan-compatible. And then second of all, you
+mentioned the phrase entry driver. Can you say what both of those mean? So Vulkan-compatible just
+means that it's a UAPI exposed to user space, where user space libraries can build on top of to
+build an API that ties back to the Vulkan API, which is a standard. So this ties back to Vulkan
+being more fine-grained about controlling the GPU's virtual address space. So it needs a mechanism
+where user space is in charge of deciding how this virtual address space layout looks like, how
+objects are mapped in memory. And the kernel needs to provide an API for that and has to pass
+control to user space about those details, which the underlying hardware abstraction and firmware
+abstraction layers have to be capable of passing it up. So that's definitely a difficulty here. The
+second question you asked was about entry driver, which means that the driver is part of the Linux
+source tree and is supported within Linux Torvald's Git tree of the Linux kernel. Okay, thanks.
+That's really helpful. So if I'm understanding you correctly, Nova is a user space driver for NVIDIA
+GPUs. Is that the right way to express it? So Nova is the kernel space driver. The user space driver
+is, for instance, Mesa with NVK. So Mesa is a huge library which contains different user space
+drivers that sit on top of the kernel drivers. All right. Thanks for that clarification. That was
+super helpful. In a moment, we're going to dive into your motivation behind using Rust in the Linux
+kernel. And then we're going to talk about exactly what you built and how you evaluated it. But
+before we do that, is there anything that we haven't covered at a high level that you think would be
+helpful for our listeners? I think we're all set. All right. Let's go into the next phase. So what I
+want to talk about now is the fact that, good grief, the Linux kernel was implemented almost
+exclusively in C for over 30 years. So my sense is that it must have been a really big decision to
+actually pick Rust for Nova. So can you walk our listeners through why the community decided to
+support a second language? So I think roughly two thirds of serious kernel CVEs stem from memory
+safety bugs and 30 years of C discipline hadn't moved that number in any other positive direction.
+So I think there is a huge motivation for a language that delivers memory safe concepts. And I think
+Rust is just a good fit for that. It's a system level language, has no things like garbage
+collectors, has a minimal runtime, direct memory control, and is C API compatible. Okay. Okay. So
+you happened to mention one of the things that I was really interested in. You said memory safety.
+So briefly, can you say what is the meaning of memory safety? It basically means that there is a
+compiler enforced guarantee that code only touches memory it actually owns and memory that is still
+valid and only touches it in a permitted way. Thanks for that definition. That makes sense. Now,
+when you mentioned the idea of the driver being like the operating system for the NVIDIA GPU, that
+made me think of the kinds of bugs that are related to memory safety that you might find in an
+operating system, like a use-after-free bug or a buffer overflow or some kind of data race. So can
+you tell our listeners a little bit about how using Rust can help you as a Linux kernel developer
+avoid these classes of bugs? Yes. So Rust has a very powerful type system, which allows us to encode
+large parts of semantics of an API. Plus, it provides mechanisms to track ownership and lifetimes,
+like with the BorrowChecker it has built in. So my understanding is that many of these bugs are
+going to be found at compile time. What's the reason that the bugs are not found at compile time if
+you're using C or C++ as opposed to Rust? So C operates on raw pointers. The same is true for C++,
+whereas Rust has the concept of references where the compiler actually checks where the references
+originate from and tracks the ownership and lifetime of the reference. Okay, so there's this idea of
+lifetime, and then there's this idea of BorrowChecking. And we're going to investigate those in much
+greater detail. But can you tell me a little bit more, when we talk about a variable and its
+lifetime, what's the meaning of lifetime? And then what specifically does the Rust BorrowChecker do
+in the context of the Nouveau driver? So I think the best way to describe a lifetime is to say that
+the compiler basically makes sure that a reference is only valid for a certain scope within the
+program. The scope can be either a scope as it is usually described, like from a control flow
+perspective, but it can also be a semantic scope when it comes to generic lifetimes, for instance,
+through generic associated types. We're using this concept very heavily in the kernel, especially in
+the driver core parts, where the driver model mandates that certain resources must only be accessed
+and used and owned by a driver in a certain scope. And this is the scope where the driver is bound
+to the device it actually operates. Okay, I see what you're getting at. Can you give us a concrete
+example of a kind of bug that would be possible in C if you didn't think about it carefully, but
+would not be possible in Rust because the compiler would catch it for you? I think a good example is
+the result type, where the compiler ensures that the caller has to deal with the return value being
+possible to contain an error and automatically propagates it up the stack if necessary or deals with
+it directly. But it has to deal with it. It's not like it can be ignored and silently forgotten to
+check the return value and then just keep operating as if the error wouldn't be there. So error
+checking is a good example. Okay, that makes sense to me. I was thinking return value checking would
+be one example. And I think I've even read about that being mentioned on the Linux kernel mailing
+list. Others might be related to things like memory leaks or maybe cleaning up if the program
+crashes in some ways. Are there anything else that you can tell us about how Rust might help you in
+the context of memory leaks or various types of cleanups when you face an error? Right. So there is
+a destructor implementation that's called the drop trade that can be implemented by types. And it
+makes sure that if an object goes out of scope, the destructor is invoked directly and things are
+cleaned up properly. It is, however, not a guarantee. It is valid to forget about a value in safe
+code. So memory leaks are not really enforced by the language in terms of being part of the safety
+guarantee. Okay. I wanted to now read a quote that I read from Greg Crowe Hartman on the Linux
+kernel mailing list. And the quote is as follows. The majority of bugs, quantity, not quality or
+severity we have are due to stupid little corner cases in C that are totally gone in Rust. So I have
+to say that's a pretty provocative statement because it actually says totally gone in Rust. So first
+of all, is that your experience as well? And can you amplify that quote and share some stories or
+examples? So I think that's absolutely true to a large part. There are cases that are still not
+covered, like the ones that I just mentioned with memory leaks. But the majority of issues,
+absolutely. And I think it goes even beyond the small little corner cases. I previously already
+mentioned that we are heavily relying on lifetime semantics in the driver core. And that it helps us
+to enforce driver lifecycle rules, which, if got incorrect, is a major source of bugs in the kernel.
+And Rust actually helps us to enforce those lifecycle rules at compile time, which is a huge benefit
+beyond just the small little corner cases. Okay. So it can help for small corner cases, but I think
+you're contending it can help in a much bigger way as well. Is that the right way to interpret it?
+Absolutely. Yes. Okay. So we've got this entry nova. It's part of the Linux kernel. It's implemented
+in Rust. And before we go into the details of what you're building and how you built it, I just
+wanted to briefly quantify how much Rust is in the Linux kernel today and how fast that part of the
+code base is actually growing. Can you roughly quantify that for our listeners? So I think if we
+leave out vendored code, I think we're at about 120,000 to 150,000 lines of Rust code in the kernel
+currently with a growth rate of, I think, about 20% each cycle. So if Rust is roughly 120,000 lines
+of code in the Linux kernel, and from what I recall, it's about 300 to 400 files in the kernel, my
+next question is, how many lines are in the Linux kernel overall, and how does that put the amount
+of Rust code in context? Can you share a few more details? That's a good question. And actually
+working on the kernel for a long time now, I lose a little bit of track of how many lines of code we
+actually have, but I think we should be at about 40 million lines of code overall in the kernel. And
+yes, I think that number sounds very huge compared to the number of how much Rust code we have in
+the kernel. But I think there is a very good reason for that. The efforts about Rust in the kernel
+are currently focusing mostly on enabling drivers to be implemented fully in Rust with fully safe
+APIs. And therefore, a lot of the efforts go into abstracting existing APIs that exist in C, which
+carry all the real work or a lot of the real work to abstract them in a way that we build an
+abstraction around those APIs, encoding the semantics of those APIs where necessary, and providing a
+safe API to drivers. We have a few components in development that also contribute to this number and
+are continuously growing and will grow faster and faster over time. Nova is one of them. Nova has
+about 13,000 lines of code currently and is moving a lot. I don't know how much code the binder IPC
+module is, but I also think it's roughly that scale. Thanks for that response. That actually
+connects to a quote that I wrote down in my notes. Ideally, unsafe code would only be needed for the
+firmware interface where there is shared memory. And I think that quote connects to several words
+that you've used previously. So first of all, can you tell us why is it a good idea for unsafe code
+to only be used at the firmware interface where there is shared memory? So I wouldn't say it's a
+good idea to use it for that. It's more that it was one of the things where I was expecting that
+we're not getting entirely around using unsafe code within the Nova driver. I think in every other
+place, it's definitely possible to stick with safe APIs. The difficult part about the firmware APIs
+is that the driver and the GSP, so the GPU system processor, communicate through shared DMA buffers
+with each other. And the difficulty here is about ownership of that memory. So one cannot just
+create mutable references or references to those memory objects because they may be concurrently
+used by the device. And this is something that has to be asserted from a semantic point of view
+where we know that the GSP system processor is not accessing a certain area of memory at the same
+time where we are accessing it from the CPU in order to create those references to deal with those.
+Structures. However, it has been turned out that for a large part of the interactions, we can
+actually get around unsafe code. And one of the mechanisms that we introduced, which works at least
+for structures that we know are at a static location within the memory is so-called projections.
+Maybe we can dive into that a little bit deeper later on what IO projections and how the IO
+infrastructure in the kernel works. But coming back to the question, the only part where we are only
+needing unsafe code as by now is the parts of the DMA buffers where structures are really placed at
+dynamic offsets. And we don't know the layout of those structures at compile time already. So this
+is where we have to use unsafe code to assert certain guarantees. Maximize the value of your team
+with our new software professional certifications. The program offers an objective framework to
+evaluate your contributors on core software engineering principles from initial requirements down to
+engineering economics. Discover how IEEE Computer Society can help you build more successful teams
+at computer.org slash certification. In a moment, we're going to talk about the specifics of safe
+and unsafe Rust. But before I do that, I wanted to double click on one more point. If I'm
+remembering correctly, I think Nova Core was introduced into Linux 6.15. Am I remembering that
+correctly? And before we move on, can you briefly tell our listeners, where does Nova stand today in
+terms of its integration into Linux? Right. So Nova was introduced in 6.15. But the introduction was
+really just a stub driver that didn't do much more than really implement against the absolute core
+driver infrastructure, core PCI infrastructure, read a few registers through the core IO
+infrastructure. So it was basically just a proof of concept for those infrastructure that had to be
+introduced before. Now, where Nova stands today is, well, I guess to answer that question, I have to
+talk a tiny little bit about how the driver is structured. So Nova consists mainly out of two
+pieces, which is Nova Core, which is the core driver that deals with hardware and firmware
+abstraction and provides APIs to the other components that are sitting on top of it, which is Nova
+DRM, which is Nova DRM, which is then the actual DRM GPU driver, which just uses Nova Core as a
+backend to let the core driver do certain operations on the hardware and interact with the firmware.
+A third component in that context is vGPU, which is the NVIDIA VFIO driver that also sits on top of
+Nova Core, exposing VFIO functions to virtual machines. So for the current state, we've been mostly
+focusing on Nova Core for obvious reasons. It's the foundation. And what we have so far is that we
+really got all the huge chunks of firmware loading, implemented the fundamental interfaces to
+communicate with the firmware, which is very non-trivial stuff. It's a very complicated device. And
+we're currently working on the core memory management primitives, so page table management and
+enabling channels, which is the concept to submit work to the GPU. In parallel, we are also working
+on the vGPU driver and exposing the interfaces for vGPU. And we are also now starting to focus a
+little bit more on Nova DRM now that we got a large part of the foundation already being done. I
+remember that in 6.15, it was introduced as something, as you said, that was like a stub or a work
+in progress. Is it actually functional today? And can someone use the Nova driver for NVIDIA GPUs on
+Linux? So that depends on what functional means. So it works to the extent what it already carries.
+So it can load the firmware. It can communicate with GSP. It can properly unload. So all the
+fundamentals are there, but it's not really useful without anything sitting on top of it and
+providing functions to user space that can be taken advantage of. So yes, it can be used, but it
+doesn't really provide anything yet for users. Okay, so that's part of the roadmap to the future,
+which we'll briefly touch on at the end of our episode. Now what I wanted to do was to double back
+to a phrase that you used just a moment ago. You talked about the idea of safe code versus unsafe
+code, and I have a lot of questions about this topic. So first of all, obviously unsafe has a
+negative connotation. Can you tell our listeners a little bit about what does it mean if a block of
+code in Rust is unsafe? And then the flip side of that is what kind of guarantees do we have about
+code that's in a safe block? Right. So by having an unsafe block, nothing is lost yet, I would say,
+because it's not like just because there is an unsafe block, all the compiler guarantees and type
+system information and borrow checking and lifetimes is gone. It's really just that it allows the
+user to perform an operation that is potentially memory unsafe, which is, for example, dereferencing
+a raw pointer. Okay, so it's possible that a bug could creep in if you incorrectly dereferenced that
+pointer, but not necessarily a guarantee, because as a programmer, you might do the right thing when
+you perform that dereference. Am I explaining it the correct way? That sounds about right. Okay, so
+we know what safe means and unsafe means, and ideally it would be our preference to write code in a
+safe block. Can you say why it's a good idea to write safe Rust code? So avoiding unsafe code is
+beneficial because it avoids that the programmer can make all the mistakes that we previously also
+touched on dereferencing a pointer that's not valid anymore. And with safe code, that's not possible
+because the compiler keeps track of things. Okay, so it's the compiler to the rescue for all of the
+code that's in the safe block. Roughly speaking, can you quantify how much code in Nova is safe
+versus unsafe? So Nova has about 13,000 lines of code. And I think out of those 13,000 lines of
+code, we have maybe a handful of unsafe blocks, which is really just for the DMA buffer interaction
+that we touched on previously. There is a few more than just this handful, but it goes away. It's
+just a remain of an old API that required us to assert an unsafe trade, which is otherwise solved.
+So it's really just a handful of unsafe. Many Rust programmers may be familiar with the concept of a
+crate. And I know that there are safe abstractions built into what's called the kernel crate. Can
+you tell us a little bit more, what is a crate? And then in particular, what's the kernel crate and
+how does it connect to the Nova driver? So I think a crate is best described as a logical unit of
+code, which could be a library in the kernel. It naturally maps to a kernel module. The kernel crate
+itself is currently the crate that carries all the core infrastructure from every subsystem that has
+Rust code in the kernel. It also has all the core primitives that we could consider being part of
+the Rust subsystem, which is the building blocks to write abstractions in the first place. And
+drivers, driver modules are crates themselves. But the hierarchy about dependencies is really just
+the kernel crate is the root, and then all the drivers are leaves. And this is what the current
+state is. We're trying to move away from that because the limitation is that because of all the
+subsystems are within the kernel crate, we have to move all the Rust code in a central place, which
+is the Rust kernel directory in the kernel, rather than having the code in the actual directories of
+the subsystems. So it is much nicer to have own crates for the particular subsystems so that you can
+also more fine-grained implement dependencies and also have dependencies between driver modules,
+which is also a use case that we have in Nova core, which I also previously mentioned. And Nova DRM
+is going to have an API with Nova core, which is currently not natively supported by the kernel's
+build system. We have a workaround for that, but ideally we get the build system rework and have it
+supported natively. Now, I heard you mention a moment ago the idea of a leaf. So when I think of
+leaves, I think of the tips of a tree. Can you tell our listeners a little bit about how a driver is
+considered a leaf module in the context of the Linux kernel? What is a leaf? Right. So the kernel
+has kind of a hierarchical system of how things are built. So there's absolute core kernel
+primitives like the scheduler, like memory management and other core APIs. And then there are
+subsystems which build on top of those core primitives, like the DRM subsystem providing components
+for drivers. And then at the very top of the tree, there are drivers making use of those core
+primitives, making use of subsystem components. So if a leaf module is a driver, my next question is
+as follows. Is it possible for one of these leaf modules to call into the memory manager or to call
+into the Linux kernel scheduler? Absolutely. Maybe they are not calling directly into the scheduler,
+but certain APIs that somehow interact with the scheduler or higher level components that sit in
+subsystems. I previously mentioned GPU VM, GPU virtual address space manager, and drivers definitely
+make use of that. It's one of the building blocks they're consisting out of. The only rule is for
+RAS drivers specifically, they are not calling the C primitives directly because that would also
+involve a lot of unsafe code interactions through an FFI layer. But they are calling into the
+abstractions that ideally only provide safe APIs. Okay, that's really helpful. What I wanted to do
+is to turn our attention to something that I know lives in the C-based Linux kernel code. And it's
+something that's called a self-referential structure. So can you tell us a little bit about what is
+a self-referential structure? And in particular, why do those present challenges for you as a Rust
+kernel developer? So I think there's two answers about that, because it's not only about their
+presenting challenges, but they are also providing huge opportunities, but we can get to that later.
+So first of all, what is a self-referential structure? It's simply an object that has a field that
+points to another field of that same object. Okay, so that's what a self-referential structure is.
+Can you give us a concrete example of what kind of structure like that might exist in the C kernel
+code? I think the well-known example for this is the list implementation in the C code. And a lot
+of, almost all core primitives somehow have a structure included that is somehow self-referential,
+mostly lists. And so the Rust side had to solve that problem. Okay, so if you have like a linked
+list or some type of queue that use linking, then you have a self-referential structure. And just a
+moment ago, you mentioned the Rust side has to solve the problem. So can you tell us a little bit
+about like, what is the problem? And then what strategy did you adopt to solve it? Right. So Rust
+fundamentally does not support self-referential structures natively. It's just because the Rust
+ownership model assumes values can be moved. There is a pin type, but that doesn't solve the problem
+of that pinning is already required on initialization time. There is ways to work with that in the
+Rust language or the standard library already, which is maybe uninit. And then you initialize the
+fields and then assert that you initialized all the fields. But that's fundamentally unsafe again
+and something we definitely want to avoid. So if I'm understanding you correctly, is the idea of
+pinning a way in Rust to ensure that data does not move because of the fact that Rust doesn't want
+the data to move so that it can ensure safety? Am I explaining it in the right way? Right. So the
+kernel has primitives where we have to make sure that things cannot move because it's how the kernel
+fundamentally operates. The absolute typical scenario in the kernel is that someone allocates a
+buffer with kmalloc, then initializes all fields of that structure and passes it somewhere else. And
+the way we had to solve that in Rust was with a component that's called pininit, which basically
+provides exactly this pattern, but with a way that the implementer cannot forget to initialize
+fields or initialize things in the wrong order. So it provides so-called initializers, which is kind
+of a structure that represents the recipe to initialize a structure within a given chunk of memory.
+My understanding about many of these things is that instead of enforcing it by a convention, using
+things like the pininit crate and the other features of Rust ensure that when you use Rust in the
+kernel, it's enforced by the compiler instead of convention. So is that the right idea? And is there
+any way you could develop that concept further? This is absolutely right. What I wanted to do
+quickly right now is to connect to a couple phrases that I remember learning about when I was
+researching Nova. First was the idea of reference counting and then also the idea of shared
+references. Is there anything else you could tell our listeners about how you have to perform
+reference counting inside of Nova? So that's an interesting point you're touching on with this
+because Nova has, as far as I know, unless I missed something very recently, which is unlikely,
+there is not a single reference count within Nova currently. And the reason is that I think drivers
+in a lot of cases don't require reference counts in the first place because of the lifecycle model
+that they are built in. There is cases where reference counts absolutely make sense. So, for
+instance, page table management will later on require reference counts of PTEs. But fundamentally,
+we can get away through the driver lifecycle model and its hierarchical nature a lot with just
+having those self-referential structures. Thanks. That was a fascinating response. Now, you
+mentioned the idea of a lifecycle or a workflow. Can you tell us a little bit more? What is the
+overall lifecycle associated with a driver? Of course. So when a device is plugged into a machine,
+the driver core takes care of finding the right driver for this device. So there is a matching
+process going on. And once the driver is matched to the device, the driver's probe function, the so-
+called probe function, gets called. And from probe to remove, remove is the exit function, so to
+say. Within those two entry and exit points, the device is operated by this driver. And the driver
+has full control over the device, controls the device resources, and operates the device. And in the
+so-called probe function, typically the initialization of the driver is implemented. So there is
+things where device resources are allocated and so-called registrations are made. Those
+registrations are basically the thing that makes the driver do something in the first place. Because
+if only probe would run, then there is no entry points back in the driver anymore. So those
+registrations are basically the places where asynchronous calls into the driver are initiated with
+or registered with. So to give one example for such a registration, this would be an IRQ
+registration where interrupts are registered. And then those are calling back into the driver.
+Thanks. That was a fascinating response, and it helps quite a bit. Now, I recognize that there's no
+way we could cover all the technical implementation details of the Nova driver. So what I'd like to
+do is pause for a moment before we move on to the next topic about the tooling that you use. Is
+there anything else that you wanted to share with the listeners so that they can get a good high-
+level understanding of how you use Rust and Nova? So I think one interesting detail would be to
+touch a little bit more on the how is this driver lifecycle implemented in Rust. And I've already
+mentioned that a driver typically does this initialization sequence and those registrations within
+probe. And the way this fundamentally works, and that's tying a little bit back to pin in it and
+lifetimes, is that the main data the driver keeps for operating the device where it stores its
+operating data is the so-called bus device private data. It's not really interesting why it's called
+that way, but it's interesting that it's really the core container where the driver stores its data.
+And one of the big issues in C code is that when drivers initialize this private data, they have to
+take a lot of care about what's the initialization order. Because once certain fields are
+initialized and some registration is made, like an interrupt registration, and the interrupt handler
+itself tries to touch back the data, it has to only touch the fields that have been initialized
+already. In C, you get away with partially initialized structs, which in Rust is not valid in the
+first place. So that's a little bit of a challenge. Plus, we also don't want to have drivers being
+responsible in Rust to pick the right order, register things in the right order, initialize fields
+in the right order, without the compiler being capable to check those things. So the way we approach
+this is that this bus device private data basically carries a lifetime, which at one hand allows us
+to tie device resources to this lifetime. So drivers are unable to hold on to those resources
+outside of the scope of their lifetime, of their life cycle. And registrations themselves are stored
+as objects within this private data, such that registrations only get access to fields where PinNet
+allows them to take a self-reference of, which means that all those dependencies, initialization
+sequences, and so on, just become data dependencies that are eventually checked by the compiler,
+which is a huge benefit. And that's also what I referred to previously when I said it helps beyond
+those small little things. That was a great response. Thank you. I think you've tied everything
+together. And so now what I'd like to do is to turn our attention to a brief discussion about the
+tooling that you use when it comes to building Rust into the Linux kernel. Now, I know many Rust
+developers are going to be focused on using a tool like Cargo. And for listeners who want to learn
+more about Rust, make sure to check the show notes for this episode, because we'll give links to
+other shows on Software Engineering Radio where we've talked about the tooling. Again, I mentioned
+Cargo a moment ago, but I know that the kernel's build system called KBuild is different than Cargo.
+So my question is, do you use Cargo? Do you integrate with Cargo? Or do you use your own system when
+it comes to using Rust in the Linux kernel? Right. So the kernel does not use Cargo. As you
+correctly said, it has its own build system, which is called KBuild and largely builds on makefiles.
+And this is also how the Rust tool chain is integrated. It's yet another compiler that is supported
+by this build system. Okay. So many programmers who use Rust, they know that it's possible to
+introduce something called an external crate. Briefly, can I put, or you as a developer, can you put
+an external crate into the Linux kernel tree? So typically we don't do that. But there are
+exceptions of crates that we vendored, which I also mentioned previously. PinInit is probably the
+best example. PinInit is not primarily be developed within the Linux kernel. It was motivated by the
+Linux kernel, but it is a separate project that lives outside of the kernel as well and is also used
+by other projects. So the kernel kind of vendors this library and builds it within the kernel, which
+basically means it's just a copy of the code in the kernel tree and integrated into the build
+system. Okay, that makes sense. Now, the other thing that I remember using are tools like Rust
+Format or Clippy or Rust Dock. Do you use those tools as a Rust in Linux developer? Yes, not
+directly, but they are pretty much accessible like they would be with Cargo. So I'm not too much of
+a user space person, so I'm not dealing too often with Cargo. But I think Cargo just makes those
+commands available and wraps them with its own commands to instruct Cargo to run Rust Format or to
+compile with Clippy. And the same is done by the kernel's build system. You just have additional
+make targets, which is, for instance, the Rust Format target, which formats your source tree. And
+Clippy can also be enabled by setting a flag or setting an environment variable when invoking make
+such that the build system chooses Clippy instead of Rusty. Now, the next thing that I wanted to do
+was to quickly talk about the testing techniques that you've adopted in the context of Rust for the
+Linux kernel. So if I was writing test cases in Rust, I would simply be able to run Cargo test. But
+I know that the Linux kernel uses K-unit. So my question is similar to the one from before. How did
+you harmonize these two different worlds for creating and writing and running test cases? Right. So
+you can basically write K-unit tests in Rust, similar to how you write test cases in user space. The
+only difference really is that they are executed not on the host, obviously, but they are executed
+in the kernel. So when you run the kernel, they are executed as part of the boot sequence and you
+see the result in the kernel log. Now that we've talked about the tools that you use for building
+and testing the Rust part of the Linux kernel, I wanted to quickly talk about the performance story
+related to using Rust for Nova. I know that Rust uses what's called a zero-cost abstraction
+approach. Can you tell our listeners what is zero-cost abstraction? And then broadly, what's the
+performance story when it comes to Rust in the Linux kernel? Of course. So when it comes to zero-
+cost abstractions, I think a very good example of how we use that in the kernel is the IO
+infrastructure, where we build abstractions around how to deal with registers that are mapped in
+memory, how we deal with structures that are located in shared memory. And actually, those two
+concepts, we have different implementations for that, but we are working on unifying them because
+they are really the same concept. On the one hand, we have projections, which I mentioned
+previously, which provide a more and more narrow view in the structure until it comes down to just a
+single primitive that can be read or written. And for registers, it's basically the same thing, but
+a different implementation, which is not projections and views. But, well, technically, it's also a
+projection into the bit fields of a primitive that represents a register. So we're working on
+unifying them. But in the end, it's a huge code base. I think it's a couple of thousand lines of
+code to represent registers and those shared regions and projections and implementing them against
+different IO backends, such as DMA memory or shared system memory or memory mapped IO. And
+eventually, all this code, once it's used within a driver, besides doing lots of build time checks
+and providing lots of type safety, in the end, really compiles down to just a load or store
+operation. And this is, I think, an interesting story when it comes to zero cost abstractions, where
+really thousands of lines of code really just compile down to just two assembly instructions. Right.
+If I'm understanding correctly, the idea of zero cost abstraction is that essentially, as you build
+the abstractions in Rust, they're there for you as a programmer, but they don't introduce any
+runtime cost when it comes to running the Nova code. Is that the right way to think about it?
+Absolutely. Yes. And I think there is also other examples where Rust not only provides zero cost
+abstractions, but actually helps with improving performance. So one example, and we touched on that
+previously, is how Rust tracks lifetimes and concepts like reference counting. So one of the things
+that C code oftentimes does, where it conceptually is actually not necessary, is reference counting.
+Because in C code, there's really only two ways of doing things in terms of keeping track. Either do
+it by convention and just share a raw pointer and hope that it's not dereference after it has been
+freed, or do reference counting in order to get this problem resolved. But then you introduce a new
+problem in some circumstances, which is where you introduce by making it a reference count an
+unbounded lifetime, where you actually know that the backing object has a bounded lifetime. So you
+rely on everyone dropping the reference at the right point of time. With Rust, it is possible to
+track lifetimes in a different way, such that the compiler takes care of it by Rust native
+lifetimes. So you don't have to introduce reference counts in the first place, just in order to
+gather a little bit of additional memory safety. So there is Rust code where we get away with really
+just using lifetimes and having the chance to avoid reference counts, which obviously saves memory
+allocations and saves atomic operations. Wow, that's a really powerful point. So I think what you're
+saying here is that because you use Rust, you don't have to worry about any of the overhead
+associated with doing the reference counting, but then also you can make your code more memory safe.
+It's a win in terms of safety and reliability, but also in terms of performance. Am I thinking about
+that the right way? Yeah, exactly. Okay. Now the next thing I'm curious about, do you do any kind of
+performance benchmarking for certain parts of the Nova driver? And if so, can you tell us a little
+bit about that? There is not a lot of performance benchmarking going on here. I think most of the
+places where we are looking for performance is in the core abstractions. And also there, it's less
+about measurements, but more about inspecting what it compiles down to in terms of how does the
+assembly code look like? Does it introduce any additional overhead? Or does it achieve exactly what
+we intended to? For Nova, it's a little bit difficult because we're still in the phase of
+implementing the firmware loading sequences, core MM APIs, and there is nothing we can really
+compare it to or nothing that we can really run it with. So I think those performance considerations
+are something for the future. I see what you're getting at. Now, as we start to draw our
+conversation to a conclusion, I want to review that we've talked about safe code and unsafe code,
+and we've talked about the life cycle associated with the Nova driver. What I wanted to do now is to
+connect to a presentation that I know you previously gave. My recollection is that the title of it
+was called Journey of a C-Kernel Engineer Starting a Rust Driver Project. And you were the person
+who gave the talk and you've been on this journey. So I'm wondering if you could pull out a single
+story to tell our listeners about a challenge that you faced or something that you overcame as a
+problem when you journeyed from being a C-Kernel Engineer to a Rust-Kernel Engineer. Right. So I
+think there was not this one concept specifically that was making me struggle in the beginning when
+I started to learn about Rust and learn about Rust and the kernel. It was rather the overall
+complexity of the language that gives us the opportunities of this powerful type system, the borrow
+checker and everything in the first place. Compared to C, it's really a very complicated language.
+It's a little bit different to C also in terms of syntax. So it was a lot of things that were
+different. And it was, well, it was a change to have to focus on the language again after so many
+years of writing C code, where the language was something that was, well, feeling very natural. And
+the focus was more on writing the code and now having basically going back on learning a language
+that is much more complicated. Okay. So there's an issue associated with you having to learn a more
+complicated language. But my sense is, based on many of the things you've said today, is that
+overall, this is a win for Linux and the Linux kernel and the overall introduction of Rust. So if
+that's the case, can you paint a picture for what Rust in the Linux kernel looks like in the future?
+So what I'm looking at for Rust for Linux in the future, in the kernel, is as a first achievement,
+get to a point where it is easy for everyone to write their drivers in Rust. Because this is really
+where we can get immediate benefit without having to make compromises. Drivers are also one of the
+main contributors for CVE issues. And the fact that Linux is a monolithic kernel is also suggesting
+that increasing the stability of drivers benefits the overall system. So I hope that we get enough
+infrastructure built out that, like I said, someone who's interested in writing a driver can just
+start writing it and can just start upstreaming it without having to build core infrastructure in
+the first place. Thanks for those details. I see what you're getting at. I think that right now,
+Rust in the Linux kernel is a work in progress because you're building the core infrastructure with
+the hope that when people build drivers down the road for an LCD panel or for a new type of GPU,
+they can use the infrastructure that you're creating. Am I thinking about it in the right way? Yes,
+that's correct. Okay. So now that we've talked about all the details that are related to the Nova
+project and how you're introducing Rust into the Linux kernel, Danilo, I want to say thank you for
+all of the time that you've invested. Are there any remaining topics that you think we should
+briefly discuss because they would help our listeners to understand the work that you and your
+colleagues are doing? There is one interesting consideration that I've been making throughout the
+whole process of working on Nova and working on the core infrastructure that Nova motivated and that
+also is going to be core infrastructure needed for other drivers and other subsystems, which is the
+way we had to make the process go. And there is one fundamental rule in the kernel, which says that
+you cannot have code upstream that does not have a user. And one of the things that we did in order
+to resolve that situation was that we said, okay, we're starting with just a stop driver, like we
+already touched on in the very beginning, which allows us to build up the driver upstream within the
+kernel. And one of the things that is something that I took away from this process, because it has a
+very interesting dynamic, which is Nova is needing some new piece of infrastructure. We are working
+out this piece of infrastructure. We are using it within Nova and we're getting a back and forth
+interaction between building this core infrastructure and seeing how it turns out in Nova as a first
+user. So that's a very interesting dynamics. And it is something that is not usual or not typical or
+not common. And usually drivers are built downstream and then upstream as a huge chunk of code that
+is a new addition to the kernel. And the difference that I can see is with the approach of building
+this driver out upstream in the kernel is that we are benefiting a lot from upstreaming it in
+smaller chunks, which makes it much more accessible to maintainers in the kernel, to other
+contributors, to other reviewers. And it significantly increases the code quality because if you
+upstream a huge chunk of code in one go, you're likely not having the core maintainers of the core
+infrastructure you're using taking a look on it. But now it's much more accessible and it makes a
+difference. And I think it's a very interesting thing to consider for the future. And maybe it
+changes at some point how other drivers are built out in the Linux kernel and upstream. Thanks. That
+insight was really compelling. And I think, in fact, it gives help to all of our listeners who are
+building big, complex systems. Because it sounds a little bit like you had a chicken and an egg
+problem because of the fact you can't ship something in the kernel unless there's a user for it. But
+it wasn't ready yet for a user. So you had to build the user as well and do so in small chunks. Did
+I explain the key insight the right way? Yes, that's correct. Okay. Well, this was really helpful
+and I think a great place for us to conclude. Danilo, thank you for all of your time as a guest on
+Software Engineering Radio. And thank you for introducing our listeners to the Rust and Linux kernel
+project. Thank you. It was nice to be here. Thank you very much. For all of our listeners, if you
+want to know more, please check the show notes because we'll give lots of details and links to all
+of the topics that we've discussed today. All right. This is Gregory Kapphammer signing off for
+Software Engineering Radio. Goodbye, everyone. Thanks for listening to SE Radio, an educational
+program brought to you by IEEE Software Magazine. For more about the podcast, including other
+episodes, visit our website at se-radio.net. To provide feedback, you can comment on each episode on
+the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening. I'll see you next time.

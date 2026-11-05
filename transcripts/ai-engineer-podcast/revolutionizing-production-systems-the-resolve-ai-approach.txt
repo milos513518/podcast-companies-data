@@ -1,0 +1,572 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Revolutionizing Production Systems: The Resolve AI Approach
+DATE: 2025-09-04
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/resolve-ai-infrastructure-operations-automation-episode-59
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638925421853932476cf657f93-33f4-4074-b7f2-4845a01106acv1.mp3
+DURATION_SECONDS: 3061
+TRANSCRIBED_AT: 2026-09-17T03:33:36Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macey, and today I'm interviewing Spiros
+Xanthos about architecting agentic capabilities for operational challenges while managing production
+systems. So, So, Spiros, can you start by introducing yourself? Hello, everybody. My name is Spiros
+Xanthos. I'm one of the founders and the CEO of, Resolve AI. As a background, I've been working in
+dev tools and observability most of my career and started working on Resolve AI about two years ago
+with the goal of building agents that help troubleshoot production issues and help humans run
+production systems by taking over the the stressful parts and the toil of the work. So I I had
+exposure to ML and AI over the years because I worked in observability for a long time. And do you
+remember how you first got started working in the ML and AI space? Previously started two companies
+in the space, one log analytics platform out of my PhD. A company got acquired by VMware. And then
+in 2018, co created OpenTelemetry and, built a company around it called Omnition. And, you know,
+obviously, in observability, we always had the goal of using, let's say, machine learning to
+understand anomalies and to point them out to users. And ideally, maybe try to connect the dots and
+tell them what's going wrong. But in reality, that never worked beyond, let's say, maybe crossing
+thresholds and understanding that something is wrong. It was impossible to really do the work that
+humans did, right, of looking at their systems, looking at the data, looking at telemetry to
+understand how, let's say, a violation of a threshold relates to the root cause. So I was always
+interested in the topic, but I think with Resolve AI, we took a very different approach. Obviously,
+with the advancement of, LLMs, we decided to try to build agents that work autonomously. They use
+all the human tools and, try to not just essentially do simple tasks such as anomaly detection, but
+they try to reason through, you know, very long running kind of, tool call processes to get an
+outcome. And now digging into Resolve specifically, can you give a bit of an overview about what it
+is that you're building and some of the story behind how it came to be and why you decided that that
+was where you wanted to spend your time and effort? Yeah. So when my last company was acquired by
+Splunk, I ended up being the general manager for Splunk Observability, which was a large engineering
+team and a production system that our users relied on to run their own to run their own software
+systems. So we had very high reliability requirements. And at scale, what was happening was that our
+own engineering and SRE team were spending the vast majority of their time troubleshooting our
+production, let's say, running or maintaining our production rather than building new features. And,
+not only that, you you had periods of time where things would get unstable enough that would freeze
+pushing to production. And we have, we had, like, a six month period where 90% of our SRE team
+resigned due to burnout. And all of that, despite unlimited use of our own tools and, basically,
+unlimited data to troubleshoot production. So So the realization was there that despite working in
+observability all these years and, you know, building tools that gather lots of data, that data by
+itself by themselves are not useful. Right? Like, humans have to provide all the context and connect
+the dots, and that's a very, very hard problem at scale. So, that's how the idea was born from our
+own pain to some extent and the realization that data alone without context and knowledge of the
+entire software system and how all these different types of data connect with each other leads to
+answers, that's what became to like, was the initial idea behind Resolve. We we decided to maybe
+rethink how to approach the problem of troubleshooting alerts and incidents when something goes
+wrong and, decided to do that by building agents that basically connect to all the human tools,
+source code, telemetry, logs, metrics, traces, infrastructure. They these agents work in the
+background all the time, build, essentially, a deep understanding of the whole production soft
+system from code to back end databases and everything in between. They try to understand and extract
+all the tribal knowledge that exists that usually spread out across tools and use all of that to
+essentially be on call. And every time something goes wrong, start an investigation, get you to the
+root cause, and provide an answer of how how you should fix the problem. That's kind of the high
+level architecture of how the system works. And, of course, there are many, many, many complexities
+of how to make it work. And in terms of the operational aspects, as you mentioned, we have a lot of
+investment in being able to generate, collect, curate, display a lot of data about how our systems
+are running. As you said, it is still a very manual process. We do have automated systems in place
+to be able to do things like threshold based alerting or simple machine learning heuristics around
+things such as exceeding a certain number of standard deviations of norm. But I'm wondering if you
+can talk to some of the critical failures in the capabilities that we have in the types of systems
+that we use to manage the reliability and overall kind of operating capacity of the platforms that
+we rely on for our applications. Yes. So I'll give you a few. First of all, these systems are
+designed to collect as much data as possible. And the way that humans use them is, essentially,
+either by querying the data directly or by creating, let's say, dashboards that hopefully maybe
+highlight important KPIs and by setting up alerts that fire when something is wrong. But these tools
+don't generalize very well. What what I mean by that is that you have to create very, very specific,
+let's say, dashboards with very specific charts that maybe indicate health or potential problems.
+And then you have to create very, very specific alerts with static or dynamic thresholds, but still,
+they monitor one specific metric, and then they don't generalize very well. Right? As a result, what
+ends up what ends up happening, you're either in a situation where you kind of set the alerts to be
+very sensitive so that you catch problems quickly, and then you get overwhelmed by alerts. And she
+wants to know know where to where to start. Or if you try to be much more, let's say, specific, then
+you end up missing a lot of the challenge or a lot of the problems, and you become very reactive. In
+other case, humans are drowning in alerts and data. Right? And every time something goes wrong,
+either you have, like, a lot of experience and expertise about the system and you can intuitively
+maybe get to the right answer. Or if you're a new engineer, a new SRA to the team, usually have,
+like, this very hard cold start problem where you can know something is wrong, but you have no idea
+where to start from. Right? You have to both understand the underlying the monitored, let's say,
+software system, the it's it's architecture, the dependencies, but also have to become now an expert
+in these tools and their languages and, you know, how to essentially query all this data to get an
+answer. How does it manifest in practice? Right? You know, oftentimes, you are the new developer to
+your team, and it takes them a few days to submit their first PR. But it takes them then six months
+to be primary on call, right, and be effective. And why is that? Because there is all this knowledge
+that is very specific to this system and all this data that you have to familiarize yourself with in
+order to be able to, like, troubleshoot these systems on your own. To that point of needing to
+troubleshoot on your own, it requires a lot of acquired experience, often acquired with a lot of
+stress and anxiety. And I'm curious if you can talk to some of the ways that bringing an AI agent
+into the picture can help to alleviate some of the need for all of that broad context or at least
+help to surface the contextual relevancy of that context so that somebody who hasn't already been
+working on operational systems for decades can actually understand and interpret the findings that
+the agent is providing to them. I I think that at this point, the aim is not to make a person who's,
+let's say, not a software engineer or an SRE, you know, troubleshoot production systems. There is a
+secondary call which I can talk about, but the primary goal here is that we should have agents that
+can learn all the context. They can have the all the tribal knowledge. They can, like, they can
+understand the entire software system, and then they can do all the hard work and the heavy lifting
+of actually connecting the dots across all the different systems. Right? Looking at code changes,
+looking at structure changes, looking at configuration changes, connecting that to what they see in
+logs, what they see in metrics. Sometimes, you know, with what they see in how, let's say, the
+infrastructure and dependencies of the cloud work and trying to essentially develop the theories of
+what might be causing the problem and getting you to the root cause. Right? Humans still have an
+input, and humans maybe are still the best at deciding among two or three options which one makes
+the most sense. Right? And maybe even guiding the the agent further to narrow down this to one
+theory and then help the agent provide provide a fix. But there are things that the agent do a lot
+better than humans. Right? They can operate at a much higher velocity. They can connect many more
+signals. They don't have biases actually sometimes, right, on what they should check or not check.
+But still, humans are still at the wheel, let's say, most of the time. Now to your point about
+people that maybe don't have, like, the deep expertise in production systems and software, I do
+think actually what we realized and what we saw with our customers is we deploy these agents, that
+now give you, like, a very easy interface, right, in English to ask any question about your
+production system, whether it's related to a problem or not. Right? What that creates is actually an
+ability for anybody, whether they're deeply technical or not, to actually get self-service in
+anything they might wanna ask about about the system. What we see, for example, around sales team is
+using resolve instead of, like, tapping some of the shoulder to understand, like, a new feature that
+was just released. Right? Or to ask, give me a summary of whether my customer has faced problems in
+the last twenty four hours because somebody complained. So you have that as well. Right? But that's
+more to answer, let's say, more basic questions rather than, like, go and troubleshoot an incident
+and resolve it. Right? That still requires engineers and SREs. But the agents make it a lot easier
+and a lot faster. And what that avoids is both, like, say, the burnout and the stress of, like,
+being paged in the middle of the night and not knowing what to do, but also it helps avoid the
+constant interruption of escalations and paging the wrong people sometimes or, you know, multiple
+teams trying to troubleshoot the same problem, although it comes maybe from one specific area of the
+of the system. Because of the fact that we do have a lot of technical and operational investment in
+the systems that we rely on to provide the scaffolding and operating context for the applications
+that we care about, some of the big names in the space, obviously, being things like Grafana,
+PagerDuty, Splunk. Why is it necessary to create a completely new system in the form of resolve to
+provide these agent capabilities rather than incorporating that as some sort of feature or plug into
+those existing systems that already have a lot of the operational data that is necessary or that
+people are currently relying on? First of all, this is, in my opinion, much broader than
+observability solutions. Right? So what we're doing here is we're building agents that do the work
+of humans, work alongside humans, and relieve them of a lot of the toil of, you know, running a
+production system. We're not simply just, like, advanced systems like Resolve are not, like, simple
+tools that translate maybe English to a query to get back an answer and, you know, continue on your
+own. Right? These are, like, autonomous agents that can connect the dots across multiple of these
+tools, learn about the software system the way a human learns about it, and create essentially this
+very deep understanding and expertise over time of how production runs and how to troubleshoot it.
+And to do that, first of all, you have to go across multiple categories. Right? You have to go into
+code. You have to go into, like, CICD and pipeline pipelines and changes. You have to go into
+observability tools. Oftentimes, in each one of these categories, you have multiple of these tools.
+So it's it's very, very hard for any one of these tools on its own to actually help you beyond its
+own data. Right? Because a human does not rely just one of these tools to get answers to or to run
+production. They rely on the union of the tools and the most appropriate for every question. So to
+me, this technology is way more advanced than what observability does and, you know, all the prior
+work I did myself in that, essentially, it can reason almost as a human for this particular kind of
+set of problems. Now, obviously, existing vendors could try to build these solutions themselves.
+Right? I think still they're gonna be limited mostly by the fact that they will probably try to
+build it for their own data. But there is also the other challenge, which is that this is a very
+hard problem to solve, and it's very, very different type of problem than essentially become being a
+database for for large amounts of data. The models have advanced a lot, but it's still a very, very
+hard problem. Like, as easy as it may be, it is to build a demo, an AI demo, it is that much more
+harder to build something that works well in production. Like, just in our case, we have a team of,
+like, more than 50 engineers, 10 of which came from, like, top labs, building agents for a while.
+And it takes, like, both focus and talent to solve this well. So I think if anyone else or, you
+know, these bigger companies, wanna solve this as well, they probably have to assemble a a call
+amount of talent and focus on this problem. Right? And I haven't seen it happening so far yet. In
+terms of the overall industry as far as building agentic applications, there is still a lot of
+evolution and discovery happening as far as how to actually build those systems and make them
+reliable and achieve the goals that you set for them. I'm curious how you approach the overall
+problem of identifying and evaluating and proving out the various architectural patterns and
+paradigms around how to actually build an agent based system and some of the selection criteria that
+you had going into that? So, first of all, it's a very hard problem. You're right. And especially
+when you're dealing with multiple modalities of data like we do, it is even harder problem because,
+essentially, you have to have multiple agents. Each one then maybe specializing on one type of data,
+let's say, code, logs, metrics, infrastructure. And you have to combine the data across all of them.
+Right? And reason across tool called chains that sometimes go like a 100 or a thousand tools deep.
+And, you know, there is no really well established patterns of how to do this well. Right? All of us
+who are working on this were paving the way of how these systems should be built. Now what we found
+or with the way we architected the system and what we found to work very well is, first of all, in
+our case, I think there's a simple approach that maybe some take, which is take an LLM, run
+telemetry through that, summarize, and maybe correlate what you see. And that can be quite useful
+actually to humans because they get a much shorter set of data that they get reason over. But then
+that only addresses a small subset of the problems. Right? Our approach has been to actually use all
+the underlying tools to first build an understanding of how the production system looks. Right?
+Understand every host, every dependency, the application infrastructure also dependencies, every
+change that comes into the system, and also go to all these other tools and extract, let's say, the
+tribal knowledge that exists. But not just from the tools. As humans use Resolve, we try to actually
+learn from the questions they ask and the feedback they give us. Right? So that allows us over time,
+first of all, to build, like, this deep understanding of the whole production system. And to me,
+that's a prerequisite of building something very effective. Right? Because then you have, like,
+let's say, this graph that the agents can use to plan, backtrack a reason about the problems they're
+solving. Right? So that's kind of the foundation for it. Then we built a lot of, like, agent
+infrastructure in terms of planners, meta planners, things that understand knowledge and have a a
+very powerful memory system that lets the agent become more and more effective every time they
+perform a task. Right? So if when they make a mistake, they make the mistake all nuance. Right? And
+when they find something that works well, then they remember that forever. And then we brought down
+the problem into multiple agents that each one of them specialize in one task. And, you know, for
+each one of these agents, we kind of have a hill climbing approach where, essentially, we keep
+improving, let's say, the the the reasoning and the models to achieve, like, very, very high
+accuracy in terms of, like, what this agent does for the data it it looks after. Right? Like, logs,
+code, metrics, etcetera. And then we put a lot of effort then on top of all of that to have, like,
+essentially, a reasoning engine or a reasoning agent if you wish, that given a task or a problem, it
+knows how to call all these tools that are available, all these underlying agents, and drive this
+very, very long process, a long horizon kind of agentic process to get an outcome. So that's kind of
+rough the architecture we built, and it works very, very well. You raised an interesting point of
+the variance of the actual context in which the agent needs to operate because everybody has their
+own specifics of how they actually deploy and configure and manage their operational environment
+where maybe there is a large corpus of people who are using Kubernetes so you can maybe make some
+assumptions about how the capabilities that you have to be able to retrieve information. But there's
+even given that common substrate, there's a huge amount of variance in terms of whether actually
+using for generating or collecting metrics, what their log formats might be, their naming patterns
+as far as how they identify the different applications that are running, the network topologies or
+overlays that they might be using. So even just within that assumption of we're only gonna target
+Kubernetes environments, there's a lot that you have to deal with. And then if you also expand to,
+we're going to support various cloud providers and their core compute primitives and maybe even
+expanding out to some of the serverless capabilities or on premise use cases, that's a massive
+surface area to be able to identify and service. And given the potentially exponential search space
+that you need to deal with, what are some of the ways that you're thinking about managing the
+complexity of your product and some of the ways that you're thinking about the framing and customer
+targeting of what the presumptions are of their operating context to enable your tool to do the job
+that it was provided. Yeah. First of all, you're describing the the problem very, very well. Right?
+This is by far the hardest product I ever tried to build. And I think also all the challenge you're
+describing is the reason why, in my opinion, it doesn't make sense for most people to try to to
+attempt to solve this themselves. Right? Of course, there are subsets of the problem that it's
+worthwhile for developers to try to build and solve on their own, but the totality of the problem is
+very, very hard because of all this complexity you're describing. Now in our case, I would say,
+like, at the high level, we broke down the problem to two parts. Right? One is, like, understanding
+of the environment and our ability to go and extract as much of that tribal knowledge or learn about
+as much of that tribal knowledge using the existing tools and via the interactions with humans. So
+we have agents that run-in the background all the time that understand changes, understand
+dependencies, you know, look at all the tools and understand look at the human created knowledge,
+whether that's in the form of dashboards or the form of prior incident reports or in the form of
+even architectural diagrams, and try to essentially create this understanding as deep of an
+understanding as possible and hopefully as close that experience human engineers have about the
+system. And that's kind of the baseline. And then we have these agents that can reason almost on
+first principles. Right? Our system is not like a run book automation tool. It can start with any
+task or any symptom or any alert or any incident, and then tries to actually explore the space by
+starting a very high level set of hypothesis or, you know, questions to ask. And then based on the
+answers, it iterates and goes to into more and more specific kind of investigations to narrow down
+the scope to to something very specific. Not that much different from what a human would do. Right?
+But to do that well, you need to have this underlying context and understanding, and you need to be
+able to provide the right context also at the right time to the right agent to do this well. And we
+found out, like, this kind of hierarchical investigation system and the background agents that
+create baselines and understand the environment are, a very good set of primitives for making this
+generally applicable. And the third one maybe is that we also found that it's very, very important
+for the agents to be able to learn on the job. So they have to be effective day one because they
+have all the training, let's say, about, like, existing systems, and they can maybe quickly
+understand the environment. But it's very, very critical that every every day and every time a human
+uses them or interacts with them, they become better by learning from it. That brings up an
+interesting question as well as far as how you thought about the means of discovery and patterning
+the agentic capabilities and agentic discovery patterns after the ways that a human operator would.
+And I'm wondering what types of research or user experience studies you did to understand how best
+to actually map that human pattern of discovery and debugging into the ways that the agent is
+actually executing those same behaviors. Yeah. First of all, many of us worked in building tools
+that human used all these years to do this. Right? Like I mentioned, we're co creators of open
+telemetry. We build Splunk observability. Before that, we built the log analysis tool. Most of us
+have been on call and managed and, you know, run large production systems. So we had, like,
+firsthand experience in both the approach humans take, but also the tools that humans use and their
+limitations. And that helped us quite a bit in understanding what is the starting point and maybe,
+how to go about solving the problem. Now the other thing that is also true is that the agents have
+to use human tools to perform the task. Right? Now maybe there is a future in which we kind of
+evolve the existing tools we have, and they're more appropriate for agents, and they can move
+faster, and the paradigm changes a bit. Right? But for the time being, because we usually our agents
+drop into an environment that humans already manage and operate, they have to essentially be able to
+use the same tools. And, you know, you they have to be able to approach the problem almost as a
+human in order in order to solve it effectively because these are the tools that are available.
+Right? So it's both the understanding of how humans solve the problem, but also is the limitations
+of the the tools we have that were designed for for humans. And to be honest, this is maybe a bigger
+bottleneck than the reasoning or inference that, we have to do for the agents. Context is one of the
+bigger problems to deal with when you're working with agents because you can't just send all of the
+data that you have and expect that it will figure things out because not the least of which is that
+you'll explode your budget in the process. But also in order to make sure that the agent is paying
+attention to the most important things, you need to be as sparse as possible with the context that
+you're providing. Context engineering is the current terminology that people are using around that.
+It is the most complicated piece of actually building agentic applications, at least from my
+understanding and in my opinion. And I'm curious how you think about the appropriate structures and
+retrieval methods for being able to actually manage that contextual grounding to the LLM, especially
+given the fact that LLMs by nature are very forgetful unless you keep reminding them of the things
+that they're supposed to be doing and have to know to perform a given task. Yeah. Completely
+forgetful. Right? They start over every time unless you pass something in context. So there are many
+techniques we use. Right? Some of which are actually almost original research we did. Of course, you
+have to be very effective in, like, providing the right context at the right time. You have to be
+very effective in summarizing maybe the output of a step so that it doesn't blow up the context that
+by itself. You have to actually use, oftentimes, multiple agents. And for each agent, you pass a
+very specific context, and you expect a very specific answer. And then you use that as part of a
+larger process, let's say, that runs on top. But I would say, okay. If I were to summarize, I think
+very, very important to have, like, a powerful knowledge and memory system that remembers a lot of
+important information and context. And then you have to have a very sophisticated retrieval system
+to know what to use out of that depending on the on the task at hand. Right? Then you have to worry
+a lot about not blowing up your context by having a lot of unnecessary information. So it's very,
+very important to distill maybe the outcome of a step down to the essentials, but you can then use
+that for subsequent steps. And I would say then there is kind of even traditional distributed
+systems, maybe paradigms that we use here. Right? Like, if multiple agents get involved, do they
+share the whole context? Do each one of them has its own context? Is there maybe shared context that
+close a subset of the agents? And, you know, it is it becomes a very complicated both, like,
+retrieval, but also software engineering problem. And I agree with you. Like, it's one of the
+biggest challenges, especially in production systems. Right? Where, like, your input data are
+practically unlimited. Right? You know, the volume of logs that you might be dealing with is
+practically unlimited. So how do you essentially architect the system that, you know, does this
+well? The other interesting element of that challenge is that you need to be able to even have
+access to that data in the first place, which brings up the question of integrating with the
+customer's systems. And I'm wondering how you're thinking about that challenge as well as far as
+reducing the onboarding effort for the customer while maximizing the benefit that they get from as
+little work as possible. Yes. So that's a very by the way, in our case, it's an kind of one of the
+principles on which we will resolve. Like, we wanna have the minimum amount minimal amount of effort
+from users in order to onboard us to a system. Right? Which means that we have to do a lot of work
+on our own in actually training our agent to use all the existing tools that might be available in
+environment. Right? Which requires both depth. The agents have to be very good in querying and
+understanding logs. Right? But also breadth. They have to be able to know all the logs common log
+tools that people have out there and they use. Right? And sometimes they have to be able to use
+custom tools as well, right, without the user having to do a lot of work or any work for that
+matter. So that means, like, we have to put a lot of work upfront on our side to so that the agent
+comes pretrained as much as possible to use all these tools. And, of course, then we also have to we
+put a lot of work in making sure we respect the limitations of these tools. The agent should not
+actually impose and do burden, let's say, onto these tools. Right? Maybe they it shouldn't run
+unnecessary queries. Right? And it shouldn't run stupid queries that are too broad, right, that
+humans would avoid otherwise. So there is that as well. Right? Like, direct limits and how
+intelligent the agent is in using using these tools. Right? So it doesn't, like, create problems for
+the humans who are using the tools or, you know, creates, you know, unnecessary complications when
+it gets onboarded. And for anybody who has used LLMs for any extended period of time, you also have
+the challenge of the LLM getting stuck in a loop. So speaking from recent experience, I asked the
+LMM, make this change to this file to be able to achieve this outcome, and it just gets stuck going
+back and forth between the same two solutions and can't realize that it's stuck in a loop. And I'm
+wondering how you think about some of those types of challenges as well as far as the who is
+watching the watchers where you are building a system to provide operational understanding and
+proactive capability to the end user. How do you then also use some of that capability to keep watch
+of yourself so that you don't cause your own operational problems. Yes. I mean, you have all the
+traditional challenge for building software here. Right? Like and you have to have good
+observability, and you have to have good auditability of all the actions. Right? So that you can
+troubleshoot also these systems. But then this brings up another very interesting point that we
+found to be very, very important, which is that the we make the agent always ground any answer it
+provides on real data. Right? So when it provides an answer or a theory or, like, you know, a root
+cause analysis for a problem, it always creates, like, a pretty detailed set of citations that the
+user can use to verify the chain of thought that the the agent used to get to the conclusion it got.
+And this we found this to be very, very important both for the agent itself to or the agents to
+prove to themselves, let's say, right, to their own system that the answer makes sense, but also for
+a human to be able to verify. And we found that it would be very important for creating trust with
+the humans because they always can verify an answer. If If they disagree with an answer, they can
+even tell us what tell the agent why they disagree with the answer, and the agent can learn from it.
+But also, over time, that creates more and more trust so that humans trust the agent because they
+have they've seen a few times now that the way it works makes sense. Right? And it draws the right
+conclusions. Because of the fact that you are focused on augmenting and not replacing human
+operators, that also brings up the question of what is the actual user experience, what are the
+interfaces available to that human operator, and how do you manage a pleasant and useful hand off to
+the human operator without just saying, here's a bunch of stuff and dropping it on the floor. Yes.
+First of all, yet another, you know, original problem here that is almost research. Right? Because
+we don't have many good paradigms on how to do this. Right? And, you know, simple chat is not
+sufficient by itself. Right? Because you have rich data. Oftentimes, to verify an answer, you have
+to go through a lot of, like, data points that when tied together, create the answer. So it it's not
+a simple interface. But the way we kind of approached it after a few iterations is that we have
+agents that work alongside humans. They they can interact with humans, and they usually provide
+quicker answers. And we have agents that work in the background. And in either case, we found that,
+they have to be able to present in a very concise way an answer, but then have a longer, maybe, set
+of data that somebody can examine. But we also found that even for the background agents, it's very,
+very important for humans to be able to actually intervene in the process as the agent answer the
+background and does a lot of work. It exposes all the work it does. It exposes its current, let's
+say, thinking and its current state. And humans, anytime, can come and intervene either, you know,
+send the agent in a different direction or tell the agent that, you know, you're right about this.
+Maybe go deeper. And that interaction mode is not easy at all. Right? It's almost as if you're
+interacting with another human, right, in a in a way that is very natural to both. And we found,
+like, a combination of essentially a very kind of rich in data, sometimes visual, some text for a
+human to understand the state and the status and an answer, but also an ability to kind of jump into
+the middle of, like, a backhand kind of agent investigation and provide guidance is very, very
+important. Right? Which means that the agent has to be very responsive to that as well. Right? And
+should be able to, like, change direction in the middle of a task. But, yes, also that creates
+something that is also very powerful. Right? Because now humans can go to resolve.ai and ask any
+kind of question. Resolve is gonna go to all the underlying tools, get the answer, provide it back,
+and humans now can operate at the high level of abstraction. Right? Not just for problems, but for
+any type of software engineering task that involves code and production. And that's extremely
+powerful if you get the interface right Because humans don't have to be now experts in these low
+level tools and custom languages, and they don't have to be able to have to, like, go through huge
+dashboards of with many charts to try to eyeball maybe an answer. And they don't have to be able to
+try to correlate, let's say, across all of these. Right? Is something slow because of a code change?
+Is that a future flag that is on? Did something change the traffic patterns? You can ask a question.
+The agent is gonna go and examine all of these and give you an answer or two about what might be
+going on. Right? And this is very, very powerful. And I honestly think this is the future, right,
+where agents become more and more autonomous. Humans now start operating at the level of obstruction
+that is higher, and they actually delegate most of these kind of tasks to humans. And then they are
+the ones who are kind of deciding what should be the next step, right, or the final outcome. Given
+the fact that you focused on systems that are powered by software, you're empowering people who care
+about whether or not their application is running, whether they can deploy their application
+effectively. That also brings up the question of the fact that a lot of software now is also being
+written in conjunction with LLMs and some of the potential for that to introduce new problems or
+security issues. And I'm wondering maybe if there is some bidirectional capability that you're
+thinking about as far as being able to feed some of the discovered operational characteristics and
+patterns of the system that the application is operating within to then be able to help course
+correct things like, GitHub Copilot agent that is iterating on a pull request to be able to say,
+nope. I'm sorry. You can't actually do that because the the system that you're trying to talk to
+doesn't even exist. I think that the future looks exactly the way you describe it. Because now you
+have, agents like Azure AI that create this very, very deep understanding of production all the way
+from source code to, you know, how this team operates. And that context is useful, not just when
+you're on production or even troubles with production, but it's equally useful when you're actually
+trying to make changes right via code. And the exact ways that this might manifest, you can think of
+it as, like, the right context for the change I'm trying to perform right now. Right? Or for the
+right the right test case to validate the change that I'm performing now. Or let's say, the
+appropriate PR to fix a bug or to improve, let's say, the reliability of the system or the
+efficiency. But, you know, I think this is kind of worth the future is in my opinion. Agents like
+Resolve AI improve reliability for code that was generated by agents, but also providing the right
+contact don't context those agents to actually be more effective when they make a change. Right? Or
+or when the reason about the code related problem. And then the other aspect of a system like
+resolve.ai is that you're working in the context of something that is constantly evolving. People
+are adding new code, scaling up, scaling down, changing the labels on a particular metric or
+changing the structure of log lines, which requires you to be able to adapt and course correct as
+well as being able to maybe prune the set of tools that you need to have available to the agent
+because they don't even exist in the context that you're running, and you can cut down on some of
+the some of the number of tokens that you're taking up by just even saying, hey. These tools might
+exist. And I'm curious how you're thinking about that iterative feedback loop and the evolution of
+your system as it adapts to the changes of the context in which it's running. Yeah. This goes back
+to the way I was describing the architecture. Right? So a big part of what Resolve does and does a
+lot better and differently than anyone else I've seen is that it actually models the entire software
+system. And to model the entire software system, it means that it captures every change that
+happens, every configuration change, every code change, and adapts its understanding of the
+environment consist confidently. Right? Like, one way to see this is, like, why are runbooks not
+effective? Because they're always out of date. Right? Because as soon as they're written, something
+changed in the system, and, you know, they're not applicable anymore. Right? Or why do you have to
+spend so much time to maintain observability tools? It's because the the things they monitor change
+all the time. Right? And you have to constantly update alerts, dashboards, etcetera. And Resolve
+does all of that automatically. It models the system. It updates its understanding of the system
+constantly, like, every few seconds, basically, and with every change that comes in and also learns
+from humans, like I said, right, on top of all that. And to to me, that's, like, maybe one of the
+most important things that we did to be able to be effective in a system that changes constantly.
+Right? Sometimes tons of times a day. One of the other perennial problems of any sort of even
+observability based system, but especially when you're bringing AI into the mix, is the question of
+predictability of cost to say, I would love to use resolve.ai. How much is it going to cost me, and
+how can I predict costs going forward? Obviously, costs can be highly variable when you're dealing
+with variable data collection. LLMs added a even higher degree of volatility to price prediction.
+And so and I'm wondering how you think about being able to mitigate some of that volatility in the
+costs that you're incurring by operating your system and pass on some of that predictability and
+confidence to your customers too so they don't have to worry about accidentally spending $10,000 a
+month when they thought they were only gonna be spending 500. So first of all, you're pointing out,
+like, a very challenging problem that observability tools have today. Right? Because they charge by
+volume of data, More data doesn't necessarily mean more value. Right? But yet, we find ourselves
+stuck in that situation, and we have to pay all this money. So having all this experience myself in
+observability, we decided that the way to do this is to essentially charge by the amount of work the
+agent does, right, or this number of problems it solves for the users. And users have full control
+in how often they want to have the agent do the work for them. Right? So it creates a lot of
+predictability and aligns actually the value extremely well to the outcomes that are the humans
+aiming for. Right? Not in an abstract way. Okay. More data means more value. But actually,
+specifically. Right? Like, it will solve all these kind of incidents or it will respond to all these
+alerts for you, or it will troubleshoot all these problems for you. And we find this to be also
+create a lot of predictability and a lot of kind of alignment between value and outcomes that the
+users are expecting. And also gives a lot of control to users on how how often or how widely they
+wanna use the the product. But to be honest, the most important thing is that because now Resolve AI
+essentially directly addresses maybe the most important challenge in delivering business to software
+reliably, it is also very, very valuable. Right? So if it does it well, honestly, it's way cheaper
+than, you know, humans, and it's a no brainer for us to use it. So the outcome or the value of the
+of the task with the job performance is very high. So as long as we, you know, do it well and keep
+improving, humans wanna use it more and more, right, not less. As you have been building resolve.ai,
+digging deeper into some of the architectural paradigms, the user experience paradigms, etcetera,
+and working with some of the early customers, I'm wondering what are some of the ways that your
+conceptions of an understanding of the overall problem space and the approach to it have evolved and
+changed and some of the ways that you have maybe been surprised at false assumptions or
+misunderstandings? So I I try to keep track of things that I thought would be one way when we
+started versus that, differently now. And there are many, many things that I thought would be
+different. Actually, not not just technically. Like, maybe I'll I'll give you two high level things.
+When When we started, it wasn't clear we can solve this problem well and we can go very far. And,
+also, it wasn't clear to me that companies, especially larger enterprises, would be willing to adopt
+agents in production. I was surprised by how quickly, essentially, large companies were working with
+some of the largest financial institutions in the world, actually leaned in to AI and, you know, AI
+that goes into production. And they see the value in actually modernizing their operations. The
+problem itself, in some ways, it's a lot harder than maybe I anticipated. Like, it takes a
+tremendous amount of AI talent together with, let's say, maybe more traditional observability and
+software systems talent to solve this well. Obviously, the models provide the baseline for being
+able to even approach this problem, but also the final outcome is very far away from what the models
+can do on their own. So we had to make huge investments in creating infrastructure for agents,
+investing on planning and reasoning, whether that's via improving the models or outside of them.
+And, you know, that that's kind of the other thing. Right? Like, this is a much maybe harder problem
+than even I anticipated. Then we think that, you know, we think that, right, there are many, many
+interesting challenges, that we we found. But I would say that I'm very optimistic about the future
+in in some ways. I think that despite of how hard this problem is, I think we still remain on an
+exponential curve of improvement. And I do believe that in a year from now, I mean, the way software
+engineering is done has changed completely already. Right? But But I think it's gonna keep changing.
+And I'm optimistic in another way also. I don't think this change is gonna result in, like, fewer
+people in working the technology. I think it's gonna result actually in a lot in a much higher
+technology output. Right? Maybe a 100 times more, a thousand times more, which in my opinion is very
+beneficial for the world because we're gonna be able to solve a lot more problems via technology,
+and we're gonna be able to improve our our life the quality of our lives and create, let's say, a
+lot more good to the world than maybe the short term difficulties we might have. And I do think more
+people are gonna be end up working in technology. Of course, we'll have to adapt, right, and learn
+to work the new way. But as long as we do that, I think there is pretty good future for anybody
+who's in technology, in my opinion. And as you have been working with some of your customers and
+early adopters of the resolve platform, what are some of the most interesting or innovative or
+unexpected ways that you've seen them apply this agentic capability within their operating
+environments? Yes. So this is this is something that surprised me even by how our own our own team
+is using the product. You know, when we started, we were thinking of we're building an AI SRE,
+basically, right, that can be on call, that can troubleshoot alerts, troubleshoot incidents,
+troubleshoot problems that humans report. And, of course, we do this quite well now, and it's very
+effective. But because we created now this set of agents that essentially are an abstraction over
+all the underlying data from code to telemetry to infrastructure, humans started using it all the
+time, what we what we call, like, vibe debugging. Right? Any question that you have about your your
+code or production system, it's much easier to answer by going to resolve than going to the
+underlying systems. Like, our own team uses Resolve, like, all the time. Like, I don't just use it
+multiple times a day to answer any question they have about the underlying software system. Barely
+anybody goes to the underlying tools anymore. It's way easier and more effective to go to Resolve
+because oftentimes, you have to combine data from multiple systems. But even if it's one just one
+system, Resolve does it a lot faster than a human would be able to do it. So I'm surprised by how
+much, let's say, usage the product gets. The usage has exploded outside of actually incidents and
+troubleshooting. And what are some of the interesting ways that you have been using Resolve to help
+power Resolve? You know, it it we use Resolve for first of all, everybody's using it. Like, Resolve
+is on call internally. It responds to every elected incident. Humans use it for any questions they
+have. Like I said, nobody goes to the underlying tools anymore inside Resolve. But then other
+surprising things is, like, our own sales team. They're all power users of Resolve, for example.
+Instead of, like, going to engineering to the engineering team and trying to get answers about their
+customers or about features, Everybody goes to Resolve and tries to answer all sorts of questions
+that I'd never expected. Things like, why is my customer like, is my customer's environment stable?
+Right? Have there been new users using maybe Resolve? You know, somebody maybe sees, like, a new
+feature on Resolve, right, on the UI, and they go and ask, hey, Resolve. Can you tell me what this
+new tab does on the UI? Or can you tell me how can I use this new integration that was developed?
+Resolve will give you an answer. Right? Like, exactly of how can you use it. Yeah. It's interesting
+because for a long time, the only people who interacted with the operational systems were the people
+who built and maintained them because they were the only ones who had the necessary context and and
+a number of cases access to even be able to do that work. And it's interesting how raising the
+capability of the system to be able to manage itself broadens the scope of who is able to interact
+with it and the types of capabilities that they're able to, gain by virtue of the underlying
+information kind of generation that exists. Correct. And, you know, I think people have these
+questions all the time. They would either refrain from asking them because they didn't wanna, like,
+interrupt somebody, or they would bother somebody and they feel like they're interrupting them for
+some important work. And I think, like, essentially, AI agents allow anybody in an organization to
+self serve themselves and answer any question they have. And in some sense, maybe even like the
+coding agents, in particular, like, the more divide dividing type of pipe coding type of agents,
+allow anybody really to create prototypes and, you know, experiment with building. And I think the
+same thing is happening with production systems with where anybody can ask questions about software,
+about, like, features, about they couldn't answer on their own before. For anybody who has a
+production system, they're managing it in whatever fashion they have available, what are the cases
+where you would advise against adopting resolve.ai? I think that there are still companies because
+of compliance, restrictions, or, you know, particular circumstance they're in where they haven't
+gone to the point where they can trust, let's say, maybe AI agents to operate and have access to
+direct to the appropriate data. So I guess if somebody is not in that position, right, where they
+can give the agent the appropriate data that the human uses to troubleshoot the system, then it
+doesn't make much sense. Right? Because then it's like tying the agent's hand behind its back, let's
+say, and trying to have it help humans. Right? It's it's probably gonna not gonna be able to draw
+the right conclusions. So that's a scenario where we've seen and where we advise against using it
+unless you can get to the point where you can obviously do the high we focus a lot on security. We
+focus a lot on, like, making sure the system is conforms to that high standards of security and
+compliance. But if if that's not sufficient, and it's not sufficient, let's say, for good subs of
+the data, then it probably doesn't make sense. Then it depends on the other particular situations,
+right, where maybe somebody has a very bespoke system that maybe they don't use any standard tools
+and maybe, like, the integrations would be all custom, that also might make it a bit more difficult,
+right, at this stage of of the of the product evolution to be able to be used. And as you continue
+to build and iterate on and invest in Resolve dot AI, what are some of the projects or capabilities
+that you have planned for the near to medium term or any, new areas that you're excited to explore?
+Obviously, we're trying we keep improving the accuracy and effectiveness of the product so it can
+solve more and more problems. It can get you to the right answer much more quickly. It can give you
+the remediation and the solution you need to follow. We keep expanding the coverage so it comes out
+of the box knowing every tool in your environment. And we also improve the capabilities of the
+product, right, to go and essentially be much more effective and do much more of the work and get
+you to the outcome or to the solution on its own without maybe human having to do any work. So these
+are the three areas where we're expanding constantly, and we're also moving at a very, very high
+velocity. One one interesting thing I I tell sometimes customers is that unlike, like, traditional
+software where maybe you get a demo or you sell a product, and you more or less knew if it's gonna
+help you. I think AI and, especially, it is moving so fast that it does make a lot of sense actually
+to kind of start using it because it becomes better. It improves its capabilities, but it also
+learns. So, like, even within a month or two of being used in production, it becomes way, way more
+effective. Are there any other aspects of resolve.ai, the overall application of agentic
+capabilities to production systems or your own explorations within that space that we didn't discuss
+yet that you'd like to cover before we close out the show? Alright. Well, for anybody who wants to
+get in touch with you and follow along with the work that you and your team are doing, I'll have you
+add your preferred contact information to the show notes. And as the final question, I'd like to get
+your perspective on what you see as being the biggest gaps in the tooling technology or human
+training that's available for AI systems today. I think that there is still obviously the reasoning
+capabilities of models for some of these harder long horizon problems are are very limiting. Right?
+And the models are improving, and we're improving, like, say, the applications and solutions on top
+of them. And the more that improves, actually, the outcomes are gonna improve exponentially in my
+opinion. But I also agree with you that humans have to adapt. Right? And humans have to get used to
+using these tools. We still see sometimes resistance in organizations, and I think two things are
+true for that in my opinion. AI has to be a top down kind of initiative, and especially so that
+organizations don't fall behind and get disrupted by competitors. But also all of us as individuals,
+probably it's important. Is this a time where we should be curious and try to learn all these new
+tools and capabilities, right, to not fall behind individually in what we do? Absolutely. Well,
+thank you very much for taking the time today to join me and share the work that you're doing on
+resolve.ai. It's definitely very interesting platform and interesting application of these emerging
+technologies. I appreciate all the time and energy that you're putting into reducing the burden of
+people who are operating production systems as somebody who is responsible for them myself. So,
+thank you for that, and I hope you enjoy the rest of your day. Thanks a lot, Tobias. I really
+enjoyed the conversation. Thank you. Thank you for listening. Don't forget to check out our other
+shows. The Data Engineering Podcast covers the latest on modern data management, and podcast.init
+covers the Python language, its community, and the innovative ways it is being used. Visit the site
+to subscribe to the show, sign up for the mailing list, and read the show notes. And if you've
+learned something or tried out a project from the show, then tell us about it. Email
+hosts@AIengineeringpodcast.com with your story.

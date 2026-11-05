@@ -1,0 +1,400 @@
+[0:00:00] Lee: Glauber, welcome to Software Engineering Daily. 
+
+[0:00:03] Glauber: Lee, thank you so much for having me. 
+
+[0:00:06] Lee: I'm glad you're here. I'm trying to figure out really what the essence is of your product, right? And so, to me what it seems like is you're talking about production quality SQLite, which is by itself an amazing feat. But geographically distributed, small footprint for edge location [inaudible 0:00:24]. Is that a good summary? Or what else would you throw into that? 
+
+[0:00:30] Glauber: It's a pretty good summary. And I think that it's always a challenge to talk about anything, if really, specially technology. Because it depends on like who is on the other side of us listening and what do you care about. But one thing that I always like to highlight is that SQLite is the database with the best developer experience in the world. It's not even close. Every tutorial starts with SQLite. 
+
+[0:00:57] Lee: It's so simple to use. 
+
+[0:00:57] Glauber: It's so simple to use, right? 
+
+[0:00:58] Lee: Yeah.
+
+[0:00:59] Glauber: But the problem is that, like, now I've done this tutorial, I've used SQLite, I created my app, right? Just use the Prisma ORM or any other ORM. Now what? I need to take another step to go find the new database for me to use. 
+
+One of the things that we want to do with Turso that goes beyond the performance, the latency, the – is really just like, okay, so how does that on-ramp work, right? Can we provide this experience of this tool? And I don't want to discount as well that SQLite is a great database they use for real use cases. But it's usually an embedded devices where you don't need the connectivity anyway [inaudible 0:01:38]. 
+
+[0:01:40] Lee: Things like an internal iPhone app uses it a lot. Yeah. 
+
+[0:01:40] Glauber: Right. You would you wouldn't necessarily think about like if I'm using a web application, right? Usually, the journey is like the tutorial is on SQLite. They're getting started in SQLite. How you get your production in that database technology as well? Which has other advantages way beyond. One of the things that we hear a lot is like testing databases is a pain. Like, of course, it is. 
+
+I mean, CI is obviously not anybody's idea of fun to begin with. And now you have to – like, your connection to Postgres and you just spawn a container or to test it locally. Or spawn Postgres in this set. We had a product before that had that and like there was always like some port conflict. Always some issue with tear down. And then it takes forever. 
+
+And like SQLite is just the file. This developer experience of – I started super simple. But even after I'm going to production, I can now use it as a production web-based database and I can test those things locally with five bios, spread those things around. This is sometimes to me way more important than any number that you can attach to it in terms of performance cost or anything like that. 
+
+[0:02:49] Lee: Now for people who use SQLite but don't really understand how it's – what some of its limitations are compared to other databases. SQLite doesn't really have a server mode, right? It's a library that plugs in and it uses flat files. There's no connection to a port or anything you need to make. But as a side effect of that, there's also no remote that goes along with that. 
+
+Now that gives a lot of limitations on what you're able to do with the database. But it's also what gives it a lot of its simplicity. Now you've extended that, right? You moved beyond the basic SQLite. And do you want to talk about that a little bit more about some of the extensions you've had? 
+
+[0:03:29] Glauber: Yeah. In fact, the thing they described is SQLite doesn't have is exactly what we added, right? And it's one of the things that we added. Just for clarity, what we've done, we had a goal, which was to build the database but follow those characteristics that you read from in the beginning of the latency, the geographical distribution, edge friendly and all of that. 
+
+We knew SQLite was the perfect building block for it. And all I wanted to do is like let's make some changes to SQLite. But SQLite is almost perfect for what we want to do, right? Almost. 
+
+We made a bunch of changes to that. SQLite, unfortunately, part of their own admission, they're not an open contribution product. So, they would not be interested in their contributions anyway. That's what they want to do. We forked SQLite. 
+
+One of the things that we've done in the journey to create our product was to have this fork of SQLite where we keep our changes, but we also welcome changes from anybody else. We call it ourselves, again, not the company product, but the specific project. The open contribution fork of SQLite. And the name of that project is libSQL.
+
+In libSQL, which is again a purely open source project, there were contributions for other people in the past that have nothing to do – it's a relatively new project, but we had already some contributions from people that have nothing to do with our organization or what we want to do. But we also made changes to that to allow SQLite to be used in a server environment and without losing the ability of being an embedded database. 
+
+SQLite has a connection string for people who are familiar with that. So, you can use this connection string as a file and now you're talking to a file. Or you can pass an HTTP address. And now you're talking to a server. But those are changes in the client. 
+
+And then we also have as part of that project a server implementation, right? If you're talking HTTP, we're talking through something, right? You have the server mode, the thing. And then you have the client that connects to this connection string. All part of the prod. And Turso is a managed version of this. 
+
+[0:05:40] Lee: Now it's not only a server version that runs on your server as a separate process. It also can run remotely over the internet and over – 
+
+[0:05:49] Glauber: Yeah. If you're using Turso, for example, which is our managed service, then you don't – the experience that the user is going to have is that you create a database. And you can do this from the CLI. So, we have a CLI that became SQLite being so nimble. It creates you a new database in less than 10 seconds, including all the provisioning, the VM that we're going to create for you. All of that. 
+
+In less than 10 seconds, you create a database. Now you have an HTTP connection stream. That's it. You just connect to that. And if instead of passing this – instead of passing this HTTP connection string, you pass a file connection string. Now you're doing locally, right? 
+
+And one of the things that we just announced this week is a much better way to go between those things in the same application. But the idea is like let's do file. Let's do HTTP. Let's do everything in between. But not only file, right? We're moving the idea of SQLite, the concept of SQLite to a remote database as well.
+
+[0:06:47] Lee: Okay. Now it's a remote database. But you go a step beyond that as well, too. And you actually create a geographically distributed version of that database. 
+
+[0:06:57] Glauber: That's right. Yes. 
+
+[0:06:58] Lee: Why don't you talk about that? 
+
+[0:07:01] Glauber: It's super interesting because we – I have a talk next month coming up in a conference call P99, in which I talked specifically about that. But lots of people – when you're optimizing databases, right? It's a lot of – you put a lot of work to maybe optimize your latency from 30 milliseconds to 20 milliseconds and then, wow, that's great. Right? 
+
+But the reality of the world is that the world – the speed of light limits what you can do. If you are in Australia and if you are accessing a database that is in the United States, I'm sorry. I mean, it's 200 milliseconds at least. It's impossible – 
+
+[0:07:43] Lee: Almost nothing you can do to fix that problem. 
+
+[0:07:47] Glauber: Outside of recreating the universe with different laws. I mean, there's very little you can do to solve that problem, right? And this hasn't traditionally been too much of a problem because you have things like, "Wow. My backhand is very close to the database." But there is a problem with that. 
+
+There is a trend in the industry, which is like, "Look, the backend being close to the services is fine." But that doesn't change the fact that the user is far away. So, you need to find a way to push the backend close to your user. 
+
+And then you have things like Cloudflare workers. Cloudflare workers are essentially something created to solve this problem. And they have Vercel Edge, Netlify Edge and a lot of other web edge solutions. It will allow you to execute code close to the user. Fantastic. 
+
+But then, again, if you're just doing a URL transformation or you're doing super simple that doesn't require any state, that is good. But the moment you have to access the database, you're actually worse than before. Because with the backend closer to the database, you have all the round trips. You have one big round trip from Australia to your backend. 
+
+And then you have a bunch of round trips between the database and the backend and the response back. Now with the edge, your compute is now close to the user in Australia and all the round trips. Because between the backend of the database are now essentially making your experience worse. You have to architecture things in a way to hide this problem. It gets everything a lot more complicated. It's important for us to make this thing geographically distributed. 
+
+And again, we didn't start with SQLite test because we didn't start from the solution. Basically, what can we do with that? We start with the problem, right? Let's say we want to solve the problem of edge compute, right? Data in edge compute. How do we solve the problem of edge data? 
+
+Okay. The only way to break this geographical, this speed of light issue is replicating data. But try replicating Postgres instance to 30 locations. You're going to break the bank. It's extremely expensive. 
+
+When you think about it, it's really a problem of cost. It's not a problem of technology. The technology is there. Replication exists forever. Massive replication is good enough for a variety of use cases. The web runs on caches anyway in a lot of ways. 
+
+It's really the fact that you can't economically put Postgres on that many locations or MySQL. I'm not picking on Postgers, of course, or in any of those locations. Plus, the developer experienced on top of that. Because, like, now, if you have a lot of those replicas, you need to be very aware. Where are those replicas? Which replica am I connecting to? Is this in sync or not? Or all of those kinds of problems. 
+
+The experience we want people to have with Turso is the following. You go. As I described. You create a database. It's ready in a couple of seconds. And then you just select where do you want your replicas. But your connection string doesn't change. But you always have a single connection string, which is the address of your database. And all the routing is done by us. 
+
+You don't have to change any configuration in your application. Again, you keep connecting. You change – you develop on – pointed to a file. And then you give your HTTP, URL to your application. And you don't have, let's say, a replica in Tokyo. Tomorrow you see you're starting to have a bunch of users in Tokyo. You now go to the libSQL, to the Turso CLI. You create a replica in Tokyo. And people from Tokyo are going to be routed there. That's it, right? Without any changes. 
+
+And this has to make sense from the cost point of view as I said, which is why SQLite was the great – the building block that we chose because it fits everywhere. I mean, it's the database that has been traditionally running on mobile phones. And my watch probably has some SQLite, right? You can now make the database that's super cheap to run to the point that running – just for comparison our scalar plan on the website costs $29 a month. It includes six locations, right? 
+
+[0:12:07] Lee: Yeah. And that's much cheaper than you can do for MySQL or Postgres or anything like that. But now what you end up with, correctly if I'm wrong, is you're – we create a cluster database using SQLite or you using Turso I guess is really the correct terminology now. We create a cluster database using Turso, let's say, in six locations. One of those is still the primary and the other five are all replicas. 
+
+[0:12:35] Glauber: Yes. That's right. Yes. 
+
+[0:12:36] Lee: And so, are they read only replicas? Are they read-write replicas? 
+
+[0:12:40] Glauber: Our technology is very interesting in that sense. Because, again, it doesn't quite – from the point of your topology, like if you're talking from the point of view of this service, they are read-only replicas. 
+
+[0:12:52] Lee: Okay. 
+
+[0:12:54] Glauber: Well, you can write to them. They're just going to route it to the primary. It's not read-only in the sense that the user has to be aware and say where do I write? You can send HTTP requests to any of them. 
+
+[0:13:07] Lee: In New Jersey, you've got an interface for your application and you want to talk to the closest database. You'll talk to the replica to do the reads and then forward the rights on to wherever the primer is located.
+
+[0:13:20] Glauber: That's right. I mean, the application doesn't change, which I think it's the interesting thing of what we're doing. You can connect to any replica. In fact, with the single URL, you don't even know which replica you're connecting to. You just get that URL. But you can for – obviously, we don't want to hide those kind of things. You can. You have a command a verbose version that shows you the individual URLs for each of the replicas. If you connect to one of them for whatever reason and you write to it, you can still write. The only thing that you see from your point of view is that this write takes longer. 
+
+[0:13:51] Lee: You have a longer latency to – yeah. 
+
+[0:13:52] Glauber: Yeah. Exactly. Right? 
+
+[0:13:53] Lee: Yeah. Still, it's a synchronous write. If you do a synchronous write, it's a synchronous write to the database. And so, you have to still deal with the latency for the writes, but not for the reads. 
+
+[0:14:05] Glauber: And this write is not going to return to the writer until the write is done on the primary and back. You have the digital write semantics, right? 
+
+As long as you're connecting to the same replica, from the point of view of one application connecting to that location, you have this view of a consistent SQL database. But other client that is connecting from another location and ends up on a different replica may see a snapshot in the past, right? 
+
+[0:14:36] Lee: Let's talk about consistency a little bit. This is all great. I get now the architecture of how it works, is you have one primary multiple replicas. You can read and write on a primary. Obviously, on the replicas, if you read and write on those, right? Just forwarded synchronously to the primary. 
+
+Your performance characteristics and the replicas are very, very fast reads and the writes are still as if you talk directly to the primary. 
+
+[0:15:04] Glauber: Pretty much. Yeah. 
+
+[0:15:06] Lee: Yeah. That's how things work. Now given that, the consistency model is generically then primary with replicas consistency model, which is essentially an eventual consistency model. Is it truly eventual consistency? Or do you have anything more in there to guarantee transactional integrity? 
+
+[0:15:28] Glauber: There is snapshot isolation, right? Because, again, we never – one of the changes that we've done to SQLite in the libSQL project was to have a way to tap into the write-ahead log. The way we replicate, we always replicate a transaction boundary. You're never going to see – and again, I work before – just for context on this. Before Turso, I was at Scylla, which is a fully NoSQL eventual consistent database. 
+
+And again, that level of eventual consistency, which is like you never truly know the state of anything. And it's not what we had, right? We have a stronger guarantee than that. It's snapshot if you do a transaction. A replica either have the entire transaction or nothing at all. 
+
+[0:16:15] Lee: Right. Eventual consistency at the transaction level. 
+
+[0:16:18] Glauber: Yeah. Which is called snapshot isolation, right? 
+
+[0:16:21] Lee: Snapshot isolation. Yeah. 
+
+[0:16:22] Glauber: Yeah. You always have those snapshots, right? But when you think about it, when you open a transaction [inaudible 0:16:31] database like Postgres, that transaction will always see the state from when the transaction started. The database will change in – it may change in other ways that if there is a conflict, the transaction fails. But other than that, I mean, you see the state where as the transaction started. 
+
+It's about the same thing. We're replicating the entire transaction. You're always going to see that. Plus, you have, as I said, read your own writes. If you're writing from a specific location, then the writers only acknowledge when you're fully up to date. That means that in that same connection, you never see things going back in time. 
+
+[0:17:13] Lee: You offer then full transactional integrity. 
+
+[0:17:19] Glauber: That's right. Yeah. 
+
+[0:17:20] Lee: If you do a transactions, you either succeed or fail and they're they're always consistent that way. 
+
+[0:17:26] Glauber: Yeah.
+
+[0:17:29] Lee: Let's talk about that a little bit then. Okay. Full transactional consistency. From the state of a client that's talking to one of the replicas and going through that model, that in order to be transactional consistent, while you are processing the transaction, whoever it is that's creating the transaction and processing it, it does see the updates in real-time. It's within the transaction. They can read and write values within the transaction and deal with that. 
+
+Now in that case, that entire transaction has to go all the way to the primary. Exactly.
+
+[0:18:10] Glauber: You're right. Yes. Absolutely. Yeah. That's the only way – 
+
+[0:18:13] Lee: Even the reads have to come from the primary. 
+
+[0:18:15] Glauber: Yeah, exactly. And there are two kinds of transactions, right? There is batch transactions and interactive transactions. What you're describing is an interactive transaction. 
+
+[0:18:25] Lee: True. It's true. 
+
+[0:18:26] Glauber: An interactive transaction is exactly – and it is a little bit of an empty pattern for – again, not only us, but in any database that has I think this kind of model. But you – again, not that you can do. But if you can, batch transactions is always better. 
+
+An interactive transaction is essentially you open up the transaction and then the connection is there. The connection is open. You can do whatever you want. You can read. You can write. You can run some code in the middle. 
+
+Again, this is a little bit more of an into pattern in effect to us. Because SQLite – and this is one of the things SQLite is infamously famous for. Only allows one writer. And so, the Postgres log is essentially I don't know exactly the full granularity. But it's pretty granular. I don't know if it's at the B3 page level or at the row level. But you don't log the entire database. To write to really try to log only what you need. 
+
+SQLite kind of logs everything. You can't have two transactions at the same time. You can do interactive transactions. But the moment you have like multiple clients doing this, which is where like if you have a situation like that, what we recommend is like split this in different databases. 
+
+And again, our free plan allows you to create 500 databases. So, you can do like – you it's very good for things like per-user data and et cetera. Fine. Because now your transactions are isolated at the database level. But within the same database, you try not to like do lots of interactive transactions. Batch transactions is something like you'd essentially do a begin and then you send a bunch of statements. 
+
+[0:20:01] Lee: A bunch of write statements or – 
+
+[0:20:03] Glauber: Read, write, whatever you want. But then commit, or roll back, or et cetera. But there's no interactivity in the middle, right? Those are fantastic. Because those are – essentially, you send it to the primary in one request. You do all the request and then you return it back, right? 
+
+[0:20:25] Lee: To bring this down to a programmer model so that we can talk about – think about this a little bit. In a interactive transaction, if you start the transaction and you do reads and writes through it, if you write a value and you read it, you get the new value right away. That's within the transaction itself. Now outside of the transaction, either you don't see it into the transactions committed. But within the transaction, you see it right away. 
+
+[0:20:53] Glauber: That's right. 
+
+[0:20:53] Lee: With a batch transaction, if you're reading and writing as you're going along, all your reads are getting data from the beginning of the transaction. They're not taking in account any of the writes that are going on during that? 
+
+[0:21:08] Glauber: No. No. Not really. And I can give you an example. Let's imagine that you have – the interactive transaction, really, the pattern there is that you have some logic with those reads, right? So, you need to do some logic. That's why it's interactive. You need to make a decision. You need to branch something. 
+
+Let's say you have a counter of user accesses or whatever, score. You write to the transaction. You update that counter and then you read after that. But then you write something else. That value still saw the update, right? So, you're getting [inaudible 0:21:49]. 
+
+[0:21:48] Lee: That's correct. Read has to have known about the previous write. 
+
+[0:21:53] Glauber: Yeah. Exactly. 
+
+[0:21:54] Lee: And have the result of the previous write. Yes. 
+
+[0:21:55] Glauber: When you do a batch transaction, maybe your request that you're doing to the batch transaction is like it's exactly this. Give me – I want you to update the counter and give me the new value and at the same time update the user with the counter information, right? You're doing all these things in a transaction. Your reads to the new value is in the transaction like any other transaction. 
+
+What you can't do in a batch transaction is things like, oh, test this and Branch it. And then depending on this and that. You can just start procedures and things like that. But the goal of an interactive transaction is like open a connection, right? [inaudible 0:22:30].
+
+[0:22:33] Lee: Yes. Yeah. Yeah. You're right. You're putting the entire batch transaction into a single non-logic flow model in order to make that. Yeah, you're obviously right. But I think what I was trying to get to is if you did a random read from within a batch while you're creating a batch transaction, if your code just happens to do that, you're going to get a read as if you're not in the transaction. Because it's not part of that transactional integrity that's going on. So, you would still get that at a higher speed from the – yeah. Okay.
+
+[0:23:13] Glauber: Yeah. I think I know what you mean. What threw me off is that your use of within the transaction.
+
+[0:23:20] Lee: I agree. That was confusing. 
+
+[0:23:22] Glauber: Yeah. Yeah, sure. But like if you do – if you do another read outside of this transaction, why was this transaction going on? Sure. You see the deal there. 
+
+[0:23:31] Lee: We should have a white board here, that would make it a lot clear. That makes perfect sense. That's great. 
+
+Let's see. Eventual consistency. How do you deal with data scaling? One of the other shortcomings of SQLite is it's really designed for small data sets. Now small dataset still could be megabytes or even gigabytes. But it's not designed for SaaS application-level scaling of data where you're talking about terabytes and petabytes of data. How do you deal with application scaling to large and larger data sets and running into those sorts of limitations? 
+
+[0:24:17] Glauber: I will question this assumption a little bit. Because I don't see – I don't think there's a lot of SaaS applications out there at the petabyte scale. And even – 
+
+[0:24:31] Lee: Fair enough. That's fair enough. But – 
+
+[0:24:33] Glauber: One of the realizations that I had when I left Scylla, which was one of the things that led me to create Turso was that, look, data people – and I've been part of the data industry for a long time. We're always talking about like scaling, and web, and et cetera. Webscale was the term that generated all this, right? 
+
+You always go to like, "Okay, will I get you the petabytes?" And you have those – when you're trying to sell a big data solution, every company has this light. Gartner has it. And then everybody also repeats it, where data is growing exponentially, right? 
+
+[0:25:11] Lee: Yup. 
+
+[0:25:12] Glauber: Yeah. Data is growing exponentially and aggregate despite this, right? But when you remove – and I talked to Alex DeBrie the other day. Had a zinger on that one. If you remove everything that has a timestamp on it from this equation. What kind of things have timestamps? Events. Machine-generated data. Time series data. Data that is generated by equipment. If you remove that from the equation, data is not growing exponentially. I'm sorry. I don't know how big your e-commerce is. Your product catalog does not have a terabyte of data. It does not. 
+
+[0:25:51] Lee: I degree. But an application is more than its catalog. And so, if you look – from my history standpoint, I came from Amazon and I came from New Relic. And both of those, timestamp label data was very critical for both of them and very very important ways. You're right. 
+
+If you have an e-commerce store, the catalog won't change in size. But the transaction records obviously do, and the event records and all those – the analysis. And all that does change. Are you saying that you don't recommend using Turso for that data? 
+
+[0:26:35] Glauber: Yeah, pretty much. Again, it depends on your size. Because there's also – there's also something about like the life cycle of the application, which is something like people talk about it on Twitter the whole time. Lots of the vast majority of SaaS are also not Amazon, right? 
+
+And then the question is like if you go for an architecture to handle Amazon scale from day one, you're probably spending so much time and resources to get to this architecture. 
+
+Somebody actually asked me this day this this very question on the tours of Discord. I have an e-commerce site, et cetera. Same characteristics as Amazon. Can I build this with Turso? 
+
+I said, "Look. When you get to the size of Amazon, probably not. Or actually certainly not, right? But the first three years of that workload, yes, you can. And then the advantage of that is that it's going to – and you have three years to make it. It's going to be fast. It's going to be simple to get started. And when you cross the hundreds of gigabytes threshold or to a terabyte probably is when you think that maybe get out of the platform. 
+
+But here's the thing, time series data will get you to that level in two months. And the other data will get you to that level in years, right? The question is like there is a point. We don't want to represent the solution. There is a point at which Turso is just probably not the right solution for you. The claim that I have here is that like there is a very big amount of applications, right? Even within verticals that can get big just aren't that big. 
+
+[0:28:17] Lee: Absolutely right. And so, your claim is there's a large set of customers that can be served by smaller – relatively speaking, smaller databases. 
+
+[0:28:29] Glauber: Yeah. Even in SaaS. Even in – and by the way, we're not the only company that got to this realization. Another company that I incredibly admire is DogDB, right? They came from the same realization between the analytics space. That, essentially, there is a lot of workloads for which you essentially download your data and you do your analytics locally. Because it's a couple gigabytes. 
+
+And if I told you in 2006 download a couple of gigabytes, you would have killed me. If I tell you now download a couple of gigabytes. Boom. Right? That's the thing, what changed. 
+
+[0:29:04] Lee: Wait a second. I'll get it. Yup. No. I completely get it. And you're right about the size. Obviously, from my history and what I advocate, one of my – the books I wrote is Architecting for Scale. I talked about scaling an awful lot. Is that you you do want to think about scamming from the beginning. But you're right there. For a lot of applications, even if you think about scaling from the beginning, you never get to the point where you're more than a few hundred gigabytes or probably maybe even less that from a data standpoint. 
+
+And so, that makes – your arguments make perfect sense there. But it is an acknowledgment. And you agree with this that you really are designed for the smaller – because of the SQLite framework, you're designed for smaller data sets than like a Postgres, or a SQL server, or larger applications. That makes perfect sense. 
+
+Let's talk though about scaling from the standpoint of number of simultaneous clients making use of your database. And we'll extend this conversation, since you're a distributed database, to a number of nodes and how it works. What's a rational sort of upper limit of an application as far as number of simultaneous accesses? And we'll stick to reads now because we understand the limitations of the writes from what you were talking about. Reads only. How many active connections can you have into a single instance? And how many instances can you really realistically get to? 
+
+[0:30:41] Glauber: Yeah. Again, the interesting thing about this architecture, I don't think I – the short answer is that I don't think I have a number. Because I don't have another, we'll try an explanation. If you want, it's mostly technical. But then maybe the reason I don't have a number it will become more clear. Because this is something that the databases fixate a lot with. 
+
+I mean, this is how many – to some extent, architecturally speaking, our server mode is more like a web server with SQLite embedded than a database if you think about it, right? 
+
+And you have to keep in mind that it's designed to work well at least before this week where we announced better replica. Because embedded replica has changed the game a lot. But it's been designed from the beginning to work with platforms like Cloudflare workers, Vercel Edge and other edge platforms. 
+
+And those platforms are very limited in what they can do. I actually did not know that before I started digging into this, but you can usually do TCP connections from those platforms. All you have is the node implementation of patch. And so, you can do HTTP. Nothing else. 
+
+Cloudflare is announcing now TCP from their workers. It's still in beta. It's going to take some time to mature. The current situation is that it's all HTTP. What databases have been doing to serve this market is essentially that they are adding an HTTP proxy to their existing database. 
+
+And what we have done is a little bit different. It's like let's write a web server that has SQLite on it. That we'll figure out a way to get the data distributed. That is what it is. 
+
+[0:32:23] Lee: So, you don't send a select statement. You send a here is a – here's a web page that's asking you to do a select. Or HTTP request is asking you to do a select. 
+
+[0:32:31] Glauber: Yeah. It sounds like a REST API in a sense. You send an HTTP request, right? And in that HTTP request somewhere, there is all the information you need to process, including the select statement. And the return of that is like the number of rows, and the columns, and et cetera, and all – 
+
+[0:32:51] Lee: And then the data itself. Yeah. 
+
+[0:32:53] Glauber: First of all, this is yet another reason why this is so much better. And although we implement interactive transactions on top of that with a protocol. But this is another reason why batch makes a lot more sense. Because for this kind of data, I send a request and get all the information that I need back. 
+
+But you don't keep connections open, right? There is a limit of concurrent connections. But for web servers, this test should be really, really, really high to the point that we don't even care. 
+
+And also, being a geographically distributed database, the more locations you have, you're effectively increasing that limit because you now have more entities that you can connect to, right? 
+
+[0:33:40] Lee: True. But they're – if you look, first of all, moving towards protocols like HTTP 2.0, which does keep connections open for performance reasons and performance to the databases is extremely important, then the number of simultaneous connections does become an issue. 
+
+[0:34:00] Glauber: Yeah.
+
+[0:34:01] Lee: And you're right. You can always add more replicas. But there's even limits to that because of the ventral consistency [inaudible 0:34:07]. 
+
+[0:34:08] Glauber: Well, my point my point is that the number doesn't matter. My point is that usually databases, especially SQL databases, count connections in the dozens, right? And a web server will usually be counting connections in the thousands, in the many thousands, right? 
+
+Because we are after all like, yes, it's a web server. But that is a database. It's just usually not something that comes up a lot. And what you have is really just those HTTP requests. 
+
+[0:34:37] Lee: Okay. There's no fundamental architectural. No limitations to the number of connections. 
+
+[0:34:46] Glauber: Yeah. Postgres, for example, when you create a connection – 
+
+[0:34:49] Lee: It's rationally high. It's rationally high. Yeah. 
+
+[0:34:52] Glauber: When you create a connection with Postgres, you have to fork the server and then create new process. And then there's all of that. 
+
+[0:34:58] Lee: Connections are much heavier there. Right. 
+
+[0:35:00] Glauber: Yeah. Exactly. And the connection with us is really – it's an HTTP connection. Then you open the connection. And there's a SQLite embedded database in that connection, right? Not even a thread. It's essentially just an async event loop server, right? 
+
+[0:35:15] Lee: Right. Right. Yeah, your limitations become more like the number of open files on the file system and then on everything else. The number of connections on the server. That sort of thing. Yeah. Okay. And, again, that's all very distributable as well so [inaudible 0:35:31] pretty easily.
+
+[0:35:32] Glauber: And just to make it – in case it's not obvious, it may not obvious. At least you start to think about it. If you had to connect to a central location so that we route you to the closest replica, you already lost the latency game, right? We use DNS in that single URL so that you will be connected to the closest replica directly. 
+
+And in that sense that I'm saying like the more you add replicas, because the connection happens directly to the replica, you are – you're not adding load. The only load that you're adding by adding your replicas is obviously on the primary, which is beefier to essentially pass on the replication. 
+
+The number we work with for number of replicas is around 30, which is the number of locations that we support. So, you can have those 30 replicas. The load that you generate by adding new replicas is just the replication itself. Now you have more replicas. You have more loat to replicate. 
+
+[0:36:30] Lee: Makes sense. And to be clear to everyone, we're talking read-only applications at this point. It's writing inside a whole different level of scalability. Just for completion for the topic, do you have any thoughts on the maximum number of writer processes that is reasonable to your application? 
+
+I know you can only have one transaction going on at a time. And so, they're very much serialized. That basically says a very tiny number of writers at a time. Is that correct? 
+
+[0:36:58] Glauber: Yeah. Very tiny. I mean, just very tiny. Because what happened is that like it's essentially – look, we've done benchmarks in which we do like a thousand, two thousand writes a second, which is pretty, pretty distanced too. But they're not like the heavy interactive transaction writes. 
+
+Because, again, each write, once you arrive at the server, SQLite will lock the database to write. But the write itself at that level is still at the micro second, right? Once you are at the right instance in our server, you still write in microseconds, right? 
+
+[0:37:46] Lee: Significant portion of the write time actually is asynchronous. It isn't synchronized. Yeah. Yeah. 
+
+[0:37:51] Glauber: Exactly. The hard part is getting into this. The expensive part is getting proxy to the right place so. Again, if you open an interactive transaction, this dominates. But if you're doing updates, update statements and their own conflict whatever, however complicated your update statement is, the actual physical write is still very cheap. You can get through like thousands of rights easily. 
+
+[0:38:18] Lee: Sounds good. Great. Great. Let's change gears a little bit and talk a little bit about near edge versus far edge. And just so people understand the terminology that I'm using here, and I think this is consistent with your terminology. When I think of near edge, I'm thinking of things like CDNs, right? 
+
+They're mechanisms that are tightly connected with the internet but provide data closer to where you're located. And it is what's called the far edge, which is basically like your mobile phone is part of the far edge, right? It's a device that's very, very hyper-located near somebody but has potentially less connectivity into the internet. Less reliable, slower, et cetera, et cetera, et cetera. 
+
+An edge location is either tightly connected to the internet. Improving performance or it's tightly connected to the user with questionable performance to the internet itself. Given that distinction, how does your app fit into both near-edge sorts of scenarios like CDNs and far-edge solutions like mobile phones?
+
+[0:39:30] Glauber: First of all, I just want to commend you on that because that was a fantastic summary of the landscape. And usually, the whole edge thing gets super complicated. A lot of people like, "What is the edge anyway?" I mean, edge can mean anything and et cetera. 
+
+And for me, we wrote a bunch of articles about that as well. For me, the defining characteristic is the connectivity. The near edge is connected and the far edge is disconnected, right? 
+
+When we talk about – because there is some confusion that comes from some way people use the terminology that is above that and extra to that. But Cloudflare workers, for example, is the near edge, right? 
+
+As I mentioned, we're actually in the middle of releasing a lot of new features this week. And the initial iteration of our product was essentially only focused on the near edge. As I mentioned, it was designed to work with HTTP only. We designed this from the beginning. And this is not good for the far edge as well because HTTP, be like it or not, just works – everything supports HTTP these days.
+
+And most of those platforms like Cloudflare workers are also serverless. You don't have a file system. The idea is like even if I could replicate the data, even – they have nowhere to host it. The idea is it's essentially a CDN as you described. The CDN that executes code. That's what the near edge is becoming this day, right? Again, you connect over HTTP. You do your stuff and you select the Turso locations that you want to have your replicas on. And then there you go. That's it. 
+
+One of the things that we added now and which goes a lot more into the roots of SQLite is what we call embedded replicas. Embedded replicas allow you to replicate the database locally if you have a file system. And it's a little bit different than other technologies that try to do the same and sync SQLite in which your write are still always going over the network to Turso. 
+
+If you are disconnected, you can't write. That's the limitation. And again, it's a different – other solutions that are based on CRDTs and local first, they're trying to tackle the problem of can I always write and then merge those things later? 
+
+Again, we're focusing on simpler applications in that sense. If you disconnect it, you can't write. But you can still read. I give you the same transactional guarantees. Any reads are at the micro-second level. 
+
+You can think of it as essentially the SQLite database the truest spirit of that that allows you micro-second level reads. But it's always synchronized with any other replica that you may have, right? 
+
+[0:42:29] Lee: Right. Yeah. I think of the 100 or so SQLite databases that are on my iPhone right now and imagining them all having synchronized back-ends. How useful that would be to have consistent data on my device. Yeah. 
+
+[0:42:42] Glauber: With the caveat that unlike the CRDT-based solutions, then you have to be connected to write. Right. That's correct. Yeah. 
+
+[0:42:49] Glauber: Right? But same guarantees. Once you write, the right will bring the new data in and you're going to have all this transactionality. But you can read in microseconds. And this is good for two things. First of all, it's good for the latency of aficionados. And I'm definitely one of them. Because now I can really read my database in microseconds as long as I have a file system. But also, for a little bit more into the far edge case in which my connectivity is existent but not constant, right? 
+
+[0:43:18] Lee: Yeah. You're trading off simplicity for – a simplicity of creation and simplicity of the data consistency model for losing a feature that may or may not be important to you. If you don't need that feature, writes, when disconnected, you can get a much simpler data model that's much more consistent than some of these other solutions that involve merging and all that sort of stuff. 
+
+[0:43:47] Glauber: Being a managed service, this data is backed up for you. You can have a hybrid model. So you can have the same database that is accessible over it. You don't have to choose between one model or the other. You can connect it over HTTP from your Cloudflare workers. But then you put a copy of this on your server in Kubernetes or whatever you want and/or your phone or whatever have you. And now you can do local reads from that thing. You could replace your cache. There are a variety of workloads that are not at the far edge, right? This is not far edge only solution, but it also allows you to get to the far edge. 
+
+[0:44:25] Lee: Yeah. For less far, near databases. It's still a performance improvement technology. Yeah, it makes perfect sense. You mentioned a couple times a new product that's coming out. A new product feature set I should say that's coming out. Do you want to clarify a little bit more exactly what that is for other listeners? 
+
+[0:44:48] Glauber: Yeah. We have a launch if you go to blog.turso.tech, you're going to see we're going to be publishing uh stuff every day with the details. Some articles already of course are already out there. But I would focus just in the interest of time on the two biggest pictures that we have. We just discussed one of them, which is embedded replicas, right? 
+
+Embedded right will we'll essentially allow you to replicate your database and we're going to keep the synchronization. We're going to keep the writes. We're going to keep everything in sync. But your reads, SQLite-level reads in the micro-seconds and you put this everywhere you want as we say discuss. 
+
+The other biggest feature is that we are upping the limits of our plans. And just so you can have an understanding of how radical that is. Up until last week, we allowed a free user to create three database. You could go on Turso, again, as a free user. You're getting started. And then create a database to play with or maybe a simple production application for your – until your – is my application really going to scale or not? Right? 
+
+And we're upping that limit to 500 databases. You can now create a free 500 databases. And the scalar plan, which is our plan that costs $39 a month to get started, the previous limit was six databases. Now the new limit is 10,000 database. So you can create 10,000 databases with the same allowance. 
+
+And, again – and let me know how technical you want me to get. But the reason for that is that like – the reason we can offer this – let me first talk about who would need something like this. There are lots of people that have per-user data. Like day-to-day you want to keep isolated one way or another, right? And you may have a variety of reasons for that. One of them could be compliance. 
+
+Because let's say maybe, one, you have these 10,000 databases. You want to create 5,000 in the United States and 5,000 in Europe. Again, still replicated, but never outside of Europe because they have regulations about that. Or maybe you have a user base that – I have some customers in Europe. I have some customers in the United States. I don't have to replicate all the data everywhere. Then you can put like some databases here, some databases there. 
+
+This is the why we're doing this feature to essentially allow data isolation and data compliance. People have been asking this of us from the beginning like ever since we launched the first version of Turso. We had many people asking us in our various channels and communities, "Look, if you guys are based on SQLite, why can't I create? SQLite is just the file. Why can't I create 10,000 files? And each file is one of my users?" Right? 
+
+And we couldn't really. Because in our managed service model, each database was essentially a VM. A VM with few resources, et cetera. But a VM. And even if you will run our open source server, you're still running like a server process per database. It limits the amount of things that we can do. What we've done with this release is that we made our server multi-tenant, right? 
+
+In our server, you can now have different URLs, different files. Everything isolated. Everything separated. But now you're running a single server. And that server, you have 10,000 SQLite files. Each of them with their own URL. Each of them with their own connection string. But you can now have this massive amount of databases. 
+
+[0:48:24] Lee: Yeah. I definitely see that use case. You definitely see people who just don't want to deal with multi-tenancy. They'd much rather have a single-tenant database. And, yeah, SQLite is perfect for that and your product would fit that perfectly as long as you can create lots and lots of databases. That's fantastic. That's fantastic. 
+
+[0:48:42] Glauber: Yeah, 10,000. And going back to that discussion about Amazon, et cetera, Amazon probably has a lot more than 10,000 customers like yours. And it's not the 10,000 is the hard capital. But we always have enterprise plans where you can get more than that like. We could easily get this number to hundreds of thousands, right? 
+
+But you can stay with an architecture like this with Turso. Again, super simple. And by the way, another added advantage is that once you create the first database, I said before, that creating a database takes seven seconds. But now seven to ten seconds. But once you create the first database, the next one is essentially free. Increase instantly, right? Just in less than – it's in milliseconds. 
+
+You can easily create those databases and destroy those databases within an API. Turso is all API-based as well. You can have an API in your SaaS that like, "Hey, a new user came up. Create a new database." Now they have a database. That's it, right? And all their data is in the database. 
+
+[0:49:43] Lee: Cool. Cool. Yeah. We're kind of running out of time here, unfortunately. I wanted to talk about how your company is structured and some of those things. We're going to have to save that for another conversation. I'd love just to kind of a hint to people. You use a term called collaboratively transparent. I love that term. But let's save that and we'll talk about it another time. 
+
+If you're interested in what he's talking about with that, there's a lot of information on the Turso website that talks about it. Yeah, I'd invite people to go take a look at. That they have an interesting company structure. That's part of the best way to describe it. 
+
+But I'd like to end with something a little bit lighter. Your mascot is Iku. Is that how it's pronounced? 
+
+[0:50:32] Glauber: Iku. Yeah. 
+
+[0:50:33] Lee: Iku. Iku. Can you tell me the story of Iku? 
+
+[0:50:38] Glauber: It's also the story – it's so tightly connected with the story of this company. We had a previous product that didn't quite work. I was also using lots of things around SQLite and et cetera and trying to reach the same audience. But as with many startups, including my previous startup, Scylla. I wasn't the founder, but I was one of the early employees. Sometimes startups change direction, right? And this happened to us as well. 
+
+And when we were – we were kind of in the process of like what is it that we should do? And we decided like, "Hey, maybe it's this thing." Right? The SQLite database with the same characteristics that we had today. But we did not know how to call it. 
+
+And then my daughter was born prematurely and then I had to rush – and, obviously, with a lot of premature babies, there were a variety of complications. And I essentially disappeared from the company for a whole month. And my co-founder stayed essentially running the whole thing. And he's from Finland. Right?
+
+There were two things. When I came back, there were two things that had happened that I had no – absolutely no voice with. First of all, he had written the entire backend in Go and I almost killed him. Because like everything else they were doing, it was done in RUST. Now we have two languages to deal with, which, actually, I ended up later recognizing was the right choice. The benefits. I'm not going to language framework here. But the benefits of doing that. I'll weigh the disadvantages of having to deal with two languages by a wide margin. 
+
+And he had named the project, like just the repository, just to git repositories. He didn't propose this isn't as an official name. Ikuturso. Ikuturso, and I'm trying my best to name the pronunciation here. Ikuturso is a Finnish mythological creature. You can you can Google it. It's a monster. I think it's similar to Leviathan in our mythology. But it's like it's this Finnish mythological monster. There is also a Finnish beer brand based on the monster, right? We couldn't come up with – 
+
+[0:52:43] Lee: Is it named after the monster or the beer? That's the real question. 
+
+[0:52:46] Glauber: I think it's the beer. We couldn't agree on the name before I left to the hospital. And then he had to name the repository something. And then he named it Ikuturso because I think he was actually drinking an Ikuturso beer. Just let me name this Ikuturso. That was a joke. And then we were like, "Okay, now we have to find a name for it." And naming things, as you know, is one of the two hardest problems in computer science. Together with caching validation and off-by-one errors. We couldn't find a better name. And this was growing on us and we were liking the Ikuturso, Ikuturso. It was a great name. 
+
+Ikuturso I think would have been a product name. But then what we did is that we named the company and the product Turso or Turso as we say in English, right? And Iku became the mascot. Just Ikuturso as it was the code name. Just a half mascot, half product. 
+
+[0:53:39] Lee: Cool. That's great. I had not heard the story, but I knew it was an interesting story. That's great. Well, thank you very much. Glauber Costa is the founder and CEO of Turso, cloud-centric, edge-based computing platform. And he's been my guest today. Glauber, thank you very much for joining me in Software Engineering Daily. 
+
+[0:54:02] Glauber: Lee, it's been a great pleasure. Thank you so much for having me.
+
+[END] 
+

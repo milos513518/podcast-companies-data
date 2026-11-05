@@ -1,0 +1,597 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Building AI Systems on Postgres: An Inside Look at pgai Vectorizer
+DATE: 2024-11-11
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/pgai-vectorizer-postgres-vector-embedding-episode-39
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638665426253011221ed13d1c2-d85b-430b-9058-916a2fe48daev1.mp3
+DURATION_SECONDS: 3230
+TRANSCRIBED_AT: 2026-09-17T03:33:31Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macy, and today I'm interviewing Aftar
+Surathan about the PGA AI suite for Postgres and how to run your AI workflows in your database. So,
+Aftar, could you start by introducing yourself? Thanks for having me, Tobias. Yeah. My name is Aftar
+Shiratan. I'm the head of AI at Timescale. Timescale is a Postgres database company. We build tools
+that help developers do more with Postgres. I'm excited to be here to chat about PG AI, our project
+that helps developers build AI systems on Postgres. Thank you so much for having me. And do you
+remember how you first got started working in the ML and AI space? Yeah. I think, you know, my first
+introduction to ML was actually in university. I took some classes at that time. I think big data
+and neural networks were the main thing of the day. I think it was slightly before the craze around
+transformers. But, yeah, took some classes in machine learning. I've always been the kind of person
+that's more interested in the applications of things rather than, innovations in research or
+training or that those kinds of methods. So I gravitated towards things like, for example, one of
+the tasks that I took was the implications of, AI on public policy and at that time studying the
+first, like, self driving car regulations and use of AI and ML in the court system and stuff like
+that. It was with the wonderful professor Edward Felton who was a deputy CTO at the White House,
+during one of one of the previous years. But yeah. And then, you know, through I think my current
+the way I find myself working in the AI AI and ML space right now is through the lens of data
+infrastructure and more of the ML ops side of things and ML, engineering and data engineering. As I
+mentioned in the beginning, timescale, we're really a database company. Our kinda core focus is
+around helping developers use Postgres for more than just the relational data use cases. And, you
+know, with the influx of interest that we saw from ChatcheBT and people wanting to build these RAG
+and such systems, they needed a database or a vector database in order to power that, and that's
+kinda how I got pulled in and how we, as Timescale, got pulled in to the AI and ML space. And, you
+know, I've been kinda full time working on these data infrastructure projects for AI developers, for
+the past kind of year and a half or so, and, it's been really enlightening, and I'm really glad I
+kinda got pulled in this direction. Now bringing us to PG AI, I'm wondering if you can just start by
+giving a bit of an overview about what it is and some of the story behind how it got started.
+Fantastic. So the story behind how it got started is actually really simple. Initially, we didn't
+actually set out to build PG dotai. We saw, there was an extension called PG Vector that was getting
+kind of popular, in late 2022, early 2023, and we decided to to support it on the timescale hosted
+product, and we thought that would be the end of the day. Hey. PG vector, it has vector search. That
+should be, you know, all you need to power these AI applications. And then as we started talking to
+our own customers, you know, people in the community, we realized that, like, vector search is not
+enough to build a good AI system. And I think for people who've been working in kind of
+recommendation systems or, like, building machine learning systems previously, this is probably
+obvious. But coming from a place where, you know, people were wanting to build, like, RAG and such
+systems and kind of chat chat with your docs kind of applications, those are the craze kind of just
+after chat gbt. We realized that, like, hey. You actually need to go beyond, vector search and
+address some of the limitations that would prevent people using Postgres for AI applications. And so
+that's kind of the genesis story of this project. It's a project, and it's a suite of tools that
+allows developers to build AI systems on top of Postgres with the minimum amount of ML knowledge and
+the minimum amount of, kind of previous experience and then configuration. And the project really
+has 3 components today. The first one is this Postgres extension called pgvectorscale. And as the
+name suggests, it kind of works alongside pgvector in order to help Postgres, scale and be
+performant for very large vector workloads. So we're talking about, you know, tens of millions, 100
+of millions, billions of vectors. Technically, how it works is that it adds a new kind of index type
+called streaming disk ANN that allows you to, actually do more efficient nearest neighbor search,
+approximate nearest neighbor search. And it comes built in with things like a special kind of binary
+quantization and also the ability to store vectors on, disk as well as in memory. And so all of that
+makes it easier to scale as you go from tens of millions to 100 of millions to billions of vectors
+when you're building, like, a production drag application. So that's PG vector scale. There's
+another extension called PGAI, which is all about allowing developers to access ML models from
+within the database. So in PG AI, the actual ML models don't run on the same server as your
+database, but what we do is we allow easy access and, like, basically bringing these models closer
+to where your data is to enable use cases, like, for example, summarization or embedding creation or
+if you wanna do any kind of LLM reasoning on data that's already in a Postgres database. We allow
+you to do things like access models from OpenAI, Coher, and even open source models from Ollama that
+supported in in Ollama, things like LAMA 3.1 from Meta, things like that. And that's the PGAI
+extension. Then most recently, you know, we thought about the other kind of workflows that are
+involved in building an AI application. And, you know, despite the the numerous tutorials and, it
+feels like, you know, creating embeddings should be like a a solved problem. We realized that, and
+after talking to a bunch of customers and other developers that, you know, it's one thing to get a
+POC search or RAG application up, but it's it's another thing to deal with the demands of, like,
+dynamic data changes as your RAG application goes into production. And so that's where PGAI
+Vectorizer comes in. The vectorizer is all about basically putting embedding creation on autopilot.
+So we, have a system that works out of the box to automatically create and update embeddings as the
+underlying source data changes. So in most, vector databases, the embeddings and the source data are
+kind of, divorced from each other. You have an ETL pipeline where you do your chunking, your
+processing, and then you create your embeddings and you add it into a database. What PGA vectorizer
+does is kind of link the source data and the embeddings a lot closer together, allowing you to solve
+things like, you know, data staleness problems, allowing you to detect, like, drift in your
+embedding models, etcetera, and also solves things like experimentation and testing, which happy to
+get into further, which I think, you know, given the pace of innovation today with, like, new models
+getting released all the time, that helps to compare, you know, is it actually worth worth it to
+upgrade and, like, which model is best for you? So to summarize, PG AI, you know, helping developers
+build AI systems on Postgres, The 3 components are 2 open source extensions, PG vector scale and PG
+AI, and the PG AI vectorizer, which is also an open source tool, which is, aimed around, embedding
+creation and updating. Digging into some of that embedding workflow, as you mentioned, that's
+largely governed by ETL processes right now where people will be putting it either into, Postgres
+database using pgvector or a dedicated vector index. And that vector index. And that workflow can be
+fairly heavyweight, compute and resource intensive, maybe even require GPUs depending on what you're
+using as the embedding model. And, usually, when you're thinking about workflows that you want to
+run-in the context of your database, you don't want anything that's going to be too resource
+intensive, too long running because that's going to negatively impact the applications that are
+getting powered by that database. And so I'm wondering if you can talk to some of the ways that you
+think about the trade offs of moving that workflow into the database engine for managing those AI
+workflows and some of the ways that you're thinking about mitigating the performance impacts for
+people who are using that database for transactional workloads? That's a good question. And I think
+off the bat, I must say I 100% agree with you. It's kinda dangerous to run too many things on the
+same server as you're running a database because, you know, you want your database to be able to be
+performant and respond well to all the user load that is coming onto it. And so what we said is
+that, okay, what do you actually get from having your, embeddings running in the same place as your
+database is that you get the ability to manage your embedding creation and updating in the same
+place that your data actually lives. And so instead of having kind of, systems that would, let's
+say, as you mentioned, you know, sometimes you might have multiple databases, one for metadata, one
+for vectors, and then you have to have these orchestration and syncing systems to keep things up to
+date. We said, okay. How could we get the benefits of having embeddings running on the same server's
+database without actually having to, put up with that load and the the downside of it? And so what
+we came up with is a system where you can actually manage the embedding creation process in a SQL
+query in your, like, database layer because that's where the data lives. But the actual embedding
+creation process happens outside of the database, but you manage it in in the SQL query, like, in in
+Postgres. And so what happens is and I'll take you through 2 take you through 2 versions. 1 is, in
+our cloud product and one is for self hosted and and open source the open source product. What
+happens is you have this kind of management layer and this API that, knows everything about your
+database. It knows, the tables. It knows the the schema, etcetera, but it can communicate with these
+external workers where the embedding creation is actually happening. And so in our cloud product, we
+actually have, cloud functions that run the embedding creation and things like AWS Lambda and stuff
+like that in order to take offload, off the database. And in the self hosted product, you can
+actually define where you want your external worker to run to create those embeddings. But that
+process and that syncing between your embedding creation worker and the database and also
+monitoring, for example, how much work is there left to do. Let's say there's, like, a 100 new items
+added to your database. I need to create those embeddings. All that queue management, all that
+syncing, all that monitoring for things being out of data stale is handled by the vectorizer
+abstraction, and that work takes place, primarily in the database that then will alert these workers
+that there's work to do, and then that work will be done. And so that's kinda how we solve it by
+saying, okay. We don't want the downside of, like, having extra compute load on the database, but we
+do want that flexibility of management and keeping things close to the data. And so we solve that by
+using these external workers. And, you know, if you use the open source version of PGI Vectorizer,
+you can kind of select where you want these workers to run. So you could use, things like model. You
+can use AWS Lambda. You could just use your, you know, a separate Docker container in your
+environment. And so there's a lot of flexibility there. And, you know, I think as we support more
+ways, what we wanna do is make sure that, folks have the flexibility that they need to, you know,
+run embedding creation in the environments and in the places that work for them rather than
+constraining it too much. Because I know there's some database systems out there that actually think
+like, hey. It's actually good to run these literally inside the database and literally inside the
+database server. But our philosophy is to say, okay. Can we do some of the management on the
+database layer, but keep the actual compute processes outside the database in order to protect from,
+again, that overload and things potentially degrading for your users who depend on it as a
+application or transactional database. And as far as that queue management process observability,
+you mentioned that you can use a SQL prompt to be able to say, okay. Start generating the embeddings
+for all of the content that gets returned to the subselect. Generally, in Postgres, if you have a
+transaction that's executing, you can see in the pgstat table, these are all the processes that are
+running. And I'm wondering how that operates as far as the view that the PGAI plug in has for the
+standard Postgres tooling and the the view that it has as far as the actual workloads that are
+running in that external process for doing all that chunking, embedding generation, and then the
+return trip back into the storage layer. Exactly right. And I think what one thing to keep in mind
+is that the system really works as a combination of things happening inside the database, and we
+implement that via the a Postgres extension, the PGAI Postgres extension. And these external
+workers, whether it be in the timescale cloud functions, if you're using the timescale managed
+service, or on, local workers or external workers of your choice. When you talk about, like,
+managing this observability and stuff, exactly right. And so what we do is actually provide
+functions and schema where you can actually transparently see your q table. You can check, hey, how
+much of work is to be left, what has been processed, etcetera. What we try to do is create an
+experience that, you know, we don't wanna abstract everything away and say, like, oh, it's magic.
+Like, don't worry about it. But we also don't wanna be like, hey. You gotta configure, you know, 7
+different things in order to just get something working. And so for folks that actually wanna dig
+under the hood, everything is there in the in the Postgres schema. We actually have a schema called
+AI that is, kind of reserved for all of the, PgaiVectorizer and Pgai, functions and tables that kind
+of work under the hood. And so, you know, developers can go and inspect exactly what's going on and
+then see, you know, if there's any issues or if there's any to see the exact state of the system.
+That's all transparent in that AI schema. So for building these AI applications, RAG has quickly
+become the predominant pattern for being able to increase the accuracy and reliability of those
+systems. That's where these vectorized embeddings come into play. What are some of the other
+patterns as far as the generative AI stack that you are thinking about incorporating into that PGAI
+extension? And what are the pieces that you are explicitly saying this is out of scope that needs to
+be done in more of a pipeline or, application centric approach and does not belong in the context of
+the database? Yeah. I think from our side, I think you you hit the nail on the head. We think RAG is
+one of those work, loads where the database plays an important role in terms of being, like, a
+knowledge base to keep any private documents or any documents that you want other teams to access. I
+also think another popular one that we see is just plain old semantic search where either search
+engines over text data and increasingly popular is search over image data where, you know, we do
+have capabilities in PGAI in the PGAI extension, to handle that and, for example, supporting the
+OpenAI clip model for for images, and things like that, and various, like, image models via Ollama.
+So one thing that's interesting to us right now, and we think the database plays a big part, is
+actually, AI agents, especially in terms of tool use. So you can imagine, you know, a simple example
+is an AI agent that can have a tool that can do knowledge based lookup and that's, you know, that
+can be a semantic search under the hood. And the AI agent also has another tool to do a SQL query
+and to do a calculation over certain data that it's allowed to query. And then in that case, you
+know, you can actually get, rag, quote unquote, over both structured and unstructured data. And I
+think SQL databases and especially Postgres, that's kind of a very natural thing that we see because
+a lot of data is stored in these structured tables. And so I think, you know, we're gonna move,
+increasingly towards that. You know, most of the, hype around RAG today has been around, like, chat
+with PDFs and chat with text data, but I actually think the next frontier and something that we're
+building towards, and I think Postgres is very well positioned, is actually, allowing structured
+data and some sort of query access to agents. And, obviously, there's a whole bunch of
+considerations there. We're actually, you know, in the in the middle of, working on a set of, tools
+and features around this. And you gotta take into account security. You gotta take into account
+predictability, and these are tough problems and, you know, it's exciting to see the progress on
+them. A couple things that I'm not sure about and to answer your question completely about, like,
+hey, what probably doesn't belong in the database, I think there's some interesting things around
+graph, RAG, and there's all kinds of different architectures where, you know, I know there's graph
+extensions for Postgres, but I haven't really seen too much of, you know, implementations that have
+been successful there. I also think, you know, some of this is, obviously companies wanting to,
+position themselves for AI, and I think I totally respect that. And, you know, I think it's up to
+developers to decide what architectures actually work for them. But I think what's exciting is one
+thing that I try to do is just to have an open mind about, hey. Is a database does a database
+actually have a role to play here? And a good example of that is it for the PG AI extension, for the
+longest time, you know, I had, developers, coming to us and saying, hey. I wanna do l m LLM
+reasoning on my data that's in Postgres, and that had basically involved, like, either getting the
+data out of Postgres, doing the reasoning, and then passing it back. And there's certain cases where
+I was like, okay. I don't think it's actually a good idea to, have the ability to access LLMs within
+Postgres, but there's certain cases where my eyes were actually opened where users are saying, well,
+actually, what I wanna do is I have a bunch of data, that's in these rows, and what I wanna do is
+basically do, like, a batch transform to summarize all that data, and it's already in the database.
+And so that inspired us to say, okay. Let's build this PGAI extension. Let's build that
+functionality where you can call an LLM, do a bunch of batch data processing on rows, and then have
+the result also be stored in the database in the same place. But I I think for us, what we try to do
+is say, okay. Let's give users that ability and let developers choose which parts of their workflows
+that make sense rather than saying, like, oh, you should use this method for everything, and you
+shouldn't ever use other methods. I think, you know, we're still so early in AI, and it feels like
+the pace of improvements is, you know, every week there's there's new state of the art. Every week
+there's a new method that, you know, improves things by a 100% or whatever it is. And I think for us
+right now is just to say, hey. Let's give people different workflows and different methods of doing
+things, and let's see how the workflow standards evolve from there. So that's kinda how I think
+about it. And I think it's exciting to see, you know, some things as the preferences of developers,
+solidify in the future, what actually becomes a standard. And, you know, I'm obviously biased, but I
+think, you know, Postgres is very Lindy in that regard in a sense where it's like it's been around
+for 30 years. I have a hunch that, you know, a lot of AI systems are actually gonna be build using
+good old Postgres, especially for companies that are not the scale of, like, a Meta or a Apple or
+something like that. So, yeah, it's exciting to see and and curious to see how this all unfolds.
+Another interesting aspect of using the database for managing that embedding workflow as opposed to
+an ETL workflow or an orchestration engine is that it segments the work to be done. And I know that
+a lot of the existing frameworks like langchain, llama index, haystack, etcetera, when you look at
+their getting started tutorial, let's say, just throw everything into this one script, but they do
+support being able to have discrete stages in the overall workflow and then having the LLM
+interaction at the front end for people to actually have that be the user experience. As people are
+thinking about designing their overall system architecture the way that they want their AI
+application to operate and being able to manage those context embeddings using something up like a
+PGAI, How does that factor into the overall developer experience of designing and implementing and
+operating that system? Yeah. I think for us, the biggest difference and the one thing that I want
+listeners to take away is right now, in most AI architectures, your embeddings and your source data
+are divorced from each other. And you treat them as independent things when actually the embeddings
+are derived data. They're, you know, representations in high dimensional space of images and text,
+etcetera, but they're intimately linked to the source data. And so what we have done is to try and
+reimagine, say, okay, what if you actually linked these 2, things, the embedding and the source
+data, and how its systems look like using Postgres as obviously our playground if this was the case.
+And I think, you know, when you go to, you know, all these different getting started tutorials,
+there comes a time where, you know, that metadata might become too big for the constraints of a
+separate vector database or something like that. And I think the biggest thing for us is to think
+about not just how to get to a POC and how to get to a v one, but actually how do you improve your
+system over time? Because I think improvement and this comes back to, like, you know, some of the
+lessons that people have learned doing ML systems in the past 10 years. Engineers are kind of
+relearning those same lessons today. And one of them is, like, you know, the importance of
+evaluation and testing and making sure that you understand, like, your baselines and how different
+changes improve or degrade the system. And this is especially important for, like, nondeterministic
+systems, which is, you know, anything with LLMs today. And so what we have is with PGI Vectorizer,
+for example, one of the one of the things that we made a decision about is that ability to have
+source data in a single table and then to have multiple derived tables with embeddings. And those
+embeddings can be, for example, from multiple different embedding models that allows you to test,
+you know, which OpenAI model is better for you. Should you upgrade to text embedding 3? Should you
+stay with ADA 2? You now can do that, but the way that we did is to say, hey. Instead of asking the
+developer to, like, you know because someone could just re could dump all the data out and, like,
+reembed it. Let's essentially create, like, a synchronous replica. So all of this, the embeddings,
+there is they're synced to the source data, and so that makes testing things like different models
+really easy. Another thing that we found is, you know, everyone, when they're getting started, you
+kinda use the default chunking settings, the default formatting settings. But how you chunk your
+data and the the information that you put in the embedding can actually make a big difference in
+terms of the quality of results that you get with your ad. And so another thing that we wanted to
+focus on is enable developers to test different chunking and formatting mechanisms. For example,
+making it easy to include data from, like, other columns in your database. So in including the let's
+say you're using the example of like a blog post or like a docs in the docs page, you'd have the
+actual content, but maybe you also want the title of the page in every embedding because that gives
+context about, like, hey. If this page is a blog about, you know, GPD 4 0, I know that, okay, if
+they're talking about, like, new model training methods, the LMM knows, like, hey. This is about GPD
+4 0 and not some other model. And so we made that really easy. And so it's those kinds of
+considerations where I think, you know, designing a system such that it's not just it doesn't just,
+like, get you to, like, a POC state and get you a state where, okay. I can chat to my data, but
+designing it in such a way that you can improve and measure those improvements and easily test and
+experiment. Because I think today, the rate of progress is limited by the rate that you can
+experiment. And so one thing that we've tried to do is for folks that use PGAI is make it very easy
+to experiment and spin up essentially replicas of your data with different models, different
+chunking. And the other thing is you don't have to worry about it falling out of sync because all of
+that is taken care of by the system itself. So those are some of the considerations we took into
+place. And, you know, obviously, there's ways to do it to do this without PGI, but people, at much
+larger companies, managing queuing systems, managing synchronization systems, building monitoring
+tools, having alerts for when your data is stale, etcetera. But we think for the the median company
+that's building today, you know, to try and solidify all of that, like, that's kind of what we try
+to do. And, hopefully, that points away to developers who are kind of entering the AI space now and
+building AI applications to actually build better applications in the long term. And so that's our
+kind of goal there. You already partially answered the question that I was going to ask as far as
+some of the data modeling and schema management, particularly in the case where you have a large
+source blob of text that you're then going to turn into multiple embeddings because of various
+chunking strategies. So being able to have that kind of dependent schema with presumably foreign key
+references into the source text addresses that aspect. But when you are going through that
+experimentation cycle of I'm going to use this chunking strategy with this embedding model, no. That
+didn't quite work, so I'm gonna use a different embedding model. That model's good. I'm gonna use a
+different chunking strategy here. What are some of the ways that you think about signaling to, other
+engineers or to the system, which is the final, state of that experimentation to say, this is what
+we actually want to use and serve up for those embeddings and either maintaining those other
+historical experiments or also optionally being able to reap, older embeddings that are no longer
+needed because they were previous generations of embedding models or pre previous experimentation
+cycles. Exactly right. And I think, this is where, you know, we are very mindful that, like, there's
+so many other tools in the ecosystem for evaluations that we wanna play well with. And I think for
+us, what we try to do is solve the problem of data infrastructure that allows you to experiment in
+the 1st place. And so, for example, you know, I've talked about where like, let's say you have this
+case where, you know, you see a new embedding model get released. You wanna switch that model to see
+how it is, but you also don't wanna, you wanna keep your existing embedding model for your
+production queries. And so, you know, creating that essentially like a synchronous replica of your
+data with this new embedding model, that's something we, thought about in design. I think the other
+one is that ability to do, version tracking and to actually, like, have this in the database and
+because, like, a lot of the time, version tracking is it like some, you know, engineer's notebook or
+it's some sort of shared Notion page or something like that where it's like, oh, on this day, we use
+this version and, you know, you don't really capture it. The embedding is just a number. It doesn't
+have the version associated with it when you look at it in the database. And so having that, for
+example, where it's like you can create a table and you call whatever the embedding name is, the
+version is there, to actually track those things a lot easier and to have them such that, hey. It's
+all in the same database. You can actually see, like, okay. These embeddings are from the these
+models, etcetera. And we also do it, like, even if you don't name the table, you know, table x text
+embedding 3 small or whatever, we track this for you on the back end where you can actually see for
+the vectorizer that got created what was the create vectorizer statement and what model did it use.
+So, that makes it so much easier to actually track and say, ah, okay. This set of embeddings uses
+this model. This is all for you in the in the in the vectorizer tables. And, you know, once again,
+this is fully transparent, so you can just query that AI schema and find it whenever you want to. We
+also expose it in a UI, in the in the timescale product. The other one is thinking about things like
+gradual rollouts of new models where, for example, sometimes you might wanna do, AB testing. This is
+as simple as, like, pointing your query to a different table and to say, okay. For for a certain,
+test group of users, this is the table that we're gonna use. For a certain other set of users, this
+is the table we're gonna use. Everything else in your code stays the same. And so that kind of,
+like, experiment experimentation and testing is something that we've, you know, thought about and
+try to try to really think about, like, hey. For the use cases that actually that people wanna
+build, how can we make this, like, super easy? And then the other thing is this idea of backward
+compatibility where you know, I've talked a lot about upgrading and, like, you know, using new
+models. But sometimes as we know, like, certain models just get, like, lobotomized and, like, this
+is famous for, you know, minor updates. Yesterday, cloud was good and then today, like, something
+happened. And so maintaining that backwards compatibility is important where, you know, for us, we
+never overwrite an embeddings table, with new embeddings. We always create another table. And so
+that makes it really easy to fall back and say, hey. You can point your queries to this new table.
+And if that doesn't work or if you're seeing degraded performance in your evaluations, you can just
+drop it and continue with your current table. So it makes it really flexible. And that idea of just
+having these multiple copies that you can choose between that all get kind of automatically, synced
+and automatically updated. Makes it really easy rather than having to kind of maintain these data
+pipelines and maintain these things yourself. You kinda get all this orchestration for free. You
+mentioned already the rapid pace of change in the AI ecosystem. You've mentioned some of the ways
+that you've thought about the design and scope of PGAI to reduce the amount of engineering churn
+involved in maintaining that project, meant keeping it viable. I'm interested in understanding some
+of the ways that the overall design and scope of that project has changed from when you first
+started working on it to where you are today as you have engaged with the community, kept an eye on
+the overall ecosystem and the direction that it's trending, and maybe some of the aspects that you
+decided to cut out because it was already addressed elsewhere? So this is, again, you know, I love
+talking about our journey because I think it it really shows a couple of things. One is the
+importance of focus and, like, understanding, like, what sorts of developer problems you wanna take
+on. And the other thing is the importance of open source and actually building upon the best of what
+other people have built out there and, you know, proverbially standing on the shoulders of giants
+as, Isaac Newton would say. So I think the PG AI journey, one of the things that initially when we
+started, there was a lot of complaints about PG vector being slow, and at that time it only
+supported the IVF flat, inverted file index type. And, you know, the immediate reaction is to say,
+hey. Why don't we just implement this other index that, other vector databases support? It's called
+HNSW, hierarchical navigable small words. This is very popular in terms of being like a graph,
+search index. And, you know, some companies actually did this. Some Postgres companies actually,
+like, built this, and we actually said, okay. In the spirit of not wanting to, build things that
+aren't actually gonna be used and in the spirit of actually building things that solve unique
+problems and and kind of being additive to the ecosystem rather than competitive. We reached out to
+the folks who are behind pgvector, you know, an individual, by the name of Andrew Kane, And he said,
+hey. You know, HNSW is actually in progress. This is good. If you wanna help, this is how you can do
+it. And what we actually saw and we asked him, like, hey. Do you have any plans to introduce other
+index types? And what he mentioned is that, no. You know, there's a lot of juice to be squeezed out
+from HNSW. If you guys wanna explore other types, like, feel free to do it. And so what we did is
+actually looked at, some of the latest, approximate nearest neighbor search research, and this
+specific one that we latched onto was a paper on disk ann, which is to say, hey. How can you scale
+vector search? And so that's where kind of our roots started. Timescale as a company, as the name
+suggests, Timescale, we're all about building, like, scalable systems on Postgres. So that was like
+a natural starting point for us where we said, okay. How can we jump in? How can we help, increase
+this performance and scale ceiling on, building AI systems with Postgres? And that led us to build
+the pgvector scale extension that works alongside pgvector and say, okay. And and technically
+speaking, it it's also building upon the best of the open source work that are out there because,
+like, we require the pgvector extension for pgvector scale to work. We use the same data type. And
+so to say, hey, guys. Let's actually, like, be really additive to this community and, like, net
+positive rather than trying to compete and say, like, oh, don't use PG vector. Use our thing. That
+doesn't make any sense. And so that's, like, one place where we started off in terms of performance,
+and I think performance is still important. There's a lot more to do there. But then we started
+talking to users and the sudden set of users were like, okay. Scale is important to me, but it's
+important to me insofar as I want to be able to scale in the future. I might not have, like, the
+need for, a 100000000 vectors or a 1000000000 vectors today. And so we're like, okay. That makes
+sense. Like, if you do have that need, you know, this PG vector, this PG vector scale, that's fine.
+And that led us to thinking about, you know, these the needs of production users and what does it
+actually mean to take an AI system from POC to production. And that's really where we're focused on
+right now with, tools like PGAI Vectorizer. You can think of a lot of what we do is, like, there's
+these, RAG platforms out there that are very, like, you know, they're they're good. They're probably
+most of them are designed for folks who are, you know, in a hurry. Maybe they're a small team. You
+just upload your PDFs and you get a chat interface. That's good. What we thought we could do is to
+say, hey. How can we build something that's more transparent and that's more database centric where
+folks, you know, they wanna get started quickly, but they also wanna have control over how the
+system evolves over time as you get into production? Because I think the worst case is when things
+are working fine, everything is good. But, you know, many engineers who are listening know that, you
+know, when things are not going well and you're on call and you get, you know, questions and you you
+did there's no, the system is opaque. There's no visibility. There's no transparency. You can't
+actually see what's going on under the hood. That's when you get really frustrated, and that's when,
+you know, you you feel really helpless and and you don't wanna be in that situation. And so what
+we've been trying to do is design for those kinds of developers. Say, hey. You're building AI
+systems, but you wanna have control. You wanna have transparency. And that led us to things like
+PGAI vectorizer to try and solve some of the embedding creation and sync and updating processes and
+then the PGAI extension itself to say, okay. How can we allow developers who wanna do some LLM
+reasoning, from the database and where the the workflow makes sense in the database layer to do
+that? And then in the future, as I mentioned, you know, we're thinking about things like how do we
+allow, these agents use case? I think agents is interesting. It's still very nascent. Like, I I
+don't know of too many agents in production today apart from, you know, folks like the Devon, like
+software engineer agent, etcetera, and also Replit agent as well. But I think, that's very
+interesting, and we do have some work, you know, in progress right now around that use case and
+where kind of Postgres and databases fit in. In terms of the implementation and workflow, we've
+talked a lot about the Postgres interface of how you execute, how you manage the queues, some of the
+the schema data storage aspects. In terms of actually configuring the embedding process, the models,
+the dependencies that are managed there. You said that you have the ability to run these in the time
+scale workers, or you can have a Docker container or some other execution environment. But it splits
+the workflow between what you're doing in the database and what you're doing for all the dependency
+management and build process. And I'm curious how you think about being able to reduce the amount of
+context switching that's necessary for being able to do some experimentation of let me choose a
+different model, or maybe I need a different version of lang chain or some other dependency in that,
+execution context for the embeddings and how you're thinking about that overall experience. Yeah. I
+think that's super important, because I think what is important there is to balance that initial
+quick start and initial, you know, can I get something working fast? And also the need for
+customization and and specialization that, you know, you might have in maybe not the first month
+that you start working on these systems, but in month, you know, 5, 6, and 7. And so what we've done
+actually is to provide a whole bunch of out of the box functions for things like chunking and
+splitting. For example, we have like a character text splitter, a recursive text splitter. And then
+what we, plan to release soon after, the the initial release is that ability to define your own
+functions. So to say, hey. We have this function running, this this this a way to run functions. And
+right now, it runs these functions that we define, but what if we could provide a way for you as a
+developer to define your own functions and and run those? And so that essentially, reduces some of
+the rigidity in the system from, from a testing perspective. The other thing about, you know,
+creating new OpenAI like, defining the models and stuff that I use, what we do to make it really
+easy to keep up with, you know, we keep talking about this team, like, the rapid pace of innovation,
+is just hook into the OpenAI APIs and to say, okay. Whatever models OpenAI supports, as long as you
+define the model name, we are just gonna use their standard, libraries and their standard APIs. And
+if something gets added to those, we kinda automatically inherit that, because we use their official
+libraries and their official APIs. And so, for example, you know, we don't have anything custom for
+saying, like, you know, the the process to embed your data with OpenAI a to 2 versus text embedding
+3 small is, the same. The only thing that is different from your side is the model name and maybe
+the dimensions that you wanna specify. But everything else takes, is taking care of you under the
+hood. And, I think what we are trying to do in the next release is really provide more of that
+customization where, for example, if you don't wanna use OpenAI models, which is the main model
+provider that we support today, you can define your own embedding models where if you wanna use
+something from sentence transformers, you wanna use something from Ollama, you can hook into that
+instead. And so I think the next theme of PGI vectorizer is gonna be all about customization. And,
+you know, what I encourage folks is if they have, ways or ways that they wanna customize, you know,
+reach out to us. This project, again, is open source. We're very attentive to issues in the in the
+GitHub repo. In your experience of building the PGAI suite, working with this community, figuring
+out how to accelerate the time to first experiment, the the the pace of experimentation, and reduce
+the overall burden of maintaining these systems. What are some of the most interesting or innovative
+or unexpected ways that you've seen that suite of capabilities applied? I think there's a couple of
+interesting use cases that we've seen, PGAI, as a suite of tools used. I think the first one, I'll
+just talk about the PGAI extension. So one of the ways that someone used it was actually for
+moderation where they're running a I think it's some sort of blog or some sort of forum, and every
+message that they that a user posts gets, catalogued in a in a in a database table. And what they
+decided to do is to say, hey. What if we actually could make our moderation easier by automating
+that with LLMs? And so they already had a workflow where, you know, every message gets inserted into
+the table. But what they did was actually use a trigger to say, okay. Upon insight into this table,
+can you moderate it? And then they defined the, moderation function as, I think it's plpgsql, like,
+but they defined a function to to do moderation. And then if the message passed the moderation, it
+would get inserted into, like, an approved table, and those, other comments that are shown. And if
+the message didn't pass, that would go into a flag table where, like, a human could review it or
+something like that. So that was really interesting for me as a place where actually making these
+capabilities available on the database layer helps because then you have all these database, level
+abstractions to deal with it. And, you know, a lot of these workflows, if folks wanna deal with it
+on that layer, like just giving people the ability to do that. I think the other interesting thing
+for PGI Vectorizer is just how, we underestimate how busy teams are in order to do experimentation.
+And I think from the people that we've talked to, both current, Timescale customers as well as, you
+know, folks that are just using the open source stuff in the community, you know, simple things like
+you would think, you know, folks as, like, within 3 months of OpenAI releasing, like, a new
+embedding model that promises to be cheaper and, you know, perform better, most developers would
+upgrade. But you'd be surprised that the amount of developers are still running Ada to the old
+embedding model that costs a lot more. And when we ask them, you know, hey, it seems like it's a
+good idea to upgrade. Why wouldn't you? They're like, hey, man. We have so much to do on the product
+side and, you know, it's just something we keep putting off in our in our, sprints and we we just we
+just put this off for months months and we just never got around to it. And so for us, I think one
+of the hopes is that PGAI Vectorizer and tools like it enable folks to do these things that it's
+very easy to put off its tedious work, enable them to do that, and actually, like, benefit their
+teams. I mean, like, some of these models have, like, huge cost savings, and the users get the
+latest and greatest, you know, in terms of performance, etcetera. So I think, like, solving that non
+usage and non experimentation that's going on, that's the biggest thing for me and what I hope is
+kind of the biggest unlock for new folks that use PGI Vectorizer is, like, now it actually makes it
+easy to do experimentation, and even simple things like, hey, upgrading your embedding model. What
+used to take, like, maybe a week of work that you'd have to allocate 1 engineer to that you keep
+putting off can just be a day or a few hours at most. In your experience of building this extension,
+iterating on its capabilities, and working with the members of the community to understand its
+utility and the direction to take it? What are some of the some of the most interesting or
+unexpected or challenging lessons that you've learned in the process? I think one of the one of the
+big things is trying to keep up with all the different levels of the stack and, like, the different
+integration partners that people are using. You know, some people, parts of their system is, like,
+in lang chain that they're trying to migrate. Parts of their system is in, you know, some other,
+like, RAG framework that, you know, some developer got started with and they're trying to, like, you
+know, integrate things together. So I think just dealing with those legacy and it's it's funny to
+say legacy because it's, like, maybe something they wrote, like, 6 months ago. But now it's kinda
+out of date. And just kinda dealing with that and having to kind of help them, migrate away from
+that or how do you integrate that into the current, way of doing things. That's been interesting.
+The other thing I think is that's been really heartwarming for me to see is just the level to which,
+like, you know, people care about open source software and the way that developers are willing to
+contribute fixes and features and things like that that, you know, really, they don't have financial
+incentive to do this. Like, I think part of our goal for PGAI is to, make the software as accessible
+as possible to to everyone and not make it something that's just proprietary. But the extent to
+which, you know, we have a feature request, the extent to which we have people in our Discord or
+even in the GitHub issues helping each other. It's really been great to see and, you know, I don't
+mean to use this as a meme, but, like, you know, reconfirmed hope in humanity a bit where it's like,
+hey. This is just folks who find this kind of thing interesting and wanna help each other. I think
+that's been really great to see. Yeah. I think that would be my my answer to that question. So for
+people who are interested in building these RAG or semantic search applications, what are the cases
+where PGAI is the wrong choice? I think right now, one of the places where Postgres in general can
+do better is where you want to have full text search and where your application has a heavy reliance
+on full text search. And this is things like bm25 and stuff like that. And I think what we've found
+is that in cases where you wanna do hybrid such, you can kinda get away with using pgvector,
+pgvectorscale, and then the, native pull the native Postgres search. I think it's called TS vector
+or something like that. You can get away in some cases, and then, you know, you can kind of your re
+ranking process can help you or say, for example, you wanna do, lexical search on only the titles
+and stuff like that, like to say simplifying things. But if you have a heavy reliance on full text
+search rather than vector search, I think PGAI is really built for, things around the vector search,
+these kinds of embeddings based application. And I think, you know, some folks in the industry are
+doing interesting things. I think there's PareDB. There's also some, like, pro proprietary
+solutions. Many of them are not quite there yet, such that it's a seamless kinda hybrid search
+experience or a seamless full text search experience. And so that's where, know, one of those things
+where if you wanna have a search engine both with heavy full text search requirements, you know,
+Postgres isn't quite there yet. Hopefully, it will get there in the future, and hopefully that
+future comes soon. But today, that's one of the places, you know, honestly speaking, where the the
+ecosystem is not quite, quite ready. As you continue to invest in and mature the PGAI project and
+suite of capabilities, what are some of the things you have planned the near to medium term or any
+particular projects or problem areas you're excited to explore? Yeah. I think there's a couple of
+things. The first one is, you know, making starting with what we've been talking about around PGAI
+vectorizer, just making this process of embedding, handling, embedding creation, experimentation a
+lot more flexible and customizable. So I talked about, you know, today, PGAI Vectorizer supports
+mainly OpenAI models. We have some out of the box, like, commonly used chunking and formatting
+functions that that, are used. Just making that really customizable, making that so that people can
+define their own functions, their own embedding processes, and have that run within the
+pgaivectorizer kind of framework and kind of system. That's one thing. And then the other big thing,
+I think I've talked about this earlier as well, is that excitement of unlocking the capabilities of,
+structured data with LLMs and with agents and, like, building the abilities for agents and LLMs to
+query Postgres tables. And I think some part of this is like text to SQL. Some part of it is like
+really defining a great developer experience around this. This is something that, you know, we're
+excited about. We have, you know, for example, Broadposts about how you can build this yourself
+today just using Postgres and the existing, you know, agent frameworks and existing frameworks out
+there today. Like, for example, Instructure is a popular one on Python, But I think there's a lot of
+work to do there, and so that's another interesting area that we're watching closely. Are there any
+other aspects of the PGAI suite, the work that you're doing at Timescale to improve the experience
+and, reduce the maintenance burden of people building these, vectorized workflows that we didn't
+discuss yet that you'd like to cover before we close out the show? Yeah. I think the final thing
+that we can close on is kind of a theme that's been running throughout this, which is the choice of
+data infrastructure that you use. And I think for us, we're a Postgres company. We started off
+Timescale started off as a company that built a time series extension for Postgres. This has now
+evolved into things like real time analytics, and time series as well. And then now we have this
+pgai project and pgai suite of tools, which is all about AI and vector. The biggest thing that, I
+would encourage developers to take away is that, like, you don't need to learn something new in
+order to build a state of the art AI application. Like, the tools that you already know, that you
+may already have in deployment, that you have familiarity with, especially, the databases like
+Postgres, you can get a very long way. And for the work that we've been doing, we're trying to make
+it such that developers kind of never have to switch away from the tools that they already know. And
+so that familiarity and that ease of saying, okay, if I wanna build an AI system, I know how to use
+Postgres. I can use PG vector. I can use PGI vectorizer. I can use a PG vector scale extension.
+That's really cool because it means that, like, you don't have to learn a whole new system. You can
+transfer all of that knowledge that you have from maybe your existing years of using Postgres. And
+so, you know, that's one thing, you know, and I'm all for seeing innovation. I think some of the
+other folks in the space are doing really interesting work with just focusing on just vector search
+and kind of embedded vector databases and stuff like that. But I think from from our perspective,
+you know, making Postgres better for more of these use cases that are outside of just relational and
+transactional data handling, I think that is, the theme of Timescale as a company and a theme that
+we're seeing where it's, like, there's a popular meme online like Postgres for everything. Like, I
+don't know if you know the midwittweem where it's like, hey. The person who's, like, kinda dumb uses
+Postgres. The guy in the middle is like, no. You need to have, like, 10 different databases. And
+then the Jedi on the end is like, yeah. Just use Postgres. And so that's, that's where I'd like to
+end is like, hey. You know, we're doing our best to help, folks just use Postgres for AI. And if
+there's any way we can make it better, I'm all ears, and excited to hear what listeners have to say.
+Alright. Well, for anybody who does want to get in touch with you and follow along with the work
+that you and the rest of the folks at Timescale are doing, I'll have you add your preferred contact
+information to the show notes. And then as the final question, I'd I'd like to get your perspective
+on what you see as being the biggest gaps in tooling technology or human training for AI systems
+today. Oof. The biggest gaps in tooling technology or human training. Is that from an engineer's
+perspective or also, like, just people using AI systems? However you want to think about it. I think
+my biggest gap that I'm seeing is the willingness of people to really give AI and integrate AI into
+the everyday workflows. And I think there's 2 layers to this. I think the first one is there's a
+wonderful book by an academic out of the out of University of Pennsylvania called Ethan Mollik
+called cointelligence. And one of his rules for AI says, hey. Like, always invite AI to the table in
+everything that you do because that's the only way you will discover, what he calls the jagged edge
+of AI where the the frontiers of AI capabilities, and that's the only way you'll be able to separate
+fact from fiction when you see claims made by other companies that are just trying to sell you
+dreams versus companies that are actually building useful things or people that are building useful
+things. So I think, like, I'm just surprised at the continued like, there's a certain set of people
+who are super all in on AI, and there's other folks where you'd expect a lot more AI usage. And I
+think, for example, one illustration of this was, you know, last year before OpenAI made their
+latest models free to use, everyone was judging frontier AI capabilities on GbD 3.5, which had been
+old and GbD 4 had been out for a long time. And so I think just that willingness to test as a means
+of, like, deciding for yourself and, like, thinking for yourself, that's very important rather than,
+you know, seeing what people on Twitter are saying and kind of going that direction. The the key
+thing is, like, that willingness to invite, AI to the table and, you know, use AI in your general
+workflows, whether it be coding tools, whether it be writing, whether it be any kind of thinking. I
+think there's a lot of interesting interesting benefits to get out of there. And I think the only
+way you find out is by experimentation and is by usage. And I don't think we've reached peak AI
+usage and experimentation by any means yet. And so hopefully that becomes, you know, even more
+accessible to people and even more popular, and that ultimately helps people at the end of the day.
+Alright. Well, thank you very much for taking the time today to join me and share the work that
+you've been putting into the PGAI suite of tools. It's definitely a very interesting approach to
+managing those embeddings, increasing the pace of experimentation, and then increasing the
+maintainability of those stacks. So appreciate all the time and energy that you and the rest of the
+team are putting into that, and I hope you enjoy the rest of your day. Thank you, Tobias. And thanks
+folks for listening. I really, enjoyed, being on this podcast today, and it was a it was a lot of
+fun. Thank you for listening. And don't forget to check out our other shows, the Data Engineering
+podcast, which covers the latest in modern data management, and podcast dot in it, which covers the
+Python language, its community, and the innovative ways it is being used. You can visit the site at
+the machine learning podcast.com to subscribe to the show, sign up for the mailing list, and read
+the show notes. And if you've learned something or tried out a project from the show, then tell us
+about it. Email hosts at the machine learning podcast.com with your story. To help other people find
+the show, please leave a review on Apple Podcasts and tell your friends and coworkers.

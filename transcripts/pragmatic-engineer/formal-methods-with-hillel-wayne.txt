@@ -1,0 +1,771 @@
+Formal methods with Hillel Wayne
+2026-07-29
+Hillel Wayne explains why formal methods like TLA+ matter, how they help build reliable software, and whether AI will finally bring formal verification into the mainstream.
+https://newsletter.pragmaticengineer.com/p/formal-methods-with-hillel-wayne
+SOURCE: publisher_substack (Substack podcastUpload.transcription -- publisher text, not machine-transcribed here)
+DIARIZED: yes -- 3 speaker labels from Substack
+SPEAKERS: SPEAKER_01 61.9% (00:30:30) | SPEAKER_00 37.4% (00:18:26) | SPEAKER_02 0.7% (00:00:21)
+NOTE: labels are anonymous (SPEAKER_nn). No name is inferred from them here.
+1768 segments | 16,109 words | 253 turns
+CHURN: 203/253 turns flagged -- 22 under 1.5s, 201 sandwiched inside one other speaker's run (structural in a two-speaker interview: nearly every interior turn is). Marked inline.
+READ: 20/253 turns are BOTH short and sandwiched (7.9% of turns, 0.4% of voiced time) -- that is the mislabelled-backchannel shape. Marked ** inline.
+==============================================================================
+
+[00:00:00] SPEAKER_00:  (prev -- / next SPEAKER_00)
+There's a popular theory going around that AI will finally make formal verification go mainstream because when machines write the code, humans will need mathematical proof that is correct. Today, I'm talking with one of the best people to respond to this, Hillel Wayne, a formal methods consultant. He's taught TLA+, a popular formal specification language across the industry, wrote the book Logic for Programmers, and will soon be joining Antisys. In today's conversation, we discuss The Crossover Project, Hilo's research interviewing 15-plus traditional engineers to answer the question. If you want to understand more about formal verification and get a sense of whether this approach could go mainstream with AI, this episode is for you.
+
+[00:00:55] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_00)
+In today's episode, we'll get to the question, does it make sense to use formal methods to verify AI written code? As a spoiler, the answer will be proper formal methods are an overkill for this, but lightweight formal methods can actually be helpful. This is where I need to mention our presenting sponsor, Antizizis. Antisysys verifies your system of correctness by running your whole system in hostile simulation and finding bugs. It does this by using an approach called deterministic simulation testing, or DST, which ADW's distinguished engineer Mark Brooker and Ankur Desai have described as lightweight formal methods. Setting aside Entisysys for a minute. If you as an engineer want to get more serious in verifying that your system works as intended, your best bet would be to use lightweight formal methods. Now back to Entisysys. Entisysys turbocharges testing by running your whole system under aggressive Imagine Antithesis as hundreds or thousands of versions of the Mario game running, each instance aggressively trying to break the game with increasingly weird input combinations. With Antithesis, you can specify properties at the whole system level, and Antithesis will actively try to disprove them, so you can be confident that if your system holds up in Antithesis, it will hold up in production. There's good reason teams like Janestreet, Fly.io, and the etcd community rely on Antithesis. Head to antithesis.com slash pragmatic to learn more. So hello, welcome to the podcast. Thank you so much. I'm really excited to be here. It's so nice to have you here. I was curious, you're very well known for formal methods,
+
+[00:02:22] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+for programming, for logic, for all of these topics, but how did you get into tech?
+
+[00:02:27] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 53.5s, 6/21 segments under 1.5s]
+So to start, I never really saw myself as a technical person. I liked computers growing up and I did a tiny bit of programming. My father was a programmer. He taught me Visual Basic. But I always wanted to do physics and math. That was like my dream. I put in my college application, I want to listen to the heartbeat of the universe. Don't ever take advice from like a high schooler for writing, just saying. But after about three years of doing this in college, I realized that I kind of liked the idea of physics, but I didn't enjoy doing it. And I couldn't see myself doing it for 50 years. What part I did enjoy, though, was the programming in the labs. That was the most fun part to me. So I thought, well, if this is what I enjoy, want to try to do it full time. So after college, I left for San Francisco and became a developer, a Ruby on Rails developer in education technology. After some time, I moved back to Chicago. And then in the course of the next job I was working in, also in education technology, I fell into my current niche, which is formal verification and formal methods.
+
+[00:03:21] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 9.5s]
+The first time I came across your writing because you write a blog, a pretty regular one, and I really enjoy your writing. The first time was with the crossover project.
+
+[00:03:31] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.3s]
+This was a project where you attempted to answer,
+
+[00:03:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.4s]
+are we as software engineers actually engineers?
+
+[00:03:38] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.7s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yes.
+
+[00:03:38] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.5s]
+Can we talk about this project?
+
+[00:03:40] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.2s, 2/3 segments under 1.5s]
+Absolutely. So I guess I should probably start with the motivation, which was,
+
+[00:03:45] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.3s, 1/2 segments under 1.5s]
+I've read a lot of books on software and I've read a lot of online articles about software.
+
+[00:03:50] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 34.8s, 4/15 segments under 1.5s]
+And one of the favorite things that software developers do is argue about whether it should be engineering or not, right? And there's the cap of people that say, well... We don't deserve to call ourselves engineers. We should not. They are so far above us. We shouldn't even like consider ourselves in the same space. And then there are the people who are like, what we do is so special and so unique. Engineering doesn't have anything on us. They can't hold a candle to what we do. You see books like Software Craftsmanship, which talk about how like, oh, engineering is this really boring, slow field and software is this incredibly creative, special, wonderful thing. I was very firmly in camp one.
+
+[00:04:25] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.8s, 1/2 segments under 1.5s]
+I thought we were not engineers. We didn't deserve to call ourselves engineering, anything like that.
+
+[00:04:29] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 30.5s, 6/14 segments under 1.5s]
+What I do for work is really carefully analyzing software systems. And I thought, ah, this is real engineering and everything else is not engineering. Then I found this talk by Glenn Vanderberg, where what he did was he read a bunch of engineering books and compared them to what we do in software. And he said, actually, this looks really similar to what we do in software. And I thought, that can't be right. I need something more rigorous. I'm going to have to talk to people who did both engineering and software development and see what they say. And they all agreed with him. So I was wrong. We're engineers. Can we go a little bit into it?
+
+[00:04:59] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.4s]
+So as I started talking to the first people, I realized that this was a much deeper project than I ever expected.
+
+[00:05:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.1s, 1/2 segments under 1.5s]
+And I decided I needed to have as comprehensive a look at traditional engineering as I could possibly get.
+
+[00:05:11] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.6s]
+There are many kinds of engineering.
+
+[00:05:13] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 36.9s, 7/16 segments under 1.5s]
+There's not just building bridges, but there's designing circuits. There's figuring out chemical processes. There's industrial engineering, which is figuring out the layouts of factories and how we organize kinds of labor. There's just so many different kinds. And I wanted to see every single kind's view into what engineering looked like. To compare them all to software, which when you think about it, when we say like, oh, software isn't like building a bridge, maybe it isn't. But is it like designing a circuit? Is it like figuring out a chemical flow? Maybe those are much more closer to the kinds of engineering we do. I needed to know. I think in the end, I talked to about 15 or 20 people in total across about six or seven different fields.
+
+[00:05:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.5s]
+And what were the similarities that you found that software engineering has with either specific types of engineering or across the board?
+
+[00:05:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_02)
+If I had to summarize what I found in general, I'd put it like this.
+
+[00:06:03] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.2s]
+Everybody hates waterfall.
+
+[00:06:07] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+No way. The core tension of engineering is between how expensive it is to make a mistake and how quickly you can iterate. The faster you can iterate, the less planning you need to do before you iterate. And the more expensive it is, the more planning you need to do. That's why, for example, when you're building a building where you can't build it multiple times and see what happens, you have to do a lot of planning up front. But even then, you are looking for ways to iterate on the plan. You do things like build scale models, you use software to simulate the building, you do CAD models, etc. And in other fields, like in, for example, electrical engineering, you have the ability to come up with a design, test it, and then throw it to the fab and get something back. So they will iterate a lot more than civil engineering does.
+
+[00:06:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.3s, 1/2 segments under 1.5s]
+Ah, interesting enough. I heard the term smoke test originated from electrical
+
+[00:06:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.4s, 1/2 segments under 1.5s]
+engineering, actually. I did not look into that, but I could believe it.
+
+[00:06:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.9s, 2/6 segments under 1.5s]
+Yeah, apparently it's when you have a test circuit and you just hook it up. And if it does, if it smokes, it's already bad. That is very interesting. So even within engineering, when we say traditional engineering, there's just layers of engineering or differences, right?
+
+[00:07:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.6s]
+Layers of iteration, I'd say. One of the first people I talked to was actually a mining engineer. He designed mines and Okay, so I guess we all hate waterfalls.
+
+[00:07:42] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Or the idea of waterfall.
+
+[00:07:43] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.6s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:07:44] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.9s, 1/5 segments under 1.5s]
+What are some of the interesting differences that you came across? Either where engineering is ahead of us or traditional engineering does have things on us, which you were hoping to find, or places where actually software engineering is ahead in some ways.
+
+[00:07:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.0s]
+There's both differences in how we practice it, but also differences in the shape of our material. Because every engineering concerns a different material, they have different constraints.
+
+[00:08:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.7s]
+While it's true that everybody tries to iterate as fast as they can,
+
+[00:08:09] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 69.9s, 3/24 segments under 1.5s]
+often turning to software to do that, software is the best at it. The best comparison is chemical engineering, where I talk to people saying that they would set up their experiment, run it overnight, and get the results the next day. And that was fast. With us, we can basically press F11 and get the result, right? And that allows us to basically iterate much faster than even those fields can. I think we all kind of know this. One thing that we might not realize as software engineers is that our work is a lot more consistent than other fields. The example I always do sometimes because I've given a talk about this is I would pull out like a CPU chip or like a stick of RAM and I'd say like, hey, here's the spec sheet. And if I look at the spec sheet, it says this resistor has a resistance that is within 20% of 100 ohms as long as you keep it between 20 and 50 degrees centigrade. So they're basically saying that if they make a thousand of these, there's going to be a variance of 20% across all 1000. And the only way to know is to test them. And then if you run it for too long or you heat it up too much, it's going to change again. With software, assuming no like CPU bugs or anything like that, the same program, if it runs on this computer or on your computer, exact same. Sort this list the exact same with the sorting algorithm.
+
+[00:09:19] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.2s]
+Does this also mean that we might not account for variability as much as other engineering disciplines do?
+
+[00:09:26] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.0s, 2/3 segments under 1.5s]
+I'd say so. The variation we have to deal with is kind of And how did you see the similarities or differences of
+
+[00:09:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.0s, 3/6 segments under 1.5s]
+Software engineers, for example, often interact with customers, with end users who use the software. In other engineering fields, is this also a thing where as an engineer, you will talk or know your customer or just... Not knowing them at all.
+
+[00:10:09] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 12.9s]
+I think it depends because different engines I talked to had different experiences. Some said that they felt that with software, they felt much closer to the customer. With other ones, they said they felt much further. So I think it's hard to really tell there.
+
+[00:10:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.7s]
+One thing I remember vividly is a difference that you pointed out, which was very different and almost makes software engineering a bit higher status or better place is open source. The concept of open source.
+
+[00:10:34] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 48.6s, 4/18 segments under 1.5s]
+Yes. So... That is one thing that seems very special about software versus any other field. Like the reason I'm here in Hungary right now with you is because I'm going to be speaking at craft conference, right? Most other fields of engineering, or in fact, any other field of like human labor has two kinds of conferences, academic conferences where they talk about research and trade shows where they try to sell, where vendors try to sell to like companies. Software is kind of unique in having the third kind of the practitioner conference where we are just meeting to get better at what we do. We also are really the only kind to really focus heavily on like open source and making our knowledge freely available. For any language, you can probably find out how to learn language online, right? You don't have to buy a book. You don't have to like talk to the vendor to learn it. That's something really special about software.
+
+[00:11:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 37.7s]
+I wonder why this might be both the fact that we do share a lot of the information or the craft or how we build things. Even some of the largest companies, I think, are like an Uber or Airbnb. These are $100 billion companies. They will not particularly hide how they built that piece of software Uber publishes and does talks about their app that is used by all these people, how exactly they built it or approximately. I wonder why this... I'm going to switch to
+
+[00:12:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 32.2s, 2/10 segments under 1.5s]
+speculation for a second. This isn't something that I could really speak on with full authority, but my guess is that part of it is cultural. But another part of it is that the material we work with is the same as our product, right? We are using software to write software versus using tools and lathes to build things or using software to design circuits. And I personally think that that similarity, basically, that we are using the same materials on both ends is what makes it so much easier for us to talk about things like open source.
+
+[00:12:34] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 17.7s]
+Interesting how I like this thinking of materials used in each engineering and how our material is software. Of course, the hardware engineering, and we know that's a bit different, of course. But already there's a divide between hardware engineering and software engineers on how much they share, how much we know about them, and so on.
+
+[00:12:52] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.9s, 3/8 segments under 1.5s]
+I kind of wonder, I've got some friends who do like 3D printing, and it seems like, and I haven't looked into this, but it seems like they also have like a very open space of like sharing things freely. And I wonder if that's the same because it is so easy to share and because like the unit of value is the schematic there, if that kind of leads to the same thing.
+
+[00:13:09] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 25.9s, 4/11 segments under 1.5s]
+I also wonder if hacker culture might play a thing in places where it's easy enough to afford to get started on a thing, for example, ham radios, which is not entering, but there's a thriving community where they share the setup, the things, they talk with each other. Small electronics might be, but ultimately software started in the 70s when it was affordable and anyone could buy a computer, maybe the internet. I'm also just speculating.
+
+[00:13:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.8s]
+Yeah, definitely something worth doing a follow-up project on, right?
+
+[00:13:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.8s]
+Well, you've already spent a bunch of time on it.
+
+[00:13:41] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.5s]
+Don't give me so many rabbit holes. There's already too many rabbit holes in my life.
+
+[00:13:45] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.8s, 2/4 segments under 1.5s]
+One more thing that you brought up is version control and the fact that in software, we just take it for granted. We have version control everywhere. And you said that this is super unique across most of engineering.
+
+[00:13:57] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 18.2s, 2/8 segments under 1.5s]
+Yeah, I interviewed like 20 people on this. I think all 20 mentioned version control as the thing they wish they had in their old field. Wow. Yeah. Now, to be clear, they do have things like change management in like other fields. But I think version control as we have it, is so much more sophisticated than anything they have. It's like comparing like a modern car to a Model T.
+
+[00:14:15] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.5s]
+What do you think there are things that now having talked with so many people and learned about the different engineering cultures, like actual traditional engineering cultures, what could we learn from them? What are some kind of inspiration that might be useful here or there?
+
+[00:14:30] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 8.6s]
+Yeah, this is a harder question because while everybody I talked to mentioned those two things of openness and version control, I got a much more scattering set of answers when
+
+[00:14:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.3s, 1/2 segments under 1.5s]
+talking to people about what we could learn from their old fields.
+
+[00:14:42] SPEAKER_01:  (prev SPEAKER_00 / next --)
+The two things I kind of gleaned out is that one, while we are a lot better at iterating than other fields, we're worse at the planning part. Like we still need to do some kind of planning before we iterate. And we just aren't as good as those other fields, in part because we can get away with not doing it as much. But we could get some sort of fusion of the two and get even better than we currently are, which, hey, plug for what I do. The other thing that I think is more interesting in terms of being a bit more shocking to me is that while we're better at being open about all of our materials, We seem to be worse at compiling information about the specifics of our job. And that's a bit loosey-goosey, but the example I keep coming back to is that one of the engineers that I talked to had two favorite books, The Design of Everyday Things, which he recommends every engineer read, and the Snapfit Handbook. Are you familiar with Snapfits?
+
+[00:15:32]
+No.
+
+[00:15:33] SPEAKER_01:  (prev -- / next SPEAKER_02)
+Looking around here to see if there's like one, if I can just show it. But like, you know, like how remotes, they have that little clicky thing in the back that you use that hold the battery in?
+
+[00:15:39] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.5s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:15:40] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+That's a Snapfit. It is a physical device that basically clicks into another device to keep them fused. And this was a 500-page book all about Snapfits, their engineering, appropriate shapes, materials, etc. And that kind of compiling of information about the materials is something other fields do that we don't do. An analogy that I would think of in software would be something like a 500-page book on how to version an API.
+
+[00:16:03] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 21.2s, 7/11 segments under 1.5s]
+We could all use that. Yes, we could. And we don't have it. We can learn it from engineering. We should have that. You started this project asking, are we really engineers? And your personal inclination, which you didn't say at the time, was that we're probably not. In the closing of this series, you said you're still a bit unsure of how to answer it. This was five years ago. This many years later, what is your inclination? Are we actually engineers?
+
+[00:16:25] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 31.1s, 1/11 segments under 1.5s]
+I think so. I think this project and writing about it and thinking about it has firmly moved from the camp of we are definitely not to we probably are. I do want to caveat that I wrote this before LLMs were a thing, and this has probably changed our field as we know it, and it's probably also changed those other branches, and I don't know how. So that could have changed the calculus between two spaces. But as of now, I think excluding LLMs and how they're changing things, what we do now is very similar to what those people in those other fields did, according to my interviews.
+
+[00:16:56] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 15.2s]
+It's such a cool project and it's still a very good read. I'll also link it in the show notes below. I do recommend going into it. So let's talk about formal methods. How did you get exposed to them? And for those of us who are not deep into it, What are they?
+
+[00:17:12] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.0s]
+I'm going to give you a function in max, right? Which should, given a list, return the largest number. What would be a test you'd write for that?
+
+[00:17:18] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 24.5s]
+I'd write a test that I do a list of like two items. It returns the largest one that I know. I give a very long list. I try to stress test it. I give a list where I give like similar numbers. I try to come up with some edge cases. I'll probably write like five tests. Try to think about integer overflows, potentially try some tricky one. Maybe I'll take it to maybe eight if I'm feeling super ambitious and then I'm done.
+
+[00:17:42] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.1s, 1/3 segments under 1.5s]
+Okay. So we take one of those tests. How do you know what the right answer is supposed to be?
+
+[00:17:46] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 15.4s, 3/7 segments under 1.5s]
+I just know because I have a, I learned math. So in school, I know which number is bigger. Honestly, I look at it. I have this, I guess, ingrained knowledge and it feels very basic knowledge that I don't even have to explain.
+
+[00:18:02] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Right. You have some ingrained knowledge that you don't have to explain, such that you can look at, say, the max of two and three and know it's three, right? That's interesting. There's some sort of implicit mechanism in your brain that can see that and know what the function is supposed to do. Step one of what I do with formal methods is asking, can we take that implicit knowledge and make it explicit? Can we figure out what a function is supposed to actually be doing and write that down in a way that can be shown to anybody? So I would basically, in this process, say like the max of a list is an element that is in the list such that every other element is smaller than that element. That is a way that we can formally say what the maximum of a list is. So that's part one, just learning how to look at functions and say, okay, I know what this is doing. How would I explain what this is doing in a way that is clear and unambiguous? Then step two is asking, every single test you've written is basically some Facet of it is an element the list and it is the number of that list such that every other number the list is smaller than it. Now that we have that, what's the best way to show that our function actually satisfies that specification? Tests are one way. Those are basically taking individual values and showing how those comport in specification. Types are another way. We could basically say, OK, in every single case, we are putting in a list of elements and we're getting out a single element. So we have to make sure that every time we call it, that's what's true. So basically, coming up with the properties of the thing, like what it actually is, is the specification of it.
+
+[00:19:30] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+And then showing the function matches that specification is the verification. And what phone methods ask is, can we use mathematics to show that it works not just for the cases that you asked for, but every single possible list you pass in? And that is done through proof. Coming up with some sort of mathematical argument that this code matches this spec.
+
+[00:19:49] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 31.1s, 4/10 segments under 1.5s]
+And then in proof... Again, from university, I still remember the maths proofs where we would proof an equation, you do rigid Transformations, you know what you're allowed to do. Sometimes you can bring in tricks, but those tricks are also inside of your rigid list. And every time, you know, you typically start from a complicated equation and you keep changing it. And in the end, you shape it in a way that it's now trivial or you transform. Those are one of the tools we do. Is this what formal methods also does to some extent?
+
+[00:20:20] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.7s]
+Yes, but you know how to basically add two tangent numbers by hand, right? Do you do that by hand or do you just use a calculator?
+
+[00:20:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.3s, 1/3 segments under 1.5s]
+I now use a calculator. If it's easy enough, I use my brain as a calculator. Otherwise, I just punch it into the calculator.
+
+[00:20:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 32.0s, 5/14 segments under 1.5s]
+Yeah. So similarly, a lot of problem methods, that math of transformation, while you can do it by hand with like what's called a theorem prover, often in industry that is being done for the most part with tools that basically automate huge parts of this process. So you don't have to do every single transformation yourself. You can, for example, say, OK, we have these things are true at the beginning. I want this to be true at the end. And can you figure this out? And it'll be like, either yes, I can prove these things match, or no, I need a little bit more help. And then you say like, okay, at this point, I'm going to also let you know that this is true.
+
+[00:21:04] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.7s]
+And it's like, okay, I can verify that's true.
+
+[00:21:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.1s, 1/2 segments under 1.5s]
+And it helps me get to the end. And you just keep doing that until you actually have enough that the computer
+
+[00:21:10] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 17.2s, 6/10 segments under 1.5s]
+can do the proof for you. Yeah. So with form and methods, this, I mean, this sounds all logical. I think it's easy to follow. In practice, what techniques, technologies, tools do What does the industry use, the tech industry use to actually prove that, you know, some stuff works?
+
+[00:21:27] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.8s]
+To get to that, we need to ask another question. Why isn't this being done for everything?
+
+[00:21:31] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 25.6s, 6/14 segments under 1.5s]
+Okay, let me ask that question. That's a good question. Yeah, this all sounds sensible. It will be nice to not have to write out those five or eight tests. And I know that those tests might not cover all edge cases. Been there, done that, where you miss. And I didn't think that I didn't do a formal proof. I thought like, well, I missed a test case. That's on me. Sorry. Let me put in that test case. I now have nine tests. And now I go and think I did a great job. Why are we not doing formal testing for everything?
+
+[00:21:57] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.2s]
+Instead of finding the largest number in a list, why don't we try to find the file in a directory that has the most lines in it?
+
+[00:22:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.3s, 2/5 segments under 1.5s]
+Well, now I'm thinking of writing a program that in kind of an imperative style, it goes to a four list each file. I list how long the lines are. I count the lines. I cannot tell it easily.
+
+[00:22:16] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.7s, 1/5 segments under 1.5s]
+Okay, are we talking about ASCII lines or UTF at new lines? What happens when the files, you don't have the file permissions to read it. Should you basically ignore it or should you say, hey, my function might be wrong? What if one of the files is a shortcut to another file? What if it's actually a directory?
+
+[00:22:31] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+What if it's
+
+[00:22:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 25.3s, 5/13 segments under 1.5s]
+a binary? You're now simulating real world. Yes, and that's the problem we have, is that when you start talking about most interesting domain problems, you have to pull in so much context that basically even writing what the function is supposed to do becomes a nightmare. The imperative program you write that will get it correct 99% of the time is probably good enough to use in almost all cases. And if you want something that works 100% of the cases, you've got to figure out, okay, which file system are we using? You have to figure out everything. Yeah. And that's why it's not done.
+
+[00:22:57] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.4s, 1/4 segments under 1.5s]
+And it would just not be practical. It would be for 99% of people, why are you wasting your... It's like premature optimization, right? Yeah.
+
+[00:23:05] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.2s]
+Especially when, as you say, writing 10 tests might get you most of what you need.
+
+[00:23:10] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 18.6s, 1/7 segments under 1.5s]
+What are practical technologies that you have seen used in some part of the industry that even though they will, I'm assuming, will be somewhat heavyweight because it sounds like pretty heavyweight, It might be the return, the return of investment of using this heavyweight stuff is worth it that teams in industry are using it today.
+
+[00:23:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 20.5s, 2/6 segments under 1.5s]
+Right. And here we can basically start to break this down into different parts of the landscape. So one part is to look at the stuff that actually does need to be verified to that degree. And the usual term here is nukes in NASA, like nuclear power plants and like NASA. But I can tell you for the first hand experience, nuclear power plants do not care about this stuff.
+
+[00:23:49] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.0s, 1/2 segments under 1.5s]
+They're actually just fine with thorough testing. Okay.
+
+[00:23:52] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 22.6s, 1/9 segments under 1.5s]
+Okay. So then category two is like really focused cores of programs where they need like one specific part of the program to be like really verified and the rest of it, they can use informal methods. And this is usually things that are like small parts of databases or like cryptographic primitives. I believe that the HTTPS stack in Firefox is verified as part of something called Project Everest, but I might be getting some details of those wrong.
+
+[00:24:14] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.0s]
+Would an operating system kernel fall into this or maybe just a very key specific part of a kernel like memory allocation or something like that?
+
+[00:24:21] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 56.0s, 8/23 segments under 1.5s]
+Yeah. Parts of an operating system kernel are good uses for this. A couple of examples I can think of is I believe Microsoft used some proliferation of parts of their Bista kernel for the driver loading. Famously, there is an operating system called SCL4 that has been end-to-end verified in a language called Isabel. It's a microkernel. It's very small. It's mostly used for automotive and military applications, but it is a fully verified operating system with a caveat meaning that it's matching the specification. So it might do the wrong thing, but of the things that you specify that it has to do right, it will do those specific things right in the right circumstances. The last category is the kind I work in, which is asking, OK, what if instead of verifying the entire real world system, which is a nightmare, as we just discussed, we create a simplified version of the system and verify that? Then the actual system might still have bugs, but we can iron out the issues in the abstraction such that we don't actually build them in the real system.
+
+[00:25:18] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.3s, 1/2 segments under 1.5s]
+And so that's a topic where you are planning a system and you want to stress test it to iron out.
+
+[00:25:24] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 1.5s]
+Yeah, stress test the plan.
+
+[00:25:26] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.0s]
+What kinds of plans would these be roughly? Is it planning like a database or some sort of distributed system?
+
+[00:25:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 27.1s, 4/10 segments under 1.5s]
+In my work, it's mostly been databases and distributed systems for technology companies. But I've had some other interesting gigs. I've had one gig that was involving formally verifying firmware of a device kernel. And honestly, one of the coolest products I ever worked on was verifying the transponders of a train system. To make sure that they wouldn't cause problems to trains going over those transponders. That was a lot of fun. We found a really old bug in that one too. That was kind of exciting.
+
+[00:26:02] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+This whole episode is about a question that only gets more important as AI writes more of your code. How do you know if it's correct? And for some parts of a code base, you really don't want an AI model to be taking guesses at. Auth is on top of that list. And this is where I need to mention our season sponsor, WorkOS. If you're building any SaaS, especially an AI product, you'll need Auth for apps and agents. This is the layer where close enough is just not good enough. So don't let this layer get improvised by AI. WorkerWise gives you the proven implementation, SSO, skim, and fine-grade authorization built for how agents operate and in a way that's easy for them to integrate with an implementation that you can trust. Check it out at WorkerWise.com. I also want to talk about our season sponsor, TurboPuffer. But this time, I don't want to talk about how they are fast, cheap, and extremely scalable search engine built on object storage. Instead, I'd like to talk about their team. I interviewed Simon, the co-founder and CEO on stage at AI Engineers World Fair, and also hung out with their team for a few days in person. Here's a few of the interesting things I learned about them. The company is full remote, yet feels pretty connected. They have a Slack-first culture. For example, all of their customers have a dedicated Slack channel, and engineers are in these channels, seeing feedback from these customers, often fixing their bugs. The team gets together for annual summits at least twice a year and campfires form several times a month anytime several remote employees gather in the same city. Simon describes their engineering culture as hardcore and whimsical. They focus on solving difficult problems but also try to have fun.
+
+[00:27:30] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+A good example is The Pragmatic Engineer landing page that they built. We agreed to have a custom landing page and then their team decided to build a cool logo that animates on mouse movement. Another interesting thing is their team composition. Pretty much everyone currently working at the company has 10-15 years of experience. For a startup, they are an unusually seasoned team. Finally, I really appreciate how pragmatic their engineering philosophy is. Simon and the team strongly believe in how simplicity scales, and this is a reason that object storage is TurboPuffer's only dependency. The team do seemingly silly things like build their job queue in a single file on object storage because they understand the core primitives and they know how they scale. To check out the whimsical animation, or if you're building AI products, head to turbopuffer.com slash pragmatic. And with this, let's get back to how TLA Plus works with a demo from Hillel.
+
+[00:28:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.3s, 4/8 segments under 1.5s]
+Can we see a demo? Okay, sure. So I've got a couple languages with me, the kinds that I've worked in. So the most popular technology right now for that kind of planning is this language called TLA Plus. It was invented by Leslie Lamport, the same guy who made LaTeX, the typesetting language, actually. Oh, yeah.
+
+[00:28:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.2s]
+All the PDFs behind the scenes are LaTeX.
+
+[00:28:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Yeah, PDFs behind the scenes are LaTeX. He wanted a language that could be used to model distributed systems. So he basically created this thing called TLA Plus, Temporal Logic of Actions Plus. Everybody always asks about the name. You don't need to know the name. You just know it as TLA Plus. And what it does is it basically represents the state machine of a system. Every possible state it can be in and every possible state it can transition to. Then... We can use a brute force model checking where we basically find every initial state and every state that can evolve from those and check if they have properties. TLA plus is unique in some ways because it has certain properties like checking liveness and refinement that we won't get into. But let's actually see a demo right now. So this is one of the demos I like to use to showcase this. And in this demo, we have a simple model of a trading platform. Each person on the platform has a set of items. And they want to trade these to other people. The way that we're going to show the simplified system is that each item is assigned to a person. There's also a set of outstanding offers. We're only going to model sending items to people, not swapping items. If you propose an item, you have to own that item. And it's basically added to the set of offers. And then you can accept an offer. If that offer is available, you remove it from the set of offers. And the owner transfers. If you reject the offer, it's just removed from the set.
+
+[00:30:04] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+Then we define what can happen next. A next state, as in one of the ways this system can evolve, is we pick some two people that are different, that's what this from dash equals two means, and some random item, and either you propose that item, accept a proposal for that item, which must already exist, or reject an existing proposal. Below we have a property that a valid change is one where if the owner changes, it is because the new person accepted an offer from the old person. So if the item goes from you to me, it's because you offered it to me and I accepted that offer. And then finally we have a change invariant, some property of the system saying every change is a valid change. Now what's the bug in this?
+
+[00:30:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.8s]
+Well, first of all, this has a learning curve.
+
+[00:30:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Yes, it has a learning curve. And that's why this is fairly niche. And I should probably point out right now that when Leslie Dunbar made this in 1990, like before he was thinking of it mostly, he was a mathematician, right? So he was using his mathematical like So you have things like quint and p.
+
+[00:31:28] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+Which are languages that look more like programming languages and are easier for people to grok. The reason a lot of us use TLA plus was because like the first really high profile demonstration of this kind of work in practice was an Amazon paper. The use of formal methods in Amazon Web Services in 2014. And they use TLA plus for this. So that's what a lot of us just have originally started on.
+
+[00:31:49] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.0s]
+So going back to this, there is a bug in this one with all the associations. And how can we figure out what the bug is? Will the system help tell us or we now need to think through what case we missed?
+
+[00:32:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.2s]
+Well, if we had to think through it ourselves, we wouldn't be using this nasty syntax, would we?
+
+[00:32:08] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Nope.
+
+[00:32:10] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+So what I've done is I've also written a quick configuration file saying, take a specification, take these three people, Alice, Bob, Carl, and have them trade around a stick. And then I tell it, make sure this property that the change in variant always holds. Always holds, yep. Now I just have to run this.
+
+[00:32:31] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_02)
+I'm also having it output the state space for you so you can see what that looks like. And it just puts out the error for us. It says the property has been violated. It took 53 states to find it. And the way it works is it's on a small screen, so it's being word wrapped. But if I see it kind of looks like this. Essentially, the error is as follows. And let's actually see if the error, I can show it to you with the .file.
+
+[00:32:57] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_02)
+.viz, .viz, not .viz, what am I saying?
+
+[00:33:03] SPEAKER_02:  (prev SPEAKER_02 / next SPEAKER_01)
+So this is just a preview of the state space it's generating.
+
+[00:33:10] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+So you can see it's basically generating every possible state it can find. This isn't the whole state space. Usually because the state spaces end up being like 100 million states in the state space, usually these aren't that useful. It's mostly a thing that we sometimes use for demos. So the error is as follows. Alice, Bob, and Carol are on the system, and Alice owns the stick. Alice makes an offer to Bob. Bob is away. Alice gets tired of waiting for Bob to come back to make the offer because she wants to get rid of her stick. She makes the offer to Carol. Carol immediately accepts. So the stick transfers from Alice to Carol. Now, Bob comes back, sees the offer from Alice to Bob, and goes, oh yeah, I want that stick, clicks the button, and now the stick becomes Bob's. But it did not transfer from Alice to Bob, it transferred from Carol to Bob. So the change in variant that if the stick went from Carol to Bob, it must be because Carol made an offer that Bob accepted was violated. And therefore, the system raises an error.
+
+[00:34:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 10.2s, 1/3 segments under 1.5s]
+And then how did the system simulate this? It had to simulate a state where Bob was waiting or didn't respond for a while and responded later.
+
+[00:34:15] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_02)
+We basically, assuming we start a state of basically Alice owns the stick, there's two possible things that
+
+[00:34:22] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.6s, 3/4 segments under 1.5s]
+can happen here, right? We have offer Bob. Yep. And we have offer Bob.
+
+[00:34:30] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_02)  [CHURN: sandwiched; 12.3s, 1/4 segments under 1.5s]
+Carol, right? So those both happen, and those are both distinct states. So the model checker says, okay, I'm going to create two new states. Then from this top one of offer Bob, there's three things that can happen.
+
+[00:34:43] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_02)
+We can have Bob accept,
+
+[00:34:47] SPEAKER_02:  (prev SPEAKER_02 / next SPEAKER_01)
+Bob reject, or, and this is where the concurrency comes in, we can do offer
+
+[00:34:52] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+Carol, right? Yep.
+
+[00:34:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.4s, 3/4 segments under 1.5s]
+I see. Yeah. I see where this is coming. And then when you continue, we will hit the bug.
+
+[00:35:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:35:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.2s]
+The changing variant will be invalid at whatever step that is run at.
+
+[00:35:07] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.1s, 1/2 segments under 1.5s]
+Right. And that's actually where a lot of this, like, Yeah, so this is what TLA plus is then.
+
+[00:35:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.5s, 2/5 segments under 1.5s]
+Yeah, basically. And one story I've heard, and I think you might have been involved, is AWS using TLA+. Can you talk about how they onboard it, how they're using it, what they're using it for, as far as you're aware? Yeah.
+
+[00:35:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 27.8s, 1/8 segments under 1.5s]
+So the seminal paper on this was in 2014. The Use of Problem Methods at Amazon Web Services. And they talked about how a couple of people in the company were interested in and learned TLA+, in another language called Pluscow, which is something that compiles TLA+. And applied it to aspects of the DynamoDB and S3 storage systems. In doing so, they're able to find fairly complicated bugs that could potentially lose data. And I think it was in the replication system.
+
+[00:36:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 17.1s, 1/6 segments under 1.5s]
+In the paper, it said that the shortest error trace exhibiting the bug contained 35 high-level steps. Which, if I understand that correctly, it was at a depth that it would have been very hard for a human to persevere or you would have needed to be really determined and precise.
+
+[00:36:39] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 15.8s]
+I did not work on that project, of course, so I don't know what the details are. I can speculate that the reason it found a 35-step bug was because the state space was probably 100 million states wide. So there were like plenty of, say, like 70 or 80 step chains that were totally safe. And just having this one 35-step chain was invalid.
+
+[00:36:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 16.6s]
+Through working with a lot of customers and teams that have used formal verifications with distributed systems, what are some... Problems you've come across with distributed systems that might be a bit of a repeat pattern of, you know, how they break down or why they break down.
+
+[00:37:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 45.4s, 7/19 segments under 1.5s]
+And I can think of, like, one thing that, like, besides, like, just general race conditions and locks, this is the one that, like, is always when you pull your hands off. It's like, yes, it's another time to allow, time to check the time to use bug. And time to check the time to abuse is a situation where... You are checking to see if something is like valid, can be done validly. And then you see that it's correct. And then a little bit later, you do it. Sometimes that little bit later is like a day later. Sometimes it's a microsecond later. But is any case where it is possible for something to go from being valid to being invalid in between the time you check and the time you use it? A good example here is imagine you're withdrawing like money from a bank account and putting it to another bank account. And this is not how banks work. I know they use a different kind of ledger. But just as a demonstrative example, Yeah, and it's very interesting because when...
+
+[00:38:18] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 37.7s, 1/12 segments under 1.5s]
+We were building Uber's payment system. I realized or I learned that the problem of having a message delivered in a distributed system exactly once is a very difficult one because typically that's what you need when you want to do one charge. You want to charge a customer's card exactly once because if you send multiple messages just in case one of them gets lost, you now have double charges. It turns out it's a complicated problem. It's a lot easier to do at least one's delivery than exactly one's delivery. But of course, you need exactly at least one's delivery to build on to create exactly one's delivery.
+
+[00:38:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.1s, 1/4 segments under 1.5s]
+Yeah. I wonder if this is like a lot of like businesses, they just charge you extra than refund you some amount. That seems like easier to do from an engineering perspective.
+
+[00:39:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 34.8s, 5/15 segments under 1.5s]
+As well, it's also from a risk perspective, you eliminate a lot of edge cases by authorizing upfront on the credit card, you have a credit limit. And if you would authorize exactly how much you think you need right now, but you need a bit more, you might get into that edge case where later you have trouble authorizing it. This is why often hotels don't want to deal with this. So they just authorize a larger chunk. And they know because it's a larger amount for hotels. Otherwise, they might have run into the thing where you run out of your credit and now they have to do a separate flow. But you're right. So some enduring decisions might happen because it's easier to do some stuff.
+
+[00:39:41] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 9.3s, 3/5 segments under 1.5s]
+Yeah, it makes sense. I honestly thought hotels did that because they were trying to convince you not to break stuff. Because like, hey, if you know that you're definitely going to lose $800 if you break something, you're not going to break stuff.
+
+[00:39:51] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 15.2s]
+Through working with engineering teams who are building distributed systems and you're coming in and helping them learn TLA plus learn how to survive things, what have you learned about how they usually think of verifying distributed systems before they learn about formal methods and what changes after?
+
+[00:40:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 17.3s, 4/7 segments under 1.5s]
+So I think the most interesting thing about formal methods and how it affects how you build systems isn't the theory of the method or how it makes you think about systems. It's the practice. Why is concurrency hard? Why is it hard for us to reason about concurrent systems? Why do you think it's hard?
+
+[00:40:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 23.7s, 1/7 segments under 1.5s]
+I think it's hard to keep several things in your mind of like where they could be. That's one. Or maybe we just don't really have a mental model of how to draw them out. I guess whiteboarding would be a way to do it, but I don't remember whiteboarding on concurrent system. I remember whiteboarding just boxes and imperative. This flowcharts are good for whiteboarding.
+
+[00:40:47] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 89.4s, 5/30 segments under 1.5s]
+So this is something that I've wondered a lot, right? Like why it's hard for us to deal with these systems. And I'm not sure it's because it's hard for us to think about them. I mean, like when you cross the street, aren't you working with a concurrent system? You're just, there's cars everywhere. They're going to hit you. You're going to die if you don't model the concurrent system in your head. And there's actually this really cool paper I found called Common Sense Computing. Where some people were trying to figure out like how people thought about concurrent systems. When talking with like sort of like high school and college students, they changed the concurrency problem from like, hey, we've got these threads doing some operation to like, hey, we've got these like Clerks at a ticket office, assigning seats at a concert, people saw the bug much faster. So I do think we can actually get quite good at seeing concurrency issues. I think a large part of the problem of why it's hard for us is because we don't get a lot of practice. Usually when you have a race condition in a system, you find out months later and then you try a fix and you find out weeks later after that if the fix actually worked. Whereas with the TLA+, like I write my model of the system and then I click a button and it tells me, hey, race condition. And then you fix it and it says like, hey, timeout bug. And then you fix it again and it says, hey, TOCTOU bug. And that feedback loop ends up being so much faster than you get in practice. And I think that more than anything else helps people find race conditions more easily and think about problems in distributed systems more easily. I've found personally that when I work with new clients, I wonder if it's a little bit like...
+
+[00:42:44] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 54.5s, 2/19 segments under 1.5s]
+Refactoring and also migrations. So refactoring a code base when you are starting out as a developer and you need to do a refactoring by hand, you know, let's say just changing a function name and then you need to go and change all the references of function. And the first time you do it, you change it at a few places and then you forget about the rest. And either it's a compilation issue or if it's a dynamic language, it's another problem. But then you get good at it once you practice. With migrations, most engineers that I've seen are terrible at migrations because you need to make a plan, you need to check, you keep in shadowing, reverse shadowing, all that funk. And then there are a few engineers who have done three or four or five, and then they close their eyes and they can just do it. I'm just thinking that when it comes to race conditions, most of us, I was exposed to race conditions by, oh, we did a double charge. And then we found the race condition, but I never did a second one. So I will not be good at finding race conditions. I'm not even good at thinking about them.
+
+[00:43:38] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 1.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+I think that's right on the money.
+
+[00:43:40] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 15.0s, 1/5 segments under 1.5s]
+It sounds like you coming into teams or to these clients, it You have to please give them some practice, the very least, of how to think about this category of errors, even assuming that taking out even the tooling itself.
+
+[00:43:55] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.1s, 1/4 segments under 1.5s]
+I think there's also like more subtle things that you start to pick up from these tools. But I think that's like the most visceral one, the visceral like hatred of a race condition that gets a like physical presence in the algorithm.
+
+[00:44:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 19.0s, 2/7 segments under 1.5s]
+You've been doing this for a very long year for you. Writing TLA plus is like for most of us writing TypeScript or the language that we're familiar with. How has your thinking changed? And is there any similarities between when you program an imperative language and then you learn a different one, like a declarative language, which requires a very different thinking?
+
+[00:44:25] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 30.8s, 4/14 segments under 1.5s]
+And that also depends on the declarative language. Like I've, I've, I've done a lot of stuff in like logic programming languages and like I've done some stuff in like array languages, but like you show me CSS, I'm just like, what is this dark magic? Declarative? What are you talking about? I think so. It's going to be hard to sort of pin down exactly what though. Like my usual hacking language is Python these days, just because that's like one of the first things I use and I just know very well. And I think like at the very least, like the formal methods makes me much more willing to reach for mathematical solutions or like math heavy solutions than like simple,
+
+[00:44:56] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.2s, 1/6 segments under 1.5s]
+reliable solutions. Math is also an interesting topic. You've recently had a bit of back and forth on whether... Developers, programmers, software engineers should learn math. There was a bit of a discussion back and forth. Can we talk about the core of the argument?
+
+[00:45:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 54.8s, 3/19 segments under 1.5s]
+How math is useful in programming is a very interesting question, right? So first of all, there's math that we all find so useful we forget that it's actually math. Like counting. Counting is math. Knowing whether one thing is bigger than another number is math, right? It's just math that we have been taught from a very young age because it is so important that no matter what you're doing in life, you need that math. Then there's a lot of math that is useful for very specific specialist jobs. Like I've talked to some SREs who need calculus, but I think most programmers do not need calculus. There are some branches of math that are useful in a wide range of programming. I think things like understanding graphs and directed graphs, knowing matrices, knowing formal logic can be very useful for a lot of different people. But I think it is more useful for most developers to have an exposure to like what math has in the various fields versus just going on every single field when they see them, right? You've got to know what's available to know what's most useful for you. And most math will not be useful for you.
+
+[00:46:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+It's also very interesting because for a long time, I thought at university, we have pretty heavy math education for computer science from algebra to computational theories, even formal methods. At university, I learned a bunch of advanced math. At first, when I came into the industry, it wasn't particularly useful or I didn't use it day to day. But then there are some tests. It's kind of useful. For example, matrix transformation. I learned 3D graphics and how you compute all the points based on 3D matrix transformations. And then it helped me understand when GPUs were becoming so powerful with AI, why this is because they're also very good at And I think going back to our discussion with the crossover project, I wonder if it helps you connect closer with other engineering disciplines in terms of you can understand more things there. For example,
+
+[00:47:10] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+For electrical engineering, you do have math involved that is there to describe. And if you will want to have the vocabulary to understand that part.
+
+[00:47:21] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 50.2s, 5/20 segments under 1.5s]
+One of the interesting things, at least about the mathematical differences, is that in almost every traditional engineering field, the math they need is continuous math analysis, things like differential equations and calculus. And that in the United States is what's taught like at an advanced level in high school, if you get that far, is this kind of continuous math. In software engineering and computer science, the math that we most often use is discrete math. Things like combinatorics, basically which is the math of counting things, graph theory, formal logic, set theory, things that work with discrete entities, which isn't usually taught, at least in the American high school very much, or even early in university mathematics classes. And I wonder sometimes if that is the reason people don't recognize the use of math in software engineering is because the math they do need is not the math they've been exposed to.
+
+[00:48:11] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 33.8s, 4/14 segments under 1.5s]
+Interesting. Yeah, because the math that I did use more was Common Networks. And of course, like maybe these days those injuries are going out of style, but there's the here's a problem, build an algorithm that solves it. And then you ask like, OK, how efficient is this algorithm? And then there's a big old notation. We have the language to describe how efficient in space and time is, and you can do trade-offs, and once two people know the same thing, you can have discussions about these things. And on one end, it's very abstract, but on the other end, if you're close to the machine, it can be very useful.
+
+[00:48:45] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 20.6s]
+I've also found that my understanding of big O notation got a lot better once I understood the mathematics behind it, because I think it's usually explained in terms of like, oh, This function scales at this certain rate, but like it is more formally a way of describing a set of functions. And then there's the math of like how we do asymptotics and stuff, but like, et cetera. I think even like the technical aspects of math does help a lot in understanding those.
+
+[00:49:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.0s, 2/5 segments under 1.5s]
+Yeah. And with the TLA plus specifically, what cases have you seen in the industry TLA plus being a good fit for certain problems? And in what cases would you never consider it?
+
+[00:49:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+I think the case of TLA plus and... Most, not all, but most role methods, they shine the most in highly computational domains where most the problems are highly technical and not like business embedded. And what I mean by that is that like how do you replicate nodes between these two data sets is like very technical, right? Something like I'm trying to think about like a good example here, like how do we make sure our sprints don't go over time? It's very business, right? It deals with like very human behaviors. I've had to help model client model that. And we got some use out of it, but it was very hard. So that's why a lot of my clients end up being things like database vendors or like cloud computing people who are or like hardware people who are working in a space that's like very important for business, but several steps removed from like the front lines of that business. The other thing I would say is that Different tools are good at different things. TLA Plus in particular tends to be good at discrete distributed systems where the main challenges are messing with concurrency and possibilities of interleaving-like behaviors. It doesn't do floating point. It doesn't do decimals. It Doesn't do as well when you're trying to figure out probabilistic things. Oh, that's another thing I guess I should be saying is that like where the kinds of errors you care about are ones where like if it is possible to happen, that is a big deal. It's not good if like you're like, OK, this error is bad, but as long as it happens less than one out of 100 times, it's OK.
+
+[00:50:48] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+It can't do that kind of probabilistic reasoning for you. There are tools that can, but they lack things like functions or arrays or variables. Numbers also depends on how much time you need to spend planning. Like if you don't need to spend that much time planning, this is going to waste your time. I do want to add that, that this like, if you can iterate your way through a solution and the bugs aren't going to be that costly, then you might not need this tool. I think it's really important as like a person who talks about a really exotic tool to like constantly emphasize and like, no, I'm not trying to convince you to like use something that's not a good choice for you. I think a lot of the reason people are skeptical of these because they've been burned by things like Case and UML and all these other miracle solutions that were forced on them by people who wanted them to use it no matter what. And I think it's really important to always say, like, if this is the right tool for you, I am not going to recommend it.
+
+[00:51:34] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.1s]
+And then can we talk about other tools? Or can you show us a few other ones?
+
+[00:51:39] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 57.7s, 6/19 segments under 1.5s]
+Yeah. So the other tool I have installed on this computer is called Alloy, and it was made by an MIT professor. Different from what is lineage. Just like there's many different kinds of programming languages, there's many lineages of formal specification verification tools. So this example is a simple access control system. So we have a set of resources and users who can read those resources. So each resource has some people who it's reasonable by. And resources may or may not have a parent resource. L1 meaning less than or equal to one resource. There are no cycles. So no resource can have itself as a parent or its parent's parent as a parent. You can read, access a resource if the resource indicates you can read that resource or if its parent indicates you can read that resource. And we have a property that if you can read a resource, you can read its children. This system has a bug. What is it?
+
+[00:52:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 16.8s, 5/8 segments under 1.5s]
+I mean, I'm glancing at this and this all made sense to me. I thought this is it because we're saying all of the parents can access it. I'm assuming the bug, if there is one, it might have to do with something that we talked earlier of like accessing in certain areas. No idea. Can we run it?
+
+[00:52:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Yes, we can. So this was actually made in an earlier version of Alloy just for context. Alloy did not have any sort of temporal reasoning over state up until about Now, if I execute this,
+
+[00:53:39] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+Here's the counter example. And this is one of the things about Ally specifically is that it can generate visualizations. So basically, here's the problem. We have a user who can read a parent resource. The parent has a child. Because of how we defined can access, we can read his parent so we can read the child. The child has a grandchild. We cannot read the grandchild. So, because we are not in, we are not assigned to the readable by for the child, only the parent. In other words, readable by is not transitive. So we can read the child, but not the child's children. And that is the bug.
+
+[00:54:24] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+And to visualize this for us.
+
+[00:54:25] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.1s, 1/2 segments under 1.5s]
+Yes, which is quite nice. And one of the reasons why people really like Alloy.
+
+[00:54:28] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Nice.
+
+[00:54:30] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.7s, 1/2 segments under 1.5s]
+It's a bit worse for modeling, like, distributed systems, though, which is why most of my work is in TLA+.
+
+[00:54:35] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.9s]
+And then to do the fix, what would it involve? We would need to give access to the children's children?
+
+[00:54:45] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 32.3s, 5/15 segments under 1.5s]
+Yeah, there's a few different ways that we could fix it. And often, like, problem methods, they don't really tell you, here's how you fix it. It lets you choose how you want to fix it. Like, one thing I could do is I could say, okay, I'm going to say that this is a transitive lookup too, that we transitively close over all parents. And if I execute that, no more counterexample. That said, that might not be something physically implementable. I might try to tell like, hey, people like, hey, in our SQL database, you have to have a transitive query and our database administrator is like, no, that's going to crash the database. You can't do that. Then we have to find a different fix.
+
+[00:55:18] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.5s]
+So this is the beauty of formal methods. Yes, it gives you opportunities of how you will implement fixes, changes, and then you can rerun it again and see what difference it made.
+
+[00:55:30] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 9.4s, 2/5 segments under 1.5s]
+Exactly. Now, one quick fun fact. I love just fun facts about stuff. You see how this says solver sat4j? So have you heard of sat, S-A-T problems?
+
+[00:55:40] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.5s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+No.
+
+[00:55:40] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 15.3s, 1/5 segments under 1.5s]
+Okay. Is there some variable that makes the statement P true? If I can make P true or false, is there a way I can make that true? Let's say P is a Boolean and I have a statement P. Can you assign some value of true or false to P to make that true?
+
+[00:55:57] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.2s, 1/2 segments under 1.5s]
+Typically, you can assign true and it will be correct. Well, true.
+
+[00:56:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.5s, 1/2 segments under 1.5s]
+That's even unsatisfiable by setting P to true. What about P and not Q?
+
+[00:56:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.2s]
+Also satisfiable by giving true to P and false to Q.
+
+[00:56:12] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.3s, 1/2 segments under 1.5s]
+Right. Now what about P and Q and not P?
+
+[00:56:16] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.6s]
+That's unsatisfiable because no matter what ruling you do, true and false will always be true.
+
+[00:56:24] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Lovely. What you've just done is a Boolean satisfiability problem. Taken some sort of statement of a ton of Boolean variables, in this case too, and either found some assignment that makes it true or said that it cannot be made true. Now, Boolean satisfiability is what we call NP-complete. And what that means in theory is that there's no such thing as a perfectly efficient algorithm that solves all problems. In practice, that means that we can solve them really fast. So often what makes Alloy interesting is that unlike TLA+, which must be brute-forced, Alloy can be converted into a satisfiability problem. I'll open this up. And it is able to turn that model into a Boolean probability saying not x21 and x96 and 0.
+
+[00:57:15] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+So X15 or not X72, etc. And because of that, most alloy models can be checked in like a few milliseconds or a second at most. Whereas often for like a large TLA plus model, you have to basically churn it overnight to go through all 100 million states.
+
+[00:57:32] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.9s]
+Can we talk about some other tools on the table of someone looking into formal verification?
+
+[00:57:39] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 37.2s, 6/15 segments under 1.5s]
+Happily. So I don't have any more demos on my PC right now, but I can talk about a few of them. So a couple of the ones that have been successful to TLA Plus is the P language, which was invented by, I think, a person at Microsoft Research who was then poached by Amazon as a way of making a language that was more accessible than TLA Plus, among other things. So it basically looks like a set of state machines, interacting state machines that send messages to each other, almost like the actor model in like Erlang or something like that. Yep. So there's that. There's also another one in the same space as Quint, which was basically people who were making a different kind of model check for TLA Plus and then
+
+[00:58:17] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.8s]
+realized they can make an
+
+[00:58:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.1s, 6/15 segments under 1.5s]
+entire language that was easier for people to pick up. They've gotten a lot of interest in the banking and I believe cryptocurrency space, smart contracts. So another one that I've used, which is a lot more niche, but quite interesting, is called Prism. And Prism is a probabilistic mile checker. So like KLA Plus can tell you like this bug will never happen or it could happen. Prism can tell you this bug can happen 10% of the time or it is a 25% chance of happening if you shut down. It's really cool, but it's also much more like academic in that there's a lot more work required to actually translate languages into Prism. If you're interested in it, I've basically been doing this like, have you heard of the Jewish game Dreidel?
+
+[00:58:59] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.6s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+No.
+
+[00:59:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 13.5s, 1/5 segments under 1.5s]
+Okay, it's a game that you play on Klanica where you spin a little top and you get money. And I do not like the game. And I have written a two-part series using Prism to show how this game is not fun by analyzing it as a mathematical thing. Love it.
+
+[00:59:13] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.3s]
+Those are, I think, some of the ones that are, like, really popular.
+
+[00:59:16] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 54.4s, 7/21 segments under 1.5s]
+But there's also, I mean, I could just keep listening. There's, like, Event B, which has, like, been used, I believe, famously in part of the Paris metro system. There's like MCRL-2, which I think comes from a Dutch university. Himera-X, which is mostly used for like robotic control systems, but I think that's mostly academic. There's like NewSMV, which I think NASA is used for a bunch of stuff. I can keep going. Then, of course, there's all the, of course, this is only for specifying like abstract models of systems. If you want to talk about verifying code, then you've got things like Daphne, which is basically something that compiles to like .NET and lets you basically write provable code. You've got JML for like model checking Java code. You've got like PrimaC for like checking C. You've got Adaspark. You've got like, and you've got Ethereum Provers like Rock and Lean and Isabel, and I can keep going.
+
+[01:00:10] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.2s]
+I wanted to ask how this property-based testing works. Relate to formal verification. And before, let's just like lay out what property-based testing is.
+
+[01:00:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_02)
+So let's go back to the entire thing with max, right? Maximum list. We can define like the specification of max as it is in the list and for all elements of the list, it is the largest element of that list, right? I actually have a demo on my computer of doing that. So let's actually go into this. So over here in this file that I wrote for my book, plug,
+
+[01:00:44] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.6s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+I have
+
+[01:00:49] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+I have basically three variants of max, a good version which just returns the max of the list, one that returns the max of the first three, and the one that returns the max of the absolute value. This below here is a property test. What it does is it says, given a list of integers where each list has at least one integer in it, the maximum value of that function should be in the list and all other values should be less than or equal to it. Yep, clear. So this basically looks a lot like our formal verification spec, our formal specification spec. The difference between the formal methods that we do and property testing is that the formal methods are saying like, okay, can we prove this for every possible list? And property testing is, well, that's very, very hard. And as we talked about, very difficult to do in practice. Can we instead generate a thousand random lists and try all those? I have it set that way. It basically has the invalid max, max of first three.
+
+[01:01:47] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_02)
+We should be getting errors or it should cast
+
+[01:01:50] SPEAKER_02:  (prev SPEAKER_00 / next SPEAKER_01)  [CHURN: short; 0.5s, 1/1 segments under 1.5s]
+some errors.
+
+[01:01:52] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_01)  [CHURN: short; 1.0s, 1/1 segments under 1.5s]
+Let's run it.
+
+[01:01:56] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_02)
+Let me just run it from the command line. That's faster.
+
+[01:02:02] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_02)
+PyTest, test, max.py.
+
+[01:02:08] SPEAKER_02:  (prev SPEAKER_02 / next SPEAKER_01)
+This is an old machine I mostly bring around for conferences because it's like easy to just throw on something on here.
+
+[01:02:17] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_01)
+So we see over here that it says that this test failed on this line, that for the list 0001, it is not true that all the values are greater than zero.
+
+[01:02:33] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+This is because, as I said, our bad max only looks at the first three values. So it found the max was zero, but here the actual max of the list was one. I broke this down to two subspecs for part of the book where we have testing that max is the largest element and also that it's in the list.
+
+[01:02:48] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.6s]
+So that's why one of the tests passes. I should note, though, that if I believe I run this with a verbose,
+
+[01:02:56] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_02)
+what I'm trying to do for this demo is show that it actually does not start with the... Largest list, it actually starts with a much smaller,
+
+[01:03:05] SPEAKER_02:  (prev SPEAKER_01 / next SPEAKER_02)
+with, here we go, if I print max, if I print, then I do it like this, I think.
+
+[01:03:19] SPEAKER_02:  (prev SPEAKER_02 / next SPEAKER_01)
+It tries a lot of edge cases first.
+
+[01:03:22] SPEAKER_01:  (prev SPEAKER_02 / next SPEAKER_00)
+So it's basically trying huge lists, it's trying tiny lists, it's trying empty lists, etc. And once it has one that fails, for example, this value, it starts to shrink it, finding the minimally interesting example. And that's why this lets us find a bug. Not just find a bug, but also find a bug presented in a way that is comprehensive for the average human. Because I think that it found the original bug with this list, and I do not think that looking at this, I'm going to know what the problem is. That's basically property-based testing in a nutshell. And as you can see, it is less thorough than formal verification, but it's a lot easier to apply.
+
+[01:03:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.1s]
+So it sounds like it can be a nice middle ground in terms of getting started with it.
+
+[01:04:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 12.4s, 1/4 segments under 1.5s]
+And probably just stopping with it, because I think that I love formal methods, but I think it's a fairly niche tool for most people. And I think like property based testing is in general going to be useful for more people.
+
+[01:04:13] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 39.6s, 2/13 segments under 1.5s]
+So speaking of verification in general, today we have AI generating way more code. We have data to prove this as well, but also day to day. I see it on myself. I have AI generate a lot more of my code. We're getting more code. Code reviews are, people are, it's hard to pay more attention to this. So there's a growing number of people saying, well, maybe we should somehow validate things more. And there's an idea that keeps coming up on maybe formal verification or Operator-based testing or some of these things could be more useful. Do you think this will happen? Because I see a lot of people talking about this. I don't really see anyone doing much about it.
+
+[01:04:53] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 58.5s, 7/21 segments under 1.5s]
+I'm definitely seeing more business from people. My client is people trying to generate specs with AI and then getting to help work with the spec or find issues with that. And I'm definitely seeing more people like using property based testing. I know, for example, I think Kiro, like the Amazon spectrum development platform specifically advertises generating property tests as like one of the key values of it. And I've been seeing a lot of like papers about generating specs using AI. I will say this is kind of really exciting because as you saw, like a lot of the challenge of writing a spec, not all of it, but like a lot of it is like rocking your head around like very, very technical syntax and like semantics. That said, I've been doing a lot of experience with this myself, and I think the one thing AI is extremely bad at, as of March, I know that Claw just released a new Claw 4.8, so maybe this is all out the window. It changes every month. It is very bad at coming up with properties.
+
+[01:05:52] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.2s]
+It is very bad at that. What does coming up with properties mean? Is it writing the actual form of verification part?
+
+[01:05:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.9s, 15/24 segments under 1.5s]
+Yeah, so like if you give it properties and like a spec, it can tell you like, hey, we're going to fix the spec, make these properties pass. That's fine. But if you basically tell it, here's the spec, also come up with the properties of the spec, it'll be like, okay, so one of the properties I'm going to specify is that either P is true or not P is true. And then you're like, that's just always true. And it's like, wow, I verified it. Amazing. I'm so good at this. Especially when you deal with what's called liveness properties, properties about how like a system can evolve over a long period of time. It just... It's hard to put down. It's just not good at that yet. And often I find my clients, I have to tell them like, it's doing a good job at generating the actual design, but actually expressing what the design is supposed to do. It cannot do that yet. You have to do that part yourself.
+
+[01:06:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 40.9s, 1/11 segments under 1.5s]
+It's interesting because there's a blog post that I'll also link in the show notes from a year ago in March, 2025, titled The Coming Revolution in Distributed Systems. And this was an engineer working on GitHub's co-pilot team. And this person wrote how AI autonomously produced precise TLA plus specifications from Azure Storage's production source code and it uncovered a subtle race condition that had evaded traditional code reviews. And then this person was very enthusiastic and saying, well, this could be a revolution. AI could just generate TLA plus from specification like it did with Azure. This was a year ago and I haven't heard much on any of this, even though the models were not as great. What have you seen in this area?
+
+[01:07:20] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 54.0s, 8/24 segments under 1.5s]
+So actually the same person, Chang Huang, did come up with a tool called Lamport Agent where they demonstrated using this to specify parts of crack, I think it's called, part of DC's crack. I'm going to link both those in the thing. Here's my response. I was writing about this and then the thing that they did. He seemed to be a lot more successful than I was generating properties. But one, at least the example that he showcased in his later piece, one, he's an expert specifier who already knows how to do this stuff on his own without the LLM. He's the main expert. Yeah, he knows how to get the results out of it. As a general thing we've seen, like, To get good results, you have to already know how to get good results without it. It just helps you get good results faster. And also, one of the systems that he was able to create the complicated properties for in TLA Plus already had a sophisticated spec written in P. So I don't know how much that's relevant here. Maybe it read that and it cheated. Maybe that was like fine. I don't know.
+
+[01:08:14] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.7s, 1/3 segments under 1.5s]
+But we do see this a lot where when you're an expert in a domain, it may that be software engineering or like backend or mobile, AI works better for you.
+
+[01:08:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 44.6s, 2/16 segments under 1.5s]
+Then there's also this one interesting person, Claudia Colley did write a write-up because she just did about a multi-year project and using formal methamphetamine, the big Chinese cloud provider, where she talks about how in between her working on this paper and the time she got published, She got really sophisticated data on how long it took people to write formal methods at this one company. And then LLMs basically just compressed the scale by the time she actually had the paper out. So I think people are seeing like more use from like formal methods, but it seems people with the most success right now are specifiers who are using it to amplify their ability to specify. And we haven't yet really seen, I mean, people post acronyms all the time, like people who they had a AI write the whole spec for them, but those tend to not be very good specs.
+
+[01:09:07] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.8s, 2/6 segments under 1.5s]
+And what's your take on, again, I've heard some voices say that AI might make formal verification go mainstream based on this. But outside of the, do you see any movement outside of this niche of people who already know how to do formal verification?
+
+[01:09:21] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.1s, 1/3 segments under 1.5s]
+I think it is making it more popular. I don't know if it'll make it go mainstream, but it's definitely making it a lot more popular. It's bringing it from maybe like 0.1% to 0.3%.
+
+[01:09:30] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 27.7s, 4/9 segments under 1.5s]
+Which is huge. There's also this thinking that I've read. Actually, in June 2025, in your newsletter, you said that AI is a specification force multiplier. And now, of course, we see that LMS are bad at vibing specifications. What changed between that time where you saw that they were like a year ago, they were pretty decent at doing it or they had science and now we have So what I wrote
+
+[01:09:58] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 55.9s, 3/19 segments under 1.5s]
+that it was really good at was fixing syntax errors, which is really big because that's often trips people up. It's good at understanding error traces, which is huge because being able to take like a 35 step error trace and turn that into like two paragraphs of English text, major improvement. Good at boilerplate, like mass changes to like a bunch of small things like updating like boilerplate and It's okay at writing properties from a very precise description. It's bad at fixing specs and it's real bad at providing properties for specs. Ha, I'm still consistent. So I think I called it early back then that it like is really bad. It's good at translating properties from like English, precise English into a spec, but it's bad at coming up with properties on its own. Everything I got back was trivial, uninteresting or too coupled with the implementation details. So I think ultimately what I'm going to say is that like, I think it has a lot of potential to improve things. But even back then in 2025, I was noticing that I was really bad at this one thing, that it continues to be bad as of March of this year.
+
+[01:10:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.5s]
+So then how much do you think you really need to know formal methods to be able to use LLMs to help you at all? You need to get the basics in place, likely.
+
+[01:11:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 13.3s, 2/6 segments under 1.5s]
+I think getting the basics in place is really valuable here, right? Because for one, I mean, even discounting, like being able to write the properties and all that, you need to be able to tell when the AI is doing something wrong, right? And if you don't know the basics, you can't really do that very well.
+
+[01:11:17] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.2s, 3/5 segments under 1.5s]
+In your book, Logic for Programmers, you argue that formal logic is probably one of the most useful parts for day-to-day engineering. Why is this?
+
+[01:11:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 52.7s, 3/17 segments under 1.5s]
+First of all, I'm honored that you've read my book, or at least the early drafts. I mean, the official answer is because logic teaches us to work with like booleans and statements. What we learn in elementary school, how to work with numbers, right? Essentially, there's not a whole lot of difference between knowing that One plus one is two, and true and true is true. It's still the manipulation of values. And it happens that Booleans are so important to software engineering that having some formal grounding in that is very handy, especially when we are not taught that in school for the most part. The other answer is that I've just... I'm learning logic and getting better logic and teaching logic a lot as part of teaching TLA+. I'm just finding more and more applications where I'm like, oh, because of logic, I can do this one thing. And I find that people who don't have that background struggle through that one thing. I guess I'm saying that empirically, logic keeps coming up as a useful form of math.
+
+[01:12:21] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 16.2s, 1/6 segments under 1.5s]
+And if I'm a software engineer and I work on complicated systems, distributed systems, what techniques would you recommend that I look into to harden these systems? We can assume that I'm already doing... I'm going to just completely go 90 degrees here and recommend this book by Nancy Levison called Engineering a Safer World.
+
+[01:12:57] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 26.3s, 1/8 segments under 1.5s]
+She was an aeronautics engineer who investigated things like Etheric-25 radiation case and like the Columbia disaster. And she was really fascinated in how like systems have been accidents and systems happen, like why accidents could happen in complicated systems. And I found her writing on this to be incredibly insightful and incredibly valuable in understanding how these systems can break. So that's the thing at first I'd recommend is checking out that book.
+
+[01:13:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 24.3s, 2/9 segments under 1.5s]
+Looking ahead for the industry a year ago, you wrote a post where you shared some of the uncertainties and anxieties. It was a longer post. It started with how Vitecoding will be never good as software engineering, experienced software engineers, and you wrote six different things. Can we read through them and just reflect on how you feel about them, what you think might have changed, and maybe talk about what potential new anxieties we have because there's so much change going on, that's for sure.
+
+[01:13:47] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.6s, 1/2 segments under 1.5s]
+The way I sort of think about it is that the next five years keep being rewritten every few months.
+
+[01:13:51] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.5s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Right?
+
+[01:13:52] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.0s, 2/5 segments under 1.5s]
+Yeah. So I wrote, the following can all be true. One, vibe coders will never be good at software engineering as an experienced software engineer. Probably true. I mean, if you don't have the basics, you can't really.
+
+[01:14:02] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.8s, 1/3 segments under 1.5s]
+It feels true. I even see it on myself when I try to build a software in a domain I'm not an expert in, like a game, and it's an absolute just vibe coded mess.
+
+[01:14:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.8s, 2/3 segments under 1.5s]
+Yeah. Elements can significantly augment a professional software engineer's ability to quickly
+
+[01:14:16] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.6s, 2/2 segments under 1.5s]
+write high quality software. I think also true.
+
+[01:14:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 8.7s, 1/4 segments under 1.5s]
+I mean, even if you don't have it writing a single line of code, just being able to be like, okay, what's this bug? Where's the bug? Or like, hey, what library should I look into to solve this problem?
+
+[01:14:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 16.6s, 1/5 segments under 1.5s]
+And I think we're starting to see or starting to recognize that engineers who have really deep knowledge are so much more efficient. And the ones who embrace these tools and figure out how to control them and not them to control, you know, like their anxiety or whatnot, they get a lot done. Absolutely.
+
+[01:14:44] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.5s, 1/6 segments under 1.5s]
+Elements will cause many software developers to lose their jobs. I don't know. That's a hard one to pin down because like, I mean, one, the software engineering, at least in the US, is starting to recover. Like we're starting to see more jobs open up for software development. So it's hard to tell how much of like the loss of the past few years was AI versus
+
+[01:15:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.0s]
+the end of like zero interest rate policy and like the post-COVID crash.
+
+[01:15:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.7s, 1/3 segments under 1.5s]
+And I think it's more the latter. But like, again, LMs are still getting better. Maybe they're going to cause job losses in the future.
+
+[01:15:12] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 41.4s, 4/16 segments under 1.5s]
+Yeah, this is a notable question. The data that we had in The Pragmatic Engineer, it did show that We are seeing overall more software engineering openings in the US, in Germany and France. They're declining a little bit at the same time. And there seems to be a big shift on who is being hired and the skill set. So now AI engineering is increasingly spreading to more software engineering fields, not all of them. And we're seeing a decrease in, for example, front-end engineering hiring, mobile engineering hiring. So I think the shape is changing, but it's always changed in the past. If you think about 20 years ago, The most in-demand engineer was a Java engineer, like Java specifically, like don't care. 10 years of Java experience required and that's changed. Okay, then we'll put up new jobs for many possibly far more money software developers.
+
+[01:15:53] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.3s, 1/3 segments under 1.5s]
+I think that's also true. I think when you basically need one developer to make your product as opposed to five, you're more likely to hire one developer, right?
+
+[01:16:00] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+That's been true, yeah.
+
+[01:16:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 48.3s, 4/17 segments under 1.5s]
+The software jobs that LLMs open up will be lower paid and lower procedures in the heights of the 2008 to 22 tech era. And that's the thing that scares me the most is that As mentioned, I decided to leave a field and just become a techie. And I was able to do that. And I was able to get a well-paying job that led to me to now full-time mathematically prove systems correct. That's crazy. What other field can somebody just go like, what other engineering field can somebody go like, I want to be an engineer and just walk straight into it? What other field is going to send people to Budapest from the US to give a talk for 45 minutes? Like, it is really precious and magical what we have here. And I'm afraid of losing that. I'm afraid of a place where it just becomes like any other white-collar job where you get two weeks paid vacation every year and two days off sick. And I don't want to lose that.
+
+[01:16:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.1s, 4/7 segments under 1.5s]
+Are we saying we're afraid that software engineering might become just like every other engineering job? Yeah. Because that is the reality of a lot of engineering jobs. We do have a privilege. I don't think we talked about it when we compared the rest of engineering. We have massive privilege.
+
+[01:17:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.1s, 1/5 segments under 1.5s]
+Yes, we have a huge privilege and I don't want to lose that. And I mean, it would be nice if everybody else got the same things we are, but I don't want to like equalize us by losing what makes software engineering so magical and precious.
+
+[01:17:14] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.2s, 2/2 segments under 1.5s  ** READ, do not trust the label]
+Yeah. So this is a worry.
+
+[01:17:16] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 1.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah, that's my that's my fear.
+
+[01:17:17] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.1s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+And then number six.
+
+[01:17:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.1s]
+There will still be high-paid professional software engineering jobs, but they will be rare, more competitive, and less developer-friendly.
+
+[01:17:24] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 17.8s, 1/6 segments under 1.5s]
+I'm afraid we're seeing some of this already. I wonder if this is inevitable. I also see it in some other industries, for example, with investment banking. The traders used to be, many of them, very highly paid, highly respected. There are now fewer of them, still highly paid, highly respected. It's hard to get into them.
+
+[01:17:42] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.7s, 2/5 segments under 1.5s]
+Yeah. I mean, I think most jobs do ossify over time. As like the centers are set and more people enter them, software engineer, I think for a longer period of time was able to like get away from that.
+
+[01:17:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.1s]
+And then you close your prediction with these lines a year ago.
+
+[01:17:59] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 23.5s, 1/9 segments under 1.5s]
+I predict that in the next 10 years, software development will survive, but it will become like any other white collar professional work. No more $200,000 salaries, a little vacation or incredible employee bargaining power. I feel sad that we'll lose something so magical, but I guess it couldn't have lasted forever. Automation comes for all of us, even us automators. Here's a good way of ending this. If we start with automation comes for all of us, even us automators. On one hand, I feel like I'm losing something really special.
+
+[01:18:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.1s, 2/2 segments under 1.5s  ** READ, do not trust the label]
+On the other hand, a doctor friend of
+
+[01:18:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 34.7s, 3/12 segments under 1.5s]
+mine came to me a few months back and was like, hey, we managed to Create a new shift scheduling platform for our hospital to trade shifts that really saved us a lot of time and made all of us nurses and doctors so much happier. And I was able to just vibe it out. I don't know any kind of code, but AI let me do this. And I'm like, wow, it really is helping you and your hospital make your life better. And it feels so weird to balance my needs as a professional software developer with his needs as a doctor. Who matters more, my cushy job or his job? I don't know. And we're going to all find this out in the next 10 years, I guess.
+
+[01:18:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 35.2s, 2/11 segments under 1.5s]
+Grady Bush told me that this time reminds him of the time in the late 1960s and early 1970s where people could purchase computers and start to hack with them. And he said it was a magical time because teachers and people who had nothing to do with software... Saved up and started to just hack around and it democratized it. And I feel this is the first time I'm also feeling like this other person the gym told me that they're vibing something together. It feels it's opening up the field. And if anything, a lot more people are realizing, oh, software is cool. I can do it. And now they're trying to learn the hard parts of software engineering eventually.
+
+[01:19:34] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.6s, 5/13 segments under 1.5s]
+Did you ever read up Clay Shirky's essay, Situated Software? No. Basically what it is, is that this person was talking about how they think like The most important, the vast majority of software should be made for like three people or like a family or community or like one school. And up until now, that like could only really happen if one of those people in that family, that community or that school was like really, really into computers. But now it's possible for everybody to have situated software and computers. That, again, is going to change the world in some strange and some terrifying and some exciting ways.
+
+[01:20:09] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.3s, 3/4 segments under 1.5s]
+It's exciting. As closing, what are books, a few books that you could recommend that you have enjoyed or made an impact on you?
+
+[01:20:17] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+Oh boy, let's just leave this just for this into just software books, okay? Because otherwise we're going to be here for like a month. So there's three books that I really love in software that I think of as like the books that have influenced me so much. The first one I think I mentioned in the interview was Nancy Levison's Engineering a Safer World. I believe that's actually free online. The second book is called Data and Reality by Bill Kent. And this one is actually hard to find because it was republished in 2000, I think, 11. But the republisher changed the book. So the last good edition is the second edition, which can be found like in dark corners of the internet online is actually kind of hard. But like it is basically by this like famous database designer who like worked on like IBM databases who was just asking like, What is data? What does it mean for something to have an identity? What does it mean for something to have oneness? If we talk about a book, is that the book, the physical copy? Is that the series? Is that an edition? And it's just an entire book about these questions about what data is and how we need to represent it. He ends it by saying that data isn't reality. It is our view of reality for our useful purpose. Incredible book. It totally changed how I think about things. The last book is called Debugging, The Nine Simple Rules by David Agans. And it's literally just like a book of war stories about debugging and like basic principles. But this is the book I give to every junior engineer because I think like nobody ever really talks about debugging as like a discipline outside of like basic heuristics. And this is like just at least something that's trying to do that.
+
+[01:21:44] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+And having something is better than nothing in this category. So really good book. And I think it's like $10 for a used copy. So like anybody can just get one. It's great. Those, I think, are the three most useful books for software engineers. If you want to talk about other books, I can keep going.
+
+[01:21:59] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.1s, 3/4 segments under 1.5s]
+This is great. Well, hello. This was very educational, and I found it fascinating. Thank you.
+
+[01:22:05] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 1.0s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Thank you.
+
+[01:22:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+I really enjoyed this conversation, especially the demos where Hillel showed tools like TLA+, Alloy, or Hypothesis, and how they can catch bugs. By the end of the conversation, I'm starting to understand more why it's not likely that formal verification will go mainstream, even with AI. I mean, these tools feel very rigid for the real world. For specific parts of a system that you can model mathematically, like state spaces, sure, they can work, but for everyday programs, it just feels like it will be a bit pointless to create TLA-plus specifications. One thing that I was also thinking about is how Hill talked about why he thinks we're not good at catching concurrency bugs. And it's because we don't have much practice with them. As a developer, you're lucky to debug a concurrency bug once every few years. So of course, you won't be able to build expertise this way. This is also similar to how most engineers are bad at migrations because most devs only ever do one or two migrations over several years. But if you're an engineer who does a bunch of migrations, you're going to be really good at them. Same thing if you're working on systems with concurrency issues and you become an expert in this. I also found it fascinating how other engineering fields have similarities with software engineering, like how mining engineers had their own agile revolution in the 1960s, and how all engineers hate the concept of waterfall. Plus, it was amusing to hear how source control is kind of an envy from other engineering fields that we, software engineers have, but not many others do. Check out the show notes for our related deep dives on distributed systems and tech depth that go into more detail into the topics that we talked about today. And if you've enjoyed this podcast,
+
+[01:23:34] SPEAKER_00:  (prev SPEAKER_00 / next --)
+please do subscribe on your favorite podcast platform and on YouTube. A special thank you if you also leave a rating on the show. Thanks, and see you in the next one.

@@ -1,0 +1,323 @@
+EPISODE 1599
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Build systems coordinate all the steps to transform source code into a production application. Bazel is a build system and testing tool that was first released in 2015 as a free and open-source port of Google's internal build systems called Blaze. 
+
+Historically, each language has its own build system which can create complexity when developing applications that use many languages. Bazel is special because it's a polyglot system with unified support for many languages. To handle build configuration, Bazel uses the Starlark language which has syntax inspired by Python. This is a key part of what contributes to Bazel's growing popularity. 
+
+Julio Merino is a Senior Software Engineer at Snowflake. And before that, worked at Google and Microsoft. He joins the podcast today to talk about Bazel. 
+
+This episode of Software Engineering Daily is hosted by Jordi Mon Companys. Check the show notes for more information on Jordi's work and where to find him.
+
+[INTERVIEW]
+
+[0:01:07] JMC: Hi, Julio. Welcome to Software Engineering Daily.
+
+[0:01:09] JM: Hello. How are you? 
+
+[0:01:10] JMC: I'm fine. Thanks for joining us. Could you introduce yourself and what your job title is? 
+
+[0:01:16] JM: I'm Julio, as you said. I've been a software engineer now for a while. My title is really software engineer. I don't think – I like build systems a lot, but I've done a few things before. I started at Google a long time ago as a site reliability engineer. And from that, I jumped into to build systems, but I had already done build systems before when I was working in some open-source projects. And then I went back to doing infrastructure World Microsoft, in Azure, and then I came back to working on build systems again. I like a bunch of topics, right? 
+
+[0:01:43] JMC: Yeah. You are actually quite a tinkerer. Because one of the – I mean, your blog post and your blog explode every now and then. And I think one of the latest is about end basic, which is one of your – is it open source as a project? 
+
+[0:01:58] JM: Yeah. It is a little project I started when I was pretty bored during the pandemic. I always like to try new things. And this one is like, "Okay, I want to teach my kids how to code." And I didn't find a great answer on how to do that. I had memories of how I learned when I was growing up. And so, let me try to recreate that for them to see if I'm successful. I think I was successful in creating the same experience, but they haven't cared much about it. I haven't succeeded in teaching them. 
+
+[0:02:24] JMC: But wait. Did you consider – how's this project from MIT called? Is it scratch that is – did you consider that for your kids? 
+
+[0:02:32] JM: I tried as well. I don't know. I have mixed feelings about that. It's too visual for my taste. And I wanted it to be more just closer to – 
+
+[0:02:40] JMC: A raw, more vanilla experience. How did you learn yourself before like going to university, if you ever went to university? You fell in love with software engineering.
+
+[0:02:48] JM: Because of my father. He bought a computer. It was an Amstrad CPC back in 1980 something. When I was born basically. He bought it because he thought he would have a lot of free time and he taught himself how to code. And I don't know. I got interested. He taught me then the basics. And from there on, I started getting more – he never really cared more than just knowing how to write some programs for himself to keep his job organized. 
+
+But I wanted to dig more. And I got interested in how the computer works. And I started reading books. And then, yeah, I went to university. I got a degree in computer science basically. But I had done a lot of stuff before it, especially – thanks to open-source, right? I think I grew up in a pretty good timing.
+
+[0:03:30] JMC: What open source projects like caught your attention initially? Which ones were the ones you cut your teeth with? 
+
+[0:03:34] JM: For me, it was like operating systems. I always liked the fact that you could control the computer if you wrote an operating system. And then, of course, Linux was the thing that was growing a lot. It was that, right? Linux brought me into learning Unix and trying to change the system to do things I wanted it to do. 
+
+And then because Linux was already done, right? Everything was done pretty much. I got interested in like the BSDs, free BSD, net BSD where things were more messy. And I really started contributing there. And I think I gained a ton of experience just by helping that project. They were good mentors, I would say.
+
+[0:04:10] JMC: I agree with the assessment that Linux is mature, right? Done, as you said. But new things come up that actually, if I'm not wrong – I'm not very familiar with the history of EBPF. I'm not sure if you're familiar with EBPF. But old technologies that like BPF and now EBPF, which is the extension of the packet filtering system, I think it originally came from the DS system. Or I'm not sure. 
+
+But anyway, even a mature technology like Linux gets this sort of like refreshing, new approaches from old technologies that were there like sitting, waiting for someone to make use of them. It must be fun anyway.
+
+[0:04:46] JM: Yeah. But for me, I was not very experienced, right? I couldn't contribute these high-level things. But it was more like, "Hey, I want to change pretty basic stuff. And I want to contribute to an operating system." Linux was too high of a bar to find new things to contribute. Whereas the other ones, like, "Hey, all this obvious stuff that needs to be done." It was super fun.
+
+[0:05:05] JMC: You said that the beginning of your career was as a software reliability engineer, right? Because you knew – what was it about? You took care of highly available distributed systems at least in some way or form. 
+
+[0:05:17] JM: Yeah. That was kind of a new thing for me. I think I was higher for that because I had a mixture of experience with Unix systems because of my contributions to the BSDs and just having a software engineering title. And I had some experience administering systems, but not that much. It was kind of an interesting job at first. 
+
+But yeah, I was in the distributed storage team at Google taking care of GFS and then Bigtable. And then I moved into cloud where I work in the persistent disc team back when it was started. Yeah. And then I changed to Bazel, basically.
+
+[0:05:51] JMC: At Google, did you have any contact with Blaze? Which is, for anyone not familiar, it's the internal version of Bazel, which is the open-source version. I think you cannot equate them fully. I think they don't fully overlap. But they mostly do. If I'm not wrong. And for the purpose of the conversation, let's say they are the same. But at that job, even though you were taken care of distributive systems, in this case, distributed storage. And you were not per se building applications or anything. Did you get in contact with Bazel? 
+
+[0:06:22] JM: Oh, yeah. Since I joined Google, Blaze was already a thing. I think it was put in place maybe a couple of years before I joined. But that's the thing I experienced when I joined the company. I used Blaze for many years. There was always this internal commentary saying we should make Blaze open-source. And people said, "Why should we do it?" And then eventually it happened. And it was before I decided to change teams. 
+
+When I joined the Bazel team, Blaze and Bazel already were different things. And Bazel already existed. But I had used it a lot internally before then. And it was really cool. 
+
+[0:06:57] JMC: Without putting you in a strange position talking about internal tooling from Google, just talk to the stuff that is publicly known. But how many are the internal developer tools that Google has? I know of Borg, which would be where Kubernetes came from. Blaze would be again the initial project from which Bazel comes from. Colossus. You've mentioned GFS and Big – how many internal developer tools has Google developed for itself? And how many have been open-sourced swiftly? 
+
+[0:07:27] JM: A lot. Google is a company that has developed pretty much everything in-house partly because, historically, when they needed the tools, there was nothing really out there that competed with what they have today. These days, I think you can find replacements for anything that Google has internally in the open source ecosystem, basically. 
+
+But the key thing that makes the Google development experience magical in a way is that everything is very well-integrated, right? I mentioned Bazel. They open-sourced Bazel. But Bazel needs a build farm to do remote execution and a build cache. And these things were not open-sourced. 
+
+And the way Bazel talks to these systems is different than the way Blaze did it for historical reasons as well. If you try to use Bazel in the open-source community, you're losing all these integrations that you can on your own build. But even then, they feel like isolated components and not the whole – a very nice complete experience yet. 
+
+There are companies out there trying to make this better and we can talk about them later if you want. But that's the main difference I would say. And, yeah, they have a ton of stuff internally. But it's the integration really that's the key. 
+
+[0:08:35] JMC: Tell us about Bazel. It seems that now in your career you'd become sort of an expert in Bazel and you hired for those skills. Just give us a brief overview for anyone not familiar with Bazel. What is it? How would you define it? And what are the main features of it? 
+
+[0:08:51] JM: Bazel is a build system. And it's surprising, sometimes you have to explain people what build systems are. Because many times, they are hidden behind the IDE or something. And people don't know they exist, right? Just very briefly. A build system kind of coordinates all the steps you need to transform your source code and artifacts for the product, like images and translations or whatever it is into your final thing. You can deploy to production, or to mobile phones, or whatever it is that you're shipping your application to, right? 
+
+Basically, it's kind of an automation system to take all these source artifacts and execute the compiler, linker, whatever it is it takes in the right order so that you get the final product. And the thing that makes Bazel special, I would say there are two things. One is the support for many languages. As the authors of Bazel would say, they like to call it a polyglot build system. When you join or you want to develop in JavaScript, you will go and use npm. When you want to develop in Rust, you will use Cargo. When you want to develop in Python, I don't know what the thing is these days. 
+
+But each language has its own ecosystem today. But Bazel kind of provide you something that works across them all. And you might not think you need it, but when you're especially in a corporate environment with many different teams that have grown different solutions over time, each with their own languages and practices, it's super useful to have something to unify them all. 
+
+[0:10:11] JMC: Would you say – now that you've mentioned sort of like categories of high-level, would you say build systems – CI systems, continuous integration systems, would you think they are synonyms or not? 
+
+[0:10:22] JM: Kind of. Yeah. That's the other thing. I said there were two things, right? The other thing that Bazel provides and that we used to like to say when I was on the team was that it's not a build system. It's a test system, right? It basically provides you all the right tooling to verify that your code behaves the way you want with minimal cost. 
+
+And, in theory, it's pretty easy to integrate into your CI system to provide all the steps you need to verify the quality of your software and provide assurances of where it came from and all these things. They are not synonyms, but they are very, very, very close. 
+
+[0:10:56] JMC: It is a polyglot system. I haven't run any benchmarks or done any research, but I would say it's the build system that takes in the biggest number of languages. C++, Java, C. I mean, so many. JavaScript, like you said. Python and so forth. 
+
+And yet, there's one big hurdle. I mean, we will mention other sort of like friction points of Bazel as well as more benefits. But one is that the configuration of it is run through a specific language, right? Or a specific flavor of Python. How is your experience learning it? What is it special? Why is it a specific flavor of Python? Did you name it actually? What am I talking about? 
+
+[0:11:37] JM: Yeah. Yeah. You're talking about Starlark. The reason it's Python-like is because Bazel actually used to use Python in the early days to define the build files that it uses to run the configuration of your build and stuff. It used to be Python, but it was hard to contain what the scripts could do. That was not a good thing from a CI perspective and from a reproducibility perspective. 
+
+And it was also very expensive to process. The developers decided to create this new language, Starlark, which is actually very similar to Python with a couple of syntax editions and a few feature removals. With the idea being that it should be very constraining what it can do. And that's how you configure what Bazel calls the rules, right? 
+
+Rules are the things that teach Bazel how to go from specific source files, say, C++ source file into object files and executables. And for each language, you will have a set of rules written in this Starlark language that can handle that, integrate that language into Bazel. 
+
+My experience with it, it's not difficult. I usually I have used many other build systems before. And, really, the extensibility language that they provide is a big friction point for many of them. Because they are special languages and you have to learn all the details. And it's hard to debug them and stuff. Bazel is complex too. But from my perspective, maybe it's just I have used it a lot long for a long time. But it provides a good experience, right? It's [inaudible 0:13:04]. 
+
+[0:13:06] JMC: It's also true that we're talking to yourself. You're a polyglot software engineer, right? You are familiar with several programming languages among which Python was what already you were familiar with already, right? 
+
+[0:13:19] JM: Yeah. I had done Python before. Yeah. I'm pretty versed in Bazel. I will say it's not that complicated. But someone that hasn't had that experience will say otherwise, right? 
+
+[0:13:28] JMC: What about Bazel being specially fine-tuned for mono repos? And is it not fine-tuned for microservices or service-oriented architectures? Why is it so good with mono repos? 
+
+[0:13:43] JM: There are many different things. Really, you can use it for a small repo if you want to. The thing is it will feel heavy just by how Bazel – I mean, the executable, if you try to download, it's already 100 megabytes, for example. If you have a tiny repo, you will think twice before you take on such a dependency. 
+
+And then, especially if you have a small repo, the thing is small repos tend to be just one language. And in that case, sticking to the language's own tooling might provide an easier experience for you. But for a mono repo, when you start trying to bring in together different parts of a product into the same repo, you end up having these issues like, "Okay. Every team has developed their own build system." And they don't integrate well. And you end up having these weird scripts that plum everything together and they break. And people try to reproduce a problem and they can't. Or they have to do make clean because their machine got into an invalid state. 
+
+Bazel kind of makes all these problems go away. By the way, it works internally. And it integrates all the components into one place and provides you a way to develop them in an incremental manner and in a very efficient manner, right? 
+
+[0:14:45] JMC: Elaborate on the incremental bit. Because one of the things that Bazel uses is actually most praised, right? How does that work? 
+
+[0:14:52] JM: Yeah. Most build systems provide you incrementality. And what incrementality means is, say, your project has a thousand different source files, right? Some of them will depend on other files. But when you modify one individual source file, you want your – the time it takes from building that file to actually running the test or running the code that uses that file to be as short as possible, right? 
+
+You only want to recompile that file. Whatever uses that file end up linking the application again. Very few steps towards the end product. That's what incrementality is. And most systems provide you that. But the biggest difference that Bazel brings here is that, in most build systems they make, for example, which is the most obvious and old one, they use time stamps to detect changes to files. And that's it, right? If this timestamp has changed, the file will be thought to be obsolete and it will be rebuilt. 
+
+Now Bazel does more. It tracks the contents of the file through checksums. And it also more importantly tracks the commands that we used to generate that file. So that, say, in an all-build system like Make, if you go and change the Make file to modify the command line that's used to produce an output, then Make will not know that that happened. 
+
+Even though you change the build steps, when you type Make again, nothing will happen. Nothing will be rebuilt and your output will be wrong. That's why you may need to do Make clean. Whereas in Bazel, if you go and change any of the rules to say, "Well, we forgot to add this flag to compile this C++ file," then Bazel will know that that change for that specific file only and will be able to rebuild that file.
+
+[0:16:27] JMC: Wow. Does it explicitly ignore time stamps or does it factor timestamps, then content? It probably diffs the content and also takes into account the change in the rules. All those three – factors all those three in? 
+
+[0:16:41] JM: Well, it depends on your backing file system for pragmatic reasons. In the past – you talked about Blaze, for example. It doesn't factor in time stamps at all. Because the backing file systems that they use are some fuse of selections that provide you a way to obtain metadata about the files in very fast constant time. And in that case, they can just rely on the file contents directly. 
+
+Now when you go into Bazel running on computers you don't control where people can have any kind of operating system and file system, then we had to add – actually, that's something I did when I was in the team. We had to add a layer on top of the file contents to look at time stamps as well to make it more efficient for those cases. 
+
+And it's a mixture of looking at time stamps and file sizes. And I note numbers and stuff to make sure to try to capture more than just a time stamp. But, yeah, there are various layers. But the command line changes I mentioned before, that's always considered, right? 
+
+[0:17:36] JMC: What about a build graph invalidation? And, in general, what's the use that Bazel does with DAGs? I mean, if it's related to what we're talking about or elsewhere in the product. 
+
+[0:17:47] JM: It's kind of related. It's a different thing that Bazel brings to the table. And that's called Skyframe. Skyframe is this system that exists within Bazel to represent this DAG. And it tracks all the dependencies across your project and it also contains functions inside the graph to express how to transform from one node to the other. 
+
+You might have a node saying this is a source file. And so, that node will tell you whether the source file has changed or not. And there will be a transformation function to go from that source file into an output file that's an object file. And that function will run the C++ compile based on the rules that you provided through Starlark. 
+
+Bazel creates this graph during the analysis phase that it does when it starts building anything you provide it on the command line. And once the analysis phase is built, it will detect if anything – it will look at your file system and see, "Hey, what has changed since the last time we run?" Then it will invalidate that path in the graph towards the top of the tree to whatever you want to build. And then it will say, "Okay, I have this path that has been invalidated. Let me just rebuild those specific steps." And nothing else. Yeah. They are very, very connected, right? The graph is what actually provides you the incrementality. 
+
+[0:19:02] JMC: By the way, is this happening in your machine? Does this happen in a remote environment? How does the setup of Bazel in a large company like the one you're working on right now or anywhere else happens? 
+
+[0:19:16] JM: All these graph operations I mentioned happen on your machine. That's where Bazel needs more resources, right? It has to construct it's in-memory view of what your project looks like. And that can actually be pretty big. You start having a big mono repo that can take a few gigabytes of RAM sometimes. 
+
+But then, once you have constructed the graph and you start deciding what you need to run at each level to convert, as I said before, to generate outputs and stuff, those things are called actions. A transformation from one – like compiling a C file into an object file. That's called an action. And these actions, by default, will run on your machine. But you can configure Bazel to leverage a remote execution cluster and then it will send these actions to these remote machine matches to run individually. And then it will file the output when they are done and then proceed towards the end of the build. Sending more actions that way. 
+
+[0:20:06] JMC: And does Bazel make those decisions or is this something that it's configured manually? Can you scale out – should your machine not be able to run this action because it doesn't have enough compute or whatever? Does Bazel automatically scale up to the remote environment or the remote compute node? Or will it be necessary for you to factor this in and introduce this to the rule? 
+
+[0:20:30] JM: You can configure it. And that's one of the I would say kind of little problems with Bazel. It has too many configuration knobs. But the ones about remote execution are pretty well known because that's what makes Bazel special. And they are pretty well-documented. 
+
+If you don't enable remote execution, then everything will run on your machine. There is some control about how many things can run in parallel based on the number of CPUs you have and how much RAM you have, right? Bazel tries to not overload your machine. But sometimes, unfortunately, it does. So, you go into that. 
+
+You can also say, "Okay, I want everything to be remote." Or I want only Java compiles to be remote. Or I want everything to be remote except Java compiles. Right? You can tune it at the rule level or at the action level however you want really.
+
+[0:21:12] JMC: Could you tell us more about how it manages dependencies? Whether it's transitive dependencies or in general. Could you delve deeper into that aspect of Bazel? 
+
+[0:21:22] JM: Yes. Dependencies within a project. There are two kinds of dependencies. And one of them are what I would say are the external repository dependencies, which are things that don't exist in your repository, right? You might have a mono repo. But in practice, except for the Google case, which is very strictly mono-repo-based, right? Most of the companies that have mono repo will – 
+
+[0:21:45] JMC: Just for the record. Arguably, Google's mono repo contains everything, right? It's self-contained fully, completely. Right? Or not? 
+
+[0:21:51] JM: Yeah. Yeah. 
+
+[0:21:53] JMC: And that's why it's so huge, right? I remember watching a talk by a brilliant software engineer over there that then moved to GitHub. I can't remember her name right now. It's just humongous, right? That thing. 
+
+[0:22:04] JM: That was Rachel Potvin, I think? 
+
+[0:22:05] JMC: Exactly. That's her.
+
+[0:22:07] JM: Yeah. She has a paper as well, I think, on all this tooling. 
+
+[0:22:09] JMC: Yes. It's brilliant. 
+
+[0:22:11] JM: Good paper. Yeah. 
+
+[0:22:12] JMC: Yeah. 
+
+[0:22:13] JM: Yeah. Everything is in the mono repo. 
+
+[0:22:14] JMC: Okay. Okay. But that's not the case for anyone, of course.
+
+[0:22:16] JM: Yeah. Everything is in the mono repo. Right. When Bazel was open-sourced, it's like people outside of the company were like, "Hey, we need these things that don't exist in the repo. And we don't want to put them here." Then the Bazel team had to create this thing to allow using things from outside of the repo. And that's called the workspace file. It defines, "I need these rules that exist in this GitHub repo." Or, "I need to download Apache, whatever, because I want to use it in my build." Those are external dependencies. 
+
+And they were kind of bolted on into Bazel and sometimes they cause problems in how they are handled. There are a lot of improvements in this area coming up through dependency management tools like Bazel modern stuff, which I'm not very familiar with yet. But that's one class of dependencies. And these are always – they are downloaded before analysis and build happens in a way. Bazel had that as we described before. This happens first. 
+
+And then once they are downloaded and Bazel can analyze everything together combining it with your repo, then it's where the internal dependencies within the repo take place. And they are analyzed, right? 
+
+We talked about actions and rules. But then there is also the concept of targets in your project. And a target is essentially defining the pieces of your build and their dependencies among them. You might have a target that's a library that's shared across two different teams. And that target provides whatever. But it's in C++, for example. And it has some source files. And it depends on this external dependency that came from Apache. 
+
+And then you have another Target that's a different library maybe written in Java. And it belongs to a different team, right? And then you have another target that's a binary and pulls both together and tries to combine them in some way. And that's where you express the dependencies, right? You express dependencies among targets within the repository.
+
+[0:24:01] JMC: Moving on, what about Bazel's extensibility? This is something that is also praised from Bazel. And I wonder if – I mean, we've touched upon a bit few things. But can you elaborate on it, please? 
+
+[0:24:11] JM: Yeah. It's praised because the Bazel team has tried for a while now to move as many rules as possible out of the Java core that Bazel has into Starlark. In the past, everything in Bazel was written in Java, right? The rules to build C++, Java, Python, whatever. Everything was written in Java and built inside the binary. 
+
+But once Starlark was invented, there is this whole push to taking the rules out of the core binary and putting them into Starlark so that it's easier to contribute to them. It's also easier to mix and match what you need in your project. You don't have to have this massive binary that knows everything about every language. But you can say a smaller core that then relies on rules Java, rules Python or whatever that different teams maintain, right? That was another thing. Pushing expertise to the right people. Instead of having just one team have to know everything about every language, we now have different teams or different projects in the open source community maintaining the things they are experts on. And Bazel can just pick and match them. 
+
+There is the Starlark language, which is one thing. And it's just a language. And there is the build API, which is the integration points between Bazel and Starlark, right? Starlark can call or can define things in a way that Bazel can then understand to produce the rules, right? For example, Buck2 is Meta's build system. 
+
+[0:25:34] JMC: That was released recently, right? 
+
+[0:25:35] JM: Yeah, very recently. I unfortunately haven't had the chance to look into it a lot. I really like some of the principles they lay out in the website on things they chose to do. But I think they use Starlark. But I'm not sure if they use the same build API. While the rules might look the same, they may not be fully compatible because the APIs they call into are not exactly the same. But that's something I want to look into because it seems very interesting. But I haven't had a chance yet. 
+
+[0:26:00] JMC: Didn't Meta also open-sourced a version control system? An SEM in a way? Didn't they? Or did I get that wrong? I think they announced something in that sense too. Anyway. 
+
+[0:26:10] JM: They have been contributing a lot to Mercurial to make it scale. 
+
+[0:26:13] JMC: Yeah. If I'm not wrong, they use their own version of Mercurial internally.
+
+[0:26:17] JM: Something. I'm not sure. I don't know. But I think so. And I think that's what you may be talking about. But I'm not really sure. 
+
+[0:26:23] JMC: It could be. But I think I was referring to something different. Or maybe they call their own version of Mercurial something different and I'm conflating both. In any case, I'll do some research. Meta is another company like Google in that sense that they provide themselves with a set of developer tools that are fantastic and they are open-sourcing them now. So, much later than Google. But, yeah, everyone's realizing that the stuff they built for themselves is also pretty good. Although, still needs a lot of scrutiny and more usage and stuff. 
+
+But this actually serves me as a point to move on to more your clients, your users, right? Because you're a specialist in Bazel. You go into a company like Snowflake where you work now and you sort of like implement Bazel, right? But it seems like everything is upfront. A bit negative. A bit of hard work, right? Bazel requires, well, for one, yourself, right? Sort of like experts in Bazel. It might even require a specific infrastructure at scale and even custom software. I guess my question is how do you convince people to use Bazel? And what are the upticks that you have noticed in your career maybe right now at Snowflake, but also elsewhere in developer experience? What are the things that you noticed that Bazel users start feeling that they say, "Oh, this thing is different. This thing is actually working for me better than my previous CI system, than my previous build system?" A lot there. Talk about the sort of like how do you – do you overcome these barriers that I mentioned and others that you probably get the questions about? And then what are the benefits of developer experience? 
+
+[0:28:04] JM: It is complicated. Developers will cling to whatever they have even if it has problems. And we are seeing it here, right? We're trying to adopt Bazel. And the previous build system that we have is showing its age. And it requires a lot of manual mending. But people have grown used to it, right? It's hard to take it away. 
+
+But the key thing for any kind of migration like this is to stuff it properly. And I think build in-house expertise. Because I've been in teams before where the build system was something that was on the side. No one really cared about, right? Maybe there was one or two people maintaining it. But then – 
+
+[0:28:39] JMC: Yeah. In a very dark room somewhere down in the basement. 
+
+[0:28:44] JM: Right. Everyone is kind of – they don't have the time to fix anything. And it's problematic. 
+
+[0:28:50] JMC: One thing that fascinates me about platform engineering as a trend lately is that I think it's putting this spotlight on these people that you just mentioned. The two guys that were managing the build system in an obscure room down in the basement. Right now they have been enshrined into this platform engineering team that for once is under the spotlight and is provided, and manned, and resourced properly like you were saying. Or at least in some companies, right? And it's taking care of developer experience, right? 
+
+And developer experience being not only, well, the experiential part. Building software should be fun and your client should be the software engineers. But also providing the tooling that is updated, fresh. Using the best sub-source technology and so forth. I'm really happy that this platform engineering trend, whatever it might be, is actually providing resources to people like you.
+
+[0:29:42] JM: Yeah. I think you said the keyword there, which was clients. I think you need to treat platform engineering as providing products even if they are within your own company, right? 
+
+In this case, in my team, we own the build system, right? We are providing a product to the whole company that is the build system. And that means offering support. Taking care of SLAs or SLOs, whatever you want to define on top of this. Listening to customer feedback and really paying attention to users. It's not just something done on the side. It's something that has a primary function for the company and needs proper resources. 
+
+[0:30:13] JMC: Are you then a product manager? 
+
+[0:30:16] JM: I am not. But I can wear many hats. And I've had to do those in some cases. We have a product manager of our own. That's good here. But that's not always the case in all the teams that before, right? To work in infrastructure teams, especially if they are not well-stuffed, you have to end up doing many things. From product manager, product management, support, engineering, documentation, right? Everything. Somebody has to do it. And unless you do it, it's not going to be a good experience for anyone.
+
+[0:30:44] JMC: Tell us then about what are the main sort of like positive outcomes that new Bazel users express? Not really the first time they bought it. They probably complained because of the inertia that you mentioned. I don't think it's a thing for software engineers. I think it's a human thing. I want my routines to be, well, the same always, right? And they keep changing and that bothers me. 
+
+But once I adapt to a new routine. For example, right now, it's autumn here in London and I plan to go back to the light or to the open-air swimming pool. Because I've committed to this thing that I want to go into cold water. Well, right now it's not that cold. It's just chilly. But I go through all the winter diving into really cold water. And that is a change from my summer routines, which didn't involve that. 
+
+Anyway. First, I do complain. But then the benefits of it come in. It's like I've really adapted much better to the cold winter weather because I've done this thing. What are the things that Bazel users say about Bazel once they get the jist of it and experience it? 
+
+[0:31:48] JM: The main thing is faster builds, I think. Once you break free from the confines of your laptop, say, with five cores, or six cores, or whatever it is that you have and you start seeing your compile using 200 machines in parallel, 600, whatever you throw at it, it's nice, right? It's pretty good. And people like it. 
+
+The other thing is, again, reducing the number of cases where things break for one person and not break for the rest. Like the excuse, it works on my machine kind of goes away because Bazel provides you these reproducible builds. And it guarantees that what you produce on one machine is the same as another. It reduces variability. 
+
+And for support and for debugging issues that might happen in production or something, it's very powerful to be able to reproduce things without these variants. I think these are the two main wins you can get. There will be a lot of problems on the way. It's complicated to get there. But, again, treating it as a product and focusing what people are experiencing. Getting some metrics like telemetry on build metrics is super important. You can actually watch what people are experiencing and what they are doing and tune your behaviors towards that. It's something that Bazel also offers actually. 
+
+[0:32:59] JMC: Is this distributed prowess that you mentioned, the fact that they can take advantage of all the calls in the network, I guess, or something, or in the build farm, is this powered only or mostly by the cache? We haven't talked about the cache system. Or what is it that makes it special? Can you talk about the cache system? 
+
+[0:33:18] JM: Yeah. They are two different things, right? You can configure Bazel to use a remote cache only. And this cache – one of the things that Bazel brings to the table is that the Cache can be shared safely across users due to the way it produces the cache keys, right? It's safe for two different people to reuse the same cache. They will not leak secrets into each other and they will not introduce problems that came from one machine and travel to the other machine and things like that. 
+
+But the cache is one level of things you can do. But then you can also add remote execution on top. Remote execution requires a remote cache due to the way the protocol is defined. But with remote execution, what you can do is actually just pull out any of the actions we described before, like compiles, links or whatever to have in another machine. And that machine will communicate with the same cache that Bazel can talk to get the inputs that the action needs and save the artifacts it produces back into the cache. 
+
+But they are two different things. You can choose which one you want. You can choose how many – how much parallelism you want to allow. You can deploy open-source caches. You can use some companies that offer their own remote build farms. And, really, it's up to you. There are many, many different options.
+
+[0:34:25] JMC: I guess another side of the same coin of reproducible build that you mentioned before. I just want to touch upon this. Is SBOMs also the ability to sort of like attest provenance in a way, right? If you're able to reproduce the same build everywhere, you can tell where it comes from because it has a sort of like a breadcrumb of it, I guess, in a way? 
+
+[0:34:44] JM: Yeah. That's another big benefit of Bazel. Maybe not for developers. Because they don't really – 
+
+[0:34:48] JMC: Yeah. I'm thinking of the security guy or the compliance guy, right? 
+
+[0:34:51] JM: Right. Yeah. Exactly. For developers too, right? There are benefits of having reproducible builds. From a security perspective, being able to tell – Bazel provides you the tooling by the nature of how it works and how it sandboxes the actions that produce your binaries. It can tell you everything that went into a build. You can trace it back to, "Okay, I ended up depending on these things from this Git repository at this specific commit. And I pulled those and I made sure that the commit was the right one. It was not tampered with. And I have these source files that I have here." Right? And you can prove what went into a binary. 
+
+[0:35:26] JMC: Now that you mentioned sandboxing – and I'm not familiar with the sandboxing process in Bazel. But this is a fantastic sort of like segue to go into the future of Bazel or your opinions on it, right? Is it similar in any way to the sandboxing that a browser does, right? That WASM is based on. Is it similar or not at all related? 
+
+[0:35:48] JM: It's similar in concept. It's lighter weight I would say. There's is a trade-off between how much you can sandbox and how much you actually do just because of, first, the tools that the operating system provides you have some limitations, right? Bazel has to run on Windows, MacOS and Linux. And the tools you have on each of these systems to actually isolate what the process can do are different. The guarantees that the soundbox can offer vary. 
+
+And then there is a limit of if you start trying to – you can limit file accesses pretty easily. You can limit network access pretty easily. But then if you say if you want to make sure that time is deterministic for reaction, that becomes tricky. You need to end up doing other things that Bazel currently doesn't do. There are various levels. 
+
+And sandboxing can happen on your machine. But one of the ways you can also get these sandboxing effects is by using remote execution. When you use a remote execution, all of your remote workers are kind of like they had a minimal deployment of some system, right? And the only thing they can do is what you have sent them. Your actions will provide the command and all the dependencies, including the tools that this command has to run. And that remote worker will only have access to those things. Ko kind of implicitly provide you the sandboxing guarantees that you're looking for.
+
+It's a tricky problem, right? I don't think it's completely solved. There is a lot of things that could be done there to make sandboxing really good. And it's a struggle. I was involved in that many years ago and it's not fixed yet.
+
+[0:37:15] JMC: Where do you see Bazel going? Are you an active contributor? I mean, I'm fairly sure that with the amount of work that you probably have at Snowflake right now, considering that the project is at the early stages. But anyway, do you see Bazel moving in a certain direction for specific areas? Or what can you tell us about the near future and the long-term future of Bazel? 
+
+[0:37:36] JM: I'm not sure I can tell you much. Because I was – in my last two years, before I joined Snowflake, I was not touching Bazel at all for a while. I was trying something out different. And now I'm a user of Bazel. I'm seeing it from a different perspective than when I was in the Basel team before. I don't really know what the plans are. 
+
+I've seen some – there is a roadmap for Bazel 7 in the website. And that's coming up soon. There is a long-term plan, going back to the Starlark thing we mentioned, of taking more things out of the core and putting them into extensibility pieces. That would be very good. Because then it provides more freedom to people to define how they want their builds ills to behave. 
+
+[0:38:14] JMC: What would you like Bazel to incorporate in the future? What would be your wish list then? 
+
+[0:38:19] JM: It's a good question. For me, it's always been it should be smaller. To make it less daunting for smaller projects. In my mind, I would have liked before when I saw Bazel coming out was that any small project out there, especially the open-source foundational project that exist, would use a better build tool and not be stuck with new auto-make and auto-conf. But Bazel is I think maybe too big for them. I would like it to be smaller. But, yeah. I don't know. I don't know exactly what I would want right now for it. It's pretty complete.
+
+[0:38:49] JMC: I think so. Yeah. I think it's a very mature project. It's got its own conference, BazelCon, every year running in – I think it's – 
+
+[0:38:56] JM: Yeah. It's running now. Coming up now.
+
+[0:38:58] JMC: Yeah. In November, usually. In New York. It's usually in New York. I don't know about this year. It's hosted by Google, obviously, or at least paid for by Google. But, yeah. I mean, I know of the GitHub's rules that, for example, the Adobe or engineers from Adobe contributed. And those are growing in popularity. It's extensible, right? They're making use of the extensibility there for sort of like new deployment method. It's an evolving project. But, yes. You're mostly right. I think it's fairly mature. I mean, it already came out of Google being fairly battle-tested, right? 
+
+[0:39:30] JM: For the internal users. But back to the integration points, that's where I think there's a lot of room for improvement. Providing a set of products that integrate well and give you not just Bazel, but everything else you need. Like telemetry, and remote execution and maybe source control. Source control is not – I don't think it's a solved problem. Git is very good. But for mono repos especially, it doesn't scale very well. And when you try to mix Bazel with Git, it's problematic, right? And big mono repos. There's a lot of room for improvement there, I think. 
+
+[0:40:03] JMC: By the way, going back to our conversation about Google, what does Google use as a source control? 
+
+[0:40:10] JM: That's – 
+
+[0:40:11] JMC: It's not Git. 
+
+[0:40:12] JM: No. It is not – they use – what do you call it? Perforce before? 
+
+[0:40:15] JMC: Okay.
+
+[0:40:16] JM: I think that same paper we mentioned before covers what they used.
+
+[0:40:20] JMC: Yeah. But I think they did use Perforce for a long time. Perforce is popularly known because it a centralized, not distributed system. It's got now distributed capabilities. I think it's called Streams in Perforce. It also manages very well big binaries and huge mono repos like this. But I think they moved away actually from it. They might have their own custom-built source control system. 
+
+[0:40:44] JM: Yeah. I mean, Piper didn't scale for what they – Perforce didn't scale for what they needed. So, they built this new thing on top of it. And then they also worked with Meta to make Mercurial work better for these systems on top of big mono repos. They are actually using Mercurial on top of their own thing to offer a nicer UI, right? Really. But I don't know that. My knowledge is obsolete at this point. I don't know what exactly they have now. 
+
+[0:41:08] JMC: What would a good source code management system for Bazel look for you? What features would it have so that it integrates with Bazel neatly like you were describing or you were desiring a minute ago? 
+
+[0:41:19] JM: For a big mono repo – back to – again, for a small project, that doesn't matter. Everything works well. But for a big mono repo, one of the things that Bazel can leverage if it exists is the ability to detect changes between the last time it was run and the current time it was run without having to scan your whole project. 
+
+There are some features in Bazel that hook into notifications in the operating system to know what files are modified along the way. So, it doesn't have to do a full scan. But it still has to rely on timestamps because there's nothing else that you can get from the file system. That could be improved. And then it's just discoverability when you have tons and tons and tons of small files in a repo. 
+
+The thing that Perforce provided you is that you don't have to download everything to work on the repo. Whereas Git, I think there are new features today like shadow clones and sparse clones and stuff like that to paper over this issue. But, inherently, you need everything. And it's hard to work against that model. I'm not exactly sure what it would look like. And I like the Git model and how it works. It's hard for me to think about alternatives. 
+
+[0:42:28] JMC: This also is applicable to tests, right? If tests have changed. What if the source file hasn't changed but the test has changed? Should we scan through all the test suite and see what tests have changed and to re-prioritize those ones that are maybe more prone to break? And, therefore, find the error earlier. I mean, all this sort of like optimization of the incremental changes has a lot of nuance to it. And I think there's a lot of improvement there that can go into Bazel. 
+
+[0:42:56] JM: Yeah. Tests are an interesting problem. Because in the – for unit tests, they're pretty simple, right? Because the dependency tree tells you pretty much everything to know about which test you have to run. And they supposedly run fast. So, it's okay. 
+
+But as soon as you start having integration tests that depend on your full application to be built, then you don't know what integration tests are impacted by a change to your source code. And I think there are some people out there trying to apply like AI to try to guess maybe which stats are more important, as you saying, or more impacted, which they need to run. It's an open problem. I don't have an answer for it. Yeah. 
+
+[0:43:32] JMC: Well, let's see if the Basil community in the future provides. And let's see what the BazelCon coming up soon will say about that, if they have a talk about it. 
+
+Well, Julio, thanks so much for joining us. We wish you the best in your current job right now implementing Bazel. And I hope everyone has enjoyed this as much as I had. 
+
+[0:43:51] JM: Yeah. Thank you. It's very fun to be here.
+
+[END]
+
+ 

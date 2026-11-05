@@ -1,0 +1,837 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Building Codex with Tibo Sottiaux
+DATE: 2026-09-09
+SHOW: Pragmatic Engineer
+LINK: https://newsletter.pragmaticengineer.com/p/building-codex-with-tibo-sottiaux
+AUDIO: https://api.substack.com/feed/podcast/214748970/2fca285ca573bdf5071b7bd87185a3cf.mp3
+DURATION_SECONDS: 4401
+TRANSCRIBED_AT: 2026-11-04T02:17:12Z
+----------------------------------------------------------------------
+Codex is one of the most popular AI coding harnesses today, but how did it all start? Many of you
+will know today's guest, Thibault, from his generous and pretty frequent Codex usage resets. He was
+also there when Codex as a product started and has led the broader Codex team since. Today we cover
+how Codex started and why it was built in Rust and made open source, how coderies are changing
+inside the Codex team and OpenAI, what it means when maintenance and re-architecting are getting
+ridiculously cheap, what the merge of Codex into chat GPT looked like and the many underappreciated
+engineering challenges of this project. If you want to understand how teams inside of OpenAI plan,
+review and ship software, this episode is for you. This episode is presented by TurboBuffer, a
+ridiculously scalable fast and cheap hybrid search engine built on top of object storage by an
+engineering team that I've really grown to like after spending time with them. TurboBuffer is the
+tool that companies like Entropic, Notion, Cognition and Harvey all use to connect their AI products
+to massive amounts of unstructured data. When I've talked with engineers who use TurboBuffer, the
+theme that always comes up is reliability and performance at scale. The reasons for this have
+everything to do with TurboBuffer's architecture. TurboBuffer uses only object storage for state and
+NVMe SSEs with memory cache for compute. Data in TurboBuffer is organized into namespaces. You can
+think of a namespace as a database table or a search index or an S3 prefix depending on the world
+you come from. When a namespace is not being queried, it stays on cheap object storage with no
+associated compute cost. When a namespace is active, TurboBuffer pulls it up into hot catching tiers
+so queries are very fast. This design fundamentally makes it effortless to scale to hundreds of
+millions of namespaces. If you're building a multi-tenant AI product, every user and their agent can
+have their own dedicated search index without any overhead. And each namespace can hold hundreds of
+millions of documents without any special configuration. You can scale TurboBuffer virtually without
+limit and the performance, reliability and operating model all stay the same. If you need to connect
+AI to lots of data, TurboBuffer should be your first choice. Check it out at turbopuffer.com slash
+pragmatic. Timo, welcome to the podcast. So good to have you here.  Timo, thank you for having me.
+It's so good to see you again. It's good to do this. Last time we did it in person. Now we're doing
+our video. First, I wanted to ask you, how did you get into tech? When did you first know that you
+want to work with computers? Timo, that's a good question. It was a long, long time ago. My parents
+actually decided to move out of Brussels where I was born and just thought it was great to just buy
+a small house and refurbish it. But it was in the middle of a village with not much going on. I
+think there was like roughly 200 people living there. Not many that I felt like I wanted to talk to
+or, you know, could make friends with. And so I kind of got stuck. This is like very early, like
+eight years old. I kind of got stuck because like, you know, computers and, you know, it's like
+early days of like the for me, the internet. And, you know, that was my way to learn about things.
+And so just the rest is just like, you know, came from that. So like I owe it to my parents to, you
+know, have moved into the middle of nowhere and then, you know, I had no choice but to get
+interested in computers. Once you you finished high school, like you went on and went to university,
+right? Actually studying it properly. Yes, I studied mathematics, applied mathematics at university.
+I went there quite, quite early. And so I graduated earlier as well. Like I thought for a long time
+that I would actually not make it and I would drop out. I had like small companies and small
+consulting business. Like, like while I was studying, I was working for banks, I was working for, I
+was like very interested in supply chain and applied mathematics problems. And I guess sort of like
+selling that and learning a lot through that eventually ended up in the startup world in Belgium. I
+did that for a little while and then moved to London to work initially at Google and then DeepMind.
+And then now, you know, moved to be here at OpenAI. Like this is California. I love the California
+weather. We can talk about that. It's been very good. Right after university, you started, you've,
+you've founded a startup, right? You had the startup bug in you or the entrepreneur, entrepreneurial
+bug. Yeah. So this, this startup was all about, uh, pharmaceutical, uh, supply chain, um, looking at
+the supply chain for, uh, clinical trials and like try to optimize and decide like, Hey, you know,
+should you produce more medicine? Where should you send it? Where should dispatch it? Like, how do
+you avoid waste? And, uh, through that making clinical trials more efficient. And this was using
+traditional, like non ML techniques. Um, it's like traditionally more optimization, solving Monte
+Carlo simulations, these kinds of things, stochastic multi-stage optimization problem, really. And
+we also applied it on steel industry and we applied it to electrical grid as well in Europe. Um, it
+was like anything that sort of had the shape of like an optimization problem. We would sort of like
+get interested in. And, you know, to this day like this, this, this company still exists. And I
+think they do some of the most interesting work, uh, still, but it's changing a lot, uh, you know,
+with, with modern AI, for sure. But it's interesting because you kind of said like, oh yeah, that
+wasn't ML. It was just a traditional stuff. And then you go into like Monte Carlo simulation and
+optimization and this algorithm. I get a sense that you kind of just went deep, right? That it was
+like, okay, like, here's a problem space. Like how can I use mathematics stuff that I learned stuff
+that I didn't learn to just go deeper and deeper. Do I sense that correctly? Yeah. That's, that's
+why I was obsessed with applied mathematics is just really this idea of you have theoretical
+mathematics or you have theoretical science and physics. And like there you just, you, you do it
+because there's something to be discovered and something beautiful about it. And it's all about
+patterns and pushing the frontier, but you don't necessarily always know like how you're going to
+apply it. And then there was like the real world, right? This is like, you know, there's all these
+cool problems that just lie around. And I was like very interested in seeing like, you know, how can
+I make the world better? And so like, how do I apply like, you know, sophisticated mathematics, you
+know, to just optimize the world around me. And that was like a lot of the thesis behind that
+startup. Yeah. And then after startup, you ended up at Google and first at Google London, it was in
+2015. And I remember 2015, Google was a really, really competitive place to get into, like maybe as
+competitive as open AI is today in terms of the industry or in terms of prestige. You worked on maps
+initially, and then you moved over to DeepMind. Can you talk a little bit what you worked on? And
+then why did you move on from an already really interesting space that you clearly loved, you know,
+like the optimization logistics and all these things? Yes. I didn't start on Google Maps. I started
+on a project that was meant to make the web faster and meant to make websites faster, especially on
+mobile. At the time, you know, Google was kind of so like seeing the transition from desktop to
+mobile and like more and more traffic going to like, you know, mobile phones. And so like wanted to
+get ahead of that. So funded like a number of a number of initiatives and projects. I was working on
+one of them. This was like really, really fun because it was a small group within actually the ads
+organization. It was meant to sort like, you know, offset the loss for the ad revenue loss because
+of this shift of traffic to mobile and worked on it for roughly two years. And then it was canceled.
+And although it was like the most fun I've had on, you know, solving hard technical challenges, I
+learned a lot from not having product market fit, not having the right users, not having the right
+feedback loop, not trusting your product manager when they say the project is going well, when in
+fact it's not going well at all. And then, you know, one day it's just like this VP flew in from
+California and then it was just like, oh yeah, it's like, you know, we're canceling this project.
+You know, unfortunately you only have, you know, hundreds of users and this is clearly not Google
+scale. And then it's unbelievable, but people were surprised. And I think there's a lesson there
+that I carry with me, of course, is, you know, just always, always question, always go to like,
+always, you know, deeply think about the impact that you're having, but also like the importance of
+the overall project that you're contributing. And then I moved into Google maps. Google maps was
+super fun, worked on reviews. And then after roughly a year, I couldn't ignore like DeepMind. It was
+just, it was this special place, headquartered in London. So many great things were happening. This
+was like really the early days, you know, with rumblings of things like AlphaGo. And they just seem
+to be doing extraordinary things and, you know, just really tackling the very, very hardest problems
+that you can tackle. And like, with my background, I was obviously drawn to that. I started there.
+It's like, I worked on a lot of the research infrastructure, research tooling. This is a theme that
+I carried on for almost a decade. And it's like, this is very much also the, like how I approach
+things is how can I build tooling and products that help make others more efficient and bring a lot
+of utility to them. Initially, I was doing this for research. And then like over time, you know, I
+got like into thinking about things in a much more, like more general and general and general way,
+you know, eventually like, you know, ending up where I'm now. Yeah. And a fun story that you
+recently shared on X as well is how you were part of the team that built this internal Googlebot
+that was, you know, if you want to say similar to ChatGPT, but a year before ChatGPT. Can you, can
+you talk about that? That's a, that is a new story. I haven't heard it before. This was part of
+DeepMind. There were like multiple efforts as well. There was like brain as well that was separate
+at the time. They had their own efforts on large language models, but it was definitely something
+that was being explored. It was not the main thrust of, of DeepMind. DeepMind was like very much
+worried and, and busy, like thinking about brand challenges and games and, you know, thinking about
+RL, not in the language sense. And so there was like this group that was pushing on large language
+models and, you know, thinking about, you know, what, what if, what if large text corpuses are
+everything? What if, uh, you just pushed language to its maximum and you just scaled language
+models? Like, you know, would that be enough to get to general intelligence? That was like the hot
+debate at the time. And then one, one group decided to just really push on that. And then it felt
+really natural. Like, you know, as I was building tooling, you know, with others for, for research
+is like, you know, obviously you're like, you know, what can we do with this model? Like how do we
+present it? You know, to the researcher, like how can they sort of like, you know, debug the inputs,
+outputs, and eventually you sort of like end up with, you know, like a chat system. So we built that
+internally. We had a lot of fun. Initially, the models were like, you know, kind of like almost like
+a little bit absurd, like, you know, not very coherent, uh, not super useful, but it was a lot of
+fun, um, to sort of like thinker with them that caught up, like, you know, like wildfires, like, you
+know, this application is just sort of like, you know, everyone, uh, was kind of like, uh, sharing
+little conversations within DeepMind. It felt more than like a research project or like a research,
+a project for researchers. And so then there was this desire over time to like launch it as an
+external product, but DeepMind was just like, not set up. You know, there was like the, the right
+way to launch products at Google. There was like, you know, the whole machinery of like, you know,
+how you do that. Um, you know, the whole like blessed production stack, obviously very, very
+optimized over the years to do things well. Um, but also very, very hard as an environment to truly
+innovate. And then I wanted to ask what made you, you know, look around or, or, or maybe even
+consider open AI, but I feel you partially answered this question. Just, just putting myself back
+into your shoes, like you're, you know, if it's, it's 2024 or 2023, you're inside of Google who are
+publishing amazing papers, doing really good research. You're doing super fun stuff, right? That
+pushing the limits of what's, what's been done before. Uh, it's an inside a company where you
+already moved, you know, for, for people who are feeling kind of comfortable or good about where
+they are right now, which I imagine you must've been like, what made you still explore? All right.
+Like what else might be there? Yeah, I was, I was very comfortable. Uh, it's a, it's a good place,
+but really I had a, I had a desire to, you know, meet great people, but also join a mission that I
+truly believed in. And that, you know, I felt like the people were true to the mission and cared
+deeply about impacting the world in, in a very, in a deeply positive way, but also in a direct way,
+not, not being like, oh, yeah, it's just like, you know, we just do this work over here. And then
+it's like, it's the job of someone else to figure out, you know, how to, how to make this useful.
+It's like, I wanted to join a group where, you know, like all the parameters were sort of like
+considered together where, you know, research and products were like really co-designing opening. I
+was just like crushing it. Uh, I thought chat to BT was like, you know, taking off as a guy was, uh,
+I met a couple of people from open AI. And then I was like, wait, what, you know, you only have like
+20 people working on chat to BT. Like that is, that is an insanely small number that, that must be
+like extremely empowering that, you know, how does that work? How do you manage to maintain, you
+know, a, a, a product with that level of scale? Um, and with that level of autonomy with, you know,
+only, only 20 engineers. And then, you know, I said kind of dug and dug and dug. And it's like, it
+was just a, an amazing group of people, amazing mission, you know, super talented, super driven. And
+like, it was, it was like drew me in. And then I joined pre-reasoning, uh, efforts immediately, like
+typical opening AI fashions. Like I joined, it was like, oh yeah, you know, like there's this thing
+going on, like, you know, we're going to launch reasoning models, like, you know, it's like a new
+paradigm. And then, you know, start sprinting on that. And like, you know, like a month later, like
+the company launched 01, uh, 01 preview. And now it's exhilarating to be part of, I wanted to be
+part of like a place that moves fast, cares about impact, would be in tune with the world and, you
+know, just really listen. Um, and sort of like, that's also, to me, like, you know, what I've
+carried with me, like when, when building codex, when building products, it's like having a
+community, listen to the community, just really focus on like a really intense feedback loop, uh,
+and then building something that is just like, you know, you just really want to care about it and
+like, you know, care about the utility of it, that it provides to the world. And then of course you
+start to work pretty quickly on codex. So you joined in 2024. Can you take us back? What the
+thinking back there when you joined was about AI or LMs and code? I know there was this ASWE, um,
+effort back then. The, we talked about it in the deep dive as well, that we did in the pragmatic
+engineer, the autonomous software engineer. ASWE. Yeah, that's what it was pronounced internally.
+Um, we, we don't, we don't have an ASWE effort anymore. Like, you know, it's, it's, it's codex. Um,
+but really for me is I joined, I started building infrastructure for research. Like my, a lot of
+what I did before was large scale, um, data storage analysis, and then tools to understand training
+runs. I did a lot of different things over my years. Um, but it was always about building for others
+and making them faster and just really caring about, you know, fundamentally doing that well. And
+then through tooling and infrastructure, making new things possible. And so when I joined open AI,
+it was like with the same idea. And then with the re with, with one preview and like, you know,
+some, some of, some, some of the later models, it was very clear that we had to use the models
+themselves to help us go faster. And so I just really got obsessed with this idea of what were the
+limitations? How were we going to use those models for research itself? So got together with, um,
+other folks in research, we started training models. We started building little agents. Those were
+truly the precursor to, to, to codex. And like, this was like, we were training internal models to
+be very, uh, proficient on the Python code base of open AI and then, uh, very proficient with, you
+know, having like good, good taste in architecture, good taste in, you know, like code style. It was
+like Python only. And then the idea was like, you know, we would sort of like use that to build
+infrastructure very quickly and, you know, help researchers code faster as well. Uh, and then, you
+know, and then we would move faster. And then over time, when you just kind of push that and
+simplify it to its score, you're making a lot of, uh, you know, we found that we could make a lot of
+progress very quickly and then learn very quickly. And then Greg and Sam are, you know, people with,
+with immensely supportive. And also, uh, Greg was very adamant that, you know, we would, we would
+not just focus on ourselves, but we would also focus on benefiting, uh, the world. And so he just
+sort of encouraged that we would be thinking about this, not just as a tool for opening itself, but
+also as something that we would actually make it to a product. And this is when, uh, we merged this
+research effort with this ACE3 effort. Um, and we started building one thing. And then that led to a
+sprint, which was like the initial cloud codex that we launched, which didn't really have PMF
+because it was like a little bit too high friction. And then we also launched the codex CLI and we
+continued to push, but it was always this idea of, Hey, how do we get models to really help here?
+You mentioned that first you started to build this model to train on the Python code and, and
+actually help me build in for, in for better. But then you made this interesting decision where for
+codex, you built it in rust. And at the time the model was not on distribution for rust, right? It
+wasn't as good as it was in rust and it was in Python or TypeScript. Why did you make that kind of a
+decision? Was it, was it kind of like, did you expect that it will catch up or, or you figure that
+performance is more important or, because it was very counterintuitive. Most of the, other harnesses
+built were actually not built in rust. They were built on distribution of TypeScript or Python or
+something else. Yes. From first principles, like we, very early on, we were thinking about the
+product interface and the agent as different things. So it was very important, um, to build the core
+of the agent in a way that was robust, that was secure as well, that was, um, you know, engineered
+for efficiency and scale. And having worked through projects over the years that go from, Hey, this
+is a fun thing to like, Hey, we need to scale this to the scale of like the largest data center. Um,
+is the decisions early on are like really turned out to be quite important as long as you don't
+sacrifice too much of the velocity. And so it's like, it's a, it's a trade-off, but we had very
+prolific and amazing rust developers. Our internal models were not bad at rust. Um, and then you get
+a lot of, uh, validation as well at compile time. It's like, you know, statically verified and all
+these things. And that is great for agents too. So it turns out, you know, it was quite clear that,
+you know, rust as a language would actually be quite good for agents, uh, fairly quickly if we
+decided to put some effort into it. But primarily, we were focused on correctness and we were
+focused on efficiency as well. Interesting. So you're saying, you know, it's, it's worth, in your
+case, it was worth thinking ahead of where you want this thing to be. And for example, thing like a
+language choice, obviously with agents, you can rewrite a bunch of stuff and easier than in the
+past, but it's still like, you can say save yourself reworking by putting in the right, I guess,
+scaffolding or, or, or, well, the, you know, the, the, the baseline of, of what you're building on.
+Right. I think we could have been successful if we had within a TypeScript or, you know, maybe even
+Python and then they would have been fine. And then, you know, we would have rewritten it at some
+point, but having a very clean separation between the agent itself, which can exist irrespective of
+the product. Um, it was a very important principle. And if you write everything in the same code
+base and the same language, it's like, inevitably, you're going to be a little bit sloppy and, um,
+you're going to intertwine things more than you should. And then it's going to prevent further
+innovation after that. And so that was, that was very important. And like the Rust boundary in a
+sense, like, was very useful for that. One interesting decision that you made, which is unique
+across all of the major labs is having this built in open source, right? The CLI is open source, the
+SDK and the AppStriber are all open source. When and why did you decide that? It's not a given,
+especially, you know, there used to be jokes about open AI having things closed, but this, this is
+actually the opposite where like this is open, whereas like some competitors would, would ship
+closed source harnesses, which again, I think it's very easy to understand why you want something
+closed source. Why did you want it open source? There was something really cool about the idea of
+having the code open source, because fundamentally, what you're billing is you're billing a coding
+agent. And so we were sort of like thinking about, well, if you have that, you know, you're
+obviously going to point it at itself. And, you know, maybe, you know, you can build a community of,
+you know, contributors that use it to improve it. And then, you know, you can learn a lot from that.
+Also, it felt at the time is like, you know, very clear to us that if we were going to be
+successful, open source itself would change and the role of code itself would change. And so being
+part of that community seemed important instead of divorced from it. I think, you know, it's, it's,
+it's hard to solve problems if you don't sort of like witness them yourself. Uh, and then the, the
+other thing was just, it still feels like early, but it was very early at the time. Um, it felt like
+we would have some ideas for how to solve things well. Um, and we were co-designing these, you know,
+with, with, with, with the training and, and, and, and the research. And it's, it's all about
+expressing like the capabilities of the model and like the most flexible and the best way. Right.
+But also we didn't have all the answers and sort of being very open about, Hey, this is what a good
+harness looks like. This is how we think about it. We did like a couple of like very technical, like
+deep dives and block posts, and we talked about it a lot. And we thought, you know, Hey, it's just
+like the world is vast out there. Just like, you know, crazy smart people. It's like, you know,
+we're, we're going to get inspired by other open source project as well. And so let's just make this
+a level playing field. And so like encourage a lot of tinkering, um, and exploration at this stage.
+Now, this has been now, you know, like a, a year later, a year and a half later, which is a very
+long time. And right now in this AI timeframe, but looking back or taking the experience, what are
+the benefits you've seen, the kind of enduring benefits, the enduring teams benefits from being open
+source? And just honestly, what are things that are kind of hard about being open source, right?
+Like there must be downsides, like just trying to get an honest take on both sides. Yeah, there are
+definitely downsides. It comes at a cost, right? The benefits are, it's almost something to build in
+the open. It's awesome to have like a small, a small repo as well. Like whenever we hire someone and
+they join the Codex team is like, they've seen the repo before. They've looked at PRs. They're like,
+Onboarding is done. Yeah, it's, it's, it's done. Yeah. It's like, and onboarding is just like, you
+use Codex to look at the repo, you know, with you and you ask some questions, but it's like, it's
+not, it's not a secret issue that you can get productive right away. We get a lot of good
+contributions, although we get like, you know, a tsunami of like random stuff as well. Obviously you
+and everyone else. Right. Open source is changing. I think this is one of the examples. That's
+right. And then to me, it just, and to a lot of the team, it just brings a lot of energy to just be
+part of the community and like be directly contributing. Not just saying that we care about the
+community, but actually doing things that, you know, you can see it's, it's costing us effort,
+right? We don't have to do it. The downsides are, you know, it's, it's separate from the rest of our
+code. So, you know, sometimes we have to draw like artificial boundaries and, you know, work across
+multiple repos. When we're working on something particularly exciting and you know, we're building
+it in the open, and then, you know, at times we find that, you know, others copy it, you know,
+before we have the time to release it. And it's like, it's just a little bit sad. But also it's
+like, it's part of the game. You know, it's, it's like you're building an open and it's like, you
+know, that's, that's sort of like the contract that you signed is like, you know, you can copy it.
+We have a very permissive license as well, but it does sting a little bit when you're working on
+something and you're like, you know, and then the, the third thing is just like everyone else is
+like, you know, we're, we are overwhelmed with, you know, random contributions and, you know, we
+have to deal with that additional tax. But then that pushes us to, you know, also like try and solve
+for it. Right. Which I think is good. And on top of the open source, one thing that surprised me
+about codex, and I didn't even know about it until recently, it's not tied to the open AI models.
+You can use other models with codex, you know, like putting myself in a vendor's shoe, it might not
+be very obvious because again, all the other vendors that I look at when they do a CLI, it's kind of
+use it with our models. Again, what made you decide to be this permissive about, you know, using or
+allowing to use your harness with, with other models? It felt quite natural. If, if you are part of
+this community and building an excellent coding harness is like, why would you couple it to your
+model? That, that, that felt like sort of like quite disappointing to make that decision. So it
+didn't, it didn't feel right. Um, and in general, it's like, I think, you know, it's like, I kind of
+tried to make decisions that I'm like, yes, you know, it's just like, I can just sort of like
+explain it, you know, it is correct. It's the same reasoning with, you know, it is open source in
+the first place. It would have been trivial for anyone to fork it and then add support for another
+thing. But then, but then you're just encouraging people to just like, you know, go and use that
+fork. And then now suddenly you have overhead. And the only reason you have a fork is because, you
+know, you wanted to change like 10 lines of code to add support for like another model provider.
+That feels very silly. So like, you know, why not just support it in the first place? The other
+thing is we benefit a lot from like being able to just give optionality. So, you know, it's like
+maybe today, you know, you, you, you love using open AI models. Um, and you know, you're super
+productive with them, but like tomorrow there's a new model that comes out. You want to try it at
+why force you to go and completely change your setup just to try a new model. And then we benefit
+from the feedback that we didn't get, uh, which is like, you know, maybe there's something that you
+liked about them or maybe it actually didn't work well, but it's sort of like being nice to our
+users and to the community is like, you know, feels like the right thing to do here. Um, and then,
+you know, we also, you, we will also try like other models, right? So, and you know, we tried them
+in the same harness and you know, it's just all, uh, all good. And then this is all also often like,
+um, this optionality is very important to companies that we work with. Mm. Yeah. And this is
+something that, you know, we, we absolutely lean into this last point. I think, you know, as any
+serious company, you want to have optionality and you want to use a tool that gives you that
+optionality, but I kind of appreciate it. Cause I feel to me like it's kind of honest, like, look,
+like it forces the whole company to be, to compete the best in everywhere in the model layer and the
+harness layer with open source, with, with chooseable models. And it kind of like, doesn't, doesn't
+allow you to like kick back and say like, all right, we're done. We can, we can, we can hang back
+for a little bit for now. Yeah. I want us to win users by having, you know, the best models, the
+most efficient models, the best product. And then, you know, if we do all of these things, it's
+like, we're going to have a good time. If we sort of like force you to use the product because, you
+know, this one thing, it's just like, then I don't think that will attract, you know, the, the very
+best people to work on this product either. And it's like, you know, it's like we were doing our
+best work here. We care a lot about the experience. It should feel delightful. You know, like it
+doesn't, irrespective of the model that powers it, it should feel the light hole. I love the idea of
+winning based on merit, not based on lock-in. And this is a perfect time to mention our season
+sponsor, Entire, who also play by the same rules. Like it or not, Git is becoming a bottleneck for
+modern agent-heavy software development. Devs are creating more code with agents. These agents are
+pushing more code. Many devs are running more parallel agents. These are pushing even more code.
+GitHub is clearly struggling to keep up and has frequent outages. So what's the solution? Entire was
+founded by GitHub last CEO, Thomas Dumke, and he rebuilt Git hosting for the agentic era from
+scratch. Entire was built to be very fast and to have your repos regionally close to you to reduce
+latency, allowing for fleets of agents to push in parallel. Some numbers they published. Entire can
+handle 418 pushes per second. That's up to 89 times faster than every competitor on the market. When
+GitHub is down, you can still keep working and you don't even need to migrate from GitHub. You just
+sign up to Entire and the platform mirrors your repo. And one more neat thing. Have you ever
+wondered what prompt resulted in this specific code being generated? I find that the prompt and
+conversation with the agent carries more information than the PR itself, at least for me. Entire
+captures all the prompt history with your agent right in the repo, easy to check back and has a
+pretty innovative UI to show all of this. If you're looking for Git hosting that works even when
+GitHub is down, head to entire.io slash pragmatic, install the CLI and mirror your repo with a
+click. I've already done it. Oh, and did I mention that it works with any agent and it's open
+source? I'd also like to mention our season sponsor, Antisys. Thibault talked about how the
+experience of the software you use should feel delightful. Delightful includes no annoying bugs. But
+when you're using agents to write your code, how do you avoid chipping bugs? Reviewing every line of
+code is becoming a challenge with the amount of code that agents generate, which is why Antisys goes
+well beyond code review. Antisys runs your whole system in a hostile simulation. This simulation
+includes both targeted testing and fast testing. By running this simulation, it finds every bug
+before your users do. And because the simulation is fully deterministic, it doesn't only find bugs,
+it gives you a perfect reproduction of every issue, which makes it much easier to fix issues. The
+first thing I thought when I heard about Antisys is that automated bug discovery and fully
+deterministic testing sounds like science fiction, but it's actually hardcore engineering under the
+hood. Jane Street, fly.io, and the etcd community ship agent written code with full confidence
+because they know it's been verified by Antisys. To see more case studies and details, head to
+antisys.com slash pragmatic. And with this, let's get back to Thibault and why competition between
+tools is great. Yeah, and I think as an engineer, I always see that whenever there's competition, as
+to someone who's using tools, it's always amazing. I remember when Microsoft had with JetBrains, the
+IDE wars, and then there's the clouds battling with each other with all the features. And now, of
+course, we have the harnesses, we have the models. And as a user, it's great because now we have
+more choice. They just develop faster. I guess our voice gets heard a bit better. So it's great to
+hear. Speaking of the harness, can you tell me how it works today in the sense of like, when I start
+a codex task? Does it run always on my machine? Does it choose the cloud? Does it use a sandbox? And
+how do I control this or know this? Or how much should I know about this as an engineer? Yes. So by
+default, it runs sandboxed. If there is a command that should run with additional permissions
+outside of the sandbox, it will ask you as a user for permission. But everything, every tool
+execution happens within the sandbox by default. And it runs entirely on the machine, your local
+machine. And this has been the case for more than a year now. But it is something that is evolving
+and shifting, where you can select to run this in the cloud, which then runs in a managed VM, where
+it's the same VM that you get through ChatGPT work. And you can sort of like inspect it, but like it
+runs in a CADA container. It's like a secure environment. And so if everything runs inside of that
+VM, it doesn't run on your machine, and then the only thing that happens in your machine is like the
+your input and then the streaming back of the output. And so that, you know, obviously then is like
+much nicer on your CPU and your machine, and you can scale much, much, much more. And this is like
+just a step. It's going to be much more seamless in the future to like, you know, use cloud machines
+and then, you know, maybe have a combination of like partial execution on your laptop, partial
+execution on cloud machines. And really, the thing that we're thinking about that is very natural is
+as models just get better and more capable, they can leverage so much more compute and many more
+resources than are available on your local machine. And so it would be a constraint at some point to
+just limit execution on your local machine. But one thing that is great about it running locally,
+and I think the reason I love it when it runs locally, of course, it's a pain, because if I'm doing
+some work, it's like, you know, I have several agents, it's eating CPU. If I want to close my
+laptop, I cannot kind of leave it like half open. Right. When I was in one of the offices of an AI
+company, I had a half open and they're like, are you running agents? I'm like, yeah, I have one
+running. I get it. But the reason the reason I do it because I have my local tools, I have my local
+Postgres database, I have my my this, this and that. How are you thinking about the cloud is
+amazing, but it doesn't have this setup, or it's just a pain to set it up. Are you thinking or are
+you experimenting with, you know, making the these setups? And I'm kind of reminded of a topic that
+we talked about pre-A, which is cloud development environments and like 2022, 23, they're hot. And
+then we talked about AI more. But I think outside of large tech companies like cloud dev boxes
+really never took off because there's a very big upfront cost. And then you need to pay like a
+maintenance cost as well. And you just you know, don't benefit from it as like a solo developer or
+like a small team. With the level of capabilities that we have in agents now is like the setup
+almost is free, right? So like this, the setup cost and this maintenance cost is like, if your agent
+is capable of doing it, you know, it should just do it for you. So for example, if you're saying
+like, hey, you know, I have like, I have my local SQLite or I have a local server and MCPs and
+whatnot. It's like, how hard is it to actually configure exactly the same setup and keep it in sync
+on a cloud dev box? Well, maybe it's not that hard if the model just does it for you. And so I think
+we're going to see a resurgence of, you know, fully cloud orchestrated machines, which then frees
+you from your laptop, right? It's like one thing that we've seen a ton of success with with
+ChatGipty work is like, it's just available on your mobile. I start my day just dictating a bunch of
+tasks into it next to the coffee and it just does it. It has access to my calendar. It has access to
+my email. It has access to Slack. And it's just so awesome to just be able to walk around and, you
+know, get stuff done without having to, you know, carry my laptop everywhere. And I think it's the
+same thing that, you know, we ship like Codex remote where, you know, execution is like still
+happening on your laptop, but it would be wonderful if, you know, you didn't have to keep your
+laptop open. Can you tell me a bit on how in the past, how did you improve Codex? Because I remember
+when I first used Codex, this was one of the early versions, you know, like you could talk to it, it
+did stuff. But for example, I said like, all right, make this change. And it did that change. And I
+had unit tests and it didn't run it. And then later, a few months later, I don't know exactly when,
+it just started to run it automatically. Were these things, did you improve the, you know, the
+script that runs, you know, the instructions, I'm not sure how exactly you call the, you know, the
+bootstrapping script or whatever that is. Is it improving the model? As a dev, how can I imagine you
+making each version better between the harness and then between the model and like, what's the
+connection between the two? Yeah, this is a good question. So the, the harness in a sense is always
+a little bit ahead of the model. Oh, really? How so? Oh, what I mean by that is that you, you have
+the model, it's capable of certain things, but then you set it up with like a couple of crutches so
+that it can actually do the thing to a level of reliability. And in, in, in a way that is like
+efficient and also with the behavior that you expect as a user. And so, like, that's the role of the
+harness, right? It's like, you know, provide guardrails, like safety, make it more efficient, make
+it more like steerable, controllable. And then the harness usually is also responsible for, you
+know, what we call like the developer message, which is sort of like infected in the context at the
+start of each turn. And so that affects obviously like the, the purpose of that is to affect like
+the behavior of the agent throughout, throughout the turn. A lot of what you have is like the result
+of, of the harness and the model initially, like maybe you're like, oh, it doesn't run tests. So,
+you know, you have to remind it to run tests. And then, you know, we train a battle model that is
+just, you know, capable of like better reflecting on what is it that you really want when you ask
+for something. And then, you know, you don't actually have to tell it anymore. So over time, what we
+see is like the system, the developer message shrinks, and then the harness also shrinks. Inside of
+the codex team, do you have specific goals? Do you say like, all right, right now the codex as a
+harness and model combined is not very good at this, or it's kind of doing silly mistakes or here,
+or how can I imagine how, as the engineering team, how you're working on the next, you know, version
+of codex is because the thing that I don't really get as a as a dev is like, okay, there's a model,
+which to me is this magical thing, which will get better. Of course, I'm sure you have some feedback
+channels, but you also have the harness, which is the tools that you're building. Like that's
+probably what the team is responsible for. How do you set even your goals, right? Like in
+traditional software, you'd be like, we will build this feature and you build that feature because
+you know how to do it. But it feels a bit more fuzzy to me, this this development process. Yeah, it
+is. And it's why we we co-design, you know, most things. And it's, it's a process where it's a
+collaboration between research and the engineering team, like primarily building the core, the core
+agent harness. It's always a, it's always a question of like, okay, we see today that, you know, we
+are very good at this, but we're not very good at this. And, you know, we have a desire to do like
+another thing because it would be a very cool product feature. And then, you know, we always sort of
+like look at it. It's like, okay, this should this be like a harness change or should this be a
+model change? And if it's a model change, like how soon can we have it? Can we have it in a month?
+Can we have it in, you know, three months, six months? And we sort of like work through that. And
+then depending on, you know, how soon we can just fix it in the model at which level of training,
+then we might decide to not even do something in the harness at all and not, and just wait for, for,
+for the model to, to solve it. You know, it's, it's agents all the way, right? So we use agents to
+analyze like a lot of the feedback to like, you know, come up with themes, you know, to just help us
+have these conversations and decide on priorities. But we analyze it across all of coding. We
+analyze it across like all of like, you know, the other domains, like finance, comps, marketing, you
+know, all the things where our users are using these agents nowadays. And there's like, you know,
+subcategories within those. And then we roughly know like, you know, how well we perform. And then
+we're always pushing the frontier. And there's a thing that is interesting is like, as we make, you
+know, as our pre-training model gets better, as we make the overall model better, like the whole
+thing lifts up. But then there are sometimes things that we pay a little bit more attention to. You
+mentioned, you know, you analyze agents all the way. Can we talk about the software development
+lifecycle on Codex, in the sense of whenever a new engineer joins a team, any team, it's like, okay,
+how are things done here? And you know, back pre-AI, it would have been, you joined a company like
+Uber or Google, and they would tell you like, cool, the way it works is, we have an idea, or the PM
+has an idea, we make a plan, we get together, we do some estimations, we break up the work, we code
+the work, we do tests, we do code reviews, we release, we do feature flags. And then, you know, we
+were on call. That's how it used to be. When someone joins the Codex team, you know, they've clearly
+been contributing to the open source part. But what do you tell them? How do things get done here?
+If they're like a brand, a total newbie? I introduce them to great people. And then the thing that
+they hear the most about, like when they have a question is like, have you asked Codex? And Codex,
+like, just by default, at OpenAI is like plugged into everything. So it has access to Slack, it has
+access to all the documents, access to all the code. And it still surprises new starters that you
+can basically ask it anything. And it will very often just like come up with like, a really good
+response. And so the easiest way to understand the state of a project, or who's working on
+something, or why decision was made is like, Codex knows about it all internally. And so you just
+use all of that. We do a lot of work in, you know, for that reason, we do a lot of work in public
+channels. We open up documents with like, you know, fairly broad permissions. And so that, you know,
+everyone has access to this information as well. And so that, you know, your agent can go through
+things and like, you know, reason through things. And then, you know, we have a couple of other
+things that are just really very helpful for team productivity and team collaboration that we
+haven't released yet, but are going to come like some of it at Dev Day. Although that just sort of
+like makes you very grounded and in tune with the rest of the team. And allows you to like, you
+know, just very, very quickly, like understand the state of things and produce things yourself. The
+general recommendation is just like, hey, care about the user, care about the coherence of the
+product, care about the models and where they're going. If you're doing something and, you know,
+you're building like this 10,000 lines of code crutch to work around the model flaws that, you know,
+you're probably doing the wrong thing. So we have a set of principles. But it's just really sort of
+like a team culture and ethos at this point. And, you know, it's just very much like carries on, you
+know, when people join, it's just like through the rest of the team, just like, you know, sort of
+like teaching the roads. Yeah. And then when I have an idea, I think it's a good idea. I talk it
+through with codex. Maybe I talk with it with some of my colleagues, like, here's a cool new feature
+I'm going to build as my first first contribution or first major contribution to codex. How do I go
+about that? Obviously, I code it down with codex. I obviously test it and make sure that it works.
+From there on, what's the process? Do you still have the concept of code review or AI code review, a
+verification of rolling out, a verifying of stage rolled out? You know, the things because codex
+itself, it goes out to millions of people. Like I just crossed a big 20 million active user mark.
+But if it's chat GPT, then it also goes out to like even a lot bigger number of people. Yes. But
+it's surprisingly like a similar process, whether you ship on codex or chat GPT, even though chat
+GPT goes out to like a billion, a billion, you know, active users and growing, you can ship a PR,
+you know, you can make a change and, you know, get a chip like the next day or like even the same
+day. And it just goes out to a billion users and it's fine. We just really instill a sense of
+ownership and care. So you're like, people are very empowered to make changes, even large changes.
+The general thing that is being asked is like sort of like evidence that it's going to be well
+received, evidence that is like a worthy addition, evidence that, you know, it's like it is worth
+maintaining over time, but also like the cost of maintenance is like just really, as you know,
+gotten done significantly as well. So we think about these things slightly differently than, you
+know, say like two years ago or three years ago. The other thing as well, as you can re-automate as
+much as possible. So like a lot of like the process of like code review and deploys and, you know,
+catching regressions, it's like, you know, all of that is like pretty much automated. And so, you
+know, you get to just focus on just really the idea and, you know, how it's going to help our users.
+And you care about, you know, the coherence of it all. And so like the overall power of the agent
+and making things better. And like, we don't, we have a long, long list of things that, you know, we
+sort of like aspire to do and haven't gotten to yet. And then there's like the sort of like the
+North star direction, which is a delightful, simple to use personal AGI that, you know, knows
+everything about you, like, you know, that it needs to know, has access to the right resources, can
+take like, you know, sometimes risky actions on your behalf, but then, you know, you get like the
+push notification and then, you know, you can verify that. And it's like a thing that, you know, you
+deeply understand as a user, but also it knows about your schedule. It knows about your goals. It
+can be proactive and it should be like extremely natural. It should be something that you can
+control through like natural language or voice, you know, like maybe it should understand, you know,
+your emotions. Like if it has like a camera, it should be the most natural thing on earth. It's
+like, it should not be like a thing with 10, you know, different buttons and configurations. It's
+like AGI should be simple to use. You kind of mentioned just briefly the review, the code review,
+but I wanted to go back to it. You worked at Google on a, on a product used by, you know, like
+hundreds of millions, which is Google maps. And Google is very well known for their culture of a
+very strict code reviews. They have, I think two layers of code reviews. There's a language
+correctness review, and they they've taken, I think they've really perfected it across the industry
+for, for a long time. And they do believe that it works and they use it. How do you think that part
+is changing specifically the human review? Because for a very long time, until maybe a year or two
+ago, I would have said your code review has all these benefits and knowledge sharing the second pair
+of eyes, removing the bus factor, because now someone else understands that when that person is out,
+that they can jump in. Conversations are happening about architecture, not just, not just the code.
+But now there's, you know, there's a lot more code. And what was the value of code review? What, in
+what cases, and so on your team, because you guys are so ahead of this, where do you see humans
+still being or developers being involved in the review stage valuable? And and where is it fine? Did
+you find it find it fine to hand it off to an agent? Yeah, the role of code review is changing. One
+of the early projects that I did on Codex was like working with research on developing a code review
+model that was going to be to a level where it can spot mistakes in logic and reasoning to a degree
+where it would require humans like, you know, multiple, potentially multiple hours to capture the
+same level of mistake, because it requires like really digging like, you know, three, four levels
+deep into like the dependencies. And you don't understand that maybe the documentation actually was
+wrong. And like the implementation of like the third party dependencies like different from what you
+expected. And so therefore your invariants are not upheld. And these things, it's just like, you
+know, unless you're an expert in that library, you wouldn't know. And therefore you have a bug. And
+so we developed like these code review models. And, you know, we released them. And now they're like
+the same level of like capability and like ability to spot these mistakes by doing like, you know,
+deep verification or like just part of the mainline models. Like when we benchmark them, it's like
+they're like superhuman in code review. And this is not just true for correctness. This is also true
+for security, for example, where you're capable of like reasoning across like, you know, very, very
+complex things. And then, you know, coming up with like, hey, you know, you have a critical security
+vulnerability here, which is now mandatory across like all of open AI pull requests. Like we block
+pull requests from merging if, you know, we flag them with like a security issue. And this is like
+all automatic. And the role of code review now is like, I think it was always about correctness. It
+was always about, you know, ensuring that things work, but it was also sort of like a little ritual
+for information exchange and, you know, bringing people on the same page and like, you know,
+encouraging like a discussion, which ideally would have happened before. But sometimes it just only
+happens like around the code because once it merged, it just actually runs in production, it's doing
+stuff. Yeah. And then you have to maintain it. So there's like this social aspect to it as well. And
+so I think all of it is changing, like the correctness, the cybersecurity, the security is like, I
+think that will be automated. Really, what we see and I see is there's this sort of really
+discussion around the intent that takes place around the pull request. It's like, what are you even
+trying to do? And is that the right thing to attempt to do? I think you can have that discussion
+outside of the pull request. It doesn't have to be around code. So maybe this helps crystallize the,
+you know, like where a discussion needs to happen versus where we did it because maybe we didn't
+have the type of tool that we have right now. Yeah, I think this is going to change. And it was like
+a forcing function because, you know, you have to have that discussion or like, it's good to have
+that discussion before you merge it and it becomes production code. But I think there are other ways
+to have these discussions and, you know, design things together and make sure that the intent is
+good. And then the code doesn't matter as much. And it's interesting because when I think back of
+all my code reviews, like, of course, I have like memories where like, it was great. We had a good
+discussion or I learned something really interesting. But a bunch of times, honestly, it was such a
+pain in the ass. Like, I was trying to get my stuff. You're paying. Hey, could you remove my code?
+And like, no, right now I'm busy. No, I really need this to unblock me. And then you context switch.
+And then I feel it's always been like, good and bad, right? So I feel whatever we do, there will be
+always upsides and and downside, but they're now they're just moving. So I guess one upside is, as
+an engineer, you might have to not give your attention to just kind of basic stuff that doesn't need
+your input, per se. Yes, it saves time. And progressively, what we're going to see is also like you
+have an agreement on, you know, the box and the overall contract of what it's supposed to do. And
+then, you know, what is inside the box, as long as you have like strict guarantees in terms of
+resource utilization, data access, security, these kinds of things. It's like what happens inside a
+box is, you know, it could be literally anything. You just like don't really need to care. And like
+really what you need to agree on is like, what does the box actually do? And what are the invariants
+that must be satisfied? And I think that is then worth, you know, having like a really good
+conversation on, you know, maybe assisted by your favorite agent. But then once you have that, and
+you have that understanding, it's just like changing anything within the box is like, you know,
+doesn't require for this discussion. And it's like, you know, just really preserves your attention.
+The cost of maintenance has gone down. You know, maintenance is always such a hot topic. Whenever we
+build something inside of all these companies like Google, Uber, even startups, like building was
+the fun part, but then maintenance was the painful. And that's when we learned like, okay, it was
+not, we're building it, etc. Inside of Codex and OpenAI, what do you see maintenance becoming
+cheaper changing in terms of instead of what you're building, what the ambition is, the, I guess,
+custom tooling, those kinds of things? Matt Bolton Maintenance is really like sort of like a tax
+that you pay over time just to keep things running. And it's, it's, it's, it's always been
+necessary, will continue to be necessary. But where I think it changes is like a lot of it is just
+going to be automated. So, you know, it's like, okay, you have, you have this third party
+dependencies, like you need to upgrade the version. I'm always like, oh, it's like, oh, yeah, you
+can fully automate this, you know, if you have good change log and, you know, and the code is well
+documented and like, you know, and, and the model can just like reason through it, it's like, you
+know, it can just like blast through your code base, do it in a couple of hours. And, you know,
+previously you would have like sort of punted on it because it's not the most fun thing to do, but
+it's actually really important for your business. So it's like really important for your project,
+you know, especially for security vulnerabilities, you want to stay up to date, right? You want to
+apply, you know, all these patches. And I think that's just going to be fully automated. So a large
+part of like maintenance, it's just kind of comes for free, right? And then I think it's, it's
+awesome to also think about before, like, you know, when you wanted to just completely react, you
+have to do like a new architecture because you're trying to make space for like a new, you know,
+different kind of trade-offs, or you have a new understanding of like the workload, or you're trying
+to fit a new feature. And like, suddenly you realize like your current system is just very limiting
+and you need to completely re-architecture it. That was like a really, really costly endeavor,
+right? So, you know, it's like sometimes like multiple years. And I think this is also like super,
+super accelerated now. So you like the cost of mistakes, uh, you know, I would say like, you know,
+is going down, but then at the same time, the good old rules, I would say of software engineer of
+like, you know, having good abstractions, like really help. Like, you know, it's going back to this,
+like having the box with invariants, like, you know, if you sort of like draw the right shape,
+you're going to be able to change things much more quickly within the box and like not affect the
+rest of the, of the services or the rest of your infrastructure. And I think it's important. It's
+important to design for very quick iteration and change. I remember when I talked with Peter
+Steinberger, that was before he joined OpenAI, but about OpenClaw and how he thinks about it. Like,
+you know, he told me that he doesn't read the code, but he kept thinking about like, I could see
+that he's holding the architecture in his head. And he was telling me how he re-architects a lot.
+And he thinks about how to make it modular, how to allow a hundred contributors to each build their
+thing without stepping on each other's toes. So I'm hearing what you're saying that this, this care,
+this, this planning, this, this structuring has become maybe just a lot more important to like,
+which, which, which, which was something back in the day, you know, it was like the architect or the
+staff engineer or experienced folks were doing this thing. And other engineers around the work and
+of building this, you know, smaller parts. But it sounds like now all engineers need to be aware of
+when you're building your software, right? And plan for it. Yeah. And, and the GPT models are
+getting better and better at this as well. Like, you know, thinking about long-term maintenance and
+like good architecture. And like, this is like a natural sort of like next step, right? It's like,
+not just about code quality in the sense of like, oh, is this code clean within this file? But like,
+you know, it's just like, is the architecture actually correct to reduce maintenance burden over
+time and like, you know, make space for like future product or feature extensions or changes. And
+just really this act of like, you know, engineering over time. That's kind of like something that
+models are starting to become capable of thinking about very well. I think it's just kind of
+fascinating to understand that the software that we're building is just going through the life cycle
+much, much faster, right? You know, before you had, you know, you were, you were scaling it, you
+were starting it, you know, maybe as like a small team of, you know, yourself, maybe a couple of
+engineers, and then you would add engineers like slowly. And then, you know, maybe after a year, you
+know, it's like, if it's very, very successful, you would have 50 engineers on it, or like a hundred
+engineers on it. You would have time to see it coming. You would have time to see like, you know,
+the humans on board and like, you know, you can think about the documentation, all of that stuff.
+But now it's just sort of like that explosion of like, you know, suddenly you have like a hundred
+agents contributing to this thing. It's like, you know, that can happen like, you know, in a
+weekend. And so, you know, you're just going through it at, you know, major, major speeds compared
+to before. Okay, but how do you and the folks at OpenAI like deal with it? Does it not mess with
+your mind? Like, you know what I mean? In the sense of like, you've been in this business for quite
+some time now, like decades, or well over. And there was a pace that we kind of got used to. And
+obviously, it's now a lot faster. But how do you get your head around the fact that, A, it's faster,
+B, the stuff that you've been doing a year ago, right now you're not doing because now the model is
+good at it. And, you know, like, how do you kind of reconcile that? Because I'm sure there's stuff
+that you've been really good at related to software that now you can hand off to the agent. Do you
+not get a little bit of sting? You know, we talked about it stinging for your features to be
+implemented open source, but it can also sting that I've been really good at, like, I don't know,
+refactoring or or, or, or right now it might be architecture, but maybe the model will be really
+good at that. And now I'm like, Oh, okay, damn, like, I'm glad but also like, it would have been
+nice for me to do that. Yeah, I think there's like a craft aspect to it. Which occasionally I still,
+you know, pull up an editor and like write some code. And it's just like, it feels nice. And it's
+sort of like, I have fond memories of like late nights sitting in, in Vim and you know, just like
+cranking it out, you know, drinking Coke Zero and yeah, just not having to think about anything else
+other than like the problem in front of me. But really, I think it's, it's all about being in the
+flow and solving problems. And what I find is like, you know, folks here and also like, everyone I
+talked to is just like, adapting very quickly. And I think if you if you have a mindset where it's
+all about code is a tool to solve problems, and you can solve so many more problems. It's like
+before, you wanted to benchmark something, and you weren't quite sure where you were going to net
+out. It's like, you can just do it, it's it's going to take you like, no more than 30 seconds, you
+know, to launch something in the background, and you know, get proper numbers and be able to do like
+a better trade off. It makes you it should make you a better engineer, if you just really care
+about, you know, the outcome and the system working well. And so what it allows us to do at OpenAI,
+it allows us to run, you know, our inference much more efficiently, it allows us to, you know, get
+like much more like effective compute and, you know, deploy that to the world. And so, like,
+everyone is just like very focused on that and solving important problems at the speed that was not
+possible before. And like, I haven't yet, you know, encountered someone who's like, oh, that's not,
+that's not good. That's not fun. Do I understand correctly that it sounds like if you have ambitious
+problems, if you have way more problems than what you can solve today or tomorrow or the next week,
+sounds like this is not really a problem, because when you know, you get more efficient somewhere,
+you keep going, which is a lot of startups, right? Like startups are always way more ambitious than
+what they're able to do.  We're not, we're not out of problems, for sure. Right. So, and I don't
+think we will be for a while. We have a long, long road ahead of us in terms of like, mathematical
+breakthroughs, scientific breakthroughs, you know, making the world a better place, like just really
+billing for humans and solving the most important problems that everyone is facing and just doing it
+in a deeply human way. That's, that's what we're here for. Also, just going back to coding and like,
+you know, these late nights, it's like, I think there's like, it's also like maybe like a glamorous
+version of it. It's just like, I also had very, a lot of late nights where I was trying to refactor
+something. And, you know, it's just like, it would be like three hours deep into the refactor and
+then realize like, actually, this is a dead end. And I must restart from scratch. And it was like
+very frustrating. And so it's like, there was like, there are like these very, very fun times that
+there's also the time where it's like, it doesn't compile and you're just like, why is this not
+compiling yet? Like, I'm sure you had the time where you go, you will later, it's now super late,
+you need to go to bed because you need to, you need to get some sleep. And then you can't really
+sleep. And you have this thing where like, you have some, some task that is halfway, and it upsets
+you. Sometimes I remember dreaming about the code as well. And I guess one thing I don't really have
+these days when I'm working on my software for my business is I don't really have something that is
+halfway because I can just tell it, do this. And then I can leave it at a state where it's kind of
+like, you know, done, either finished, or it's either working, or it's, I have proof that it's
+failed. But it's interesting because, you know, everything's sped up, right? Yeah, I may, maybe
+like, I do have, like what, what a lot of people do, and I do myself is like, you know, I have like,
+sometimes like bigger questions that I'm asking myself, like, and I, you know, from conversations
+I've had during the day, or like, I haven't yet, you know, just like, had the time to just look into
+it. And so I, you know, I will send off codex to just like, look at it overnight. And then I'm very
+excited to then wake up and look at the results. And so, you know, it's always like an exciting
+morning. Well, I feel there's an art to doing long running tasks. And of course, you can use the
+slash goal, which will go and run. You know, that's also something that was recently added, like a
+few months ago, right, the slash goal command to codex. Yeah. And back to, you know, maybe like the
+harness is a crutch, right, is a slash goal was like necessary to allow, like, you know, to keep the
+model, like on track on like a singular goal for a very long period of time. And it's like, it
+allows the model to literally run for days or weeks, if it's like a really, really hard problem. But
+with the new generation of models, like what we're seeing is like, you know, you don't need slash
+goal anymore, you don't need a harness around it. You can just tell the model like, you know, hey,
+go and work for a week and you know, it will actually do it. David Pyssinan Speaking of hard
+problems and the fact that you're not out of them. One of the interesting things that you shipped
+from the outside, I would say it, it was, you know, as an engineer, it was moderately interesting,
+is the what you call the merge, which is codex appeared inside of chat GPT. And the reason I say
+that as engineers, it kind of moderately interesting, because we've been using codex, like, yeah,
+it's there, you can now open it in the chat GPT app. Great. Like I just went there. And I just
+immediately went to codex because I don't, I don't really use chat GPT in the app per se. But I
+talked with folks at OpenAI and people in your team. And you know, they were telling me like, there
+was a lot of preparation going on a lot of engineering challenges. Can you give a sense of how big
+this project was, what you needed to do? And why was it difficult to pull off? And how, you know,
+how did codex and other tools help you get it done in ways that would have been hard before? Because
+since you've launched the merge, the numbers that you keep sharing of how many people use codex,
+it's like, it's going up way faster than before. So I assume there's a big scale problem you've
+solved here. A lot of things were challenging with the merge is, first of all, all completely
+different stacks. Chat GPT is like fully managed, cloud based, like, you know, you run everything on
+our, on our systems, we restore things like traditional, traditional way of like, building things,
+built for scale, built for efficiency. Codex, fully local. And so the merge is just really like, how
+do you get the same, the same benefits and the same capabilities from this local coding agent, and
+then build a product around it and build it in a way where it can benefit like a much, much broader
+pool of people, which is just also why, you know, all of us joined OpenAI is like to benefit like
+this very, very broad population across the world. And so it was like a very exciting journey of
+like figuring out like, how do we build a cloud version of this that in essence is capable of like
+very, very much the same things. But it's also built in a way where, you know, we can serve it
+through like tens and hundreds millions of hundreds of millions of users in a way that is still
+like, you know, efficient so that we can include it all the way into the plus plan. Chat GPT work is
+essentially like running the full codex harness in a cloud, like together with like a cloud
+computer. It's a very powerful machine, actually, like, people have sort of picked up on it and
+showed that, you know, what you can do that, you know, if you are creative with the prompt is that,
+you know, you can get, you can get Chat GPT to like, you know, train another model in there, you
+know. Wow. There's like pretty wild things, you know, you can get it to install Blender and, you
+know, do like 3D modeling. It's like very permissive. It has like internet access. It's like a
+powerful machine. And then Codex just works on it. And this is like what we ship through Chat GPT
+work. So a lot of system challenges, the team did it very quickly. Obviously, like Codex helped, you
+know, to make it more efficient, look at and build a lot of the infrastructure. And then, you know,
+help resolve a lot of the little differences as well that, you know, had been occurring between
+between Codex and Chat GPT, like merging plugins, architecture, you know, merging library and like,
+sort of like really, really working towards like unified system, which is really the goal is like,
+you shouldn't feel like, you know, you can do something in Codex that you can't do in Chat GPT or
+vice versa. Like what we're trying to build is like one unified product that gives you access to the
+same intelligence, but in the way that you want to use it. And so it was very fun as well, because
+Codex throughout the whole journey also acted as a journalist to sort of like document all the steps
+and the debates and the discussions that the teams were having. And it was very animated debate, you
+know, of how we should do it and how we should name the thing and, you know, when to introduce it in
+what way and like what to merge into what there were like many different permutations considered.
+And so there's like a very fun journalistic element to it where we like, we have a full recounting
+that Codex did over time. And yeah, it's just, it's kind of become known as well as like the toggle
+arc of OpenAI where, you know, we introduced like the work toggle, which there was also a lot of
+debate around of like, you know, whether this was like the right thing. And then, you know, it's
+just like, we kind of grew to just really like it. But over time, we're going to merge things
+further. So it's like, we're really headed into the direction of like full unification. And, you
+know, we kind of view this as like a temporary state where, you know, you have like, you have
+better, stronger capabilities when you're in work mode. But over time, we're bringing this, you
+know, all, all the way to like, you know, everyone that uses ChancePG. And how do you personally use
+Codex? Like what's your, what's your working setup in terms of agents, in terms of tasks, in terms
+of what you what you manage with it. And related to this, I asked Peter Steinberger what I should
+ask about you. And he said, like, you need to ask him, how do you deal with the fact that you're
+involved with all these projects? Your calendar is like Tetris, but usually you show up pretty
+cheerful. My calendar is fine. And it's just, I am capable of doing so many more things nowadays,
+because I have the technology like Codex. And I actually shifted a lot of like my my work on on
+mobile using Tadgivit work, where whenever I have something that I want to take note of, I just like
+fire that off, I use dictation a lot. Whenever I have a question, instead of like writing it down to
+look into later or delegating to someone, I just like fire it off in Tadgivit work, and I get like a
+report. It has like a whole bunch of like custom skills and custom instructions, where it's now like
+very, very tailored to like, you know, produce the kinds of reports and slide decks and code
+explorations, you know, in the style that I can consume effectively. And so every time I'm like
+between meetings, or like, you know, you'll kind of like see me like, you know, I was just like
+dictating to my phone. As I said before, it's just like, we do a lot of work in public channels, we
+have like, a lot in Slack, we have a lot in Notion and Google Docs as well. And so there's pretty
+much like, there's no question really, that I feel I cannot ask that, you know, Codex will be able
+to sort of like do at least a first pass of thinking through whether it is like public sentiment on
+a feature, looking at production logs for, you know, how much usage we have on a certain thing,
+making a list of things that we should deprecate, because they're not getting traction,
+understanding what a certain team is up to, it's like, any question I have, I can get an answer to,
+like, you know, within 30 minutes. And so that's how I use it. I use it for everything. It's like my
+personal agent in like all the ways. And then oftentimes on weekends as well, I do some like code
+explorations, or like I built some prototypes, and I have fun, like sort of like imagining the
+future of the product in some ways. And I do that with others on the teams, it's not always the same
+team. And it's just like, in one day, I can build things that I sort of like I had it in my system,
+right? It's like, it's like, I woke up one day, I'm just like, we should explore what it means to
+build this. And then I can just sort of express all of that and get like something in front of
+people in a day, so that they can think through it and criticize it and hopefully get inspired by
+it. It's like, by no means, you know, we need to ship it. But it's more like, okay, I flush it out
+of my system. And then you know, I go on and like, you know, do other things. So it's just like so,
+I know, it's such a magical time. And it's like, so empowering. And as closing, what would your
+advice be for software engineers, such as AI engineer, someone who built software, who would want to
+get the skill set and the experience to have the opportunity to work at a place like the Codex team,
+like OpenAI, or like an AI startup. So like, you know, just become this really great builder with
+with these tools. Because the question that comes up is often like, should I start with the theory?
+How important are the basics? Should I just get really good at using the tools? Yeah, I think there
+are two things that are important is a deep, deep curiosity for how things work, and an ability to
+like, you know, train yourself to understand things very quickly. And so it's, it's, it is the case
+that things will continue to change. But people that do externally well, at OpenAI are like, you
+know, people that just sort of like, are able to like, grok a system quickly, and like, you know,
+also dive into like a new code base, and sort of like, you know, make sense of it. But obviously,
+like, all of that is helped with agents nowadays, right? So just like, there's so much information
+that you need to absorb, and you know, being able to understand and reason through it. And a lot of
+that is asking good questions, really, about, you know, how do things work? And just like, going
+into like, the five whys, which I think, you know, you can just kind of keep digging and digging and
+digging. And you know, you're learning very, very fast through that. The other thing is being in
+tune with the community, or you know, the people that you're trying to solve a problem for. It's
+like, not everything is like solving a direct problem. Sometimes you're solving a problem that will
+be useful, you know, to like another group of people in the pursuit of like solving a problem for
+humans, but just being crisp about the taste, or the needs, or the requirements, and being able to
+think clearly, and like, you know, exercising through this clarity of thought feels really important
+to me. Like, if you can't explain what you're trying to achieve, you can't explain your intent. If
+you don't have a tie to a community, if you don't have the taste, it's going to be much harder to do
+great work. Awesome, Thibaut. Well, thanks a bunch for this conversation. This was awesome. Thanks
+for having me. I've always wanted to get together with Thibaut, and I'm glad that we finally made it
+happen. I appreciated how Thibaut talked about not just the upsides of open source, but also the
+downsides. Most notably, how competitors can copy features you are just working on in the open right
+now, and then ship it right before release, and just how much this stings. Plus, you get a lot of
+low quality contributions that you still need to somehow deal with. Another interesting one was
+Thibaut saying how the harness is always a step ahead of the model. From the inside, the Codex team
+see their job as building clutches for the model with the harness, the tools, and the setup
+instruction. And then the next version of the model will be trained to need fewer of these clutches.
+I'll be honest, as a dev, this sounds a little demotivating, that the stuff I build in the next
+version of the model, it'll just know and we can get rid of it. Plus, I do suspect that it's not
+just about building these clutches, but also building tools that models will use, and it's not like
+the next version of the model will reinvent an MCP protocol or scales or plugins. At least I hope
+not. I also enjoyed hearing what the merge, merging chat GPC and Codex, look like from the inside.
+It was merging a previously fully local coding agent, Codex, into a managed cloud-based stack, and
+doing it efficient enough so that it can be included in OpenAI's $20 per month plan, when $20 is not
+all that much in terms of compute purchase. It was pretty amusing to hear how Codex itself acted as
+a journalist of the whole project, as it was present in all the Slack conversations and all the
+documents, and so it could capture all the important debates and decisions. I'm not going to lie,
+this part felt a little bit of a big brother feel to it, where the AI is always watching, but it
+could well become the new normal in startups in the future. I have not yet decided how I feel about
+this. And finally, I appreciated Thibault's advice for engineers to succeed, be curious, understand
+systems quickly, and be in tune with the group you are building for. It's reassuring to hear from
+Thibault as well how much the fundamentals still matter. Do check out the show notes below for deep
+dives on how Codex, Clockcode, and Cursor were built, and other related topics. If you like what you
+heard, please hit a rating on a podcast player that you're using, it means a lot to me and to the
+show. Thanks, and I'll see you in the next one.

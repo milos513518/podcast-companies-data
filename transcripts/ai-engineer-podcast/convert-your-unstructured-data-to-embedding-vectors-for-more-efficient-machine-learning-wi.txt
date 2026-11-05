@@ -1,0 +1,534 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Convert Your Unstructured Data To Embedding Vectors For More Efficient Machine Learning With Towhee
+DATE: 2022-09-21
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/towhee-embedding-vector-etl-library-episode-12
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63853053924001635164068065-0706-47f6-a49d-dec651cb9318v18.mp3
+DURATION_SECONDS: 3114
+TRANSCRIBED_AT: 2026-09-17T03:24:12Z
+----------------------------------------------------------------------
+ Hello, and welcome to The Machine Learning Podcast. The podcast about going from to delivery with
+machine learning.  Building good ML models is hard, but testing them properly is even harder. At
+DeepChex, they built an open source testing framework that follows best practices, ensuring that
+your models behave as expected. Get started quickly using their built in library of checks for
+testing and validating your model's behavior and performance and extend it to meet your specific
+needs as your model evolves. Accelerate your machine learning projects by building trust in your
+models and automating the testing that you used to do manually. Go to the machine learning
+podcast.com/deeptext today to learn more and get started. Your host is Tobias Massey. And today, I'm
+interviewing Frank Liu about how to use vector embeddings in your ML projects and how ToeHe can
+reduce the effort involved. So, Frank, can you start by introducing yourself?  Hey, Debuts. First of
+all, thanks for having me on the show. Yeah. My name is Frank. I'm currently a director of
+operations as well as a machine learning architect at Zillowz, and we're a startup that does vector
+database as well as the greater vector database ecosystem.  And do you remember how you first got
+involved in machine learning?  Yeah. Absolutely. I mean, right out of grad school, I actually went
+to work at Yahoo. And it was a great opportunity for me to really be immersed in not just computer
+vision, but the broader machine learning world as well. Specifically, I was on the computer vision
+machine learning team over there. For the better part of 2 years. You know, back then, it was, you
+know, 2020 14, 2015. It was still very much the Wild West days of AI, of ML, really trying to figure
+out how do we use machine learning in production systems. Back then, there really wasn't a solid
+concept of what MLOps was. People really were still trying to figure out how to productionize their
+machine learning models. 1 of the ways that we did it, and it's really funny, was we'd actually just
+put all of our models and we were using Caffe back then. We just put all of our models into a Docker
+container, and then we would give this container to whichever folks needed to use it. That's
+definitely not what most folks would do today or would think about how they a machine learning model
+or a machine learning pipeline. Right? Going back to your original question, that's really where I
+got my start into machine learning and in AI in general. I've been, you know, in or adjacent to this
+area, I wanna say, for the better part of 7 or 8 years at this point. And, you know, it's been
+amazing seeing the growth not just in the capabilities of models these days from, you know, your
+very first AlexNet computer vision to, you know, LSTMs. Now we have swimmer based models. Diffusion
+models are, you know, really taking the world by storm, but also the growth, I think, that we've
+seen in a lot of the infrastructure around machine learning as well. So, you know, there's AWS
+SageMaker, for example, and a lot of these other MLOps startups, a lot of these machine learning
+startups that really help you make the most out of your machine learning models or out of your AI
+algorithms. And I think it's amazing to see the growth  in just, I wanna say, 5 to 10 years in this
+industry in general. 1 thing that I just want to comment on is that it's funny how working in
+technology, you say way back when, and then you're expecting for somebody to say, you know,
+reference something that happened maybe 20, 30, 50 years ago, and it's, you know, 5 to 7 years ago,
+which is humorous in 1 context, but it's also just a good indicator of how fast the industry is
+moving.  Absolutely. Absolutely.  And so in terms of the project that we're discussing today, Tohi,
+I'm wondering if you can describe a bit about what it is and some of the story behind how it came to
+be and the particular problem that it's aimed at solving.  It probably makes sense to start with our
+vector database itself. We are the primary driving force behind a sister project of TOWIE, a much
+more mature project called Milvus. And Milvus is a vector database. And the idea behind a vector
+database is that it stores, indexes, searches across large quantities of these things called
+embedding vectors. And for most people who are familiar with machine learning, I imagine you will
+know what embedding is. But the idea is that, you know, you have these machine learning models, and
+if you take an intermediate representation, that is generally a great way to capture all the
+semantic information of your input. So if I were, for example, to take an image classification
+model, I have an image that goes through that model, and I take 1 of the outputs of 1 of the layers
+called an embedding. That would be a great way for me to represent that input image. With Milvus and
+with the community that we had built around it, where at Zillow is, we had a lot of folks come and
+say, hey. You know, we're really interested in using a vector database. We're really interested in
+being able to search across all of our unstructured data, so images, video, audio, text, but we
+don't necessarily have the bandwidth or the capabilities to generate these embeddings ourselves. We
+don't really have a lot of machine learning engineers internally. We don't have a lot of MLOps
+engineers internally either. So that's really where ToeHe was born. That's how ToeHe came to be is
+we have these users who, you know, they wanted to have greater flexibility in the entire embedding
+generation process. Toehe, nowadays, the way we frame it is that it is a vector data ETL tool map. I
+think it'll sort of become a little bit clearer as we chat about Toehe during this session. But the
+idea is that we want to be able to turn all sorts of different types of data into vectors and to be
+able to index them and affect your database. And that ranges from everything from images to natural
+language, text to some of your lesser known data types as well. So geospatial data, for example, map
+data. You have IoT data streams, sensors, you know, from sensors, you know, out in the field, 3 d
+molecular structures, so on and so forth. And we wanna be able to turn all sorts of different types
+of data into an embedding. That's what it's how he's really all about. And so as far as the Milvus
+project,  I'll add a link in the show notes to that as well as the data engineering podcast
+interview we did on that for people who wanna dig deeper into that aspect of it. And as far as the
+question of vector embeddings and their role in machine learning, you talked a little bit about
+that. But I'm wondering if you can talk to some of the different tasks that are involved in being
+able to actually take some source piece of data and generate a vector embedding from it and some of
+the pieces that are most challenging or generate the most toil and kind of boilerplate effort?  I
+think when most folks think about embedding generation, they like to think of it as just a 1 step
+process. So if I have an image, for example you know, I'm a computer vision guy, so I always like to
+go back to the example of image processing. You know, if I have an image, for example, I just throw
+it into my machine learning model. You know, I throw that into my computer vision module transformer
+based, you know, VIT or, you know, CLIP or something like that. And boom. You know, I just snap my
+fingers out comes my embedding. And, you know, for the most part, sure. You know, that might be
+true. But when we are looking at other data types as well, when we are looking at, let's say,
+videos, for example, oftentimes, there are many ways that we can generate those embeddings. If you
+were to look at some of the older, you know, 3 d convolution, the video embedding models based on 3
+d convolution, those are really more of a 1 shot embedding generation embedding generation
+technique. There's also ways where you can do it frame by frame, or you can chop up a video into,
+let's say, 10 frame segments and generate embeddings based off of those. And then maybe we have some
+sort of summarization algorithm or summarization model later on, which will turn all of those into a
+single, maybe larger embedding. Or perhaps we just concatenate the embeddings from all of these
+individual frames. That's also another possibility. Right? So oftentimes, when I sort of give this
+particular example, I think it becomes clear to folks what some of the main challenges in embedded
+generation are, which is that it's not necessarily you know, in many cases, it is, but in a lot of
+others, it's not necessarily just a single step. I can't just take my data, put it into a machine
+learning model, and then get an embedding. Right? And when you combine multiple different models or
+when you combine multiple different steps, you can end up having a lot of application level code
+that can be hard to debug. You have, you know, these models and these embeddings, these floating
+point vectors flying around everywhere. And having a way to describe those in a data pipeline or a
+vector data ETL pipeline is important to a lot of the folks that we spoke to within the Milvus
+community. And, you know, these days, you know, Toki has has been able to form a community of its
+own as well, which, you know, I'm really quite happy about. Tobias Kassor going back to your
+original question, that is 1 of the greatest challenges with vector data ETL today. And on top of
+that, I also wanna mention that not every embedding generation technique uses machine learning. So
+there are examples. There are forms of embedding of embedding generation that, for example, are more
+handcrafted are more based on handcrafted algorithms. They're more about taking a piece of data that
+I have and running that through an algorithm that I've developed internally to be able to get, you
+know, a vector or or a tensor out of that. And a great example that I like to give is when it comes
+to fraud detection or when it comes to antivirus and cybersecurity in general, 1 of the ways that we
+can represent executables or APKs is actually by looking at some of the different features of that
+APK. So for example, how many times does it call does it look up files in the file system? How much
+memory does it use and when? How many network calls does that particular executable make? And when
+you put all of these into a vector, that also is, in some way, shape, or form, embedding. It's a
+feature vector. So it can also be indexed in a vector database to help you do a semantic search, to
+help you to do scalable vector search. These days, definitely for sure, most people think of
+embeddings as something generated from a machine learning model. But absolutely, there are other
+ways to generate these feature vectors as well.  In terms of the utility of vector embeddings, I'm
+wondering is that something that is a requirement for the majority of machine learning use cases?
+And for those instances where you are relying on a vector embedding as an input to a machine
+learning model, whether for training or inference, what are some of the ways that it's actually used
+within that machine learning project once you have gone from I have an image to here is the vector
+representation of it?  When it comes specifically to the idea of a vector database and a greater
+vector database ecosystem, absolutely, the main sort of applications that you see are in semantic
+search and vector search or understanding what we like to call unstructured data, Data that you can
+pass through machine learning models or data that you can, you know, pass through your own
+handcrafted algorithms to be able to get an embedding based off of that. But embeddings, the way
+that I like to think of them is that they are the language of computers. So we, for example, right
+now, we use English. There are multiple different human languages out there as well. There's French,
+German, you know, Swahili, you know, Mandarin, Japanese, so on and so forth. And the way that I like
+to think about it is that every machine learning model that we have, really, it is a way for
+computers to express themselves, a way for machines to express themselves. And with this idea, I
+think it becomes clear that embeddings are used in, you know, it becomes clear to see why embeddings
+are used in a wide variety of applications. So, you know, even though embeddings are originally
+from, you know, the concept of encoders, the concept of auto encoders where I take an input, distill
+it into a latent space, and then I try to recreate that input, These days, you know, embeddings are
+essentially any way to represent my input data as a vector. And with that power, we are able to
+actually use embeddings, not just in, let's say, semantic search, but also in other machine learning
+models, also in, you know, a variety of other applications as well. So diffusion models, I think,
+are a great example of this where, you know, essentially each step of a diffusion model and
+diffusion models are based off thermodynamics, but each individual step of a diffusion model, you're
+essentially distilling information down at each step and being able to have these different vector
+representations.  And then as far as the form that the vector representation takes for a given
+input, are there any considerations that need to be made about how that vector is structured and the
+types of information that you are encoding into that vector representation, particularly in the
+context of how you're actually going to consume and manipulate that vector representation within
+that model, whether for training or inference?  Yeah. I think it's always important to understand
+the limitations of an embedding are not necessarily related to well, you know, in some way, shape,
+or form, they are, but the strength of your embedding is very much primarily limited by the input
+data, by your training data. And, you know, if I'm only training, you know, if I'm only training a
+machine learning model to, let's say, recognize the difference between cats and dogs, and I try to
+extend it to be able to recognize the difference between, let's say, pigeons and geese, that's
+probably not gonna work. Right? My embeddings aren't going to be powerful enough to be able to
+distinguish between other animals asides from cats and dogs. So a lot of the limitations of
+embeddings are really some of the limitations that you would see in in the training process itself.
+Right? So if you had these models that were only good for a particular task, you'd want to apply
+those embeddings for that same task as well. You wouldn't want to try to, you know, have have an
+embedding be a be a distillation of data from another domain.  Another interesting element is the
+consistency of a vector representation. You know, if you are using 1 approach for being able to take
+an image and encode it into its RGB channels, and that's where you're training your machine learning
+model. And then in the inference stage, maybe the machine learning model is developed so that it's
+actually using, you know, HSL instead of RGB for, you know, the individual pixels. What are some of
+the risks or pitfalls that you need to be considerate of when you're building the model, both from
+the training and the inference side for how you are able to kind of validate that the information
+being encoded into those vectors is semantically compatible, and also some of the challenges of
+being able to manage some of the kind of evolution of that. I don't know if scheme was the right
+word for it, but the way that the vector is representing the information.  Yeah. Absolutely. That's
+a great question, and it sort of ties back into why we started this OE project to begin with as
+well. Again, I'm gonna go back to the example of computer vision where if you have an image and I've
+trained it in a particular way, I wanna make sure that inference is done in the exact same way as
+well. And a great example of that is if I, let's say, train a computer vision model and it takes,
+let's say, 224 by 224 input images or 256 by 256, you know, whatever you like. And I have these very
+large images, and I wanna downsize them so I can train them in the model itself, in the embedding
+model. Oftentimes, I would probably need to use bicubic interpolation or maybe I use near snafer
+interpolation to downsize these images. And a huge pitfall that I see is that folks, when they take
+a computer vision model, they don't necessarily see nor they don't necessarily understand how it was
+trained with the data that it was trained on or how it was trained to begin with. So if I train, you
+know, an embedding model with bicubic interpolation, during inference, I would also wanna use
+bicubic interpolation as well. And this sort of ties back into why we developed TOE to begin with,
+which is that we wanna be able to abstract away all of these transformations, and we wanna be able
+to abstract away all of these pitfalls into this vector data ETL pipeline to make that a lot more
+accessible, not just for machine learning engineers, but also for general software engineers as
+well. In terms of the TOWIE project itself, can you talk through some of the implementation  of it
+and the utilities that it provides to engineers who are trying to manage the embedding
+representation for their ML projects?  So TOEI really we tried to build it around this definition of
+vector data ETL. And to do that, I think the first place that we started is with the descriptive
+layers, with the user facing layers. So, essentially, when you think of ETL, you think of multiple
+different steps to get the result that you want. And for TOEI, you know, the input going from input
+all the way to output, we define it as a data pipeline. So the topmost user facing layer and, again,
+I wish I had a whiteboard where I could draw all this out, but, yeah, the topmost user facing layer,
+the descriptive layer is sort of like a spark like language where you can describe your pipeline
+just by chaining different functions or different operations together. So that's the descriptive
+layer. Right? And once we have that, once the user describes the pipeline, and it can just be in a
+single line of code for sure, once you describe the pipeline, that will then get sent to in Toki, we
+have a planning layer. And the planning layer, essentially, what it will do is it will say, okay.
+You know, maybe you wanna run this either on the cloud or you wanna run this locally or you wanna
+run it in your local server that's got a huge bank of GPUs. You know, all of that, it it will figure
+out the best way to execute this particular pipeline with compute resources that you have. And then
+once, you know, you have all that planned out, it will then get sent to the execution layer, which
+will actually do the computation. And the reason why we architected it like this is because, you
+know, we want folks to be able to use TOEI to prototype these vector data ETL pipelines, but also to
+be able to eventually put them into production as well. Our hope is for users to go all the way from
+prototyping to POC all the way to production with a single library. I think that's really 1 of the
+unique features of Tohi. And it's 1 of the reasons why we focused on vector data itself rather than
+focusing on, you know, the broader machine learning world, rather than focusing on, you know, the
+multiple different types of things that you can do with machine learning models.  Another
+interesting element of this project is that, as you said, it is a framework for building these ETL
+pipelines focused specifically on vector embeddings as the output. And most of the time when you
+hear ETL, you're thinking, okay. That's the job of the data engineer, and we're on an ML podcast. So
+I'm wondering if you can talk to who you see as the person who's actually going to bring Tohi into
+an organization, who is going to build and own the at least the initial work of designing these
+pipelines and implementing the pipelines, and what you see as the crossover point from Tohi as a
+machine learning tool to Tohi as a data engineering tool.  You know, for me in particular, and I
+know, you know, the rest of the team many of the folks on the rest of the team feel feel this way as
+well. Machine learning is becoming so ubiquitous that it is becoming a part of data engineering,
+that it's becoming part of our data pipelines. And the reason I think, you know, why this again, you
+know, this also ties in with why we started the Telete project. But with machine learning becoming a
+part of data pipelines, with machine learning becoming, you know, part of organizations, big you
+know, all the way from small start ups and 10 person start ups, enormous tech companies, it becomes
+important for us to try to understand machine learning not as some out of this earth, you know,
+some, you know, totally totally crazy wacky thing, but a tool that we can use on an everyday basis.
+And, yeah, of course, I think, you know, Tobias, you're mentioning that this traditionally is a
+domain of, let's say, data engineers. But with SoHE, our hope is that it can be more accessible, you
+know, machine learning and in particular, embedding models and vector data can be more accessible,
+not just to these data engineers, but also to regular software engineers as well. So maybe I'm a
+back end engineer, but I wanna be able to create this vector data ETL pipeline. I don't have too
+much knowledge about machine learning. I don't have too much knowledge about all the different data
+transformations that need to be done in order to have a successful AI application, I can use ToeHe
+to be able to not necessarily abstract all of it, but abstract some of that away.  That's really our
+hope for what we can be. Another aspect of it is that if you are a data scientist or an ML engineer
+and you're iterating on the model and you're experimenting with the data that you have, you're
+trying to build your training dataset as kind of your initial proof of concept, most of the
+operations that you're trying to build into TOWHE are just going to end up scattered throughout a
+Jupyter notebook, hopefully, set up in a way that you can actually do it more than once. And then
+most of the time, that notebook is then gonna be handed to a data engineer to say, okay. Here's what
+happened. Please turn this into a pipeline so that we can build this ML model and put it into
+production.  Community, and they community, and they'd be like, I have these data scientists. They
+give me this Jupyter notebook and tell me to put into production, or they give me this script and
+they tell me to put into production. I have no idea where to start. You know, that's a lot of the
+feedback that we get as well. It's it's actually great that you pointed that out. And it's
+definitely 1 of the critical problems that we hope to solve with TOWIE as well. Yeah. And I think
+that  1 of the main points of value that comes out of a project like TOWIE is that it allows you to
+have this shared vocabulary about what is actually happening, where if you leave it up to an
+individual to build their own approach to writing a script that does all the pieces that they want,
+they're going to use the terminology that makes sense to them, and then somebody else might come in
+and use slightly different terminology to do the exact same set of operations. And so as somebody
+who's working with the ML team, either as a developer or a data engineer or a data analyst or a
+business owner, they're going to see these 2 different things and think that they're completely
+different, whereas, actually, they're the same thing. And so if you have this library or catalog of
+operations where you can say, I'm going to do this 1 step. As long as that 1 step does what you need
+it to do, you can just chain it together. Everybody's going to be able to coalesce around a single
+understanding of what's actually happening without having to try and kind of remap their semantic
+understanding of the world onto the specific set of operations.  Yeah. That's actually a great
+point, and I personally hadn't thought of that, sort of using TOWHE as not necessarily a simple
+source of truth, but a way to communicate what my data pipeline is doing or what I am trying to
+accomplish with this vector data ETL or with this particular data processing pipeline. That's
+actually a great point. This is definitely something that we'll sort of keep in mind as we reach out
+to folks in the community as well. Thank you for that. Absolutely.  And on that line too, I'm
+wondering what your approach has been to figuring out how to design the interface and the API to
+Tohi so that it is understandable and accessible for people who are coming from those different
+backgrounds where maybe I'm working in computer vision or maybe I'm working in natural language
+processing or I'm a data engineer who's working with ML engineers, being able to build the framework
+in such a way that everybody can orient around it and be able to actually know what each person is
+doing and what the different stages of the pipeline are supposed to represent.  Yeah. Of course. And
+very early on when we were building Tohi, you know, we've definitely had some changes to the core
+mentality for what Tohi as an open source project, what it is. And these days, we like to frame Tohi
+as a way to allow you to rapidly iterate on your applications that require embeddings or your AI
+applications in general. And if you really think about it from this particular perspective, we
+definitely want to be able to make Tohi accessible to to software engineers. But for folks who have
+a new model or a new method of turning data into an embedding or maybe even a multimodal model that
+encompasses a wide variety of modalities, we wanna be able to have their method in TOKI to be able
+to turn this unstructured data into vectors as well. And we've really been thinking about this
+process and trying to figure out what the best way to onboard some of these ML model developers,
+some of these researchers, some of the latest, let's say, papers in CBPR or MMLP. And I have to
+admit that we are still working our way around this particular aspect. So how we help you know, how
+we bring value to not necessarily just software engineers and data engineers, but also to
+researchers as well. We've still been trying to figure this aspect out. But I think once we do, I
+think we'll be in a much better place with Toci as a project overall. You know, it's 1 of the
+questions that, you know, I'd be happy to get your advice on as well, Tobias, and also try to figure
+out, you know, how do we reach a greater audience and how do we make ToeHe more accessible to
+everybody, not just the folks who would be able to create these data pipelines. But sort of getting
+back to your original question, you know, these days, I think we definitely have a focus in addition
+to the user interface. And also, we're trying to figure out how to make it a lot more production
+ready. And, you know, our hope is that once it is, you know, vector databases along with Tohi, like,
+databases such as Milvus will be a lot more mainstream than they are today. That's our ultimate goal
+there.  In the process of building the Tohi framework and the fact that you are dealing with some
+fairly sophisticated algorithms or pretrained models, and they're not necessarily going to be stable
+and deterministic. What are some of the interesting engineering challenges that you've had to
+address around building a framework that is aimed at being repeatable and reliable?  A big feature
+or a key feature that a lot of our users were asking for initially is being able to take something
+from something from just on my laptop, for example, and being able to turn that into something
+running in production very, very quickly. I think that's a challenge for a lot of folks in machine
+learning today or in MLOps as well. And Toki really morphed originally from being, you know, this
+sort of graph slash pipeline based library, you know, something that just runs locally and allows
+you to prototype different machine learning models to a way to describe your ETL pipelines, your
+vector data ETL pipelines, and to be able to have that run not just locally, but also on also, let's
+say, in a bank of servers that you have running on the cloud or running on prem. And there's a lot
+of great projects out there that are very much targeted towards small scale use cases. And by all
+means, you know, I have a lot of respect for those as well. But for Tohi, the workflow that we
+really that we're really targeting is to rapidly iterate locally, rapidly iterate your pipeline to
+be able to try out a variety of different models. Going back to the image embedding sample, if I'm
+doing an image embedding pipeline, to be able to try maybe, you know, transformer based models,
+ConvNet models, hybrid models, all the way up to your ensemble models, get the embeddings from them,
+and to be able to run them in to be able to, you know, let's say, store them in a vector database
+and to query them in a vector database as well. We are trying to smooth out this entire process from
+start to finish. We're trying to make it much more accessible to a lot of our user base. You know,
+we're trying to tackle everything from what you would do locally all the way to what you would then
+do maybe in small scale production on a single machine all the way to something large scale in the
+cloud.  As far as the optimizations that are required for being able to make this something that
+people actually want to use instead of making it a chore to use where you say, okay. I'm going to
+run this pipeline, and now I'm gonna go and drink a couple of pots of coffee while I wait for it to
+complete versus now I'm going to trigger this pipeline, and, okay, it's done in, you know, the next
+5 minutes. What are some of the aspects of kind of optimization both in terms of the developer
+productivity, but also in terms of the processing capabilities that you've had to invest in.  This
+also sort of ties back into the 3 layers, the TOEI framework that I was talking about where we have
+the descriptive layer called data collection. We have the planning layer and then the execution
+layer. And a lot of our optimizations actually primarily revolve around execution. So, you know,
+looking at the workflow of, let's say, a data engineer, software engineer, or even a machine
+learning engineer where you wanna be able to take something locally from your laptop in an IPython
+notebook or in a Python script all the way to production, thinking in that particular context, maybe
+at a small scale when we're really only testing our embedding pipeline or we're testing our
+embedding based application, we don't necessarily care too much about how clear it runs. Maybe we
+only have a very small amount of data, let's say, 10, 000 samples or a 100, 000 samples, and I wanna
+be able to see how it works on a small amount of data, you know, before I then deploy it into
+production. And that's really why a lot of our optimizations that we've incorporated into toghe, why
+they revolve around the execution layer. So, for example, once we have a graph, a DAG, out of the
+planning layer, we do graph a graph optimization. So any redundant operations, any redundant
+transformations, we'll make sure to sort of squeeze those into a single operation. For any model
+based operators in the entire pipeline, we will do auto batching. So they're obviously, on GPUs,
+it's oftentimes better to be able to batch many images or batch many inputs and to be able to have
+them all run together. And then, you know, also figuring out this is 1 of the really cool things
+about Togi, figuring out what runs best on the CPU versus the GPU versus an accelerator. You know,
+which operators or which operations in my pipeline should I put on different machines or on
+different pieces of hardware? That's something that Tohi does automatically as well. It's something
+that's still in development on our end. It's obviously not perfect at this point, but it's 1 of the
+cool things that Toehee does, and Toehee will continue to do better in the future as well.  In terms
+of the developer experience of using TOWIE, what's the process for being able to actually get it set
+up, incorporate it into the model development, model training workflow, and then going from
+prototype into actually deploying TOEHE as a component of their production ETL pipeline so that it's
+actually running on a regular cadence?  When it comes to TOWIE as an ETL pipeline, we want to I
+think it really depends strongly on the application itself. Oftentimes, there are applications where
+you would want to be able to stream data in. So if you have a b to c application, for example, you
+have, let's say, many, many new documents or images or pieces of unstructured data uploaded per day.
+Having Tochi run on a single machine or even in a cluster of machines and having that scale up and
+down dynamically is probably a very important component of your embedding based application. And
+then there are others as well where maybe all I wanna do is I already have this huge bank of data.
+For example, if I have these 3 d molecular structures, I have a fixed number of them, I wanna be
+able to compute embeddings across all of those and then be done with it. Maybe I don't necessarily
+need to run it on a hourly basis or on a daily basis, or I don't necessarily need to run it in real
+time. And the approaches that different users or different applications would take for different
+types of tasks, actually, we try to minimize the variance between those when it comes to ToeHe. We
+try to make it so that ToeHe can target a wide variety of applications and to not really have to
+utilize all the compute resources in the world when doing this. I'm not sure if this really answers
+your question too well, but a huge consideration when it comes to volume or when it comes to
+complexity of data that our users are processing is definitely key for us. We wanna make sure that
+in addition to being able to run something locally, they can also scale a pipeline horizontally
+across many machines. If they have a machine that primarily is, let's say, it's just a bank of GPUs
+versus, you know, maybe they have another set of machines that are primarily CPUs and they have
+others where they implement other accelerators, We wanna be able to understand what is the best and
+most efficient way to run a vector data ETL pipeline on these bank of machines. That's 1 of the
+challenges that Tohi tries to tackle there.  In terms of the scaling of Tohi, where if you're
+experimenting with it, you just wanna get a feel for, what does this do for me? How do I use this
+for my ML project? To, okay, now I wanna actually put this into production where instead of dealing
+with, you know, 5 or several dozen images, I now wanna deal with several thousand or hundreds of
+thousands of images. What are some of the scaling considerations involved in both the volume and
+also the variety of data that you're working with?  When you're talking about scaling, generally,
+there are well, not exactly true, but I would say generally there are 2 different ways that you can
+scale, vertically and horizontally. And, obviously, when you do scale something vertically, there's
+always a limitation. So there's, for example, a limitation to the number of accelerators or number
+of GPUs that I can fit into a particular machine. But when I am scaling horizontally, when I'm
+scaling something across a cluster, across 10 or a 100 machines, I'm scaling my pipeline across
+these, then you sort of run into the challenges that I was alluding to earlier where how do I run my
+ETL pipeline across machines in the most efficient way possible? How do I assign operations to each
+machine in order to be able to utilize that machine's resources to the best of their ability? So,
+you know, let's say I have these different types of machines running in my cluster, I probably would
+not want reading a document. I wouldn't want that to be in a done in a machine that, you know, that
+has a very powerful GPU or a very powerful accelerator in it. I probably want that to be done in a
+machine, you know, that probably has server CPU or, you know, some other bank of processors. Right?
+And figuring these out and abstracting a lot of these operations away from the user, this is
+something that we try to do long term with SoHE. We do have a version of this right now, a version
+of this sort of automatic placement right now, but it's definitely not perfect, and it's definitely
+something that we can improve on in the future.  Another interesting element of Tohi is that you
+have a built in library of different embeddings and types of data that you're able to work with. And
+I'm wondering if you can talk to the interfaces that are available for being able to integrate with
+Tohi from a kind of tooling and platform perspective, but also ways that teams are able to extend
+Tohi and add new capabilities to it.  With Tohi, I think a lot of that would come into you know, a
+lot of that is really up to the user and how they wanna be able to implement their pipeline in the
+descriptive layer. And if you have, let's say, a new operation or a new operator that you want to be
+able to run-in a TOE pipeline or in a vector data ETL pipeline, we try to have these very atomic
+units of work called operators. And I sort of talked about it a little bit earlier, but I didn't
+really describe what each of those are. Then the operator is a single unit of work, and it can be,
+you know, some examples of different operators that we have built into TOWIE or as a part of the
+TOWIE hub are, for example, image loading, image transformation. A single machine learning model
+could also be considered a single operator. You know, video decoding is an operator. Text embedding
+is also an operator there as well. And if, let's say, I am a data engineer or machine learning
+engineer and I've created this new embedding model or I've created this new embedding algorithm,
+Toki provides an easy way to wrap that in an operator and contribute that. I you know, if you wanna
+have, like, a local version of a Toehee hub running internally or if you wanna contribute that to
+the greater Toehee hub or, you know, the central Toehee hub, that's freely available to everybody as
+well. Those are both possibilities. And I would say that's really the primary way for users to
+extend and integrate what they have right now with the broader Tohit ecosystem is through these
+operators. Once these operators are part of the central repository that, again, we call a hub, then
+your software engineers and your data engineers, they can freely use these operators. They can use
+these operations and chain them together, really, into a single line of code to be able to
+prototype, to be able to deploy these vector data ETL pipelines. So, yeah, I'm glad you asked that
+question. And to really sum it all up, I think a lot of the integration, a lot of the interfacing
+that we do with SoHE is done through these operations, done through these atomic units of work.
+With the kind of shared utility of being able to say, okay, I have this pipeline. I'm able to share
+this workflow with the other engineers on my team or the data scientists. We don't have to rewrite
+the same script, you know, 30 times because we want to do different iterations either on this 1
+model or different models. How does that have a broader impact on the types of models that teams are
+able to build, the way that they approach model development, just general kind of capacity and
+throughput, and their approach to machine learning more broadly?  What we really wanna be able to do
+is let's say when I have this really established vector data ETL pipeline, and it's composed of all
+these individual operators. And perhaps 1 of these operators is, as you mentioned, an ML model or it
+is a computer vision model or really anything. Right? You know, as a data scientist or as a machine
+learning engineer, if I make an update to 1 of these or if I push it and I wanna be able to tell the
+software engineers, I wanna be able to tell the DevOps or MLOps folks to do an AB test to see if it
+works better in production. That is something that can easily be done. It's essentially just
+redefining 1 particular operator in the pipeline. And as I mentioned earlier, we do have this
+descriptive layer in Tohi, which is essentially this method chaining API where you can chain
+different operators together just by doing a function call. And if you think about it, now if I'm a
+machine learning engineer or, you know, a data scientist or a research engineer or research
+scientist and I've updated this model, I can then, you know, push that to the hub and very easily or
+very rapidly iterate on that if I am, you know, on the DevOps side. Just simply update the operator,
+the name of the operator itself. And now I have 2 different pipelines, you know, an old 1 and a new
+1, that I can compare in my test environment to see if it works or to see if it makes my results
+better. That's really 1 of the core ways that we hope users will be able to use Tohi, even for
+ourselves when we are looking at different ways to develop these applications or, you know,
+different ways to help our customers utilize embeddings and utilize a vector database. These are 1
+of the ways that we do it our ourselves as well.  As somebody who is working on the TOEI project and
+working on the Milvus database for being able to store the outputs of TOWHE, what are some of the
+ways that you're actually using TOWHE in your own work and some of the insights that that's able to
+provide for how you want to evolve the framework going forward?  For Tohi right now, we have you
+know, as I was mentioning earlier, it's really composed of these atomic units called operators. And
+going back to the idea that if I wanna create an embedding application or if I wanna create this
+vector data application, it's never just a single model. And these days, we've extended Tohi to be
+able to insert into vector databases such as Milvus and to be able to query across vector databases
+such as Milvus as well. And what we are really trying to do there is to say, in addition to the ETL
+side of things, in addition to just generating the embeddings, we also want you to be able to
+prototype the application as well. And we also want folks to be able to take this vector data and to
+push it to maybe other machine learning databases, maybe push it to feature stores, or maybe have
+this embedding you somewhere in Snowflake, for example. You know, I'm I'm probably getting a little
+bit ahead of myself here. But that's really the future of where we see Togi, you know, as an open
+source project is we wanna be able to define entire applications and entire ways of developing
+applications that use embeddings and that use these vector data. Right now, for sure, we're sticking
+to the idea that it is a vector data ETL tool or vector data ETL pipeline. But later on, I think as
+we evolve and for us internally as we you know, especially since Tohi grew out of a vector database
+or grew out of Milvus, which is a vector database project, we wanna be able to interface with more
+of, quote unquote, the outside world, not just say, here's your unstructured data, throw that into
+Towahe, and then here's your embeddings, and that's it. Right? We wanna make the application
+development process smoother as well and not just the ETL process.  In your work of building Tohi,
+using it for your own projects, and collaborating with the community? What are some of the most
+interesting or innovative or unexpected ways that you've seen it applied?  It's actually very
+interesting. We had 1 of our users sort of come to us directly and say, I want to do time series
+embedding and, you know, time series prediction with Toki. Just on the surface, it doesn't sound too
+sexy, but what this user was trying to do was they were trying to predict the stock market with
+TOEI. You know, they had these different time series models, but it was becoming a bit of a headache
+for them to keep track of all of them. It's becoming a bit of a headache for them to understand,
+okay, how do each of these models change the predictive results of the pipeline? With Tohi, they
+actually ended up building a pipeline. They hadn't even thought of Tohi in this particular use case,
+but they had these time series embedding models, and they were actually doing visualizations with
+tohe. So the output of tohe was actually not necessarily just an embedding, but it was a
+visualization as well of saying, okay. You know, this for this particular period of time, this is
+how my particular time series model did compared to how the stock market actually performed. I am
+not sure if this particular user, if they ended up putting this into production. I would love to see
+if they did. But it was definitely 1 of the more unique use cases. So stock market prediction and
+really visualizing, you know, these time series models, how they performed relative to how a stock
+market actually performed.  And so for people who are working in the ML space and they're dealing
+with vector embeddings, they're trying to transform their unstructured source data into some
+representation that they can feed into their models. What are the cases where Tohi is the wrong
+choice?  I will say so, you know, we've spent quite a bit of time talking about what Tohi is, and I
+will say what Tohi is not. Right? Tohi is not meant to be an all in 1 MLOps platform. You know, we
+do have a fine tuner in Tohi, so you can take a model and you can fine tune it on your own data.
+But, you know, quite a bit of the training process and really understanding how your model performs,
+a lot of the stuff that, you know, the folks at Weights and Biases do, that's really not a part of
+Togi. You know, It's not meant to be an all in 1 MLOps platform. At least for the time being, it's
+not meant to work for applications that don't require vector data or applications that don't require
+embeddings. With ToeHe, we're trying to reimagine the ETL process as something that includes machine
+learning within ETL, That's something that includes machine learning in the transformation step. You
+see a lot of traditional ETL pipelines. They might be how they're using Snowflake or other data
+processing data processing platforms. For example, they're more used in the context of, let's say,
+SQL or to transform data from a source that might be a little bit noisy or a little bit messy into
+something a little bit more cleaner or organic. And all Tohi is really trying to do is reimagine
+that process, but with machine learning in the middle. And when you do have machine learning, when
+you're able to use embeddings, as I was mentioning earlier, as I alluded to earlier, the language of
+computers, that's really the primary mission that TOEI is trying to accomplish. Toki is definitely
+not the right choice for if you're trying to build a complete, you know, MLOps solution from end to
+end, for example. If you're trying to train these new huge models, if you're trying to train these
+large language models, if you're trying to, let's say, understand or do model visualizations, TOWIE
+is also probably not the right choice for you. But if you already have a model that you want to put
+into production and a mini model that you wanna put into production that you wanna test, you wanna
+create a POC out of it, and then you wanna put that POC then into production, that is where ToeHe, I
+think, can really help speed up development. That's really what ToeHe excels at, and that's really
+where I think Tohi would shine.  As you continue to build and work on Tohi and evolve it, what are
+some of the things you have planned for the near to medium  term? For Tohi, we plan to continue
+making optimizations primarily to the execution layer. I was talking about earlier some of the
+optimizations that we can have to, let's say, put operations that require more compute on a GPU, on
+an accelerator, put operations that are a little bit more data bound on the CPU. And we will
+continue to improve on that particular aspect of ToeHe. And a big thing for us is also really trying
+to get a message out about vector data, about vector data ETL, and about how we can use machine
+learning in the ETL process itself and not just as, you know, this really cool or this really out of
+this world thing that only machine learning engineers know what they're doing or only data
+scientists know what they're doing. And if I'm a if I'm a software engineer, I can just the only
+thing I can do is take the script or take the model that they provided for me and figure out a way
+to scale that horizontally. You know, we're really trying to make Tohi have it be something that
+that really tries to make embeddings and vector data in general make it more mainstream.  For
+anybody who wants to get in touch with you and follow along with the work that you're doing, I'll
+have you add your preferred contact information to the show notes. And as the final question, I'd
+like to get your perspective on what you see as being the biggest barrier to adoption for machine
+learning today.  Even though machine learning has progressed, you know, so significantly in the past
+5, 6, 7 years, I think having more folks understand machine learning, not necessarily from a black
+box perspective, but really understand that today versus machine learning, you know, many years ago
+is a lot more mature and is a lot more systematic. And we have a much better understanding of how
+these models work and some of their limitations and particularly when it comes to embeddings, where
+we should and where we shouldn't use them. So we're really trying to send this message where machine
+learning, more and more folks are becoming comfortable having them in production, and we wanna be
+able to make  specifically a vector data part of it accessible to a lot more people. Thank you very
+much for taking the time today to join me and share the work that you're doing at TOWHE and sharing
+your experience and insight on this space of vector representations of unstructured data and the
+role that it plays in the ML ecosystem. So I appreciate all of the time and energy that you and your
+fellow maintainers are putting into TOWHE to make this a more tractable problem and 1 that people
+don't have to spend as much of their time rebuilding the same thing. So thank you again for all the
+time and energy you're putting into that, and I hope you enjoy the rest of your day. Same to you.
+Thanks for having me on Show Advice.  Thank you for listening, and don't forget to check out our
+other shows, the Data Engineering Podcast, which covers the latest in modern data management, and
+podcast dot in init, which covers the Python language, its community, and the innovative ways it is
+being used. You can visit the site at the machine learning podcast. Com to subscribe to the show,
+sign up for the mailing list, and read the show notes. And if you've learned something or tried
+other project from the show, then tell us about it. Email hosts at themachinelearningpodcast. Com
+with your story. To help other people find the show, please leave a review on Apple Podcasts and
+tell your friends and coworkers.

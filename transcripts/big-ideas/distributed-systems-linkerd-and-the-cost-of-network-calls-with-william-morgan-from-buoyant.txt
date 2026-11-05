@@ -1,0 +1,506 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Distributed Systems, Linkerd, and the Cost of Network Calls with William Morgan from Buoyant
+DATE: 2026-05-20
+SHOW: Big Ideas in App Architecture
+LINK: https://www.spreaker.com/episode/distributed-systems-linkerd-and-the-cost-of-network-calls-with-william-morgan-from-buoyant--72073153
+AUDIO: https://cohst.app/pdcst/3T5O6U/api.spreaker.com/download/episode/72073153/cockroach_ep5_audio_v2.mp3
+DURATION_SECONDS: 2749
+TRANSCRIBED_AT: 2026-09-17T04:57:25Z
+----------------------------------------------------------------------
+What is up everyone and welcome to this new episode of the Big Ideas in App Architecture podcast.
+I'm your host David Joy and today I will be speaking with William Morgan, the CEO and co-founder of
+Boynt, the company behind Linkerd, the service mesh that powers some of the coolest use cases that
+you can see out there running on Kubernetes. We talked to William and I get into some of the things
+that led him to start this company and to keep this product open source and some of the things that
+they are doing. We get into his backstory with how he started working and got introduced to this
+problem at Twitter and we get into some really cool ideas around what this technology will look like
+when AI takes the scale and center of everything. So we get into all of that in this episode. It's a
+really great episode talking about some really cool ideas and if you love what we do please
+subscribe and share and with that let's get started and start talking to William Morgan. All right
+William, welcome to the podcast. How are you doing today? Very good. Thank you for having me David.
+So tell me where are you you know dialing in from today which part of the world you're in because I
+did a little bit of stalking of your profile and you've had a very prime career traveling around
+different places and speaking. So I just want to see which part of the world you're in. Yeah so
+right now I'm speaking from my home in Austin, Texas. So I'm in Dallas so we're Texas bros today. So
+yeah that's good. This is a time of year when you know there's like a couple months you're like oh
+maybe Texas isn't so bad and then the rest of the year hits and you're like oh. For sure for sure.
+Is the weather typically in Austin at this time around like a little bit more chilly or it starts to
+get warm? You know March is usually the sweet spot because by the time you get to May it's starting
+to get painful but March and February is where like you'll get random freezes and like
+infrastructure will shut down you'll be without power for like you know however long but March is
+usually a pretty good sweet spot. Yeah yeah yeah no I agree in Dallas it snows people don't know how
+to live or drive. Yeah you know it's changing you know the climate's changing and so people are you
+know they still have these habits from 20 years ago. I agree. I agree. It's awesome. Well thank you
+so much for joining in you know it's it's it's a pleasure to have you on. For everyone listening in
+today William Morgan here is the co-founder CEO of Boyend and he's one of the persons I actually
+William the backstory I did read about LinkerD about four years ago when I was playing around with
+Istio during the COVID period you know and I was like not really happy with what I was doing so I
+did try to explore it uh some of the things that you guys are doing at the time so it's a it's an
+absolute pleasure just to go back and see like you see somebody's blog or a post or something and
+then you get to talk to them after four years it's it's fascinating how we at this podcast have been
+able to experience that and me personally so it's an absolute pleasure having you here really. Yeah
+great well that's very flattering I'm glad those blog posts are still out there. Hey no I think some
+of this was really good because you you you started working on LinkerD what 2016 17 was that the
+time if I'm not wrong yeah it's been 10 years. Yeah if I remember it correctly then for this is for
+people who are listening and we'll talk about LinkerD and we'll talk a little bit about William and
+his company what they're doing if I'm not wrong even in my research I kind of saw it that you guys
+were the first people to mention bring up the point of the coin the word service mesh and then now
+it's like yeah it's like a thing that everybody talks about when they use call with kubernetes right
+so. I regret that term because like it was you know it was meaningless and now it's just like kind
+of associated with you know so this piece of infrastructure and yeah you know it's probably going to
+end up on my tombstone someday I mean I should never have coined that. What you said is actually
+kind of true because in many ways it's service mesh is a term that's common now but for some reason
+people still don't get it like because it's so much more than just those two words right so. Yeah
+yeah it's you know it's it's kind of a it's kind of a meaningless term but the reason why we had to
+invent it was because at that point and you know this was 10 years ago we were talking about this
+thing as a as a proxy we were like hey it's like an application proxy you know and people would be
+like well I have a proxy I use you know Apache and how's this different and we'd be like well no
+you're going to run 10,000 of these and you're going to sprinkle them everywhere and they're like oh
+that sounds terrible so we had we you know we had this like branding problem which is you know I
+guess at that point you know I started this you know coming from an engineering background so I'd
+never really thought through okay we have to describe this in like you know it's almost a marketing
+exercise of like what is a term that we want to use to talk about this because yes it's a proxy and
+a proxy kind of all does the same thing under the hood but the the way that we're we're kind of
+intending you to use it the patterns that you're you know are all different and new so yeah we end
+up coining the term if then it's so cool though because I mean I get service mesh I get what you
+guys are doing right it's it's super cool and I like the fact that it's lightweight you know that's
+what I like about it now so we'll get into all of that just a bit so for people who are listening in
+right William can you like start off by kind of helping folks understand what is Linkerd and what is
+this cool thing that you you started exploring a decade ago and that you've been so passionately
+working on yeah yeah okay so I'll start way back so yeah yeah my name's William Morgan I'm the CEO
+of a company called Buoyant uh we're a startup that's been around for about a decade just about as
+long you know we're mostly known in the kubernetes world for our open source project which is called
+Linkerd which we you know also started around the time that we started the company it was one of the
+earliest projects in the CNCF it was like the fifth project to be in there and you know is at this
+point it's like a graduated project which is kind of the highest tier of maturity and the so Linkerd
+is a service mesh what does that mean what it means basically is that it's an infrastructure layer
+that you fit on top of kubernetes that handles the the the networking or the communication between
+your services so the way you design an application like kubernetes typically is you're splitting it
+into lots of different components we used to call those microservices you know maybe we still do I
+don't know that term has fallen out of popularity but everyone's building their apps the same way
+right you split it into a lot of services and those services now have to do network communication to
+each other so I have the user service which talks to the you know the the authentication service
+which talks to the you know the podcast service which at the end you know pulls data from cockroach
+or something right like so you have this chain of calls and that all kind of serves your application
+and the service mesh sits in between each every and every one of those calls and it does a bunch of
+stuff you know and it does stuff uh you know the reason we we do this through proxies we implement
+these tiny little rust based proxies for Linkerd other service meshes use other you know other
+techniques but we do these tiny little rust based proxies they sit on either side you know and they
+kind of embed themselves next to the application and we do it that way because then you don't have
+to change any of the code so that developers don't have to like modify their code the platform team
+can insert the service mesh and suddenly they get you know a bunch of observability so they get like
+metrics for all the hdp calls or the grpc calls they get a bunch of security tools they can start
+accepting or denying certain calls right and then they get a bunch of reliability tools tie-ups and
+rate limiting and and retries and like cross cluster communication so that's a very long explanation
+of like what the what the service switches no but it's really cool because you know i mean for
+somebody who's building an app and if you are a listener who is building an app and you are thinking
+about scaling it then at some point you will have to make a decision that hey where should i run
+this and you're like okay i have i'm breaking this into microservices so it makes sense for me to
+run these services in containers so when you start thinking containers you will have to start
+thinking running it in pods on kubernetes and then you have to what william said is you have to
+start considering oh dang i need to make sure that the user service talk to the payment service or
+to the auth service and and then you have to then see what if i hit the user service or the auth
+service and the auth service pod is down so what do you do you basically write a retry logic in your
+application code but what william and his team have brought into this mix is that you don't have to
+write the application code let the linker d proxy which is so is this the right way to say is it
+like a sidecar proxy that sits next to the pod yeah that's right that's right so you know that
+pattern means that like we in search of kubernetes and i'm going to try not to get too deep in the
+kubernetes because there's so much cover there but you know it has this model where you know when
+you say like service a is talking to service b in your head you're like oh there's a box with a on
+it and b but in reality a is like a hundred different you know uh instances and b is like 10 000
+instances or whatever like you scale these things independently and so you have a hundred times 10
+000 possible connections and like kubernetes just kind of sorts a lot of that out and the sidecar
+model means that we take a tiny little we call it a micro proxy and we insert it into every pod so
+if you have a hundred instances of service a you actually have a hundred of these tiny proxies 10
+000 instances of service b you got another 10 000 over there and that's you know sidecar basically
+you know you can imagine it like the sidecar on a motorcycle it sticks right next to the application
+application does a heavy lifting we just try and insert ourselves in a way where again the
+developers don't need to write any code in fact we don't we try to not let them even know that the
+service mesh is there we're like hey don't worry about that you just just don't worry about writing
+tls code or don't write worry about writing uh uh you know um retry logic because that stuff is hard
+to get right and and it's hard to get right and you have to do it consistently across every service
+so if you've got a bigger company with different teams and they're writing different languages you
+know if you don't get the retry logic right and consistent you know now you have all sorts of
+horrible distributed systems failure cases so we're like just just let the platform handle that
+install linker d have your kubernetes friends like install linker d and you as a developer can be
+blissfully unaware of like how hard it is to actually make a distributed system work absolutely yeah
+i mean that's the cool thing and and for people who are building these kind of systems right and
+especially with you know what we are we're going to talk a little bit more like people using ai
+agent decoding systems to kind of you i'm i anticipate a world where more and more users are going
+to build applications they're going to start putting it in containers and they'll have to start
+doing this this is a place for you to start considering some actual architectural decisions or learn
+something new on this call or in this podcast to kind of understand how you should start designing
+or thinking about where you want to go because there is a possibility that you will add a new
+feature to a service and then you're like hey listen i don't want to put it out there for everyone i
+just want to say five percent of my traffic to kind of go see this and and i think this is a cool
+use case for even for linker d here right where you can like split your traffic and say hey 95
+percent of your traffic goes to through a pod one and five percent goes and liquidy just manages all
+of that so yeah yeah that's exactly right so you know and there's all sorts of techniques you can do
+and you've got to imagine this in the context of like a big distributed systems you've got a talking
+to b talking to c talking to d talking to e you know and you're trying to change something just in
+service c like so you're in the middle of this existing kind of like giant architecture can you roll
+out a new version of service c and just send a portion of traffic to it can you do that portion of
+traffic based on a percentage or based on like a specific route you know or a specific grpc method
+those are all things that you can do uh with with linker d in the mix so you get these you know you
+get these very powerful kind of ways of of vetting the code you know before it gets the full grunt
+of production traffic and yeah like with the introduction of ai like and how we've got you know a
+different maybe we've got like uh some vibe coded stuff over here or maybe we've just got like
+agentic communications going on like suddenly our traffic patterns are very different right oh yeah
+you have to be a little careful about you know yeah no absolutely and i think the vibe coding era is
+completely different right like i mean back in the day you would make an api call and it would hit
+like a service or maybe two services now when you write a vibe coding logic or you say i want this
+to happen it's probably doing 50 different it's calling a service it's calling a tool it's getting
+that information it's failing it is retrying uh and it has to hit like 10 different things before it
+produces a response and all of this will take say two to five seconds uh but then you have to think
+about that running in a distributed system like you said with scale uh very cool i mean so why did
+you decide to do this like why start a mad project which is so cool like what what led you to this
+yeah so you know at the time we started this uh my co-friend and i had both been infrastructure
+engineers at twitter and twitter had just gone through this big transformation where we started with
+you know when i started there it's now it's 2010 was when i started there a long time ago back when
+twitter was good by the way before it became whenever it is now no i agree with you twitter used to
+be great yeah oh my gosh i mean you know i was so excited to work there because i'd already been
+spending my whole like you know previous couple years like hooked on twitter tweeting having such a
+great time uh anyways uh let's not let's remove the dark thoughts from our head and just focus on
+those happy times um yeah so at that point when i started like twitter was running in this ruby on
+rails like monolithic code base and it was having lots of trouble scaling um you know and those were
+the days of the fail whale and like it was almost like this cultural phenomenon like how much it
+would go down you know which is interesting you know like if you're if your product is like so uh
+unreliable but also so loved that when it goes down people like kind of have parties and have
+mascots and stuff like you're really on to something but anyways like we knew that wasn't going to
+work so what twitter did at that you know during my tenure there was we moved from that monolithic
+ruby on rails app into what i would now call microservices uh containerized microservices now we
+didn't have the word microservices at the time we didn't even have containers at the time it was on
+the jvm we used c groups for isolation we ran we didn't have kubernetes we ran it on this thing
+called mesos um which you can think of as you know it's another distributed system kind of
+orchestration framework but it worked like the the amazing thing was it worked and so we took what
+used to be all of those like function calls all right like we have this ruby on rails or this ruby
+logic it's like okay a function a calls function b calls function c uh and then we turn those
+basically into like network calls okay there's a big difference there like a function call basically
+always works right like function calls don't fail unless something terrible it's going to happen
+yeah and you know and they're really really fast right it's like uh you know the cpu has to like
+move the you know the fp pointer to something else or whatever now you've replaced it with a network
+call which fails and which was like many orders of magnitude slower so in that transformation you
+know all sorts of distributed systems problems cropped up and uh twitter ended up building you know
+a lot of these kind of libraries and logic that all the developers could use to handle those
+distributed systems to make calls safely and reliably and securely and so the the original idea
+behind buoyant was let's take those ideas and and let's take the the code that had been open sourced
+and let's turn that into a product that the rest of the world can use because twitter you know
+twitter was ahead of its time but not like a decade ahead it was like two years we're like all right
+the rest of the world is going to have to do this and that's effectively what happened you know all
+sorts of details were different like the world moved on to kubernetes and docker and like all these
+things but the principles the principles were the same yeah yeah yeah that's awesome dude and so you
+did at your time did they start moving to kubernetes already and that world was shifting when when
+you were starting buoyant you know 26 i'd say 2016 or i think we started technically in 2015 at that
+point kubernetes was there but it was very young and there was a lot of competition in that point
+between mesos uh which had which was the dominant kind of orchestration platform at that point uh
+kubernetes and docker swarm um you know and there were maybe one or two uh hashi corp had nomad i
+think and so there was you know the original version of linker team by the way we had to rewrite it
+all you know because we started with the twitter code which was on the jvm and like it turned out no
+one really wanted that except for twitter oh that's true i mean you did write again 2018 19 to rust
+right like that was yeah we do rewrote everything yeah yeah which by the way you should never do but
+it worked out you know worked out for us um but you know at that point those the first version
+twitter was my first version of linker d was agnostic we could talk to kubernetes and to mesos and
+to swarm and like you know and to zookeeper if you were doing some manual orchestration of zookeeper
+um and then by the time we rewrote it which was 2018 i think is when we kicked that off uh we were
+just focused on kubernetes because after a couple years it became clear that was where the whether
+you liked it or not that was where the industry was but you would have loved a clock code in 2018 oh
+yeah of course yeah you know i love it in 2026 already so i know yeah i mean that's something i do
+want to check with you but that's that's really cool cool backstory um so you've been like working
+on this for a bit now uh you know one of the things i wanted to like get into was obviously uh this
+whole piece that this has all come about with like the consideration of scale at which folks want to
+grow and like we thought we were scaling with the digitalization with modernization and
+containerization but now the agentic scale with ai and agents and things like that this is going to
+kind of continue to glow grow up actually and become a bigger problem what i like when i did some
+research is i did go and study a little bit about your your principles uh of what what you wanted to
+build with respect to linkedin and i like the fact that you went the lightweight direction but i one
+thing that kept propping up everywhere was simplicity and operational simplicity and obviously we
+talk about kubernetes even though it's very simplified now for somebody who understands kubernetes
+it feels a little bit more simple but still it's a complex idea tell me a little bit about the ethos
+of simplicity and how you applied that into linkedin i have a kind of a philosophical framework
+around around simplicity that that buoyant you know operates by and a lot of it is is um uh based
+off of um uh work by rich hickey who's the creator of closure which is like a lisp you know uh a
+lisp language on top of the jbm but you know he he had a you know uh he had a couple talks and and
+and articles and stuff about the idea of simplicity versus complexity and simplicity versus easiness
+and like what does it mean for something to be simple versus something to be easy and that informed
+a lot of kind of the design behind linker d and so basically the idea is that what's simply you know
+easy is something that takes you a short amount of time right like if you press a button and like up
+a hundred things happen it's still easy because like all you had to do was press a button simple
+means is it made basically out of these decomposable building blocks and you can understand each one
+you know and and so the idea with linker d uh is that any kind of distributed system you know it's
+very easy for you to have these effects where you know you make one decision over here and it
+percolates over here and like suddenly you have this very complex system because everything is tied
+together so however we designed linker d we had to we had to fight against that we had to make it as
+simple as possible simple again doesn't necessarily mean you run one command maybe you run three
+commands but those commands are uh they're distinct they're self-contained they can be composed with
+the other if you imagine like the the slot i have a slide that i presented in a bunch of talks but
+there's you know you can imagine uh two two castles right two toy castles one of them is made out of
+legos and one of them is like knit together out of yarn you're like okay both are castles but which
+one do you want to modify you know which one do you want to be in charge of changing well probably
+the lego one because those are all composable pieces you're right and the knit one is all tied to
+you know knit together i guess i'm just not a knitting expert um and like changing that means you
+have to unwind all these things so that's kind of the idea behind it um and you know i think the
+service mesh unfortunately has this reputation for complexity um which we've you know not not
+because of linkerty but because of those other projects and i've kind of like you know always
+shaking my shaking my fist in the air because of that because i think we did such a good job with
+linkerty at keeping it simple and it feels like the reputation has been a bit tarnished by you know
+other people not yeah because of the generalization yeah i mean you might write that you know
+because i feel the same way um what is interesting is that every time i meet people who founded
+companies and build projects it's learning about this philosophy of yours so um what what were the
+things that you were seeing at the time that the existing solutions were not solving like obviously
+we know that this is what uh what you can do now but what were some of the assumptions some of the i
+would say um the problems that you were trying to see and what were some of the learnings that you
+had during the early phases that you've had to feel like oh we need to like do this a different
+different way yeah i think there were a couple things one was you know just the exposure at twitter
+to how complicated some of these distributed systems problems were um you know even very innocuous
+stuff like i talked about retries you know you you start out with something that you think is going
+to be pretty straightforward which is like hey you know i'm service a i'm talking to service b uh
+you know if i don't get an answer in time you know that i'm going to retry and you know if i don't
+get an answer i'll retry again but i'll like you know back off a little bit you know maybe i'll wait
+longer and then maybe i'll retry up the five times and then i'll give up right and you do that and
+you're like okay makes sense right and then b has a retry behavior on c and c has a retry behavior
+on d and then at some point d you know this innermost thing fails and then each layer starts
+retrying and then the one before it starts retrying pretty soon instead of like 10 calls a second
+you have 10 000 calls a second because every layer is doing more and more retries you're like okay
+that's you know so you have all of these kind of super complicated effects that can happen so
+exposure to that you know we got burned a bunch in at twitter uh again this is a long time ago and
+we had to learn our lessons about okay well let's do retries a different way okay let's do timeouts
+a different way let's let's do you know there there are things you can do but you they're not
+obvious i think from the outset until you've been burned so that that was part of it i think another
+big one was just this um separating out like the the people that we started to see really adopt this
+successfully you know and really use kubernetes successfully they kind of split into well we have a
+platform team and we had a developer team and those are two distinct teams with two distinct
+responsibilities and then us being really explicit and saying our audience is a platform team and we
+need to make their lives easier and their internal customers are the developers but we actually
+don't want to talk to the developers and we don't want the developers to to have to worry about this
+stuff because the job of the developer is to write the business logic you know that powers the
+company and the job of the platform it's like to to just you know be the platform that can run that
+logic so that's where we spent you know once we had that distinction and we saw what would happen
+when those things got conflated and you had developers writing like tls logic and stuff just slowed
+everything down right it's not business logic it's hard to do you have to do it consistently for it
+really to be useful you have all sorts of security problems you know like once you separated those
+two sets of concerns and everything became a lot more uh became a lot clearer for how you're going
+to be successful i appreciate the fact that you you have this principle that you're building
+technology that makes a difference in everyone's lives and it's open to everyone to use and it's
+it's so cool that we have projects like that so how has it been for you to like build a company
+around this principle and keep it as honest as it needs to be oh gosh you know i i i've become a lot
+more mercenary over over the course of this company i started out you know because i cut my teeth
+i'm an old man i cut my teeth you know uh with the early days of linux that was my exposure to open
+source and it was like this you know uh it was like this grassroots like you know anti-capitalist
+thing we were taking down microsoft like at that point it was like you had to pay money to run dos
+or windows or or you could get linux for free hell yeah you're gonna do that and then like oh you
+nights and weekends you would spend like contributing to you know i you know as a high school
+student i was like writing this driver code and like you know kind of like stumbling my way through
+uh you know some of that early stuff and and it was awesome you know and i was happy to spend my
+night so we can start but you move you know you contrast that to like modern open source especially
+in the in the kubernetes ecosystem because it it can be different open source oh my gosh i have like
+so much to say about this open source can be very different right like different projects work very
+very different ways the things that work for like python and in ruby very very different from the
+way that things work in the kubernetes ecosystem yeah open source is different yeah yeah yeah and
+those and those dynamics make a big difference so for example in the kubernetes ecosystem most of
+your consumers of the open source project they're sres they're platform owners you know and what
+they want they want the project to work they want it to solve a problem at their job you know right
+and then they want to move on to the next thing so there's very little contribution you know you
+know in contrast with like a a javascript library or something like if you're making an open source
+javascript library your audience is like javascript developers so like it's very natural accident
+the contributive pr right it's very different in the infrastructure space your audience is largely
+consuming this as a project and so you have these very different dynamics and you know the thing for
+me has been how do we ensure that linker d is a sustainable open source project right we've been
+around for 10 years the only way we can do that in this space is by paying maintainers we cannot
+rely we cannot rely on nights and weekends developers i think there's very few uh open source
+projects that can maybe languages python ruby where you have like a you know a bdfl and like you've
+got this like kind of intense passion you can't do that so you got to pay the maintainers okay well
+you're going to pay the maintainers where's that money coming from hmm makes sense yeah where is
+that coming from uh you know great open source adoption uh where's the money coming from there's
+only there's only one long-term answer right you can ask for donations you know it's not going to
+work you can ask for like please could you like chip in five dollars to my github tip jar like that
+shit it's not going to work patreon yeah yeah right you know you maybe make a couple hundred bucks a
+month like i gotta you know we gotta pay five full-time maintainers to do this thing you know and
+that's like a small team but you know these are world-class engineers that could go get a job at
+google open ai or whatever like you know so there's only one way to do that which is you got to sell
+a product and there's got to be a reason there's got to be a clear reason why you have a product
+that you can sell to a company let's say microsoft adopts linker d you know are you are you a
+charity organization for microsoft right yeah like no microsoft's got to pay they're building a
+billion dollar business on top of your project you got to make money from that because you need to
+pay the maintainers so my you know my opinion has like just shifted where now the thing one of the
+things i'm really proud of with linker d is that we have a sustaining self-sustaining project
+because there's an economic engine behind it called buoyant and buoyant pays those maintainers and
+buoyant sells a version of linker d and like that can be you know a little distasteful in the open
+source community to talk about vendors to talk about commercial stuff but like let's let's face
+facts i've given a couple talks at kookon where i'm like you people need to like face reality here
+everyone who's in this audience is here because your company has paid for you to be here every time
+you use one of these projects it's because your company is paying for you to investigate so like
+everyone's getting paid except the open source maintainers like no no no it's it's a very it's very
+interesting point uh like i had i did i mean there's a backstory within linux i mean there's so many
+contributors and uh there's this whole story of somebody who's been maintaining xc i don't know if
+you know about the whole story uh oh yes yeah yeah there's one guy it's such a critical dependency
+right uh just one guy and uh it's open source right like uh and i think he had like some people
+helping him out but i think there is something to be said about these uh mammoth project that had
+that giant security vulnerability yes because of like a state actor like doing this you know kind of
+social engineering and and and pressuring pressuring this guy to add a maintainer and like you know
+right yeah that's scary yeah it went even it went all the way into a build of fedora i believe not
+fedora um yeah i think so some one of those uh red hat projects it did go in it but then they were
+able to catch it because of another guy who was just open source just looking at something what you
+said is something that i don't get to talk enough about because uh you are a part of the community a
+part of open source right it's that there are people like you and so many who have built these
+amazing products to maintain this at that like mammoth amazing humans uh but we have to consider
+what you said is that products need to scale and products need to become sustainable and that's the
+way it kind of works so this is a cycle and and that is why we love having companies like yours come
+and talk i mean part of what we do as a podcast is also introduce um projects like yours to the
+world uh because you are solving a pretty critical uh you know problem and i i do feel linkedity is
+a pretty cool project that people have to start considering because even i was saying i was talking
+to somebody in preparation for this week and i was telling them because maybe it was because i was
+taking out liquidy i was like are you using liquidy or like some sort of istio they were like no man
+so i'm like how are you doing your like retries and you know canary and stuff like that and they're
+like yeah we're just managing all these systems i'm like dude you should check it out like it's it's
+it's pretty cool so um it's great you know and so the segue i wanted to make from there to uh
+obviously thank you for doing open source i think it's valuable is also to talk about how do you
+feel about where everything is going with ai and where linkedity's position is in this world and how
+you can come and help yeah yeah i mean you know obviously that's a hot that's a hot topic for for
+all of us you know and look i'm one of these people who uh my natural reaction to like any of these
+to anything that becomes popular is i'm like i don't i don't i hate that it probably sucks i'm gonna
+i'm gonna try and ignore you know and like yeah you know do you remember when like nfts were so big
+oh yeah yeah i had to tell me i was like oh this is stupid and like and i was right like it was
+stupid and it all went away i was happy that i ignored it but but with ai i'm like oh my gosh this
+thing actually seems to work and like i spent you know an hour with cloud code six eight months ago
+like before it was as good as it is now and i was like holy crap this is you know there's something
+here is real so you know uh there's as much as i would like to dismiss all this and be like ah it's
+all fad like there is something that is is really real here so the perspective that i take at it is
+like again you know from kind of the the mindset of like what's going to happen to the kubernetes
+platform engineer because like the devs already are like you know you know they're the ones who are
+seeing i think the most obvious and most immediate benefit here right now instead of writing code
+you're like you've got your army of agents that are like we started out with you doing like really
+fancy tab completion and now you're not even like you why even bother spinning up your ide you just
+had your five agents that are all working together and you know like it's crazy it's crazy so what's
+what's going to the effect going to be on the platform team that's the part that's interesting to me
+you know there's and there's some august stuff you know like um okay now we have mcp as this
+protocol that's happening you know maybe we're serving an mcp api to our customers am i allowed to
+say that mcp api i guess so um maybe you know maybe we even have some magentaic things running
+inside okay well mcp is like a weird ass protocol like you know if you if you are parsing you know
+if you from the outside it looks like a very long http call to like slash mcp it's like okay great i
+had a seven second long like streaming http session now what like yeah you know so some of the
+observability needs to be improved like we need to we need to like start untangling what what tools
+were actually called you know and that's all happening in the body and like json rpc and like a
+whole protocol is a mess so something that's immediate like that i think the more you know the other
+thing is what's going to happen you know once developers start bide coding really heavily does that
+mean that suddenly we have like you know we went from 10 deploys a day to 10 000 deploys a day okay
+well that's going to be different does it mean that the quality of our code went down you know you
+know maybe i don't know does it mean that uh you know once we have agentic workloads that are
+sitting around in the production infrastructure i mean now your guarantees about what that thing
+does are very very different you know it used to be like used to be oh you know maybe we don't need
+all this zero trust security because uh you know that it's all went through code review and like you
+know there's no malicious stuff in here now you're like oh this is an agent it's just if there's
+like a an endpoint this agent can call to like delete your database it's gonna find at some point
+it's gonna call it all right so now we'll fix some of these things right just happened like a week
+ago man yeah yeah to you no not to me i mean i don't know if you know this i mean there's this
+company called uh or a project called uh dtc and uh i think amazon had an agent that went and
+removed the entire project oh yeah like deleted the repo or something yes like everything yeah so
+it's happening like kind of every day now i feel like it was i think the culprit was something
+claude was involved in it but yeah it's somebody right so suddenly if you are running this platform
+and you're like okay my the job of my platform is to be reliable and to be secure and to like you
+know allow the developers to like get maximum leverage from you know now you've got code running in
+your system where you're with that you cannot trust at all okay that's very different so all these
+kind of second order effects start adding up and i think we're going to see that you know over the
+next year or two is where we're really going to see that the developers are having their like heyday
+right now but all that stuff is going to involve changes to the platform and that's where linker d
+becomes interesting correct no i definitely agree with you because i think the premise of what you
+said in your statement was uh talking about like hey we have a lot of focus on uh developers today
+and agents and okay all these things but we're not talking about the effect of that on platforms
+right and we have to consider the platform engineering team has to start considering now that one
+logical request as you said is like say a seven second mcp call or something but that has so many
+services talking to each other and tools talking to each other collecting retries all these things
+the and then it's not just one agent doing that imagine if i say i i want to go for a trip i go to
+some travel place and i say okay find me the best holiday time for this and i'll run five agents to
+find five different options for me same service same use one user instead of doing one request is
+now running five services and it is a multiplication effect so that is what scares us scares me is
+like companies will have to start thinking about running this and handling that scale and then when
+you run it at scale you have to consider what would happen if something stops working and so we as a
+company cockroach labs i mean we we build this product called cockroach db and for us it's all about
+building a database that can never go down so you're basically building a database that is highly
+resilient but now we'll have to start thinking is everything else in the infrastructure the
+application parts and are on the services are they as reliable as is possible because i mean that's
+that's the piece yeah this isn't going to help you if like all the other code can't even you know
+exactly yeah exactly like you can go build code fast but if your code cannot scale for the agents or
+your application can't scale for the agents that's like the crazy part so it's uh it's exciting um
+when i was doing some research i did i was just trying to figure out i wanted to try out linkedity
+uh locally on a simple app that i had but i couldn't do that but i did research i think the latency
+is you don't add the sidecar doesn't add less than probably has less than five millisecond latency
+or something right like that's really fast it's really fast you know so the sidecar is written in
+rust you know we were one of the earliest adopters of rust this is way back in 2018 so like rust
+itself i think it just hit 1.0 as a language and the ecosystem of like asynchronous network
+programming uh or network libraries was very very minimal so we actually invested a ton or in the
+early days on projects like tokyo and hyper and h2 and kind of like all these foundational um
+projects and rust and so as a result you know that that the linker d uh you know micro proxy is
+extremely fast now you know it's still it's still a separate process and like has to go through the
+kernel to do a network call stuff and so you know you pay a price to all this stuff you can always
+say it'll be faster you know if you embed it in the application you can always say well the
+application would be faster if i wrote it in assembly like you know every every kind of like step of
+of of abstraction and and separation of concerns adds a cost but usually you know the the latency
+that's introduced by linker d is either it's a tiny fraction of like the actual you know latency
+most of the latency often comes from the database maybe not maybe not cockroach right other other
+lesser databases you know or it comes from the application code or or whatever um and actually
+sometimes we even find that we can improve even you know we can improve your your end-to-end latency
+right because we're making better load balancing decisions right that's true we're doing this yeah
+we look at each pod and we're like every pod that we're talking to has a latency measurement and
+we'll send traffic to the faster ones and so some of them are on a slower piece of hardware or
+slower zone or whatever we'll start shifting traffic away from those or they have a you know they're
+written in language with the garbage collector and the garbage collector starts doing stuff we'll
+send those requests somewhere else so we can sometimes actually improve that's an interesting use
+case i never considered it yeah yeah absolutely yeah i mean what your your statement is right every
+every database adds a bit adds the longest latencies i'd blame the disk actually yes yeah exactly so
+hard you know at the end of the day is hardware is a problem if we can do this without hardware yeah
+amazing and it seems like you you went the right direction with like rust because rust is definitely
+having a moment right now with everybody's kind of like okay this definitely makes sense here you
+also are you guys contributing to the rust project like does your team do that as well not really
+not really you know at this point we're mostly consumers um you know and and and the and the control
+plane for us is written in go you know because the requirements are different you know you've got
+one per cluster so you don't have you don't end up with 10 000 of it okay so the memory requirements
+are more relaxed and that thing has to mostly talked to the kubernetes api and so you know all of
+the kind of native client libraries for kubernetes are all in go so we're like okay we'll just use
+go for that that part of the system so you know we had also like a go go company like yeah okay yeah
+and by the way you know what claude is great at writing is go because it's like in fact i've heard
+this now in my opinion i'm like i don't think humans should write go because like it's so boring
+this is like most boring language in the universe i feel like 80 of your go is like if air not able
+to nil return nil comma error i'm like you know have an ai write that and like right right it's not
+exciting for sure yeah you're not writing like complex complex shit yeah yeah and you know that's
+why design that's because blah blah but whatever i don't want to look at it yeah yeah i mean i'm
+sure my uh my media team who's supporting this will love this podcast because we've had some some
+really good opinions on different things so it's it's exciting uh but uh i i do wanted to like i
+know we are running out of time um i wanted to do ask you like uh with what you're doing right now
+first of all everyone listening and go go check out boint uh go check out linger d project uh hit
+william morgan up we'll we'll put these links as part of the part of the release as well but go
+check out it's cool cool set of people working on cool project but as we close uh william i do want
+to get uh something from you like bold predictions right five to ten years what do you think is
+gonna uh differentiate companies that run systems that will endure or like will run versus that that
+struggle like what do you think will be the difference uh i think you have to run in outer space you
+know like you have to launch all of your hardware just into you know in space because you just don't
+have enough energy i don't i i don't know i can't i can't i don't know what the second half of that
+sentence is yeah um no i think you know like this the the world of high is changing so fast that i
+feel like you know almost anything you predict one you know one week is going to be different a week
+later i was you know like if you had asked me a month ago i would have said a lot of stuff about mcp
+and now i'm right i don't even know if that's the protocol i think the one the one thing that seems
+to be clear to me is there is going to be uh you know um there is going to be a lot of code that is
+going to be less deterministic than it has in the past so we're going to have a lot of these like
+kind of computational processes either that are either because they're you know talking to an lm or
+something like they're powered by some neural network or because say they were written by an lm or
+something like so those guarantees you know the way that we've been thinking about software and the
+assumptions we made are all going to change so i think the companies are going to be successful are
+the ones that are being very very careful about like what are those assumptions that we've embedded
+in our systems you know and in our thinking and how do we change that whether that's assumptions
+about security whether that's assumption about scale you know uh whether it's assumptions about
+reliability i think all those things are on the table to be re-evaluated kind of like the
+fundamental you know relationship we have with software is on the table to be re-evaluated and so
+you have to design you know your your your company and your platform in accordance with how those
+things are are changing otherwise you're going to be left with the the rug just pulled out from
+under you no i mean that's well said that's really that's profound uh in many ways i mean we could
+just do a whole discussion and a pod on just that but uh this was this was fantastic i mean um
+anything that you want to leave the audience with uh something you want to tell the company places
+where people can go um look you guys up any webinars or any events that are coming up for you guys
+yeah i mean you know obviously everyone's welcome to come to to buoyant.io and like please download
+uh you know our our enterprise version of lunker d is available to for anyone to kick the tires for
+free and so like play around with it if you're a kubernetes person you know i think there's some
+really cool stuff especially if you're on aws for whatever reason for a bunch of good reasons uh eks
+users get a lot of value out of specific uh features hey william thank you so much for coming on
+it's been an absolute pleasure talking to you what a great episode uh thank you again to all our
+listeners for listening in and to all the people who help us put this together uh the cockroach labs
+uh you know social media team and everyone else so uh appreciate it and uh thank you once again
+william thanks for having me david you

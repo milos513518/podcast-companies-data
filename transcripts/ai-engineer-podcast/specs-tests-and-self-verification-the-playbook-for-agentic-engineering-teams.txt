@@ -1,0 +1,704 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Specs, Tests, and Self‑Verification: The Playbook for Agentic Engineering Teams
+DATE: 2025-10-19
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/zencoder-agentic-coding-system-design-episode-65
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/6389650654717337664a426ca3-7a3d-44e6-9f58-5b401088b316.mp3
+DURATION_SECONDS: 3988
+TRANSCRIBED_AT: 2026-09-17T03:33:38Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. When ML teams try to run complex workflows through traditional
+orchestration tools, they hit walls. Cash App discovered this with their fraud detection models.
+They needed flexible compute, isolated environments, and seamless data exchange between workflows,
+but their existing tools couldn't deliver. That's why Cash App relies on Prefect. Now their ML
+workflows run on whatever infrastructure each model needs across Google Cloud, AWS, and Databricks.
+Custom packages stay isolated. Model outputs flow seamlessly between workflows. Companies like Whoop
+and 1Password also trust Prefect for their critical workflows, but Prefect didn't stop there. They
+just launched FastMCP, production ready infrastructure for AI tools. You get Prefect's orchestration
+plus instant OAuth, serverless scaling, and blazing fast Python execution. Deploy your AI tools
+once. Connect to Claude, Cursor, or any MCP client. No more building off flows or managing servers.
+Prefect orchestrates your ML pipeline. FastMCP handles your AI tool infrastructure. See what Prefect
+and FastMCP can do for your AI workflows at aiengineeringpodcast.com/prefect today. Your host is
+Tobias Macy, and today I'm interviewing Andrew Filov about the system design and integration
+strategies behind building coding agents at ZenCoder. So, Andrew, can you start by introducing
+yourself? Hey, Tobias. Here it is. Andrew Filev here, CEO and founder at ZenCoder. We build awesome
+coding agents. And be prior to that, I was building a company called Wrike. We co created
+collaborative work management space. I grew that business to about 1,200 employees, so about 300
+people in my engineering organization. So it takes from zero to full scale. And then I've been
+around the block in AI for for a while as well. I like to say that my introduction to agents was
+when I ran our whole big team competing trying to compete in DARPA Robotics Challenge about a decade
+ago. So there's a little bit different agents that that I'm working on today and a little bit ahead
+of time, but that was super fun. So that's a bit about me. And do you remember how you first got
+started working in the ML and AI space? So I could go back to kinda my teenage years years in sci fi
+and cyberpunk and, like, written about brain computer interfaces and kind of get getting all
+excited. And then, kind of as the years progressed, I was always interested in neuroscience and what
+I would call cognitive computing, which, sort of like one you could think AI is is like one
+incarnation of it. Right? But but it's it's either about how do we make computers smarter or how do
+we understand and replicate our own brains work. So, I think where it kicked into higher gear, if
+you remember, like, the very, very, very first wave of online, like, massive online classes by
+Andrew Ng and then by Sebastian Tran and whatnot. And so that was when I got the first kind of a
+good early lightweight education in in in kind of more more formal, and that really piqued my my
+interest. And then I started filling my bookshelf with books about pattern recognition and computer
+vision and all of, all of that good good stuff. So I again, more more than a decade ago right now.
+And so now digging into your current area of focus, which is generative AI and its application to
+software engineering and automation around that, Before we get too deep into some of the specifics,
+I just wanna give a bit of a sort of survey overview of where we've been and where we're going. And
+over the past three years since ChatGPT first hit the scenes, there have been a few different
+iterations of how to apply these generative AI models and LLMs specifically to the problem of
+software engineering with the first pass of that, most notably being GitHub's Copilot of a more
+intelligent autocomplete. And, obviously, we're well beyond that now. And I'm wondering if you can
+just give your characterization of the different approaches or categories of generative AI as a
+software engineering aid. Mhmm. Yeah. Great question. And I'll start I'll skip kind of the prelude
+because even before Copilot, there were some some tools like Kite, and without and even before that,
+there was IntelliSense. So so we kind of glance over it and go more into a sort of GPT four era, if
+you will. Right? So so you're correct. It started with scope completion and Copilot back then was
+their was the big story. And there was a lot of buzz around it, both positive and negative. Right?
+There there were, like, claims that it can improve productivity by 30%. There was also anti hype
+claims that all everything is going sideways and the code is gonna be terrible and whatnot. So so I
+like like looking backwards, it's I saw some of that stuff on both of their kind of their hype and
+anti hype, side of things are a little bit funny these days. But, anyways, if when we look at the
+underlying models back then, it was what I would call at best GPT four class models that were
+wonderful in a lot of things that they did, but they were also pretty terrible. So when we got into
+this, we did some things that right now, they look obvious. Right? But they're they didn't exist in
+the category. For example, when models try to apply edits, they messed up stuff. And even before
+that, when models generated code more often than not, that code did not compile and was kind of,
+heavily hallucinated. So we started by, taking kind of their very, very basic agentic behavior,
+analyzing syntax of their of the code, and then if it was wrong, trying to give the feedback to 11
+kind of cycle through the suggestions, if you will. And so so that was their first gen. And then in
+that first generation, because the models were not trained for truly agentic behavior, you had to
+feed information to them. And so finding the right information was was critical. So when we got into
+this space again, we were focused very heavily on building state of the art code reg, and we built
+our own custom we're ranking pipelines, which are even more important than the retrieval itself. You
+know, their ranking is a much harder and more more consequential problem. But, anyways, that's their
+gen one. And while we and others were working on gen one, something landed on everybody's, lap. It
+was SONNET 3.5, and it changed the game significantly because it was the first truly agentic model.
+For example, it made for for simple repositories, it made the rag obsolete because the model could
+actually find in more relevant information. And because it was trained that way, it was also kind of
+in distribution, so it worked better on the information that it discovered. And while it discovered
+that information, it also picked on subtle signals. For example, if the model browses your directory
+structure, typically, that directory structure in itself brings valuable information about how you
+sort of divide and conquer, how you architect your solution essentially. Right? That is very
+important context that for example, if you go to direct retrieval and you give model a piece of
+code, you kinda miss all that all that surrounding context. So, anyways, their the agentic model
+scheme came into their prime light, and the name of the game, started to be who builds the best
+agentic cards. And you can also call it the era of SweetBench. Some of their listeners might be
+familiar. It's it was one of the most popular benchmark, SW for software engineering, and then bench
+for benchmark, obviously. Right? So the benchmark, had I think the original one had about 2,000
+samples sourced from open source Python repositories, where they were real PRs, and then they kind
+of backtraced them to their issues that like, a bug fix is a feature request that initiated those
+those PRs, and then they could also find some unit tests so the solution could be validated. So that
+was the benchmark that essentially tried to emulate part of software engineer real software
+engineering process where people have to implement new features or fix bugs. Albedo, obviously, in
+kind of constrained environment, one programming language, open source domain, and whatnot. So and,
+anyways, the the benchmark went prior to SONNET 3.5, I think their basic model scored, like like,
+low single digit percentages, about three or 4% at best. And then after SONNET came out there, both
+the harnesses started to improve and the model started to improve where, again, today, it's probably
+the best models in harness could score about 80% on that benchmark. So so think about well, like,
+from that perspective, it's an amazing result, right, where these are true real life engineering
+problems and a coding agents can consult 80%. Now that's not necessarily translating into the 80%
+productivity improvement for real engineer working in complex environments, and we'll talk about
+what and why, but but that's the second, I would say, second generation. That's when the term wipe
+coding come to the arena when people started to realize that, hey. Those agents can actually do some
+very, very interesting things. And then I think right now, we're moving into the third, generation.
+It's not yet obvious because we're we're kind of at that cusp. But, basically, when people use those
+agents and models, they can use them what I would call randomly. You know, just wipe code if you
+will or you just randomly throw something at a LM and hope that it solves the problem. And then
+there are people who start using it more systematically, which is what's what most people today are
+familiar with and what they associate with, AI agenda coding is you have a pretty good model. You
+have a pretty good harness that gives the model access to tools like rip graph where it can search
+through your repo and gives the model access to shell where it can execute other commands. And, kind
+of off you go, in if if you're working on something simple from scratch, it can carry you pretty far
+these days. If you're working on more complex existing repository, typically, this, harness and
+model will need a lot of guidance from you. And where this guidance has evolved is that people
+started coming up with new workflows or as I like to call them systems that help them get
+significantly more from the models. And we can talk about theoretical kind of foundations of what
+and why, but that's, what's in the industry, starting to get called AI first engineering. So in that
+approach, you you have to change the way you sequence your work and the way you use agents to get
+the most out of them. And when you do, it opens up a new horizon. We we have examples both in in our
+company and in our customers where the agents can work semi independently for hours, where they can
+implement significant units of work. It could be major refactoring on your code base or it could be,
+implementation of our I mean, feature. And and those patterns, they shift their way you use agents
+and a different, kind of higher level tooling, if you will, where it's not only about agentic
+harness that can execute simple AI command for you. You now are trying to sequence multiple agents.
+You're now trying to run them in parallel. You're now trying to execute sub agents to, take care of
+that more sophisticated workflow. And, that requires, again, new way of, organizing your software
+development life cycle, and that requires, better tooling and better models. And as you mentioned,
+pipe coating is a term that largely came about, I wanna say, early in the summer of this year, 2025,
+is when it really came across my radar in a fairly consistent manner. And to your point, we have, I
+think, exhausted that trend a little bit. Although, it depends on, I guess, which spheres you're
+operating in, where some people have already moved past it, to your point, to this more AI native
+engineering workflow. Some people are just now coming to awareness of this idea of vibe coding. And
+vibe coding, from my understanding of how people are defining it, is largely throw a problem at the
+model. Don't even look at the code. As long as it does what you told it to do, then great. You're
+done. And to your point, that is something that you can do in a very limited scope or in a
+greenfield project, but it's not something that you want to trust in a production system that you
+have been developing over the course of years and requires the interaction with a large number of
+teammates. And that also points to another interesting aspect of where we are currently, which is
+the broader conversation of how much responsibility should the model have versus the human who is
+piloting it and what are the axes of control and the interfaces for managing this managing the
+symbiotic relationship that we're having between the models and the humans in this process of
+software engineering. And And I'm just wondering if you can talk to some of the ways that you're
+thinking about that aspect of balancing acceleration and productivity enhancement with control and
+visibility, particularly because of the fact that these models can generate orders of magnitude more
+software per unit of time than a human typically can. And, also, the fact that volume of software or
+number of lines of code is not the metric that we actually care about as software engineers. We care
+about, does it do what I want it to do? And if it can do it with less code, then all the better. In
+terms of, kind of control and producing high quality code. So first, we're not starting from zero as
+an industry. Right? We've been collectively, humanity, working on developing software software best
+practices software development best practices, pun intended, for for several decades right now, and
+this has been rapidly evolving area. When when I started my software engineering career, a lot of
+the process were basic cowboy calling, and there was, waterfall in some organizations, and there
+was, like, this iterative processes, and and agile just starting to appear on their horizon around
+the turn of the century. And so we, as, again, as their as a as a collective, we're developing
+processes that help us ensure quality and more predictability in software development process for a
+while, because humans are also uneven. Our productivity varies ups and downs even individually and
+then across human pool of of engineers. It it varies more broadly. Right? So so we have certain
+gates. Most engineering organizations have code reviews for PRs. Right? Good engineering
+organizations have auto tests built in their CI process. So there are guardrails that that are
+already, over the last decade, built in the engineering process. And so with AI, it's quite natural
+to expect us to, at first, at least adopt similar guardrails, Right? And then potentially extend
+them further. We're we're we're as engineers should think not just at the level of engineering their
+end solution, but also engineering the process. And so so this is where kind of again that that
+whole discipline of AI first engineering comes in in place. For example, in our company's
+engineering pro first engineering process, it's prescribed to use test driven development. Right? So
+when before LLM is given a task to code, it is given an instruction to write tests so that it would
+compare the results to the test. In fact, may maybe it's helpful if I take a little detour and and
+briefly walk through our, again, our own company's internal, AI first engineer process. Your company
+might be different. Again, it's it's very rapidly developing area, but but it looks like it it it is
+con converging to same set of practices. So in our company, we start with, you know, an idea. They
+think of it good good example would be user story in in Jira. Right? So then that, user story, gets
+translated into a spec, essentially, right, or or PRD, we should say, where, it's it's a more
+detailed requirements document. And it's done with AI but supervised by a human. So every step of
+the process that I'm gonna talk about, there's human gate. And even gate is their own word. I should
+say it's a collaboration of human and AI, where AI is tasked to do something, but human is, in the
+driving seat. So first, their PRD is developed. Then from that PRD, a tech spec is developed. This
+is where, again, as a result of collaborative work, where most of their characters are produced by
+AI, but there's still significant amount of thinking that's done by by human. That tech spec
+contains important interfaces that need to be, created or, refactored or whatnot, contains typically
+things like con a control flow diagrams. If it touches the data model, it would be, updates to the
+data model. So, basically, it's a succinct and correct description of what needs to be done
+technically. And from there, the detailed step by step plan is generated for the agents to execute,
+and then the agents are they're led to to execute on on the plan. Now first of all, as I said, every
+step is humiliated at this point. Not only that, but at our team, we we ask that it's an act act of
+active collaboration between human and and AI. Oftentimes, the verification is done not just by
+humans, but by AI as well. For example, if technical spec is produced, it's super easy to then,
+shoot off an agent in the background that will look through that spec and cross check it with
+existing re repo to make sure that, you know, it's dry, if you will. Right? There is no code that's
+being duplicated and that it's also not hallucinating and it's compliant. So we kind of layer both
+human checks and AI checks in that in that process. Again, if you go and lay level back up from the
+technical spec to to PRD, it's, common for for us to kind of shoot a note for an agent to generate
+PRD, but then it shoot a note to another agent to just review it and kind of provide any any quick
+feedback. So, again, as we're using becoming more proficient in using agents, our agentic sort of
+collaboration becomes more and more sophisticated when we engage more and more agents more and more
+frequent. And then to the point where I started with control and verification, there there was a
+well known essay, I think, by Sautom that verification is the ceiling of AI capabilities. And and
+even before I stumbled on it, sorry, this was my personal belief. Like, their intelligence of the
+system where we define intelligence as ability to achieve real life goal is, to a large degree
+defined by ability of that system to verify the results of its work, either in real life, which is
+the best, right, or sometimes at least with a strong world model that gives good enough
+approximation of that verification, if you will. So in our company, we prescribe our AI and our
+engineering organization to use test driven development when we're in AI first workflow. So the
+tests are implemented before the code, and then then the code is, tested again against those those
+test cases. And that's big part of verification. Now on top of that, something that we're actively
+working right now, and this is not necessarily part of the the the last step is not necessarily part
+of common AI first system, but it's part of our AI first system, is we're now tuning an agent that
+will take their PRD and create acceptance tests in their BDD format to be behavioral, during
+testing. So that gives us kind of a higher level verification compared to their more typical you
+know, typically, if you say TDD, people think it's unit testing, which, as you know, doesn't always
+test the complete system and doesn't always test their kind of correct behavior. So, as as companies
+are working on transitioning into AI first culture, it is indeed extremely important for them to
+think about those gates and quality checks. And if you want a scalable process, then it's quite
+natural to think about how you can automate that. Right? If you if you're gonna generate 10 times
+more code with AI, you need to test 10 times more code. And unless you wanna blow up your QA
+organization to to be 10 times of your engineering organization, you will have to use AI as heavily
+in that verification process as you do in your coding process. And and it's it's an effort. Right?
+Most organizations do not have good enough, test coverage in auto tests. They do not have enough end
+to end testing capabilities built in. And so, again, as part of that transition into AI first
+culture, you absolutely need to think about, building the right guardrails and verification. I'll
+pause for a second again. You you you brought up so many different in interesting questions. We
+could talk about wipe coding. We can talk about context management and where where models are good
+at and not good at and where humans are good at. So there there there's a cost. Absolutely. I'm I'm
+sure that if we had unlimited time, we could probably go on about this topic all day. But for
+purposes of this, for now, I think that maybe the next interesting place to go to before we get into
+some of the aspects of single player versus multiplayer and managing the, team level context, I
+think just digging more into some of that context engineering and context management aspect that you
+touched on previously about the code rag and the reranking and how the models are now to a point
+where some of that is obviated. And then you also have most familiar with the Ader project, which
+will generate a repo map of some kind of high level snippets of so these are some of the function
+signatures that the it feeds into the context for the model and just how you think about the overall
+engineering effort of being able to collect and provide appropriate context to the models,
+particularly given the varying ability of the models and how that factors into the approach that
+you're going to take when you can understand, okay, this model is great at this, but not so great at
+this or this model. I need to fall back to doing the code rag and reranking algorithm and just some
+of the ways that the specifics of the models and the repository factor into how you think about that
+context management and providing appropriate information. In terms of kind of optimizing for the
+model, my, one of my bigger lessons, and again, that that's a that's a reference to to NSA with the
+same name, learned in the space is that I would not recommend optimizing for for the weak models
+because the models continuously get better. So whatever is the best model today that you can find
+and and work with it, don't don't don't try to optimize for the weak model because even the weak one
+is gonna get get better tomorrow. Right? So that, in my opinion, is is is a waste of time. So pick
+the best model and work work with it. Now in terms of context engineering, it serves two distinct
+and important goals. And and as a byproduct, it sort of unlocks an incredible third thing that
+people don't talk about. We'll we'll we'll talk about it in a second. So the more obvious goals is,
+one, you need to give model their right information to workers. Right? So as we all know, for LLMs,
+it's fifty first dates. It knows nothing about your your repo unless you give it their the context.
+So, one way or another, it needs to receive that that context. And you could say, well, the model is
+agentic. Let it rip it. They'll find the context by by just messing around kinda like Roomba, you
+know, other that doesn't have the map of their of your floor and it just bounce it bounces around
+there the the the corners in order to to vacuum the whole surface. Well, that's not efficient, and
+that inefficiency manifests in two ways that most of you are familiar with. So first of all, context
+window for LLMs is limited. Right? So, typically, 200 k. Right now, it could be million tokens,
+sometimes 2,000,000. But, again, more most typical for strong models, it's around 200,000. So if the
+model bounces around a lot, it's gonna fill in that context with the bouncing around, and and it's
+not gonna have enough working memory, if you will, to solve the actual problem. So so that's issue
+number one. Right? It's how how could we give model their the right information. The second issue is
+that despite all their claims and needle in the stack benchmarks and whatever, models are not great
+at multi hawk reasoning over very, very long trajectories. Right? So what it means in simple
+language is that if you can give their information to the model concisely, then you will
+significantly improve the performance as opposed to if you mix it up in a bunch of noise. And that
+noise noise can be confusing. So the way attention works, and you can test it in real life, is that
+if you add some information into their trajectory, it will bias the model towards that information
+even if that inform whether that information is correct or incorrect. I'll give you very funny
+practical examples. So up until recently, if you ask a model, doesn't matter, it could be Claude, it
+could be GPT, you ask it to write code that uses the model that's recent, that goes beyond the
+training date cutoff. The model will keep ignoring your instruction and go back to the previous
+generation. You know, you you ask, GPT 4.1 to code for GPT five, it will fall back to GPT four o or
+whatever. But you can solve for that, and the solution is readable. You you go into your prompt and
+you type g p t five dot g p t five .gptfive. You type it, like, five times, and and the model,
+quote, unquote, gets it. And and it's not because you, again, quote, unquote, yell at it. Nothing to
+do with that. It's just because it's sort of that those tokens in the context window buys the model
+towards kind of overcome their inherent bias from the training data. And and that's true about
+humans. We we're all have and careen and the things that we can talk about about how how our own
+brain brains work. But, anyways, the context, the more concise you can pass the information to the
+model, the more successful it will be in getting to the right solution. That's one part of context
+engineering. How can we find the right information, condense it, give it to to the model, so the
+model has more working memory? Now the other interesting part of context engineering is that, in my
+opinion, it's essentially a higher level unlock on inference compute. So if you think about their
+their previous big breakthrough in LLMs, it was the reasoning model, which basically took their
+chain of thought, prompting technique and, put it in a RL training harness and kind of, allowed the
+models to, again, unlock that inference time compute by producing longer chains of, thought.
+Essentially, this is what, at the meta level, AI first engineering is doing. Instead of, just
+throwing model to single shot a solution to complex problem for you, you're breaking it down in
+steps. And every single step, you're running an agent, at least one agent. And, again, typically, in
+in our scenario, it's multiple agents. So it's it's the original agent. It's the review agent. It's
+the correction agent. So every single one of those agents has a concise input and has more working
+memory. Plus you're adding all of that compute together so the final solution leverages that that
+inference time compute for many agents and essentially leverages your human inference time compute
+as well because you're part of their you're you're the director of that process, and you're the
+reviewer. So that brings, again, that inference compute number to the whole next level, and that's
+what, in my opinion, makes context engineering so much more powerful. And, interestingly, just like
+with chain of thought prompting technique, the models codified it. Entropic is right now, to some
+degree, codifying some of these practices. If you use SONNET 4.5, when you ask it to work, it
+basically does what what a good AI first engineer would do, trying to generate spec and then gen p p
+r d and spec and whatnot. Now the only thing it misses, though well, not not only. It misses two
+things. It misses your inference type compute because you're not reviewing those those stacks and
+your injection. Even if it's just, like, three words, it could be very powerful in that process. And
+then, again, it doesn't automatically reset the context for you, which is, to some degree, handicaps
+the model compared to what AI first engineers do today. So that's a little bit of, context
+management and some meta thinking on it. The other interesting aspect of managing the scope and
+context of the information that you're providing is, broadly speaking, most of these agentic
+engineering tools are by default scoped to a single software repository. And in order to be able to
+understand more fully the role of that software repository in the broader operations context when
+you actually get it deployed, you often also need access to maybe a different repository that has
+the deployment information or maybe it's a part of a service oriented architecture. So you need to
+understand what are the other services that this is communicating with. And then that also brings in
+the question of being able to introspect aspects of the dependencies of the project. And I'm
+wondering if you can talk to some of the strategies for being able to span across that broader set
+of context that you may or may not need to bring in for a given task. You you absolutely have to
+solve for it. I'll give you several different ways, so you have the full toolbox and you can decide.
+So for first, and this is not our sales plug, but our product does support multi repo indexing for
+this specific reason. Right? We we as a company, use microservices. My previous companies used them.
+A lot of companies do. Oftentimes, when you use microservices, you use multiple repos. So it's very,
+very natural for any modern team to have, kind of their repos role. And from that perspective,
+giving ability for agents to glance into their related repos is very important. So so that's tool
+number one. Tool number two is, which I don't like, and we we did prior to multi repo indexing. This
+was one of the approaches we used in our company, but but, again, I I I hated it personally. So
+which is you you kind of create a higher level script that pulls out the repos into the same parent
+folder. So you kind of have a structure on your laptop that that's not reflected in your Git,
+essentially, right, that that contains multiple repositories and that allows the agent to go across
+that. And you can run the agent at the higher level, if you will, the kind of above above your repo
+on your local machine. So I I I don't like it, but but that's one workable approach, in certain
+cases. Another one, which is the the third tool is both a shortcut for simple structures, but also
+potential necessity in very, very complex structures is you might wanna spend some time in to create
+an MD file, that will describe that that will kind of curate the information that you wanna give
+agent about your different repositories. And you can do that, by the way, with their two other
+approaches that I described there. This is not contradictory tactic. Right? It's not it's not
+exclusive tactic. You you can combine it, but sometimes there you you might have your own quirks.
+For example, maybe you have a repo that's deprecated, but there's nothing in that repo that says
+that it's deprecated. And, again, that that that's an admission, and and the best solution is to
+actually deprecate that repo. We all know the right solution, but we also know that in real life,
+there are a lot of things that are done not in the right way. And so in from that perspective,
+having good instructions helps. I found both human and AI. And so so, again, good way to think
+through that is what would you give to Joe when he joins your team and you don't want him to mess up
+and you want him to, you know, get on board with your solution in the next thirty minutes as opposed
+to the next thirty days? So and then their fourth one, which we, in our own organization, applied
+is, we actually simplified some of that chaos in order for both AI and us human humans to to have
+better time at working with our solution. So I think, yes, you do wanna use AI first engineering
+across all levels of complexity, but their nature of the models and the nature of human knowledge
+and skills makes it most usable in a certain progression where, you know, say, six months ago, AI
+first engineering was most appropriate for simple greenfield project. And right now, AI First
+Engineering is fully applicable at their scale of a company like Zencoder, where we got about 50
+engineers at a scale of product like Cloud Code. Again, both us, Zencoder and Cloud Code are a the
+we our engineer teams are AI First. But at the same time, maybe not yet ready for overnight
+transition at SAP. So so you gotta be thoughtful about carving out their space in your product road
+map and the space in your repository sprawl where you could truly go AI first as opposed to AI
+assisted. Right? And kind of use that island, more controlled environment where you can battle test
+it in your own organization and kind of from there scale to more complex, engagements, right, and
+more complex setups. So so I I would recommend that more progressive approach. And and, obviously,
+again, they're the easiest one of that progression is is Greenfield. Sometimes they're again, a lot
+of companies have new initiatives, right, that they wanna bring to market quickly, and that's
+probably is there. Especially if you think that that initiative can become the seed of the future
+platform that can overtake the legacy system, that's perfect for AI First where you can, from day
+one, build something that moves at their 10 x speed of their your well, today, it's probably not 10
+x. Today, it's probably two x, three x, but moves at the speed three x, the speed of your your
+previous software development life cycle. And it's fully covered in tests, and it's done the right
+way from their repo structure architecture structure, and use that to kind of instead of trying to
+rebuild the whole legacy, which is its own project for the next, you know, two, three years, kind of
+focus on their new greenfield development and try to make that in the market and in in your tech
+stack overtake their the legacy system. That that's one thing that, again, we've done internally. We
+we had that repo's pro and microservices pro. And one of the solutions for us was that as their
+market changed and we needed to come up with the next generation of our product, we basically took
+the best from the previous one, but essentially started a lot from scratch. And that next generation
+very quickly overtook the previous generation of of our product. That's an interesting observation
+as well because microservices as an architectural pattern are is largely solving the challenges of
+communication patterns between engineers more than it's solving an issue around deployment or actual
+operability of the system. And as you bring LLMs in as a communication partner, that also changes
+the communication patterns that you're going to have, which brings in a different factor to Conway's
+law that defines how you think about structuring your software. And so I'm wondering if you have any
+insights in that regard from the lessons that you've gained from building ZenCoder and working with
+customers and, observing the ways that people are engaging with LLMs for actually managing their
+software and how it's mutating the ways that we think about system and software architecture? I I
+think people need to be more brave right now where LLMs give you ability to understand their code
+and scopes that you did not own before. You know, you might have boxed yourself into, like, I'm a
+front end engineer. Right? I I don't understand how that back end stuff works, so I first of you.
+Like, like, I'm I'm I'm a back end. Like, like, I I I don't know much about the time script and this
+and that. And that kind of siloing significantly slows down decision making process because a lot
+of, technical decisions, they sprawl different scopes. And, again, people kind of over the last
+decade got comfortable with a certain zone. And so a lot of those decisions, they become committee
+decision where you're offering kind of a half baked solution that only covers your part and hope
+that somebody else will cover the other part. And and versus right now, I think you have agents like
+Zencorder that can help you understand internals. You have agents from OpenAI and Cloud that can
+help you research open source comparables, kind of wisdom of the crowd, whatnot. So you can very
+quickly build full contextual understanding of the whole picture. And instead of hoping for
+community decision, you can come and say, hey. Here's what I think their solution should be across
+all the scopes. And then people who own those scopes can quickly say yay or nay or correct you.
+Right? Like, it's not about being right the first time, but it's about accelerating their the speed
+of making their the decision to your point, kind of changing that communication paradigm and and
+changing that to more complete ownership of the system. And finally, I already mentioned Agile in
+the conversation today, kind of that transition around, February. There are a lot of parallels. I
+remember before Scrum, which is their kind of staple of modern engineering practices, there was this
+quirky process called extreme programming that got very popular for a brief second, and then
+everybody forgot about it. But part of their values there was being brave, And and another value was
+kind of the shared code ownership instead of silo, and you kind of all had a better exposure to
+overall, code. And and there was a active practice of rotating you across all the parts of the
+solution so you would have that full picture. So today kind of reminds me about the same principles.
+And in fact, they might be even more valuable today because as the models become better and better,
+where we human shine is that aggregation of context across the whole solution and across various
+disciplines and merging it with our intuition about the product and the market and the mistakes that
+we made in this company and the mistakes that we made in the companies before. So I I I think people
+should embrace that and and do that quickly. And that's kind of your your value, how you become
+extremely valuable in the CI first world as opposed to you trying to compete with LMS, which makes
+no sense. I don't think that's that's the right thought. And extending that question of
+communication patterns and Conway's law, a large number of the agentic coding tools that have been
+developed are still very much focused on the use by a single engineer. And I'm wondering if you can
+talk to some of the ways that you and other vendors are thinking about the more team based and
+multiplayer aspect of software as an exercise and how these agentic systems can both capture and
+distill some of the best practices of the most productive members of the team as well as provide
+useful guardrails and starting points and also just broadly visibility to everybody on the team as
+far as what the agents are doing, how they're operating, and how everybody can most benefit from
+them. You're spot on, and it's a glaring hole in the industry, but it's also very explainable hole.
+Right? Because when you're can improve the productivity individual productivity by two x or five x,
+like, you first have to do that. And then on the journey, if you're trying to improve that but the
+quality isn't there, then your first goal is to improve the quality and accuracy of that solution,
+right, before you start thinking about collaboration. But then once the individual angle will tap
+out or once, again, the the accuracy of the systems, and I would put it another way, one like one
+the once the accuracy of the systems gets better, the collaboration aspect will become increasingly
+more important. And, by the way, a little little tangent there. I think the key unlock for the whole
+industry is gonna be self verification. Because right now, the models are already getting good at
+code review, but they still produce a lot of false positives. And false positives can completely
+blow up the trajectory. Like, if you ask the model to review and another model to act on that
+review, yes. It'll fix some issues, but it can also, like, completely take it away and create, like,
+some some monster. Right? And so but we're we're on the cusp of that self verification. And once
+we're there, the accuracy will skyrocket because then the models can iterate and you can paralyze
+and blast multiple agents and whatnot. So and then once that happens, their kind of collaborative
+aspect of developing systems will become significantly more important. I'll I'll give you a very
+simple example. In that spec driven process, what should happen as the next evolution of the
+category is that execution part should be fully given to the agent. Like, now organizations still
+call dearly to code review. Why do you need code review? If you have reviewed the technical spec,
+and and, again, I'm not saying jump, like, like, ten years in the future. I'm just saying the next
+logical jump. Say you reviewed the PRD and agreed on it. You reviewed the technical spec. You agreed
+that this is the right implementation. You, as an organization, agreed on your verification
+framework. Well, like, you've got good, with automated, test suite suite, and then there are the
+guidelines for every implementation include test test driven development and end to end testing and
+whatnot. What difference does it make? Well, like, you know, if you use quick sort or bubble sort.
+I'm I'm making this stuff up. Right? But, like, there there there's zero difference. Well, like, if
+we agreed on the high level parameters and the guidelines, then it should not matter. So but that
+quite logically puts their then their review component up the chain. So now we need to be reviewing
+those specs. And as you know, those specs are created in active collaboration with AI. So it's quite
+natural that then that spec creation process instead of me iterating with my AI agent becomes more
+like me iterating with my AI agent than with you, kind of three of us. Right? It's it's it's not
+like sequential, but more collaborative process. And this is where I think, again, the the that next
+collaboration layer comes in. And today, their existing players are not ready for that. So Google
+Docs, for example, a wonderful product. Use it every day. Their OT is not built for that sort of
+block interaction with AI. Notion, wonderful product, use every day. Not their the underlying data
+structure is not built for that. Otherwise, they would already have it in the product. They they've
+been walking around with AI for the last two years. They still don't have it. So that's a non
+existing layer of technology. I spent more than decade of my life building Wrike, which was, again,
+collaboration at its best. I, I was a seed investor, early advisor in Miro, which was another
+category defining collaboration company. So I I did spend a minute thinking about how to make
+teamwork more efficient, and I think that's our big thing coming to to AI next year along with,
+again, that that self verification, which will allow us to run more agents in parallel, run more
+agents in background, and, again, elevate the level that we humans operate as we're trying to
+engineer complex systems and bring them to life in a reliable, secure way. The other aspect of
+agentic coding is, at least in its current state, it doesn't necessarily make sense for every
+software operation to be done by an agent because of, in particular, issues around cost, but also
+issues around precision. And so I'm wondering if you can talk to some of the heuristics that you use
+to determine whether and how to employ these agentic systems versus just doing it manually using
+your trusty old text editor? Good question. I think AI first is best at a good unit of work.
+Actually, let me start from maybe the very bottom. Super quick change that you or you're already
+there. Right? You know what to change. Just do it by hand. Right? You you don't necessarily need to
+to ask an agent. Then, you know, quick bug fix. The file is not open, whatever. Just single shot it
+at an agent. It should be able to do it as well. Then you're trying to implement user story that
+changes their product technical aspect a little bit. It's more than, you know, rounding their the
+square button. It's it's you're you're introducing new data structures into the product or new page
+or changing some interface in a variety of different ways. I would say use AI first approach. Go go
+through those steps. You kind of implement a new module for for your product. You're refactoring
+existing sizable modules, so go AI first if your infra, quote, unquote, is ready for that. By infra,
+I don't mean to SAP. I mean I mean, your your DevOps, your AI ops infra. Well, like, you you you've
+got the the right repository, and you you understand how all those things works and whatnot. And
+then something even higher level. Right? You're you're trying to design high level architecture for
+a new solution. Say say for company like Xancoder. Let let's say we rolled back the clock several
+months ago. We're implementing autonomous agents, right, in in for for your CICD. How do we
+architecture that? So that's human driven process that's heavily AI assisted. Right? You would run a
+lot of research agents agents in the background, but you're still in the driver's seat. You're
+you're not, like, asking AI to generate instantly generate code for you. You're you're trying to
+generate an architectural document that will go through the team review and whatnot. But as you do
+that, that that's heavily AI assisted. So so I'd say there's a sweet spot where that unit of work is
+AI first, and then the levels above and below are AI assisted. And then the level one level above
+and below is just just human because either it's too complex for AI or too simple to even bother
+doing it with, with AI. And then one of the other major aspects of considering when and how to
+invest in one of these agentic engineering systems is in terms of cost, particularly given the high
+degree of variability where in many cases, it's still going to be cheaper than hiring another
+engineer. But at least with an engineer, you're hiring them on salary. You know what their cost is
+going to be, so it's predictable. And even if the cost is an order of magnitude less than a full
+time engineer, it's still unpredictable. And so that provides a lot of fear and uncertainty as to
+how and when and in what situations to use these agentic systems. And I'm curious if you can talk to
+some of the strategies from the engineering and vendor standpoint, but also from the consumer
+standpoint about how to mitigate some of that risk and uncertainty around the potential for cost
+explosion. Mhmm. Yeah. I'll I'll start with saving and go into a paradoxical thesis on saving. So
+I'm a big believer in subscriptions. Right? So so I think they work good for businesses, and they
+work best for they work best for vendors, and they work best for buyers. That that's why at at
+ZenQuarter, we're a subscription based product, not, API based product. And then from the
+subscription perspective, that's why we also opened up the doors for users to bring their existing
+ones. So there's about 20,000,000 ChargeGPT subscribers today. And right now, a lot of people don't
+know about it. But if you if you are paying for your ChargeGPT subscription, you can also use Open
+iT tools called called CODIX CLI, a common line tool, and they're fairly generous with what how many
+tokens they let you use on on that Cortex CLI, and then you can bring that Cortex CLI into
+Zencorder. So you will have the best of both worlds. Right? You would have Zencorder UI, and you
+underneath it, you will be leveraging your Charge of the subscription that you're already paying
+for. And for us, that starting tier is like, we're we're actually free to start in that. If you want
+more features like MultiReap or whatever, we'll charge you for that. But if you just wanna bring
+your codec CLI tool and use our UI in in your Versus Code or JetBrains, you can you can do it for
+free with us. So, essentially, cost you nothing and you have full control. Then Claude from Entropic
+was very generous up until recently with their subscriptions. Now they start to tighten that down
+very rapidly. But up until recently, again, they they were very generous. For for example, one of
+our own engineers and and we, again, we at Zencoder allow you to bring your cloud code CLI tool,
+which essentially allows you to leverage your cloud subscription. So one of our engineers burned
+through about 3,500,000,000.0 tokens in in August, which in API pricing, including cash and
+discounts, was about $11,000 worth of API calls in one month, and we paid about $200 for for his max
+subscription back then. Vendors start to tighten those subscription kind of limits. But still, if
+you're using if you have ZenQuarter subscription, you have Chargebee subscription, you have CloudMax
+subscription between the three, I'd say you can do a lot. And that's all in is gonna cost you
+depending on, again, your needs between $50 and $500, a month. Compared to what's your fully loaded
+cost to engineer, it's a tremendous, amount of savings. And then in general, for my own team, I
+always encourage them to use the best tools and the best models. For example, prior to SONNET 4.5,
+between SONNET four and OPUS four, I always encouraged my my engineers to use OPUS four. I know it's
+more more expensive, and I know, again, the bill can go high pretty quick, but it's still
+significantly cheaper than alternative cost of time to market or even my direct cost of engineering
+labor. Again, I try to apply personal standards to to the team. I I'm I'm I've been subscriber to
+chat GPT Pro since the day it launched, and, it it's been extremely helpful for me in doing doing
+research and so all sorts of different topics. I've been subscriber to CloudMax since they they
+launched that offering. I I use Encoder every day. And so I feel right now, I'm significantly more
+capable at my job than I was a year ago when I did not have those tools and those LLMs at my my
+disposal. Like, I I can measure the difference and measure the impact that it's making on on myself
+and my organization. So long story short, subscription is the way to save. Bring your own
+subscriptions or use ours, whatever it takes, and then use the best models. It's still cheaper than
+making bugs or making wrong architectural decisions. Like, at this point, I see zero reason why you
+shouldn't use AI to cross check your your architectural decisions. Just like you're trying to review
+AI code. Well, let AI also review your decisions and your code, but like it's it's it's free, and it
+can significantly improve their the quality with whatever you're doing. And in your experience of
+working in this space and building a product in this space, what are some of the most interesting or
+innovative or unexpected ways that you've seen coding agents applied? We're trying to come up with
+the term sometimes use business vibing. There's this whole generation of entrepreneurs who use tools
+like ZenQuarter to essentially manage their business. They would connect a bunch of MCPs. They would
+put their sales call tran transcriptions in some text files and folders, and they would run all
+sorts of sales, marketing, and business automations through, through coding agents. So that's that's
+unexpected, and I think we can do better by them. I think we can give them better product and better
+interface that that's less techy, if you will. The the those are your kind of early adopters,
+innovators, and pioneers that use tools in unconventional ways, and and they kind of pave the way
+for their later people who will use kind of, again, simpler solutions to achieve the same
+productivity results. And one of the other interesting aspects too that I forgot to bring up earlier
+is there are many styles of agents, and there are coding agents that operate autonomously in some
+hosted environment unmoored from a developer's laptop versus agentic editors that bring the agent
+loop into the process of doing the work, whether that is something like a cursor or a windsurf or
+even these Cloud Code and GitHub CLI and Gemini CLI. And I'm wondering if you can talk to some of
+the juxtaposition of those styles of agent based engineering as well. I think we had this debates
+back and forth internally, about both kind of for our own use and for the product. I think,
+ultimately, you need to have both modalities. So there there should be called first modality. And
+most engineers think that that's the main one and that that's gonna stay there forever. I think
+they're overestimating the importance of that modality and the longevity. And then there's gotta be
+agent first because as you started to manage these fleets of agent and their work more complicated
+workflows, both sequential ones, and then parallelizing multiple agents. Again, the whole industry
+is not yet unlocked. Very simple technique, which is in sampling. Right? In machine learning, we're
+always using sampling. So you should be for complex problem, you should be running agents and
+comparing the results and merging them together. So all of those things need proper UX and UI in
+order to unlock mass market use, and that means AI first product rather than kind of code first
+product. So and they should just live happily together. I think the good example for that is GitHub
+and Versus Code. Versus Code has support for GitHub, and you can do the operations from there, but
+it also has its dedicated web interface. Right? And it has it has a decent CLI interface. So you and
+depending on your use case, you might prefer one or the other. So I think that's where it's all
+heading. And, again, I think engineers overestimate their own reliance on ID just because they
+haven't yet seen very capable AI agents that are more autonomous. Once they do, again, they will
+start appreciating other surfaces more. Again, not not as a replacement, but as an as an addition.
+You're not trying to bring Slack into your Versus code. Right? Like, you prefer dedicated interface
+to this code is already pretty busy. So if you're if you're gonna again, if you're trying to manage
+complicated AI workloads and fleets of agents, I don't see a reason to bring all of that into Versus
+Code interface, which already serves its purpose. Right? It kind of already dense. I think both both
+are awesome and will work well together. And in your experience of building a product in this space,
+what are some of the most interesting or unexpected or challenging lessons that you've learned while
+building ZenCoder? I knew that the pace would be insane, but I I still underestimated how insane it
+is and how quickly you need to be able to pivot to their next generation, if you will. I'll I'll
+I'll give you an example. We built state of the art rack. Right? An incredible re ranker. And while
+we were still kind of fixing the issues with that re ranker, if you will, because because it's one
+thing to build it in the lab and another thing to build it in production, We we lost a little bit of
+time in implementing good UX around SONNET 3.5, and our competitors kind of sweep that opportunity.
+Right? So so and we did very quickly came back on top. And, you know, we talked to SuiteBench,
+verified at some point, and we, doubled the SuiteBench multimodal. And we did 20% more in Svelancer.
+All of the great things, but time is everything. And, you know, if we done it a month earlier, it'll
+be a very different trajectory for our brand. And, again, that month is not because we were stupid.
+We we knew that was coming. We just were too slow to drop everything that we were doing and start
+sort of, like, running towards their the new target. I learned that lesson, so we're moving much
+faster right now. And, again, we retooled the whole company around Velocity. So retooled the
+architecture around Velocity, our processes, our team, and we're AI first right now. So right now,
+I'm I'm ready for for for anything, if you will. Right? And and we we are moving super fast to lead
+that that next generation of what's coming around the bike. So so that's one big lesson. And another
+lesson is interesting, and it's more on the business side. So if you're familiar with kind of
+business books, they all teach you to focus on your core customer and start with one segment and
+then go to and when I started my first company, Wrike, I I fully understand their theory behind it.
+I appreciate it. I fully agreed with it, and I still did the exact opposite. Like, I I felt that
+while while building Wrike, I was building the product that is needed by everybody. Like like, in
+business, you're always managing work and you're always collaborating. So it doesn't matter which
+department you come from. Right? So I build the generic product, and it was hard, but it was worth
+it. And it was brilliant and we helped millions of users. And exam quarter, it's kind of funny where
+instead of learning that lesson to ignore the wisdom, I went with the wisdom where, like, I I said,
+hey. You know, when when we started, models were pretty weak, and so we needed to do a lot of work
+on kind of making them better. So there was no way model can be, like, autonomous for you. White
+coating didn't exist, and and we're like, we're gonna help professional engineers get the most out
+of those models. We know they're not perfect. That's this is what we're there for. We built
+incredible context. We'll correct all of their mistakes. We'll babysit them. We'll do whatever it
+takes for for the professional engineers to to get get good value out of that. So that was our
+starting segment. And then as wipe coating got onto the radar, we're like, well, it's it's kind of
+cool and nice, right, when, eventually, we'll get to it. But our our main customers are professional
+engineers, so let's stick with it. And that was a big mistake because professional engineers, while
+still being the core of our business, they don't go on YouTube and rave how cool your product is,
+and tweet them in and whatever. Right? As opposed to for web coders, people who have not coded
+before, like, they're they're like, it's mind blowing. You know? They they type something into their
+ID, and suddenly they have the website that they dreamed about or the app that they they thought
+they thought about. And so I think that emotional aspect of it is so powerful and so valuable for
+the brand that and we we, again, we we kind of stick to our core audience and, like, hey. Multi repo
+indexing and full support for JetBrains in addition to Versus Code and this and that. And so we kind
+of missed on that opportunity. And and again, I I blame myself because I kind of took logic over the
+heart. And my mission was always helping people unlock their creativity. And from that perspective,
+like, white coating is a natural area for that. Right? Like, you're helping people create at its
+purest form. So that's the lesson one other lesson learned. So so one is there the importance of
+speed, and the other one is importance of kind of trust in your heart sometimes over over your
+logical mathematical brain. What are the situations where you would advise against either ZenCoder
+specifically or agentic coding in the large? There's one very distinct one. If you're LLM and not
+human, you should probably not use encoder. But if you're human with your own brains that can and
+and you're in the driving seat, then it's an awesome tool. Just like, you know, you you will by
+using that, you will build an understanding of whether that tool is appropriate. It's a little bit
+more complex than hammer versus a screwdriver. You know, with hammer and screwdriver, it's a little
+bit easier. Like, here's the nail. Here's the screw. You know? Don't screw it up. Pun intended. So
+as opposed to with with Encoder, is you use those products, I think it's it's helpful for you to
+start using them in different scenarios so you get firsthand feeling of where it works well and
+where it doesn't. I also think it's important for you to put some effort into building your own
+setup around those tools because for us, it took an effort to change into AI first engineering. And
+a lot of engineers don't wanna take that that effort. Right? So so they need support, and they need
+some push top down, and they need some help, and they need the prompts, and they need the tools, and
+they need examples of the champions. Like, luckily, in most companies, there are kind of more early
+adopters types there. And what what I would probably recommend is for for people who lack the
+motivation to try it on your weekend for some vibe coding stuff. To because if you only tried it in
+your prod, right, again, there there there needs to be an effort that you put in before you get the
+most value out of it as opposed to if you tried in Greenfield, you might get your own, like, oh my
+god moment. And so I would recommend everybody who hasn't done it yet to pipe code on the weekend.
+And then I also would recommend everybody to challenge your own assumptions with their every next
+major model bump. Right? So, g p t five is significantly more powerful than previous models in in
+for for all and for one and whatnot. Even the latest, SONNET 4.5 is significantly more powerful than
+SONNET four. Like internally, my previous guidance was for my team to use Opus 4.1 instead of SONNET
+four versus right now, my internal guidance is to use so SONNET 4.5. So I I I don't have good words
+when I talk to somebody and, like, oh, this doesn't work. Like, what did you use? Well, I use, like,
+like, cursor with GPT forum. And and also, by the way, they they also don't know that cursor cut
+their context very, very aggressively. So so they haven't even seen the full power of that model.
+And by the way, we're, like, two generations ahead on the model and, like, one generation ahead on
+the harness. So and then they're like, oh, it doesn't work. So, again, you gotta be trying this
+stuff because this world moves very, very, very quickly. And as you continue to build and iterate on
+ZenCoder and help to push this frontier of agentic software engineering? What are some of the things
+you have planned for the near to medium term or any predictions that you have for the maybe next one
+to two years? Because projecting further beyond that is a fool's game. Yeah. So my projection is
+that next year is gonna be as dramatic as this year. So that we will all be on the next generation.
+And, specifically, I I won't repeat the whole detail, but but we talked about those things. So I do
+think that, self verification will become more feasible. I do think that this will be immense unlock
+for compute at a variety of different levels, per parallelizing, which is gonna improve their
+accuracy of per and sampling, I should say. Right? Which will improve their accuracy parallelizing,
+which independent tracks, which will improve the productivity because you're gonna be able to do
+more things. And and as those things happen, you'll also be able to run more more of that stuff in
+the background and in UCI and whatnot. So a lot of the claims that we heard a year ago will finally
+actually become the reality next year, if you will. Or, like, some of the outlandish stuff or, like,
+oh, just point this stuff autonomously at my at at Jira at complicated Jira ticket and and we'll
+produce the PR for you. Kind of that sort of BS that we heard a year ago was BS a year ago and will
+be real life, next year. So there's that. And then the other thing that we discussed as this happens
+on their individual productivity side, their kind of teamwork with AI will become more more real and
+more more more tangible. And that will keep us all busy building and learning through through the
+next, I'd say, twelve months. Are there any other aspects of the work that you're doing on ZenCoder
+or just this broad space of agentic software engineering that we didn't discuss yet that you would
+like to cover before we close out the show? No. Embrace the exponentials and enjoy enjoy the ride.
+And I believe there is a tremendous potential for for humans. It's not the first time we bring up
+the next level of abstraction. I've seen punch cards physically. I never programmed them, but I've
+seen them. I have written a little bit of assembly code. I have written c code and c plus plus and
+Java and Python. And people underestimate what we have today with, so many open source libraries and
+cloud and whatnot. Like, we're already operating so many levels of abstractions above what we had to
+do a decade ago and then two decades before that. And so this is just the next level of abstraction.
+It is a little bit different. And it for some people, it does mean reskilling. Right? But but again,
+there are not that many Cobalt developers today. Right? So so they also did need some reskilling. So
+that's kind of just be open and enjoy enjoy that progression. Alright. Well, for anybody who wants
+to get in touch with you and follow along with the work that you and your team are doing, I'll have
+you add your preferred contact information to the show notes. And as the final question, I'd like to
+get your perspective on what you see as being the biggest gap in the tooling technology or human
+training that's available for AI systems today? The biggest gap is there's huge number of
+organizations that can already embrace AI first engineering, at least at some new initiatives, and
+that will open their mind to to kind of end their open up their productivity, so much, and they can
+bring it to to the rest of the organization. So so it is coming. There are more and more people
+embracing and adopting those best practices, but there's still huge opportunity. And then the other
+note is I would recommend people to use it as a system. Now that's a very common mistake that I've
+seen as companies, a decade ago, try to implement Agile. They would pick, like, one or two things,
+and they would call themselves Agile, and they would essentially be doing things the old way. They
+would pretend that they transformed the organization, and then they would say, well, this stuff
+doesn't work. Well, you have done zero transformation. You you just kind of slapped, some lipstick
+on what what was already there. So it is a different process. It does take an effort to transform.
+That's why I recommend starting at the smaller, more manageable scope than trying to boil the ocean
+upfront. But when you do that transformation, you will see significant acceleration, and then you
+can deploy that learning through the rest of the organization. I mean, you can deploy it as a
+system, not just as a as a lipstick where you're like, hey. We're at first using AI coordinate
+agents, where in reality, you're just doing the the same old things in the same old way with with a
+little bit of AI assistance. Alright. Well, thank you very much for taking the time today to join me
+and share your insights and experiences around building agentic coding systems and some of the ways
+that the early engineering efforts have been obviated by the models and how we're in a constant loop
+of discovery. So I appreciate all the time and energy you're putting into helping to delineate the
+forefront and help move us forward, and I hope you enjoy the rest of your day. Thank you. Thanks,
+Tobias. Thank you for listening. Don't forget to check out our other shows. The data engineering
+podcast covers the latest on modern data management, and podcast.init covers the Python language,
+its community, and the innovative ways it is being used. Visit the site to subscribe to the show,
+sign up for the mailing list, and read the show notes. And if you've learned something or tried out
+a project from the show, then tell us about it. Email hosts@AIengineeringpodcast.com with your
+story.

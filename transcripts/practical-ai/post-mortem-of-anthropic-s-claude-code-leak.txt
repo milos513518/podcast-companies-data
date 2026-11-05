@@ -1,0 +1,398 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Post-Mortem of Anthropic's Claude Code Leak
+DATE: 2026-04-09
+SHOW: Practical AI
+LINK: https://share.transistor.fm/s/44e59b0b
+AUDIO: https://pscrb.fm/rss/p/dts.podtrac.com/redirect.mp3/media.transistor.fm/44e59b0b/1ecd61fa.mp3
+DURATION_SECONDS: 2670
+TRANSCRIBED_AT: 2026-11-04T10:04:48Z
+----------------------------------------------------------------------
+Welcome to the Practical AI Podcast, where we break down the real-world applications of artificial
+intelligence and how it's shaping the way we live, work, and create. Our goal is to help make AI
+technology practical, productive, and accessible to everyone. Whether you're a developer, business
+leader, or just curious about the tech behind the buzz, you're in the right place. Be sure to
+connect with us on LinkedIn, X, or Blue Sky to stay up to date with episode drops, behind-the-scenes
+content, and AI insights. You can learn more at practicalai.fm. Now, on to the show. Welcome to
+another episode of the Practical AI Podcast. This is Daniel Leitnack. I am CEO at Prediction Guard.
+And I'm joined, as always, by my co-host, Chris Benson, who is a Principal AI and Autonomy Research
+Engineer. How are you doing, Chris? Doing good. How's it going today? Lots of cool stuff out there,
+isn't it? Oh my gosh. Lots of interesting, scary, intriguing, malicious things. So, for context, if
+you're joining us at another point in time, listening to this in the future at some point, we are on
+April 1st, 2026. No joke. Which is interesting. It's April Fool's Day. So, what we're about to
+describe is not an April Fool's joke. Although, I think there was a number of AI-related April
+Fool's posts. You know, most tech companies post something here and there. But this was actually
+very much not a joke. So, as of today, April 1st, 2026, I guess last night, or last night kind of
+into today, was this perfect storm of leaking of Anthropics' Cloud Code code base. And related
+vulnerabilities in toolchain of Cloud Code. And so, yeah, I mean, this is the most timely thing for
+us to talk about, Chris. What was, I mean, before we get into, I want to go through the timeline and
+kind of all the dynamics here. I mean, Anthropic was already dealing with some rather difficult
+things in relation to being identified as a supply chain risk by the U.S. government. But, yeah, I
+mean, coming into this, what, yeah, what's your, how did this hit you? How did you learn about it?
+What, do you have your copy of Cloud Code? I guess we shouldn't admit that one way or the other on
+this podcast. I don't know anything. Yeah, never, never speak. You know, the monkeys there, no see,
+no hear, no speak. Yeah, exactly. So, if I did, I would never admit it. Yeah, I just, well, first of
+all, you know, in the, it's kind of background, like, Anthropics had a few interesting weeks here.
+Some challenges. Yeah, and they got a judge on their side. So, if you're joining this later or if
+you haven't followed, the United States Department of Defense, that also likes to call themselves
+the Department of War, but that's not been approved by Congress, is, you know, kind of had this
+thing where they said we're no longer, because you're not doing exactly what we want, we're no
+longer going to let Anthropic be part of our supply chain. And Anthropic appropriately went to a
+judge and got some relief on that legal situation with a whole bunch more to be played out that
+hasn't happened yet. And so, that alone had, you know, had been kind of an extraordinary story. But,
+yeah, then apparently yesterday, and I woke up this morning ready for April Fool's jokes, you know,
+because as you pointed out, there's a lot of those, especially in this AI world. And when I first
+read it, I was like, at first I saw the headlines in the newsreader, and I'm like, oh, there's got
+to be, no way, you know, and then started reading. I was like, starting to feel like it might really
+have happened. Maybe this is just a coincidence. So, yeah. Yeah. Maybe for those, I mean, many
+people have heard of Anthropic and Claude. For those, maybe that just to set the stage here. So,
+Anthropic is an AI company founded in 2021 by former OpenAI executives. Some of their focus as a
+company, interestingly enough, as we're talking about the subject of security, has been around AI
+safety. I guess framed more as AI safety, not necessarily security for AI or AI for security. But AI
+safety, so constitutional AI, enterprise focus, safety, publishing their system prompts and other
+things and doing a lot of good research. But yeah, so they were founded in 2021. They have the
+Claude family of models, which now there's even TV ads about Claude. And hopefully many people in
+our audience are, of course, aware of this. Anthropic, in 2021, Claude family of models released. I
+don't know the timeline on the actual release of the tool, but they released Claude code, which is
+the topic of this discussion, which is amazing. I have to say, is a spectacular tool and product and
+has enjoyed wonderful reception in the software development world. It's basically an agentic,
+terminal-based coding agent, assistant, automation tool, whatever you want to call it. So you're in
+your computer, you're in your terminal, you can spin up Claude. It works in your code base and you
+can have it do all sorts of things from running your tests, figuring out which tests fail, making
+the changes to fix those things. It can run bash commands. It can write whole software projects from
+scratch. Like it's very, this idea is very much the agentic autonomy forward view of software
+development. Very much not the kind of GitHub copilot, although they've also implemented agentic
+things now. So I shouldn't, maybe that's not the greatest comparison, but the kind of traditional
+GitHub copilot model of the assistant in your IDE, which would help you kind of auto complete things
+or maybe even answer questions. This is much more kind of autonomy agent driven development and has
+very much taken the software development world by storm. I would hardly talk to any developer that
+is not using Claude code, I guess is the way to put it. No, I think that's, I think that's, I don't
+think that's an overstatement at all. I think Claude code coming out, you know, I believe if I'm
+just for memory, it was in May of last year that it was released. And then in late November, Opus
+4.5 was released. And so going into the December holiday season is kind of when people, Jaws were
+hitting the ground, including ours. It was the very first thing we were talking about into New
+Year's, obviously. And it is completely in a very short amount of time changed how people
+productively develop software now and the way that you do that and their workflows and stuff. So, I
+mean, it's, I think it's one of those history. We'll look back and go, that was kind of the moment
+where it really took off. Um, and so, yeah, it's, it's the leader, certainly. Yeah. And just to
+clear up the, or so timeline wise, uh, well, I guess maybe we should say what, uh, the sort of what
+happened. Basically, if you downloaded Claude code during like a three hour ish time window in the
+past, uh, um, day or so, um, as we're recording this. Right. Then two things happen. Um, one, you
+downloaded basically a bunch of proprietary IP from Anthropic that was kind of the agent harness and
+all the IP around Claude code revealing kind of how it works. And two, you downloaded, uh, a
+malicious version of a, of a, uh, JavaScript, um, package called Axios, um, which, uh, created a
+vulnerability on your, on your computer. So both, both things happened at basically the same time.
+So, but there was a lot leading up to this. So maybe like timeline wise, it's, it's worth mentioning
+that we talked about like the adoption, you talked about the adoption of Claude code, the release of
+the model. In terms of the problematic, we mentioned Anthropic's kind of been through the ringer
+recently. In late 2025, Anthropic acquired this Bun JavaScript runtime. So this, um, this was
+something that they were using, I think within the project, um, and, or they integrated further. Um,
+and, uh, that's relevant because that, that JavaScript runtime is the source of, or, or a kind of
+key piece of why this leak happened. So that was late 2025, uh, not that long ago, obviously things
+move fast. Um, March, early March, so March 3rd, 2026. So about a month ago was when the department
+of war department of defense, um, designated Anthropic as a supply chain risk. Uh, this, you know,
+uh, I, I, has been a topic of conversation, um, and Anthropic going back and forth with the, with
+the government in, uh, not, not too long ago. So March 20, March 26, 2026, as you mentioned, Chris,
+Anthropic got a judge to grant Anthropic a preliminary injunction, temporarily freezing this supply
+chain risk label. March 27th, March 27th, the next day, there was a first leak, which, um, wasn't
+the code leak, but talked about Claude Mythos, uh, sort of a leaked blog post about, um, um, I mean,
+we hear this, I don't know, Chris, it seems like we hear this, uh, often where it's like, oh, the
+model is too dangerous to release because it's so powerful. It seems like we hear that every couple
+months and then it's released and, you know, we, we deal with it. But, um, that was something that
+was sort of leaked on, on March 27th. So those are all like the, the lead up to now, I guess it's
+interesting. I mean, uh, this whole supply chain designation, uh, overlap with AI or Anthropic being
+kind of primarily positioning itself almost as an AI safety company is there's kind of a dichotomy
+there, but then obviously they, they have integrated tools within their widely distributed project
+that were, had, had vulnerabilities in them. Um, at least from the security side. So yeah, it's just
+a weird dichotomy of like what in reality is the supply chain risk. And there's, it's like layers
+upon layers of this where Anthropic was identified as that. Certainly they had a supply chain risk
+internally, but their position as a company was more on the safety side. I don't know. It's, it's a
+lot of safety and security being thrown around, um, and supply chain risk. So that, that was sort of
+the, the lead up, I guess, um, Chris to, to, to where we're at. Um, I don't, I don't know what the
+discussions like, uh, been like with practitioners that, that you've talked to. Um, I would say from
+my perspective, just in talking with people, a lot of the technical community is, is kind of like,
+Oh, why, you know, this is ridiculous. Anthropic being identified as a supply chain risk. This is
+kind of ridiculous on the customer side, like our customers who often work in regulated industries.
+Um, sometimes with some relation to the government are very much like, Oh, the rug's been pulled out
+from under us. We were not thinking that Anthropic was going to be identified in this way. And
+they're sort of rethinking this sort of, uh, model vendor lock in the, the risk to themselves. If
+they build everything on Anthropic. And then if one day the government can just say, this is a
+supply chain risk and they have no way to pivot that creates liability on their end. Yeah. The, and,
+and, uh, noting upfront, since I'm, uh, since I work in the defense industry that I'm only speaking
+for myself, uh, and, and no other organization. Um, it's definitely, I mean, to your point there,
+it's, you know, it was, it seemed very, uh, kind of, you know, malicious, like, like the, the
+government said, uh, you're going to do what we want. Whether you like it or not. And, um, and this
+particular vendor said, no, we're not. And so this particular thing happened. And so that's, that, I
+think that has created that awareness that you spoke of throughout the entire, uh, not only the AI
+industry, but I think many industries are recognizing that, that things can, can, that the rug can
+get pulled out very quickly. And there's been a lot of risk mitigation, uh, in recent weeks from
+many, many, many organizations, uh, along those lines. Now, um, in this particular case, as we
+pointed out, uh, there was, uh, a judge came in and intervened on that. And, and that, that process
+is still playing out. And I, and I think, uh, my sense, uh, is that the government is kind of
+backing down from that anyway, a little bit, um, which is probably good in the longterm. Uh, it's
+not the kind of situation that is beneficial for anybody, I think. So, um, yeah, kind of rolling
+through this, but in Thropic, uh, uh, you know, when I talk to people, there's a mixture of kind of
+support and frustration. Uh, there, you know, some of like, even in this is, we tend to pick on open
+AI more often, uh, historically. Uh, and I'll acknowledge that I'll, I'm the first person, uh, that,
+that has made some comments about them on the show and past episodes, but it, their codex is open
+source. Uh, that is the competing thing. And Claude's gotten a fair amount of, uh, criticism for not
+open sourcing. So I've talked to a lot of, uh, developers are, you know, just in groups today,
+checking out, in some cases, just reading what other developers are saying. And there's a certain
+amount of, um, well, they could have open sourced it up front and, and this is kind of, kind of what
+you get. Um, my suspicion is this will probably lead to open sourcing of that because now that the,
+the cat's out of the bag architecturally, um, and there have been a number of, uh, efforts. Uh,
+there's one in particular, uh, who had already previously been working, a developer out there, uh,
+who had been working on, uh, trying to reverse engineer Claude code, uh, before this came out. And
+had done some work along that lines. And that was one of the people that, uh, that, uh, you know,
+got ahold of the repo here last night. And what they did this time was instead of keeping that code
+out, and that was also shut down very rapidly through a legal request, uh, that's, uh, called a DCMA
+takedown, uh, in terms of not having that code out there. So the, this developer rapidly organized
+an effort to do a clean room rewrite of Claude code initially in Python. And there's also, uh, uh, a
+concurrent effort to rewrite it in Rust. And in the repo that these, both these efforts are, are
+together in, uh, hit, it was the fastest repo in history to surpass a hundred thousand stars on
+GitHub. Uh, they surpassed 50,000 stars in the first two hours the repo existed. Um, so there's been
+a lot of attention here and a lot of people jumping in on it. So, uh, they're trying to get a
+Python, uh, version up and running immediately and with a rapid follow-up on a Rust version. Uh, all
+of this replaces the original, uh, would, would essentially do a redo of the original TypeScript
+that was leaked, which was what Claude code was written in. So, um, with the architecture being out
+of the bag, my expectation is that Anthropic will probably end up just open sourcing this. Because,
+uh, at this point, kind of why not? Um, and at least that, you know, cause you're, you're not really
+losing anything at that point in terms of IP, cause the IP is already out there, whether it's
+appropriate or not. And, uh, and at least that kind of, you know, it kind of puts them open AI
+already did that. It gets rid of a criticism without having lost anything given what happened. So
+it's quite the soap opera in the AI world today. Um, and I just kind of sitting back and watching
+and seeing what people are saying. Yeah. And just, I guess, to, uh, circle back and dig into some of
+the details of actually what happened. And then I think it'd be interesting that there are some
+things I think to learn from what was released. I mean, there's some things to learn in terms of
+what not to do, uh, cybersecurity wise, but there's also some things to learn agentic development
+wise that are interesting, um, from what we, what we know. Uh, so to give the specifics, um, what,
+what happened first was this supply chain. So basically two things happen simultaneously. A
+malicious, a malicious version of the Axios library, um, is published to, uh, NPM. Uh, this Axios
+library is kind of a third party, uh, helper type type library, uh, used to make, uh, web, web
+requests. Um, Claude code depends on Axios. So, uh, you know, basically at the same time, Anthropic
+made their other mistake, they, uh, they were, uh, basically through the dependence on this Axios
+library created, um, the, the second, second problem. Um, but the, the other thing that they did,
+um, in addition to their dependence on Axios, which Axios had this malicious version published at
+the same time, Anthropic accidentally left, uh, this, uh, basically a dot map file in their, um,
+repository of Claude code. So basically this dot map, um, helps map, uh, generally helps debuggers
+map between kind of non-human readable, uh, JavaScript and, and files, um, to human readable, you
+know, TypeScript. Um, and so by leaving this dot map file in the repository or in the package, um,
+it contained enough information that. Uh, were you to want to, you could reconstruct like half a
+million lines of Anthropic private closed source proprietary code, which is the main kind of guts
+and brain of the Claude code package. Basically, if you're in that three hour window and you
+downloaded Claude code or updated, you got those half, you know, at least where you could
+reconstruct the, those 500,000 lines of proprietary code. And you downloaded a malicious version of
+Axios, um, which contained a remote access Trojan, which actually compromised your, your local
+machine. So, um, kind of a, a perfect storm of, of things, uh, that happen. Um, there's a security
+re researcher, um, uh, Chow Fan Shou, um, at fried rice on, on, uh, on X that announced that he had
+re reconstructed the source code. Um, and as you mentioned, Chris, there was an open source repo
+then that kind of reconstructed, uh, Claude, this Claude code repository, uh, which just elevated.
+There were, um, uh, way, way more now I'm sure, but you know, tens and tens of thousands of forks
+also of, of this repo. Um, and that's kind of what we came into today. So we haven't talked about
+like the guts of that and what we discovered, but that was essentially the timeline of what
+happened. So, um, I did, I, I can at least say on this podcast that I did not update my, my Claude
+code or download it overnight. So unfortunately I didn't get the 380 billion valuation proprietary
+code. Um, uh, but, uh, still interesting to learn, learn many things from, from those that have dug
+in and, and certainly still a lot going on on GitHub as we speak to reconstruct and, and, uh,
+leverage some of these ideas. Yeah. I think, um, I mean, yeah, I mean, you may not have gotten it,
+but the code is out there, um, many, many, many times over. Uh, people are not leaving it, you know,
+back in the window, people were not leaving it on GitHub. I think everyone recognized, uh, you know,
+that it was, uh, a big moment for Anthropic, uh, in a negative way. Uh, and so a lot of folks, uh,
+saved it offline. So it's, it's out there. Um, and I, that's why I said, I mean, I think Anthropic's
+best move would just be to go, we're open sourcing Claude code now. And, you know, uh, looking
+forward to, uh, community feedback to make it better. Yeah. Yeah. And, um, there's kind of, yeah, I
+guess there's an overall thing that we learn technically from this. And then there's specific things
+that are interesting to talk about. The overall thing I think to emphasize here is that actually
+it's not so much the, and we've suspected this for some time. And if you're a practitioner, you kind
+of know this by intuition. The model itself is not the relevant component that drives performance
+for these systems like Claude code or OpenClaw, et cetera. Um, there's a model that needs to be in
+these agentic systems. However, the real IP in these systems is actually not the model. It's this,
+what's called the agent harness around the model, right? It's that orchestration of how does the,
+how is memory handled? How do you connect to tools? How do you persist things over sessions? Um, how
+do you wake the agent up? How do you point to certain information? How do you give context? All of
+that is what we would call the agent harness. And it's really that, that kind of lines of code that
+was released by Anthropic, even though they didn't release the weights of their model. That's why I
+think this is so, it's one of the reasons why I think this is so interesting, Chris, is a year ago,
+we, we would have kind of been shocked and amazed if someone leaked model weights. And that would be
+like, give us everything we need to know about their IP, right? We have the model weights, we can
+reconstruct it. We have their model. Here, it doesn't really matter if we have the model weights of
+the actual Opus model or whatever Claude Anthropic model, because all of the IP is in this agent
+harness around the model, which means I don't have to use an Anthropic model. I could use whatever
+model I want. If I'm putting the right agent harness around it, I can do extremely powerful things,
+which is why this is such a leak and why it's so impactful, because that agent harness is where the,
+where the IP is. Yeah, I think, you know, and, and in a broader context, we have actually been kind
+of saying what you just said in different words for a long time now. Um, we've always pointed out
+that, um, you know, while, you know, model in the, the, uh, functionality of different models has
+been increasing steadily. And we've been reporting on that as we go and talking about these models,
+but, um, you know, we've said many, many times, it's still software. It's still software
+architecture and the model is one component in a larger architecture. And to your point, uh, much of
+the rest of the architecture is in this, is in the harness that we're talking about. And therefore
+that's why the IP is so critical. Um, and especially when you consider the fact that once we crossed
+that threshold of kind of, uh, Opus 4.5, getting to a point where it was really flipping the entire
+developer world, you know, over on its, on its, side in terms of how people productively created
+software. And at this point, you know, 4.6 came out early into the year. Open AI has pushed forward
+with new models and there will be many open source models coming out as well that are able to do
+every bit on that side. So it kind of points at the models are, as that progression goes, the models
+are becoming, uh, less and less important because there are, there are going to be many of them that
+can do the same capability. And so these harnesses, as we, as we move out, you know, in kind of
+where they're at now, but as they evolve into their edge harnesses and cloud harnesses and all sorts
+of different agent capabilities, this is huge. Um, and this is a turning point. So if, if folks are
+not paying attention, uh, to that, uh, I think they're kind of missing the story. I think the
+reporting on the model is a time passed at this point to some degree. Yeah. And if we look then into
+Anthropics specific agent harness, there's a few high level things, which, um, it, I don't think
+it's problematic for us to talk about here because everyone's talking about them everywhere. And
+essentially this is widely known now. Um, even though we're only a day into this, there's a few kind
+of key points of what makes the agent harness of cloud code, particularly powerful. The first of
+those being how it manages memory, you know, most, uh, or many AI agents, if you're not careful,
+depending on how you write them, they struggle with this kind of context entropy or, uh, memory
+drift or confusion. Where the more and more you add into the memory of the agent, as it operates,
+the more, the more junk is in there, the more noisy it is, the less effective the agent becomes. And
+this is something that it seems like cloud code is less prone to in, in many ways. And so revealed
+in the agent harness is there's kind of three levels or layers of the memory management within
+cloud. And I think this is interesting to talk about because it's practical for agent developers out
+there for all of us, which is the first thing is they have this memory.md, which basically is, it is
+a, it's constantly fed to the agent, but it's not all the memory of the agent. Basically, it's only
+the pointers to where certain information is held. So it's, it's kind of like an index or a pointer
+system to where information is. So you're not always loading in all information into the agent.
+You're kind of have these pointers. So, um, this is like an index to certain context information.
+Then there's sharded topic, topical information. So rather than keeping everything together, again,
+there's this index, but then there's these shards of discrete files, um, that have certain types of
+information in it. This prevents kind of, again, that noisy element of adding all memory into the
+agent, but only loading kind of topic specific shards when those topic specific shards are, are
+relevant. And then the last piece is, um, uh, this kind of, uh, self healing search mechanism, um,
+to where you have essentially kind of, uh, if, if you're familiar with Linux and grep, um, grep is a
+way for you to kind of search and scan logs. So the, the agent is actually, uh, uh, configured such
+that it can verify, uh, actual information, uh, um, against the actual logs using a kind of
+optimized grep search rather than relying on its own generated summary. So it actually kind of, uh,
+uh, self, uh, searches this, you know, via this kind of almost like grep-like type of, um, uh, type
+of process. So it's this searching, it's the topic related shards and descriptive capability. It's
+this, um, topical index or contextual index in the memory.md that, that is part of that memory
+hierarchy. Um, which I do think a lot of people struggle with. It's kind of one of those points of
+disillusionment where I create an agent and I just keep loading it with, with more and more stuff.
+And then it gets worse over time, which is counterintuitive and also sad. Yeah. I mean, and, and I
+think the, the learning, I mean, I think this is a big part of it is aside from whether, you know,
+what, what the future of cloud code is going to be from a licensing standpoint, um, and, and being,
+you know, having access to the code. I think these architectural concerns about things like memory
+management, uh, and other, uh, you know, innovations and how they approach the, the various problems
+of agentic development, uh, will rapidly become very standard libraries, uh, across, uh, many
+languages, you know, where, where folks can start implementing that. So we're kind of seeing what is
+likely a turning point in mature agent development going forward. Um, yeah. And, and, and so that's,
+you know, and, and you'll see the other players reacting to that. It'll be interesting to see what
+kind of changes we see in the industry coming up in the, in the weeks to follow. Yeah. There's also
+a few, um, a couple other kind of general principles. And then one thing that's created, uh, a good
+bit of pushback against Anthropic from the open source community. So the other, like, to your point,
+Chris, what we can learn, what we can practically apply from this leak, um, uh, cloud code also uses
+this strict right discipline type of principle, um, which is kind of a hallucination prevention. So
+the idea is like your agent could say, Oh, you've asked me to run the tests. Okay. I'm, you know, I
+am running tests. And in the memory, it's, it's kind of represented that you ran the tests, right?
+Um, but under the hood in the actual system, maybe something errored out and you didn't actually run
+the tests, right? Or maybe a file wasn't created or whatever, whatever happened. It didn't actually
+happen on the system. Even if the agent said, I'm going to do this now. And I did it. Um, so they
+have this kind of strict right discipline idea where in, as you're developing your agent, you should
+only record to the memory of the agent. When something happens, if you can verify against the
+environment, like the terminal or the API you're connecting to, or the file system, that the thing
+actually happened. Not that the agent tried to do the thing, but that the thing actually happened.
+And then I verify it and then write it back to the memory. Um, the other thing they have is a thing,
+um, uh, that, um, I think is, is part of this, uh, uh, memory management, I guess this idea of auto
+dream that for agents that run for very long periods of time, even days or, or weeks, um, kind of
+every 24 hours reviewing observations and insights, and then kind of consolidating. Those into the
+kind of permanent facts of the memory, such that you're not just continually. Increasing the size of
+that and leaking all sorts of noisy things and into the memory. So you can tell it's kind of like
+that memory management, that harness, these layers, this architecture around it is very much the IP.
+Um, what's, uh, the thing that people have pushed back on quite a bit is there's actually this anti-
+distillation flag within, uh, within cloud code that basically, um, tries to. So, so there's a
+couple of things they have functionality and cloud code to number one, um, prevent people from
+trying to reverse engineer their harness, um, by this anti-distillation, meaning they actually put
+fake stuff like fake tools into the, into the chain of thought of the agent. So, um, it's a, uh,
+it's a, it's a totally decoy fake tool injection, uh, reasoning masking, uh, ploy. Um, which fair
+enough, you've got a proprietary thing, um, you know, go for it. I think the thing that, uh, that
+maybe people were, uh, less happy about is this, there's a file uncover.ts, which, um, basically is
+meant to hide cloud or the AI's identity with it when it contributes to open source repos. So
+basically avoiding the kind of watermarking or any identification that things are AI generated. Um,
+uh, and the open source community has, let's say had a bit of backlash against this because, um,
+there's no transparent, like it's basically an, uh, an explicit attempt to hide AI generated code
+within open source contributions. Um, which, uh, yeah, which as the open, open source kind of likes
+transparency and this is strictly non-transparent, right? Well, I mean, and when you really get to
+the heart of it, uh, Anthropic has, has built its brand on safety and transparency as noted at the
+top of the episode. And so when you're, when you're building, when you're, when you're
+differentiating yourselves against the other major players, and then something like that is found,
+um, it's one of those, I mean, this is purely speculative, but, you know, had we found that in open
+AI, people probably would have been like, yeah, that's what I would have expected from them kind of
+thing. And just because of the, the general attitudes, um, whereas Anthropic, what people were
+holding it to a higher standard, uh, based on that branding. And this is a moment where, uh, where
+they fall flat on their face based on the, the discovery of that. So, um, they've, I mean, it's not
+just an IP issue for the company. Um, you know, it's also, it's also a brand perception and a trust
+issue within the larger developer community. So they have some fixing to do, um, to put things right
+with the people that they are trying to serve. Yeah. Yeah. And it's interesting to kind of, I guess,
+place this within the wider, the wider ecosystem and how agentic and autonomous systems are
+developing. You've got cloud code, which is a proprietary agentic development, um, tool, but is
+still a reactive tool in the sense that it, uh, it responds to your queries or specs or issues on
+GitHub and does things. Right. It appears that as also part of this leak and what we learned about
+Anthropic, they're moving to this kind of product roadmap, um, where they're moving away from the
+kind of current reactive version of cloud code to kind of, uh, running all the time or background
+maintenance, cron scheduling, refresh, uh, et cetera. Um, type of model, which is very much more
+kind of open claw based. So what's interesting is open claw, which is an open source kind of agentic
+framework. Also primarily interesting because of the agent harness around open claw, just like the
+agent harness around cloud code makes it so interesting, but open claw kind of has caused a lot of
+stir because it is kind of always running in the background and listening and has this kind of
+heartbeat mechanism to wake up and do things in the background. It does seem like cloud code is
+moving, moving that direction as well. And so I think if we were to look at kind of the, the
+comparisons here, um, cloud code is currently reactive in similar ways to other assistants out
+there, but moving to the more proactive model, um, not in maybe the same exact way as open claw,
+but. You know, you know, you know, more like open claw where it's running 24 seven or as a daemon or
+has a kind of heartbeat or wake up mechanism. Um, also interestingly, cloud code and open claw are
+both kind of local, um, uh, locally driven agents. Um, one that has maybe, um, one that has maybe
+more sovereignty associated with it in terms of your own control of it being open claw and one
+that's maybe, uh, has this proprietary element pushed off to the vendor. Um, and, uh, and, uh, and
+so I think that regardless we're, we're, if we're looking at the direction, both from what we know
+now about cloud code and what we've seen with open claw, um, get ready for the more proactive
+background agents that are going to be running all the time, waking up on a heartbeat, doing things
+for you. And I think to your point, Chris, as well, now that things have been leaked with cloud
+code, there's going to be a million open claw this and claw code this and things at the sort of
+Pandora's box, um, opens. Yeah. It'll be interesting because, and, and, you know, as noted, we're,
+we're already seeing that, uh, even today on day one, you know, or day two, I guess coming, coming
+out of this with, uh, but, you know, your point earlier about, it's all about the harness at this
+point, you know, once upon a time we were reporting on, um, on the models as they were coming out.
+And if you think about it, we've been talking about these harnesses and the infrastructure around it
+a lot more as is everyone. Um, and it really, I think it really is a sign of the maturity coming in
+the industry. And I think, uh, this big oops from Anthropic, uh, will drive a lot of innovation out
+there in the open source community, uh, and maybe some closed source where people are taking ideas
+and trying to build their own companies off of that. Um, and so I think, um, I think we're, we're,
+we're seeing a little bit of acceleration happening right now, uh, coming out of this as people are,
+uh, writing clean room code based on what, what we've learned today. Um, so it's an interesting
+moment. Um, and I suspect in the, uh, as we work through this of the, uh, in the weeks to come,
+there will be some very, uh, interesting things that are popping out on GitHub and other places, uh,
+that we're going to want to address as well. I know for myself, um, I am keenly interested in, um,
+going back to that, uh, that implementation that we talked about a little while ago. Uh, anyone
+that's listened knows that I'm, I'm into rust, especially for edge environments. And so I'm, I'm
+interested in how that rust, uh, uh, line of development, uh, matures as well as others that may be
+out there. So it's, it's an interesting moment to, to spectate on these things. Yeah, I, and maybe
+it's, uh, uh, good as we, as we close out here to also, yeah, encourage people to get, get their,
+get hands on. It's never been easier to get hands on with these tools and build intuition about how
+they work. And, you know, more is available in the open source world right now and, and can be under
+your control where you can try maybe in sand, if you're worried about security things or that sort
+of thing, create a sandbox environment and add in one of these agents and try some things. And if
+you're building agents out there, if you're AI practitioners, I think some of the just very clear
+guidance that we learn from all of this is number one, think about how you manage memory in your
+agents and be smart about it in that, in that harness using kind of sharded memory and lookups.
+Maybe think about moving to a proactive strategy rather than a reactive strategy where you can kind
+of clean and clean up memory every so often every night or whatever it is, but have something
+working in the background that seems to be where things are headed. And also as you're building this
+harness, there is very much the potential of supply chain risk within that agent harness, whether
+it's in the open source world or it's in the closed source world. That supply chain has risk
+associated with it, which is very much separate from the model risk. Totally. Certainly there are
+things related to model risk and bias and blah, blah, blah, all those things. But the agent harness
+now has this kind of supply chain risk associated with it. So all good things to keep in mind as we
+interact with these tools. Well said. That's a good point to, to wrap up on. And, um, and, uh,
+looking forward to hearing folks, uh, out there on our social media channels, uh, giving us a bit of
+feedback. Let us know what you're doing, uh, and how you're thinking about this, uh, as you bring it
+into your own development cycle, um, and your own ideas. And if there's, uh, any really cool open
+source, uh, that you're seeing developing out of this, we'd love to hear about that and go take a
+look. Yeah. Let us know. Uh, thanks for, thanks for clawing out all of the, the good topics, Chris.
+It was fun to, it was, it was fun to have this discussion and hopefully leak it, leak it as soon as
+we can to the, there you go. We're going to leak it, leak it within days here. All right. Hey, we'll
+talk soon. Take care. All right. That's our show for this week. If you haven't checked out our
+website, head to practical AI.fm and be sure to connect with us on LinkedIn X or blue sky. You'll
+see us posting insights related to the latest AI developments. And we would love for you to join the
+conversation. Thanks to our partner prediction guard for providing operational support for the show.
+Check them out at prediction guard.com. Also thanks to break master cylinder for the beats and to
+you for listening. That's all for now, but you'll hear from us again next week.

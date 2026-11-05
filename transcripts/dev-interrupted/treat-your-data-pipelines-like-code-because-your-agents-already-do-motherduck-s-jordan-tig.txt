@@ -1,0 +1,503 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Treat your data pipelines like code, because your agents already do | MotherDuck's Jordan Tigani
+DATE: 2026-09-15
+SHOW: Dev Interrupted
+LINK: 
+AUDIO: https://www.buzzsprout.com/1422892/episodes/19807680-treat-your-data-pipelines-like-code-because-your-agents-already-do-motherduck-s-jordan-tigani.mp3
+DURATION_SECONDS: 2723
+TRANSCRIBED_AT: 2026-11-04T00:36:21Z
+----------------------------------------------------------------------
+Welcome back to Dev Interrupted, brought to you by Linear B. My guest today is Jordan Tagani, co-
+founder and CEO of MotherDuck and founding engineer on Google BigQuery. He used to write more SQL
+than anyone at his company. And now, like so many of us, he can't remember the last time he wrote a
+query. We covered Stevie Agui's Gastown here on the show, and Jordan wrote the data version. He
+calls it Watertown, where a data engineer manages a fleet of agents. Those agents write the
+pipelines and the visualizations from a prompt, and Jordan's point is that the cost lands
+downstream, in review and in catching what breaks. His answer is that treat all of it like code,
+which adds to the review bottleneck, a key problem we're set to solve here at Linear B, with tooling
+like AI code review and merge automations. Learn how the mother ducking genius behind MotherDuck
+thinks about the data equivalents for his own gates. Now, here's my conversation with Jordan Tagani.
+But I'm really excited to have this chat with you, Jordan. You know, you're the CEO and co-founder
+of a pretty cool company right now, in my opinion. There's a lot of really innovative things coming
+out of MotherDuck. And your background as a founding engineer at Google BigQuery is, you know, just
+like a driving force, I think, in all of this change in narrative. And it makes so many folks look
+to you to understand, like, how data science is transforming. So we're really excited to have this
+conversation today, talk about some of, like, the ancient history, even back in, like, the early
+2020s. I know that's, like, a long, long, long time ago. But even right now, how MotherDuck, I
+think, sits at the center of an argument that the practitioners of the data stack are AI agents now.
+And data scientists and the way that we work with data and the tools that we use and communicate
+through with our agents on, they need to transform to meet that new challenge. So we're super
+excited to dive into all of this today. Jordan, welcome to Dev Interrupted. Yeah, thanks. Thanks for
+being here. These are exciting times, and it's good to be in the middle of things. It really is. And
+you couldn't really be more in the middle of things. I want to, like, back up for a second and talk
+about, you know, MotherDuck and how we got to be here, because your background was in big data. You
+built BigQuery and one of the biggest distributed warehouses, like, that does data, right? And so
+we're talking about a fundamentally different approach from how MotherDuck works now, which I want
+to dive into with you, no pun intended, but also understand, like, how that change came to be in
+your mind. Like, what did you understand about what big data was and what it couldn't be and what it
+needed to change into that, you know, you were maybe one step ahead of on the insights? So, you
+know, we used, when I worked on BigQuery, we often used BigQuery to understand what was happening in
+BigQuery. And I remember doing some, like, analysis, you know, trying to figure out, okay, well,
+what, if somebody was using Snowflake, what size Snowflake instance would they need? And so that we
+could kind of do some comparisons, because the way BigQuery worked under the hood was very different
+than Snowflake. And so I was looking at kind of the size of data that people had and the size of
+queries that people were running. And the thing I found was, like, it was dramatically less than I
+had expected. And, you know, like, something like 90% of people, you know, of queries were under 100
+megabytes. And, you know, megabytes is something that, you know, at Google, people sneeze at.
+Actually, they don't even bother to sneeze at it. They sneeze at terabytes. But, like, you know, and
+just something you wouldn't think you'd need, you'd need sort of a massively parallel engine to do.
+And, like, kind of, as I, you know, I was looking, like, wow, like, most of our customers are
+actually using tiny data. And then even the giant customers, like, you know, we had, like, HSBC and
+Home Depot and Walmart and, like, Equifax, like, some of the biggest companies in the world. Like,
+the stuff that they were doing wasn't that big. And I think, you know, internally, there was a lot
+of energy around, okay, well, how do we make bigger stuff work and make it, you know, faster to do
+tens of terabytes and hundreds of terabyte queries. But the things that people were complaining
+about were the things that, like, their 100 megabyte query wasn't any faster than their 100 gigabyte
+query. And, like, and so actually the things that people cared about was, like, hey, I've got a
+human waiting for this result. Like, if you add a second to every query, you know, because of all
+this distributed mechanism, then that's actually going to make the experience of your users worse
+than being able to handle some giant, giant thing faster. Because even those giant, giant things are
+expensive. And so people tend to not do them very often. So kind of, like, I filed that, you know,
+away. And it took me a couple of years. You know, actually, I worked at Single Store for a couple of
+years working on their SaaS offering. And people kept asking for smaller instances. And, you know,
+we had one that was half the size of Snowflake and the Snowflake smallest instance. And people were
+like, what if we did a smaller one? And so it was like, it seemed like there really was a need for,
+you know, scale to zero, serverless, kind of smaller instances as well as large. And then the other
+thing that, you know, you should realize is that, you know, these, a lot of these technologies that
+we kind of had built the data infrastructure around were designed when machines were small. Like,
+you know, if you had a hundred gigabyte query, well, a hundred gigabyte wasn't going to fit in
+memory. It wasn't going to, like, you needed, you know, if you wanted a hundred cores, like, you
+know, you had to combine a whole bunch of machines to get a hundred cores. And, and nowadays like
+the just basic machines that are on EC2, like the physical machines are, you know, hundreds of
+cores, terabytes of RAM. And so like, you don't actually need these distributed, distributed
+systems. And if you don't use the distributed systems, you can just do things, you know, much more
+easily. You can be faster, lower latency, like a whole bunch of, a whole bunch of important,
+important things. Um, and, and so, yeah, it was like, Hey, if we're going to do something, if you're
+going to, if you were going to build these things now, you would do them differently. And that to
+me, that was, it was an opportunity. There's a really interesting, I think, parallel in there to
+unpack of like the idea that, you know, you even said like the, the hardware was smaller, it was
+older and you couldn't even get some of those like midsize queries. Those things could live in the
+RAM of the machine. It was always thought that we were moving towards having these bigger monolithic
+kind of like services that could handle all of that for us, because it was just so hard to, uh,
+really visualize and understand how quickly the tools and the technology we were using were going to
+evolve and change and become more capable underneath us. And so like we make bets on like what we
+want to build and what we need for the future. But then sometimes we have to make the bets to take
+things away and to simplify them. And there's a lot of things I think we're learning about that even
+right now with, you know, how everyone's workflows are transforming with agents. You know, there's a
+lot of temptation to add a lot of complexity, a lot of stuff on top because you think you can
+orchestrate it in this kind of way. But there's a much bigger opportunity sometimes and taking away
+stuff you took for granted or that isn't necessary anymore. And you can only discover by starting to
+hack at it, you know? And so there's like, I think a lot of lessons there that have parallels about
+how we work with technology and how our expectations change. And it's really important to call out
+to that, like data to became more widespread and just more accessible to more people. Like it was,
+it kind of moved out of the domain of just being solely something that the data scientists or the
+data researcher would do at scale on these huge amounts of data. It became something that was more
+approachable and embedded into more tools and delivered reports in all sorts of ways to where
+working with data became more democratized. And because of that, we needed smaller, more
+customizable bite size on your device ways of working with that data to meet the demands, right? So
+like understanding how to throw away something that you took for granted before and like trust a new
+definition of good. Like part of doing that too is understanding what you think the next level of
+good will look like. So for you, was that a vision of the access of these kinds of tools just being
+more widespread? And what are the opportunities that you still see for the tool to continue to
+evolve for now? It's like more agentic consumers. You know, I think a lot of, you know, a lot of
+things in, in technology, you know, you can have two things that, that solve the, solve a similar
+problem. They have a different architecture. They're going to be able to grow in different ways.
+And, and I think that kind of some of these older, these like, these older systems, the ways that
+they can grow is, are reasonably constrained and they move very slowly. I mean, it's just, I
+remember some of the optimizations that we were working, worked on and, uh, in BigQuery would just
+take months and months for something relatively simple. And, you know, working on this single node
+system, you know, we can just, those things can be done in, you know, in a week or weekend and you
+can just move much, much faster. And so, because kind of the system has been shaped a little bit
+differently, the way it can expand and extend and react to new, to new changes is, uh, is, is
+different. And I think, you know, you mentioned sort of the, you know, all the changes that are
+going on with AI, I think like if you have these sort of, you know, giant warehouses, um, or
+distributed warehouses, they just, from a shape perspective, they feel less, you know, the right,
+the right shape for like, for, for, for AI agents, where you might have a lot of agents that are
+sort of hammering on different things and like, and having a single node system where you basically,
+you know, one, one warehouse, one agent, um, you know, for as many agents as you, as you have, like
+those, that seems to sort of fit the problem better than, um, than some of these, these older, older
+systems. Yeah, absolutely. I feel like we're trying to make all of the bits that an agent touches as
+atomic as possible so that we can isolate them and put them in these like more sandbox things. The
+idea of having agents at scale and at real time, all touching a same kind of data space is I think
+scary for most people who would want to protect their data. So, um, I do think that becomes like a,
+even like a strategic wedge and like how the tool is adopted and who its consumers are. And I want
+to talk a little bit about who those new like users are because, you know, it are, it is the agents,
+but it is also, um, the, still the, the engineer, the data scientists, the, the data engineer, uh,
+you know, figuring out how to orchestrate them. And that's what, where mother duck I think is really
+leading in terms of teaching the future of how the data scientists and the data engineers are going
+to work with their tools. Like we really loved your entire coverage on Watertown. We've talked a lot
+about Gastown here on the show and we've covered it since the top of the year, all of the many
+things from Steve Yage and how those different narratives have evolved. We've actually adopted a lot
+of them here on our engineering team and on the show. And so like when the see the same parallel
+applied towards a data engineers and like the ways that they work with their data and how it will
+transform, I think was really powerful and really smart too, because it gave, it gave us language to
+talk about the levels of AI fluency as you got better using those tools. I wanted to dive into your
+head again, no pun intended about that and learn a little bit about how long it took to develop that
+idea after thinking about, you know, what Gastown was doing for engineering and like what, how, how
+innately did all of that come to you? So I think that we're in, you know, we're in this like
+transitional moment right now. Like I think I had a college professor in, you know, who, who like,
+he was the guy who invented punctuate or named punctuated equilibrium, you know, in evolution. And I
+feel like software technology, like you often have something similar with meeting, like you're sort
+of at this equilibrium state and then some change will happen. And then there's sort of rapid
+transition to a new equilibrium. And so I think we had the modern data stack was this sort of
+equilibrium state where you had like, okay, you have these, these set of tools, you would just
+transform, analyze, visualize. Uh, and those are each different, different companies and everybody
+had their swim names, swim lanes and everybody was happy. And then along comes like AI and agents.
+And all of a sudden, like that, you know, the world is going to change. And so trying to predict
+exactly the way that it's going to change is sort of, um, it's a recipe for, you know, spectacularly
+bad predictions, but it doesn't mean, you know, you shouldn't, you shouldn't try. Um, so I, you
+know, it's also when it's sort of super exciting because that's when the biggest, the biggest
+opportunities happen when you are in these, these sort of transitional, uh, transitional times. So
+we, you know, started to notice that like, hey, text to SQL is getting, you know, it works. It's not
+necessarily the way we thought it was going to work, you know, but you know, with an agent, you
+basically can get very high, um, high fidelity. So, so it was like, okay, that's okay. So that's,
+that's happening. And then you realize, okay, this Claude and that agents can, can really do very
+good visualizations. Uh, and they're all, those are only going to get only going to get better. So
+like, um, you know, if you can run a query and then you can visualize it, like that's a lot of what
+you have in a BI tool. So it's like, okay, well, BI, there's a really of an opportunity to just sort
+of like change how you're doing, how you're doing BI. BI on the other side of things where, you
+know, we would, you know, you're bringing data in, you're transforming the data. That also seems
+highly vibe codable. Like it's, it's, you know, if you ask Claude, if you play Claude at Salesforce
+and say like, Hey, you know, pull my data in. Um, uh, it's going to be able to figure out how to do
+that. Uh, and, and it's going to get better. It's going to, you know, like the, the, the, how long
+it takes it to do today. Um, it's less than it'll take in the future. And so you kind of think about
+the data stack and what people are doing and what data engineers do and what data analysts do and
+sort of like, okay, how does that job change in, you know, when building pipelines can be done from
+a prompt building, you know, visualizations can be done from a prompt. Uh, you know, transformations
+can be done from a prompt. But what, but once you do that, what are the things that are going to go
+wrong? And, you know, I think, you know, well, people are, you know, the agent's going to build a
+bad, bad schema or they're not going to have the right context or they're not going to have the
+right, you know, then there becomes like this, um, these other jobs that, you know, humans are going
+to have to do too, but they're almost like, you know, I mean, just like, uh, you know, they say
+software engineers become managers of agents. Like I think a data engineer is really going to be
+sort of a manager of a, a fleet of agents that are going to be doing, you know, doing data, data
+work. And really the things that they have to do are going to be the, you know, reacting to, to
+changes. And I think one of the ways that data engineering is different than software engineering is
+that it's so much easier for things to break through no fault of your own. It's like, because you
+have this data that's coming in data, maybe changing, um, you know, there's schema changes or, you
+know, something maybe stalled upstream, or there may be a bug upstream or the format or the
+distribution of the data changes. And that, you know, changes, um, how you have to visualize it.
+There's just all these things that can, that can sort of go wrong, where, even if you've built the
+right, the right pipeline, um, that I think humans are going to have to, you know, somebody is going
+to have to, um, to handle that. And then you think, well, okay, well, but it can, some of that be
+done automatically. It's like, Hey, if the schema changed from a, you know, big into a float, you
+know, can, can Claude, you know, go and chase that through, or for a field gets renamed, can Claude
+chase that through all of the, all of your visualizations and chances are probably yes. Um, so then
+you, you think about, okay, what are those agents look like? And anyway, so that was sort of the
+idea behind, you know, I, I called it Watertown after, after, you know, Steve Yaghi's, uh, you know,
+you know, Gas Town's a little bit, a little bit tongue in chief. And so exactly what are those
+agents going to be and what are they going to do? And what are the jobs going to be? Who knows? I
+mean, just sort of like, I think when, you know, in Gas Town, you know, is, do you need the, the
+Deacon and the, like all of these specific roles, like, you know, maybe not, you know, maybe, you
+know, but I think you're going to need some, some way to sort of handle, okay, there's a bunch of
+tasks to do. There's a queue. There's, there's like, there's somebody, you know, and then there's
+like a mechanism to surface things to, uh, to, to humans as well. And then again, exciting, exciting
+times, stuff is changing, stuff is moving, stuff is moving quickly, but I think we're already
+starting to see some of these, some of these things, you know, some of these things happen. Uh, and
+some things, some things changed. Like, um, I can't remember the last time I've written sequel and I
+used to write the most sequel of anybody at the company, just cause I, I, I love to poke at stuff
+and to sort of be like, okay, well this is happening, but like what's actually happening. And, you
+know, and, but now it's just a, you know, Claude session. And, um, uh, and so I think that's going
+to be happening through the, you know, through the rest of the data, data stack and it's exciting.
+Um, and it's not just, I think it's not just like gonna make people less, you know, useful. Like, I
+think you're still going to need people, but it also brings, you know, we call them at mother duck,
+we call them NTDs for non-technical ducks, which is like the people who would otherwise feel like
+they can't do this, this stuff. They're like, I'm not smart enough. I'm not good enough. I don't
+have the knowledge or the background to be able to, to do these things, to be able to, you know,
+ask, answer these questions about what's going on in the business or their sales book or their, you
+know, the marketing campaigns. And now all of a sudden they can, they can do those. And, uh, I think
+that's, that's really powerful and liberating. Yeah, exactly. It's a goes again, to like the whole
+democratizing of the tool. Now, all they need to do is know what to ask, which is its own challenge,
+by the way, understanding what you're looking for and what the query needs to be, what you're really
+asking for. But that becomes the new barrier, right? Which is exciting because text to SQL, like you
+said, just really transformed. It's gotten amazing and it's gotten a lot better. Like I remember
+back in October of last year, I was at, um, I was at a hackathon. It was a data hackathon actually
+for data agents. Uh, Brian Bischoff of theory ventures hosted this really wacky hackathon called
+America's next top modeler, where we had to, uh, basically decide or figure out how we wanted to
+sort over like 10,000 unsorted documents and park it files and all sorts of just like unstructured
+and unstructured data for a fictional company that had several mergers and then like adding cruelty
+to it. He even had like a dusty binder with like old things in it that can contradicted what was in
+our digital files. And we'd have to consult it and like the real world. So it was like mind
+boggling. And as part of that, I was struggling with, I remember back then with, with Claude trying
+to get some basic interactions with SQL where I was comfortable with, where I was like able to
+actually understand what was going on in the data. And now, um, I just feel like whenever I do work
+with, um, you know, modern models to work with data, uh, it's really, really simple and
+conversational. Like a personal story for me is like, I, um, whenever I work out, I use an app
+called heavy and it pushes a web hook for after my workout of all of the different things of what I
+did. And I actually have that hit a doc database where, uh, it might have an agent that then just
+looks over it and helps give me like a daily understanding of my workout and how I'm trending. And
+it even gives me nudges of like, Hey, you haven't like increased that weight in a while. I see
+you're like, you know, holding back or something. And I've found that really fun and interesting to
+experiment with the data, but that's just something that's become really accessible to me as like
+an, I guess a non-technical duck or a non data engineer duck, you know, I'm like technical, but I'm
+not of the data science world, but before I would have never really even thought about trying to do
+that. Um, but as agents get better at making, uh, uh, those SQL queries, like all of a sudden, now
+you just have a rise and these huge or new or ad hoc SQL queries, you get the needs for having these
+like pipelines that can run it and create it. Uh, you know, I understand that y'all are tackling
+that problem too, uh, with flights and that's what pipelines are where agents build and they
+schedule and deploy things because now like you, they can build up that big SQL query and push it.
+Right. So like you're understanding like the platform that they need to do their distributed work
+on. I have a question for you though, in that world where you have agents deciding what SQL to run
+and then to put it up into a pipeline to run it, where do the new gates and the checks fall? Because
+agents can make so many queries or even mutate the data. And so like in engineering and in the
+linear B world, where we talk about like the bottlenecks and the places where the humans put down
+the gates, that's like code review. That's like a PR, right? But like, there's no PR for like a data
+or there's not one that's like immediately easy to visualize. So like, what does that, what does
+that like on your side? I think at some, to some extent, these things have to be code. These have to
+be like, and treated like code. I mean, obviously they're code because they, you know, they run,
+they run stuff, but like, um, but they have to be treated like code and they have to be, you know, I
+think there's going to be, you know, review processes and, you know, check, you know, people can
+submit PRs against, against them. Like, you know, whether it's going to be, you know, uh, AI agents
+or, or humans, you know, writing the, writing the PRs or, um, or reviewing the PRs, like that's
+certainly, you know, an open question and things and things are going to be, you know, and that
+part, that part is going to be changing. You know, I think it, you know, you mentioned it, you know,
+that we, we built this thing called flights at mother ducks. And so what flights are is like,
+really, they're just a Python script and we'll be adding node as well, but, um, you know, type
+script, um, that runs on a schedule and, you know, we have some like hints around, here's how to,
+here's how to do good things with, with mother duck. Here's how to, here's how to connect to certain
+data sources. Um, you know, these sort of set of set of guides that make that easy. We set of
+templates that, you know, um, that the, uh, you know, basically the AI will be able to pick the
+template or, or be able to write these, write these scripts. But at the end of the day, it's Python
+scripts. And, you know, kind of, I mentioned, you know, when we saw that a lot of the data pipelines
+and ingestions is sort of heavily, highly, highly bi-codable, we said, well, how do we, our goal
+really is to make it easy for people to get data in because, you know, people would start using
+mother duck and they're like, and we say to them, okay, well, you know, what you need to do is you
+need to go and, uh, sign up for Fivetran and, you know, set mother duck as your destination and pull
+in a bunch of data. And then you can start using mother duck. And it's like, you know, um, uh,
+that's a lot of steps. Uh, it's a lot of things you have to, you have to get right. And, and so one
+of the things this lets us do is we, you know, just let you sort of start from in medias res and
+everybody's watching the, the odyssey starts in the middle of things, middle of things is, Hey, I
+have a thing I want to do with my data and then, okay, well then we're going to go back and we're
+going to, we're going to pull, we're going to figure out where that data is. We're going to figure
+out how to, how to get it in. Um, I just did that this morning. I'd say it was, um, I'm working on
+like a new workload intensity metric and, you know, with, with claw trying to figure it out. And
+like, it's quite a complicated query. And so in order to get, you know, rather than having the
+visualizations compute that, you know, I wanted to sort of, um, pre-compute for, for our historical
+data. And so, you know, it basically kicked off one of these flights and creates one of these
+flights and then did a backfill. And that also is going to be running every, every, every hour. So
+they'll be able to sort of keep that, keep that up to date. But I didn't start out to sort of build
+a data pipeline. The data pipeline was sort of pulled in by, okay, well, there's this thing that I
+need to do this, like there's maybe this data that's missing, or this, this like this computation I,
+I, uh, I need to do that, you know, uses some external data or is, uh, is, uh, is, is highly
+intensive. And I think that tends to be how people, how people work is that, you know, the, the, the
+end goal isn't the data pipeline. The data pipeline is sort of this necessary thing in order to
+achieve this other, this other goal. You know, I think getting back to the, you know, getting back
+to the gates, I do think that, you know, so do visual on the visualization sides, we have this, you
+know, you know, our, our visualization tools called dives, which is, which is similar. It's
+basically, you know, it's a TypeScript, um, uh, thing that can be created by, by, uh, you know, your
+favorite LLM, you know, I, I use Claude as sort of the generic LLM, uh, um, monitor. We do too. Uh,
+so you use Claude, create this TypeScript file, uh, which is a data visualization and Claude is
+really good at it as, you know, as a Gemini, you know, and, um, et cetera. And so when you kind of
+have these like two things, you have this, this, these dives, which are TypeScript visualizations,
+you have these, uh, flights, which are Python, uh, you know, Python scripts, you know, but those are
+both code. Those are both, you know, things that like, you know, the way we use them internally is
+we have a GitHub repo and we, um, we set PRs against the GitHub repo. And then we basically, uh,
+commit hook that like, that synchronizes that, that to, um, to mother duck. And so, you know, for
+us, GitHub is the word is the, is the, uh, is the source of truth. Uh, but then, uh, you know, that
+makes sure that it, it, it, you know, we can have, we can do reviews. We can, anybody can see what,
+you know, what they are, we can clone them, we can tweak them. Um, but then also, you know, those
+get pushed into the tool so that it's, you know, easy to use from the, from the, uh, from the tool.
+And I, I feel like that's a good sort of stable way of, of sort of making that stuff work is it's,
+it's all code. Um, and, uh, you know, treated like code and you, so you can use the same mechanisms
+that you would use for anything, which are, you know, also being geared towards, you know, agents
+and AI and those things are getting better. I think just the last thing I'll say on this topic,
+which I realized being a little, little long-winded seems one of the things that we're trying to do
+is make it so that as these, as these agents and these models get better, like the features also get
+better. And that, which is tricky because often like, you know, people work on something and as the
+agent gets better or the L gets better, it's like, oh, I don't even need to do that. Like that
+whole, like that whole thing goes away. And, um, but I think if you can build things in the right
+shape, then as the models get better, these things just get better. So for example, the
+visualizations are dives, like they just get better as Claude gets better at building visualizations
+and gets better at writing, at writing SQL. And the flights, the same thing is, you know, get better
+at like, you know, pulling in data from different sources, you know, building, writing Python, like
+those, those just get better and synchronizing it to GitHub. Like, well, you know, the GitHub, the
+whole like developer tools are only going to get better at working with these, uh, with these
+agents. Um, and it's, it's, it can be tempting to just like, oh, well, the model doesn't do this.
+And so I'm going to fill this gap. Um, but you know, chances are the model is going to is, you know,
+as it improves, that gap is going to, is going to go away pretty quickly. Your AI software factory
+is shipping more code, but is it actually delivering more value? Linear B's new guide, Your Software
+Factory Needs a Context Layer, shows you how to find out. It breaks down why AI adoption alone isn't
+enough, how to measure effective PR yields and why cost per effective PR may be the metric that your
+executives want right now. You'll also get practical ways to connect source control issues, CI
+deployments, and AI signals into one feedback loop. Download the free guide from Linear B today.
+Yeah. You got to take stuff away. The shape is going to change and you have to just be comfortable
+reconfiguring it over and over again. It goes back to like the beginning of like just the paradigm
+of like expectations change. The technology evolves really quickly, faster than you think. And so
+you have to be comfortable with, you know, changing and evolving that way. And there's a lot of
+smart things in there to unpack, like how ultimately boiling it down to a GitForge kind of source of
+truth that's shared and everyone can have visualizations on this also allows you to take advantage
+of those same kinds of gates and checks like AI review on the types of queries and things that are
+getting shared out with folks and you get the collaboration, right? And that's a really important
+part of creating and sharing the data too, because I think the temptation in now is like with all of
+these capabilities and flights is like certainly the right shape because it's compatible with the
+atomic idea of the small and the versatile and the sandbox, right? But it also allows for the sudden
+scaling of the thing you need. Like when you said you didn't set out to make a pipeline, you just
+got a pipeline for free just by nature of how the tooling is now shaped. And so that becomes like
+the new opportunities to look for. And sometimes that does mean simplifying. Another part of this
+too that I, that keeps bouncing around in my head is when you have a lot of people with a lot of
+data needs and abilities, and you have a lot of agents that are doing these things at scale, it
+becomes really easy for people to just reinvent things over and over again for collaboration or
+communication to break down. For people to reinvent the same stuff. And that's not economical for a
+company if they have 10 really agentic engineers and they're all reinventing the 10 same things. So
+like, what do you think has to evolve to help those organizations actually distribute the gains of
+everyone being able to work that way? What has the, what has to evolve? You know, I think that's a
+good question. There's sort of, you know, the one way of thinking about it is a content management
+problem. Like how do you make sure that if something, if somebody has done something that becomes
+visible to other people so that they don't, they can either, they can either use it directly, they
+can, they can, or they can riff off of it versus like, versus generating it directly. And so we are
+building something, you know, but building that stuff into, into mother duck, then there's the
+other, the whole idea of, of context and, you know, context meaning, you know, in the, you know, the
+data world, like everybody's got a definition, different definition for how they compute revenue.
+Like different companies have, you know, like different ways of, you know, names for their regions
+or like they, you know, there's just a bunch of, there's a bunch of sort of business logic that is,
+you know, tends to be in people's hands or tends to be at a dock somewhere. And I think one of the
+reasons that people had been skeptical of, of sort of some of the AI and data is because they're
+like, well, how are they going to, how's the AI going to learn about, you know, this stuff that only
+I know about my data. And, you know, it turns out it can actually start poking around and looking at
+things and like, it can figure out like, you know, is this a, is this milliseconds or seconds? Just
+by looking at it and it was like, is this reasonable the same way a human would, would think that
+it's reasonable. But I think there's also a need for, you know, a context layer, semantic layer, you
+know, something that teaches, teaches the LLM about your business, about the specific schemas and,
+you know, things that you, things that you care about. Sometimes, sometimes it isn't necessary, but
+it's, it's a way of creating shortcuts. You know, one thing you find is that like, you know, tokens
+are expensive. And so while the, you know, maybe, maybe an LLM can, can figure out, you know, what
+your fiscal quarter is, you know, like, uh, if it doesn't have to figure that out, if you just tell
+it, like it's, it's a way of, of getting, you know, getting to the answers you want much more
+quickly and less, and less expensively. So we, we, we just want actually today, yesterday, we call
+it guides, which is all they are is sort of markdown, uh, documents that you can, that you can
+create, um, that describe, you know, aspects of, you know, your, your data, your database, your
+organization, your schemas. Um, they can be, they can even be like style guides. Like they just sort
+of describe how this is, these are, uh, kind of like skills for, for your data. Um, and it's pretty,
+it's pretty simple. It took us a long time to, long time to build. Cause we, we, we were starting
+out with something much more complicated. Uh, we wanted to like, my belief was it should be sort of
+self-driving. You should be able to, we should be able to glean this from, from what individual
+users are doing, and then be able to combine them across users and be able to sort of like, and that
+turns out to be, you know, uh, very hard to, to do well. And turns out what people actually just
+wanted was they, oh, I just, I know what I want. Can I just write it? And like, and so like, now
+we're letting you write, you know, write these documents. I think the, the next step of that is the,
+uh, is, is sort of like, okay, do you want to like, cause I think actually you can get very, very
+far from just a markdown doc that describes, that describes something. Yeah. Maybe you have little
+SQL snippets in it that describe how to do, do some, some computation, but, um, you know, LLMs are
+very, very good at understanding English, um, and, or understanding whatever, you know, other human
+natural languages. Uh, so I think that they're going to continue to get better at, you know, like
+they're going to know that better than they are going to know, like some, you know, metric flow or
+some, some cement modeling language. And, uh, and the, the additional rigor involved just makes it
+harder to write. It doesn't actually make it, make the, uh, LLF do, do a better, a better job. There
+is the, the argument that I've heard made, um, that, well, the reason you need semantic modeling,
+semantic modeling, meaning like actually something that if effectively enforces every time we do
+this calculation, we do this calculation exactly the same way. Um, and I think that those, I don't
+know whether those are really going to be needed. Um, I think as a model get better, that's going to
+be less important to describe it in English. You're like, uh, you know, or in some, some way of, of
+being, being clear about it, I may be wrong, but I think the other, the other way of doing this is
+essentially the, you know, sort of trust, but verify where you describe it and then you run evals
+for that, you know, I think evals are, are important in the, um, uh, in this world of, of agents and
+AI, where you say like, well, when I say, you know, tell me about the revenue in February, you know,
+2025, um, the number should be this, like there is a right answer and you can detect whether the,
+the LLM or your agents can, you know, are generating, generating that right number. And, um, you
+know, sort of, you can use that versus having this sort of more fancy semantic semantic model, but
+that's, that's my belief. Um, um, but I, I've been wrong about a lot of these things before and
+we'll see, you know, we'll see what happens with, with that one. Yeah. Well, trust, trust and verify
+is definitely the, the, the dual approach. That's really important. I actually gave a talk called
+that recently at the check marks app sec submit about that same as I think for a secure, like, uh,
+engineers that are, uh, using, uh, agents to produce code of like, you can, uh, trust and understand
+you can have these guardrails, but then you also need to have these verification systems in place
+to, to look at the other end. It's about like measuring and understanding the inputs, but then also
+measuring and understanding those outputs on the other end as well. And I think that's been a big
+challenge for engineering teams. It's just like a, in the last year, there's been like a big
+mandate, just use AI, if I'm just possible and just like, you know, use your tokens, pick up tools.
+We'll try every tool on the market. And then there's been a lot of shifts recently with people
+trying to pull back on their inference budgets and companies burning through all of their tokens
+that are available to them just in the first few months of the year. And it speaks to an, an
+inability to pick the right tool for the right problem. The engineers maybe are, uh, you know, they
+always want to use the best for everything. And so there's still a challenge ahead of us as like
+engineering leaders of optimizing and those costs and reducing those kinds of like duplicated work.
+And I think that's going to be a big challenge. And it sounds like guides are like one step for kind
+of putting that, those kinds of roadmaps in a shared place where agents and humans can understand
+them. There's also things like, uh, understanding, like just to get a, uh, a number instead of
+having to crunch it every time and us having to really get the agents into that kind of, uh, motion
+because they're, they are just, you know, apt to crunch. They love to use their tools. And so, um,
+there's another part of this too, about like in that world where, uh, people are just using a lot
+more tokens. We've been talking, uh, even about like the token maxing leaderboards and stuff. Like
+what are the signals that you look for as an engineering leader that tells you that like your AI
+usage and your AI productivity is actually giving you value to your engineering team or to your data
+scientists? I think that's an unsolved, unsolved question. You're right. Everybody wants to use the
+latest model. It's just like, if you've got a, you know, Ferrari in your garage, you're going to
+want to, you're going to want to drive up, um, uh, you know, maybe you won't want to drive it in
+traffic, but like, you know, you're going to want to, uh, you're going to want to use it. And if
+you've got, you know, Fable available to you and it's going to get things right more than, you know,
+Gemini flash, then you're going to, you're going to want to use that instead. And so, so far we have
+not put any sort of limits on people. I mean, we do have per user limits in Claude that we just, we
+sort of, when people run into them, we, we increase them and we just sort of want to have some sort
+of, you know, uh, visibility into what, what's happening. And, um, the goal isn't to sort of try to
+restrict what people are doing. You know, the goal is just, you know, it does, it can cost money and
+we want to prevent, uh, you know, prevent a runaway. Yeah. You don't want to run away a bill. Like,
+you can also, it helps you and the employee have like the check-in about like the AI usage and what
+you're doing with it. And it helps, you know, like what are using the tokens for? We'd love to, we,
+we, you know, let's talk about that productivity. It's an opportunity even to share it with others.
+I think that's actually a, a really strategic idea for distributing, you know, We have like, yeah,
+one of our engineers, like, I mean, I just, you know, said, Hey, can you bump my club code again?
+And I was like, and it was, it was a thousand dollars, thousand dollars a month. And, uh, but it's
+like, you know, this person is incredibly productive engineer, like one of our top, top people, like
+making him, you know, 10% more productive is certainly worth, um, worth a thousand dollars a month.
+Um, or, you know, I would bump it to, to, to something higher. Um, and so that was an easy, that was
+an easy call to make, you know, at some point it won't be though. At some point, you know, like I'm
+nervous for those, for those days where it's sort of like, it starts to get, you know, people are
+spending, you know, you were talking about gas town, you know, people are, you know, running dozens
+of agents and they're just like, um, yeah. I mean, if you're running dozens of agents and you have,
+you know, if you're running frontier models, then like, yeah, that's, that's probably going to be
+more than more than you, uh, are going to, are going to be able to, or want to, or want to spend
+when, when that world arrives, I, I, I don't know how we're going to, how we're going to deal with
+it. Like I've heard, I've heard other founders talk about like, oh yeah, we're, you know, like when
+you sign up, when you take a new job, like part of your, you know, you're going to get a, a, uh, a
+token budget and that's token budget. Yeah. And that's going to decide whether or not you're going
+to take the job, take the job because like this, you know, it's like this, this company lets me
+drive a Ferrari to work. And this, this one, I have to drive, uh, you know, uh, Ikea, those are
+different, different experiences and transition, transitional states are, are, are exciting. Cause I
+know we're certainly in one for now. Do you think this is one of those where it'll be like a quick
+equilibrium, like where it gets up to that new equilibrium, like going back to what you said
+earlier? I think, I mean, there will, there certainly will be an equilibrium about like, okay, this
+is just the way people do software engineering. And like, cause, cause right now, like the token
+budgets and the token usage and that, um, AI usage and agent usage is like, it's just sort of
+rocketing, rocketing up. And we're just sort of figuring out what are the levers to, uh, you know,
+levers to constraint it. And when does it make sense to do it? And when does it make sense to not do
+it? And, uh, and it does impact how many engineers you can hire and impacts like, um, you know, a
+whole bunch of things. Um, so I think we, you know, we will need some more time to get to the next,
+the next equilibrium. And, but I think a lot of things are going to break before, before then, which
+is, you know, yeah, absolutely. It's like, there's so much that buckles right now, I think in modern
+engineering orgs underneath, like the workflows and honestly the, the, just the raw outputs that are
+coming out of some engineering orgs. And sometimes when you zoom in and it's one team or one
+engineer, or it's one swarm of agents and it's something that's cracked the code. And then, then,
+and then, uh, the, the leadership and the teams, they want to emulate and replicate this, but then
+it quickly gets into like a, a huge ballooning amount of cost. And then there's a huge drive to
+prove the value. You know, the CFO is in these rooms now for all of these engineering teams, because
+those token budgets are real. They're parts of compensation packages at some of like the biggest
+tech companies now. And you're so right that modern engineers, like they want to work where they
+have the most, what they consider like intellectual commoditization available to them to do their
+job at scale, because that's, that is how engineering is done now. I think it's still a lot for us
+to learn. And there's definitely going to be more developments on the scene for sure. I, you know, I
+think that like in this conversation, we've talked a lot about how our expectations of how
+technology is like shifts really dramatically underneath us. And we have to be challenged to create
+new versions and reinvent things that we took an advantage of, or took for granted the day before.
+And I think that we're in a world now where we have to manage the outputs of things that are running
+atomically and at scale and 24 seven. And we have to have better guardrails and understanding of
+like how those things are, are working, but also to critically, we need a fluency layer of data and,
+uh, and intent between workers and humans and their agents. And, you know, things like, things like
+mother duck, things like duck TV, those are, those are part of that language, right? They allow the
+agent and the human to, to work more closely together and in a way that leaves artifacts that are
+shareable and can be distributed and everyone can benefit from. So I think that's like the future of
+how people will work with their, their knowledge. And it's been really cool to, to kind of dive into
+that again, no pun intended with you, Jordan today, but as we wrap up, I want to know, like, where
+can our listeners go to keep up with you and mother duck and, and everything that's going on in your
+world? I think probably the best place is, uh, you know, you know, follow, follow mother duck on
+LinkedIn, um, or, or, or me. Um, that's probably where we're most, most active. Um, and we know we
+do have a mother duck, mother duck blog where we talk about, um, we talk about all things, mother
+duck, we have a mother duck community Slack for people who are using community Slack. There's also
+duck DB discord. If you're a, if you're a duck DB fan, that's also quite, quite an active place.
+Amazing. Well, we'll get all of those links in our show notes. And to you listening, if you've made
+it this far, then you're obviously a data nerd and you obviously love today's conversation. So
+please give it a like or a comment wherever you're listening or watching this and join us on sub
+stack or LinkedIn as well to read the whole newsletter that's accompanying that this episode as it
+comes out. And if you have any thoughts about today's, uh, episode or the things that Jordan and I
+talked about, come find us on LinkedIn and let us know. You can drop us a comment and we'd love to
+continue the conversation with you there. And Jordan, thanks again for coming on the show. It was a
+pleasure talking to you. Thank you. This was fun.

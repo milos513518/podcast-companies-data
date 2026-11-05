@@ -1,0 +1,452 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Why Rust Will Help You Deliver Better Low-latency Systems and Happier Developers
+DATE: 2025-08-25
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/why-rust-will-help-you-deliver-low-latency-systems-and-happy-developers
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2156795667-infoq-channel-why-rust-will-help-you-deliver-low-latency-systems-and-happy-developers.mp3
+DURATION_SECONDS: 2578
+TRANSCRIBED_AT: 2026-08-05T12:18:16Z
+----------------------------------------------------------------------
+Is time series data crushing your database performance? InfluxDB handles millions of data points per
+second, with a database built specifically for time series workloads. Thousands of developers have
+already switched for faster, real-time insights. Ready to see the difference? Visit influxdata.com
+today. Hello everybody, I'm Olympio Pop, an InfoQ editor, and I have in front of me Andrew Lam, one
+of the developers that helped with the transformation of InfluxDB, the whole rewrite that brought us
+3.0. Given that they changed their language, their ecosystem, we were really curious to see why. Why
+Rust mainly, because that's the language that they chose together with the whole different stack.
+So, Andrew, please introduce yourself and then let's get started. Yes, hello, my name is Andrew Lam.
+I'm currently a staff engineer at InfluxData, and I've worked now five years professionally on Rust.
+Prior to that, I worked for another 15 years professionally, and I'm mostly with CSC++ on databases
+and other low-level systems. And I think also recently I've been working a lot on Apache Arrow and
+Apache Data Fusion, and I'm on the PMC chairs for that. But yeah, I've been super excited about
+Rust. I'm very happy to tell you all about it. You mentioned that you have 20 years of programming
+career, 15 years CSC++. That is normally the choice when you're discussing about database engines.
+And then the last five years around Rust. And more than that, you mentioned that you are a
+maintainer of two open source libraries from the Apache Foundation. So it means that you really live
+and breathe these things. So everybody says that Rust is a whole different beast. It's different
+than everything else that's out there. What's your feeling? I came to Rust because I needed, like,
+at the point of my career when I joined Paul and at Influx, I needed a job that I could program
+again. And Paul basically said, we're going to do it in Rust. And so that's why, from my
+perspective, we did it in Rust. Because Paul said, so I just joined it. I needed to program a job.
+And at that point, to be honest, I thought it was a hipster language, right? Like I'd seen a bunch
+of people talking about it, and I'd been to some early meetups, and there were, like, far too many
+ampersands in the examples that we showed. And there was something about a borrow check. So I didn't
+come at it, like, with some deep analysis. I just came at it from, like Paul said, I'm excited to do
+databases again, and that sounds good enough to me. But over the last five years, I've come to
+really love it. And I think now I'm a true believer, basically. And I can look back, and I think I
+can articulate the things that have made it seemingly wonderful to me. Because when you're first
+starting out with Rust, basically the pitch from the Rust fanboys or fandom is, once the Rust
+compiler compiles, you never have to chase down race conditions or crashes again, right? And
+sometimes I'll talk about memory safety. Sometimes I'll talk about whatever. But, like, to me, those
+are the core things that were super valuable at Rust, is that it really does live up to those. You
+know, and those are broad claims, right? And you don't really know until you've spent a while trying
+to build a real production system. But over the five years that I've been doing this professionally
+now, I've chased, I think, maybe one memory bug, like, depending on how you count. You could even
+argue it's not really a memory bug. And zero race conditions. And compared to my previous experience
+in CNC West Plus, it's just like night and day. Like, I spent significant percentages of my time
+chasing down bugs of those classes, right? The really tricky ones, right? If you're beating on a
+database for three days, and it crashes after three days, right? Now you've got to go figure out
+what's wrong. And it turns out to be some weird use after free or whatever. And in Rust, we've had
+none of that. So that, to me, is the core value proposition for Rust. There's a lot of other things
+that people talk about. Maybe you like how it looks more functional. Maybe you don't. But at the end
+of the day, I think the reason it's catching on is because you can get C, C++-like performance with
+far better productivity. You know, it basically has modern tooling, and you don't have to chase down
+the race conditions or seg faults or whatever. I know that you mentioned a lot about performance
+versus productivity. So in the end, effectiveness, either on the execution of the programming side
+or you as a developer, how you run things faster. So let's frame that a bit. How do you measure
+productivity and how do you measure performance? I'll start with performance because that's the
+easiest thing, right? Like, so performance is how fast you can get the program to do whatever you
+want. And these days, that involves multiple cores. You can efficiently split your work up and use
+them effectively. And the other one is just the raw computational efficiency of your low-level code.
+And so in the context of databases, performance often boils down to, like, how much you're not going
+to copy memory around, right? Or, like, being very careful about not recopying things and not doing
+too many allocations and sort of that low-level memory management layer, which is why I think Rust
+ends up being a very good choice for databases because you, unlike a bunch of managed languages like
+Java or even Golang, like, you can go so far with performance, but then at some point to get the
+next 20, 30, 40% of performance, you basically have to stop copying memory around. You just need to
+be more careful about how you're doing it. And that is when languages like Rust or C++ really come
+into the bank. And also under the coverage, you know, Rust uses the same underlying compiler
+infrastructure that C++ does, right? So, like, you've got Clang, which eventually, the thing that's
+generating the code and doing all the optimizations and doing the auto-vectorization and stuff,
+like, that's LLVM. And Rust is basically the same thing. It's just the front end is different, but
+then by the time it's generating code, you've got all the same optimizations and years of investment
+that have gone in. So that's the performance aspect of it. So from everything I've seen, there's,
+you know, basically Rust and C++ generate basically the equivalent code. You've got to work at it a
+little bit sometimes, but I've never found a place where it's like, oh, I just can't make Rust go
+that much faster, right? You can always basically drop into doing whatever you could have done with
+C++. Okay, so to just sum up the points that you had, first of all, what you're saying is that Rust
+is solid from the point of view or where other languages failed from, I don't know, segmentation
+fault, all these problems with memory and all the bugs, all the crazy bugs that are just, you don't
+know why is it working or it isn't. And then the other point is in the frame that you are focused
+mainly on data-focused products, it's the fact that you don't need to move memory from one side,
+copying memory from one side to another. And that's basically reduces the number of operations that
+the processor needs to do. And that allows it to be a lot more performant. That's the performance
+piece, yeah. And then there's the productivity piece, right? Maybe I'll just tell you some like
+horror stories of what I went through at C++ and then we can talk about, you know, and I'll tell you
+the equivalent in Rust, right? So like horror stories in C++ involve like, well, let's start with
+the build system, right? I don't know if you ever had the joy to mess around with the C++ build
+system, but I certainly spent a lot of time using like make files, right? I realized there's now
+CMake and that's slightly better, but it's, I chased far more time than I'd like to admit chasing
+down like why the thing wouldn't link, right? It couldn't find the right symbol and the whatever.
+And you had to like play games with this WL linker flag. Like if you don't know what I'm talking
+about, that's good, but it was miserable. The reason is because make was like a 30 or 40 year old
+tool at this point. And so what that practically means is like, if you want to use a library in C++,
+it's actually a giant pain in the neck to typically integrate into your build system. And you've got
+to make sure all the symbols line up and whatever, right? So it's not impossible. Clearly there's
+large C++ code base that figured it out, but it's like a non-trivial amount of effort versus in
+Rust, right? They just basically copied, you know, I don't mean to diminish it, but you basically
+just follow the best practice that Python innovated or JS with the package managers. And so if you
+want to add a dependency in Rust, like that's just built into the standard language tool. So again,
+that sounds like kind of simple, but it's like, it makes a big difference, right? Like now, if you
+want some easy to get a third-party library, it's like you add a line to a config file rather than
+you spend an afternoon figuring out a whole different, like weird build system and hoping that it
+builds on your machine. So that's one aspect, right? This is modern tooling. And of course, Rust
+also comes with similar things. I think C++ is mostly caught up, but it has integration with all the
+IDEs and autocomplete and it has a formatter and it has the unit test framework stuff built in. And
+it's got the documentation generator. Again, like all this stuff, you can get this stuff in C++, but
+it's, you got to like pick and choose which parts you want and some projects use stuff differently.
+So I think just having that ecosystem and the modern tooling, that makes a big difference. And I
+think then the other thing we touched on briefly was memory safety. And I actually would lump that,
+you know, people can talk about that. There's a lot of security benefits to that, obviously, but I
+also very much lump it in with the developer productivity perspective because like I spent a
+significant amount of hours in my career, like days, weeks, months, chasing down weird race
+conditions, right? Where like you start the thing and everything works fine or you shut it down and
+it's safe for some reason and you spend a bunch of time trying to figure out why, right? And it only
+happens sometimes, only under load, under this, that, and next thing. And it's just like, you spend
+a huge amount of time debugging, you know, what eventually turns out to be a use after free or
+something. And yes, there's structures in modernity with us that make that less likely, but you have
+to know to use them. So it's been night and day. Like instead you get with Rust as the compiler will
+sit there and complain at you. Like you just can't, there's certain patterns that just won't let you
+do. Provide two different ways to change the same object, right? Like in some ways it's pretty
+simple. It just doesn't let you do patterns that could be dangerous, not have to be dangerous, but
+could be dangerous. But because of that, it rules out a whole class of bugs. It's been amazing. It's
+very frustrating the first three months because I had patterns that I'd done in C++ for 15 years and
+the Rust compiler just would refuse to compile them. Just say, you just can't do that. And it's
+super frustrating. It's like, I've done, this is fine. I know, I know this is fine. I've done this
+many, many times. And it would just say, no, you can't. What would be one of the things that you
+created? Like it's that kind of automation and then the compiler says no. Yeah, you know, you tried
+to pass, like you have a struct and you have a couple of fields and one function you want to change
+some set of the fields and some function you want to change some other set of the fields. Rust won't
+let you effectively call one function that changes some subset and then call another one that might
+change another subset. At least it wouldn't at that point. They might've gotten smarter now because
+it basically says, hey, you might've modified it here and then this other function could potentially
+modify it as well. But of course you have to get used to the terminology that Rust uses, which is
+borrow checker, immutable borrows, which at first is like a whole foreign language. Once you sort of
+invest in understanding that foreign language and understand what it's actually trying to tell you,
+which is like you can potentially have aliasing here and that's why we don't want to let you do this
+and you understand what the pattern is instead, I think it became much more for it. It was
+definitely frustrating the first several months, but once you kind of like got into the flow and
+just went with what they suggested or what it was telling you, I think it's been great. Okay. I
+remember that at some point in a presentation, somebody had written on the slide something like, in
+Rust, it's like doing pair programming with the compiler. He's actually your friend. And one of the
+examples was the fact that the error messages actually mean something and they really help you
+rather than all the other programming languages out there. I do think compared to all the other
+programming languages I've used, which mostly with Cbos+, I think it's gotten better since then. But
+yeah, the Rust compiler sets the bar for sure on, like it doesn't tell you what's wrong from the
+compiler's perspective. It basically tells you what's wrong from the program, like basically you as
+a programmer's perspective, which is the, like it sounds obvious that that's how you should do it,
+but you know, the types of errors you got out of C++ were like, you need this particular syntactic
+structure, right? If you as a programmer didn't know what it was talking about, you would have no
+idea. You know, you have to go Google around or stack overflow and figure out what the error
+actually meant. Whereas Rust says, hey, you probably meant to import this thing, right? And you just
+copy and paste the suggestion. It often just works. Let's say that this settles it for the language.
+You have a decent ecosystem. Probably most of the languages out there now have a decent IDE and you
+have, let's say, a decent way of working with those things. There is a tendency now to have more
+focus on functional programming languages because we all have more cores and we're discussing a lot
+about working in a stateless manner. And obviously, functional programming is helping with that
+aspect. You mentioned the memory handling that is different than all the other ones and it makes
+sense. The other thing that is useful is that 90% of the application that you're running because
+most of us are using libraries. And one of the powers, for instance, of the Java ecosystem that is
+probably one of the best out there because it's quite broad and it grew a lot in the last almost 30
+years, more or less. How is it with Rust? That's a good question, right? Like if you're going to
+build a modern application, you almost certainly need a web client, right? Probably some web server,
+some sort of application framework, all that sort of stuff. And I agree 100%. More or less, Java
+sets the standard for completeness and maturity of that type of ecosystem. I've actually been very
+pleasantly surprised with the maturity of those systems. They don't have quite as many features.
+Another thing that's happened is that the Rust system tends to move fast. So like one of the pain
+points we've hit with Rust. So Rust is great, right? Telling all these things about Rust. I'm not
+chasing down memory pointers, right? But like what's some of the downsides of Rust? And part of it's
+like the ecosystem you're describing, right? The ecosystem is still relatively new. It hasn't had 20
+years of battle testing. What that means in practice is that your dependencies upgrade quickly, like
+every couple of months. Some of the foundational pieces like the underlying HTTP handler, we just
+went through one of these things called Hyper. They made a change which made some substantial
+changes to the API. And then there's a whole stack of dependencies on top of it that also changed
+those APIs. And so what that means is from your applications perspective, you basically need to
+continually invest time in keeping up with all the dependencies. And I think a lot of the Rust
+crates don't, for example, keep a long-term stable release that they backpore stuff to. Instead,
+they're just always kind of pushing forward. So that's been a challenge. It just takes time. I'm not
+sure if it's just how this offered at all. Michael's changing these days. You continually have to
+keep up with dependencies, but that's also, I think, basically becoming the state of the art
+everywhere. So I'm not sure it's as big a deal as it might have been a few years ago. No. My feeling
+is that last three, four years, maybe a little bit more, I made it the habit that during the spring,
+I'm visiting the KubeCon Europe. And usually just roaming around, you hear pretty much, I heard the
+same story over and over again. Well, it's written in Go, blah, blah, blah, blah. So Go seemed to be
+the lingua franca for the CNCF ecosystem, so the cloud native ecosystem. Then, at some point, there
+were some outliers, some people that were doing it in C, mainly, and the reason why they did that is
+like, well, we don't need any assistance, we know what we're doing, so we're just, we are certain
+that to do it. Then, starting from last year, it started to shift. Everybody moved towards Rust. And
+the other thing that seemed to happen, there are two other points that I would like to mention about
+Rust. One of them is, Rust is the first programming language that was accepted in the Linux kernel
+besides the C family, and that's a really big deal. The other one is the WebAssembly. Yes. It seems
+that WebAssembly and Rust are very good friends. I think it's because there's very good tooling and
+libraries around there, and because the memory management is so important in WebAssembly, right?
+Like, you're restricted with what you can do with the memory in order to satisfy its security model.
+And so, I think it's relatively straightforward to model the restrictions in Rust, and that it's
+clear some people have really spent a lot of time building great tooling for building WebAssembly,
+right? Like, it basically works well. The other thing I've noticed, in addition to WebAssembly, by
+the way, is also Python. If you look at the Python ecosystem, there's a huge amount of Python code,
+but then if it ever needed performance, it would drop down into C, right? I think what we're seeing
+now is many new projects, DAF, like, there's a whole bunch of them. New linters, UV, like, all these
+Python tools, instead of dropping into C when they need performance, they're dropping into Rust.
+It's a similar story where, like, the development productivity is significantly better, and so
+consequently, I think the Python ecosystem is another example like WebAssembly. Yeah, it's quite
+nice because if you look at the modern history in the last 30 years, since things started to catch
+up and we had bubble after bubble, we had a dot-com bubble and then waves after waves, it seemed
+that always there was one language to rule them all. Now it seems that we finally got to a point of
+maturity where everybody chooses their own poison. Yes. And then you have some pioneers, like Rust
+in this case, or Python that is very adopted by scientific organizations and, well, currently these
+are synonymous with data science, but basically it seems that what people said almost two decades
+ago that software is eating the world is actually happening and the programming languages are very
+important. and now it seems that we can live in harmony. It's like Global Village where Rust is
+known for its proper way of handling memory. Then in the website you have quite a few options
+actually because everybody can do that and you can build one step on top of the other. WebAssembly
+is on all of the pieces so things are actually happening quite nicely and it's quite harmonious if I
+can say that. Yes. You mentioned earlier that one of the things that you mentioned on the
+productivity checklist was the fact that you have units testing available. How is a basic experience
+of a programming day in Rust? I'm thinking that at points when I'm exploring stuff rather than
+staying with pen and paper and just thinking about the architecture I start coding and then I'm
+doing all this TDD and things evolved. How easy it is for you to do that or how would you approach
+the problem? I think it's super easy because you don't have to add any new dependencies to your
+project and you say hey these are tests and then there's a built-in test runner so you do like cargo
+test whatever and it'll run your tests which again it's nice that you don't have to configure that
+and you don't have a choice really. There are other test runners but people almost always use the
+built-in one and then there's built-in sort of assertion macros that you can put in that will
+generate nice errors when they fail so the tests end up looking very straightforward. Yeah so it's
+been you know it's basically exactly what you'd expect there's nothing fancy there's no hidden
+things it's just very very simplistic. They allow Rust things in the Linux kernel now why is that?
+Partly it's because of this memory safety thing but I think there's a broader point too that's
+important given how software is developed these days right which is that there's giant piles of open
+source software that underlies almost every modern application and when you have a giant pile of C++
+code especially performance critical ones where it's manipulating memory with low-level APIs in
+order to ensure that like a change to those like the Linux kernel right in order to ensure the
+change to those code bases doesn't cause memory problems right like that there's not an inadvertent
+use after free or bounds overwrite or something actually takes quite a bit of skill on the part of
+the reviewer right so like in order to evaluate the memory safety of forget about all the functional
+stuff but just the memory safety of a patch in C I believe is quite a bit higher than if you're
+using Rust which is basically because the compiler will tell you if there's something wrong and so
+the fact that it compiles is already done a bunch of the work versus in C you basically have to have
+an expert who knows the code base understands C and then can just evaluate the patch in terms of the
+safety so what I think that does is that effectively lowers the effort required to review those
+patches and so therefore given the most open source projects I think the limiting factor is
+maintainer capacity right like the amount of time people have to review PRs the fact that Rust
+lowers the barrier like basically lowers how much effort you have to put into a review makes the
+open source projects more effective and efficient like you know this data fusion thing that we've
+built InflexDB3 on right in Arrow it's pretty low level database stuff right there's a lot of like
+finagling in there with memory and if you told me 15 years ago when I was working on super cost
+based databases that random people from the internet would show up and provide patches that did low
+level operations you'd have to spend evaluating and making sure that wasn't introducing problems
+it's very very high versus now I feel like anyone can contribute we look at the PR compiles right
+and we're quite confident it's not going to introduce some memory problems so in my mind that like
+you know it makes the open source more efficient but what that effectively does is it also opens the
+contribution doors to that many more people that's my theory we'll see whether that's borne out in
+practice but I feel like that's one of the reasons why Rust is so popular in the open source world
+too well it felt that how should I put it nicely it felt that Rust had friends in high places when
+the US government came with the legislation for safe memory and now everybody just points to Rust
+okay that's the solution that's the silver bullet at least that was the feeling at that point
+because they was looking more into cybersecurity but more than that you mentioned that InfluxDB 3.0
+is around Rust Paul made a bet or the company together with Paul made a bet and it seems that it's
+paying off big time I would assume that rewriting the whole database from scratch and then on top of
+that getting involved in all these communities because actually Influx data has a lot of moving
+parts that are all open source and they can be used you had also an acronym for that add-on or the
+fdap stack fdap stack and then at some point you were also considering adding another eye into that
+the iceberg in terms of oh yeah it's coming let me walk you let me walk the people through the fdap
+stack story first and then we get to the iceberg piece so as you said like rewriting a database is
+very ambitious undertaking typically undertaken by startups who don't know any better Paul knew
+better right because he'd actually done it at least once before and Evan who was the CEO of Influx
+also knew how much of an effort it was and so I think part of the story of rewriting the database
+for 3.0 was that they have to find a way to do it more efficiently than all by themselves right if
+there's just basically all Influx employees writing it from scratch they knew that was going to take
+a long long time instead the bet was we're not going to rewrite the whole thing from scratch we're
+actually going to build on top of the open source several open source pieces that have most of what
+we want anyway they're basically commoditized now and then we'll just spend most of our engineering
+effort building the time series specific components so that piece that's common across multiple
+vendors is this FDAP stack right so that's like the flight arrow parquet data fusion because you
+know Influx was not the only people who want a fast common execution engine which is what data
+fusion is right query engine or SQL planner again there's a bunch of other people who are interested
+in that technology as well and so by working together from Influx's perspective that basically
+lowers the investment required to get the same level of technology there's other considerations too
+but like from a purely economic perspective you just think about like how do you make a new database
+if you have to build a whole new database from the ground up totally integrated right like something
+like DuckTB it's possible but it's a major investment and you have to have the right people too
+right DuckTB guys are basically the database world experts out of can any arbitrary startup be able
+to muster that kind of expertise and investment probably not but working together I think you can
+actually you know a bunch of different people from a bunch of different companies that all have the
+same needs I think you can actually muster the same level of expertise and investment that you've
+only been able to muster before as part of a big well-funded company so that's that's like the story
+you have to ask why is it so important in the story because you couldn't have rewritten the database
+with the same staffing level if you hadn't had the open source pieces and I think kind of from the
+part like early versions of influx where the versions one and two and it's actually very common for
+other open source like companies that are built on products like the vast majority of the
+contribution to the product came from the employees of the company right and then yes they accepted
+contributions elsewhere but most of the development effort is driven by the company's employees
+versus that's not the case with Arrow or Data Fusion like that development is driven by I certainly
+help but there's a lot of people from other companies driving that forward and it's not like partly
+because it's a library not a product so I think the economics and the dynamics of those projects are
+quite a bit different than the original influx DB one and two okay but still you started the rewrite
+and well it was a big endeavor that's for sure new programming language new ecosystem a handful of
+new libraries because most of them were just getting started at that point I'm sure that not
+everything went very linear what are the things that I don't know the war stories what should we
+know you know the kind of things that you're gonna tell your grandchildren your neighbors this kind
+of stuff I think there's like a bunch of rust specific stuff which we can talk about maybe I'll
+start with this specific inflex database stuff so the first lesson which won't surprise anyone is
+that it takes longer than you ever expect something else that was interesting is when you started
+out there's  whole class of it's called disaggregated databases now which is basically with the move
+to the cloud you outsource the durability requirements to it and it's basically infinitely scalable
+and it's supposed to be real cheap right so there was a move in database architectures and InflexDB
+is the same to instead of tightly tying your data to the local disk you disaggregate you put the
+permanent store on S3 because it's cheaper and it's durable and you have to where crashes and blah
+blah blah and then you have need low latency like Influx's bread and butter was really low latency
+queries to drive dashboards you run a query and you get the results back in 5 to 10 milliseconds if
+you're just running on S3 the S3 request itself takes 100 milliseconds it varies a lot too which is
+another problem so the point is if you care about low latency the mere fact you have to go to S3
+once you can't do it because you that ended up meaning that the caching logic of what became that
+was a far bigger investment than we thought was going to be required we just thought we need to be
+fine it turned out that you needed many levels of complicated caching to get the same little
+performance that was one lesson learned I think now it's much more well understood the trade-offs of
+things like S3 but it turns out it's not as fast  as you think and getting it to perform really
+quickly in low latency is actually quite a bit of engineering effort looking now at the project so F
+stands for flight if I remember correctly Apache Arrow Arrow Flight Data Fusion and Parquet right
+yep yep and then Arrow is written primarily in C++ well Arrow is like a memory specification so
+there's client libraries written in a whole bunch of different languages including Rust right so
+there's a native Rust implementation of it which is what Influx uses it all goes down to if you want
+to build an analytic database with all this low level fancy technology there's a variety of patterns
+that have emerged over the last 15 20 years in database systems right like I know because I worked
+at Vertica which was an early early adopter of this stuff but basically people have now realized the
+way you write fast analytic systems is you build them using columns instead of putting data in rows
+you put in columns the reason is because by putting it in columns it's much more amenable to the
+modern architectures you build this vectorized database and you use column oriented file formats and
+blah blah like there's a handful of an implemented like the three generations of systems by the way
+all the Hadoop stuff used similar technologies and techniques if we can just build a common library
+that implements those pieces and people build the specialized stuff on top of it that's a much more
+efficient way to go so arrow is a piece of that sort of composable data stack in the sense that
+because you're representing data in memory you have to have a representation memory data in order to
+process it like you need to operate on it compare look for a string add it together whatever you're
+doing with it and so in these column vectorized engines you basically have arrays so you have an
+array of numbers those are the columns that then you need to do computation on and so the point of
+arrow is that the in layout of the data across different systems is pretty similar there's not that
+many ways to represent an array of integers but the details are important like what's the alignment
+how do you represent which ones are nulls or not right and so the specifics maybe are less important
+for performance but the fact that everyone agrees is important for intropability and likewise for
+strings  interchange so the python programs could easily just sort of transfer data back and forth
+between each other by having to copy it and transform it from whatever format pandas especially was
+one of the big ones but what actually happened is once people standardized on those memory layouts
+you could then invest a whole lot more time in like geeking out about making individual operations
+on those memory layouts much faster so there's like been a whole host of effort that's put into the
+Rust implementation of Arrow to make adding to arrays really fast make looking for strings really
+fast make implementing regular expression matching really fast I don't think it's explicitly part of
+the Arrow specification but the fact that it was a spec and that a bunch of people can use it and
+therefore can also contribute back to this implementation means that you end up with this library of
+high quality performance kernels which any individual company probably couldn't afford to build all
+by themselves but together we can let me take a step back now so I was just thinking while listening
+to you that a lot of conversation that you have normally when discussing about the programming
+language you have the language itself and then you have the patterns that will develop around it and
+the best practices and then on top of the best linters basically you have a full pipeline of things
+that normally go into continuous integration that allows you to have a trunk that has a given
+standard is that the case also with Rust because you said that the compiler is so strong do you need
+anything else besides the compiler yeah so I mean Rust has a linter or like a formatter right I
+don't know how many listeners are old enough to remember the time I still remember early jobs where
+we'd argue about how the braces and the conclusion I think was no one really cared well some people
+care but it really didn't matter as long as everyone was consistent like that was what mattered and
+so since Rust sort of came of age when lynchers were a thing or people figured  out what those were
+that it just includes one things that are built in the language basically everyone uses them because
+they're already there it's definitely opinionated but at the end of the day you just follow it you
+do what it says and it's like this is the clippy that comes from old Microsoft office just changed
+jobs changed companies it's very unclear why they show it clippy right and that has been drawn
+before they needed a lovable mascot to hate ! Is there anything else that we should have from the
+why Rust for the database space? If I may I'll just get on my soapbox for a few moments to talk
+about Rust async because I think it gets an unnecessarily bad reputation I think it's phenomenal
+let's put it that way or at least phenomenal compared to everything else that I've ever used so the
+idea is if you want to do high performance network IO in basically any language but Rust included
+the way you set that up is when you're going to do a network call you can't block waiting for the
+network to respond right like you send a message you wait for the response but then you don't want
+to tie your thread up just like busy waiting for the response to come back on the network so that's
+the high level primitive that you need so the way Rust implements that it basically is a cooperative
+scheduler right like and it's built into the language but it looks like you you do some keyword
+called a wait and it just does but under the cover is what Rust does that it literally generates
+control like a return from the function returns back to currently running scheduler and will
+basically set up a callback with the appropriate marshaled state to call you back when the function
+is ready so from your programmer's perspective you just write straight line code right but what's
+actually happening on the covers is your cooperative returning control back to scheduler and then
+it's calling you back when the data is ready right the fact that that's built into the language is a
+huge deal I think JavaScript has that obviously it's always had it and one of the problems is you
+immediately get down to the guts of polling and some stuff so it feels very complicated at first but
+I feel like once you understand the alternative of what you'd have to do the rust model is super
+great in fact I think it's so super great we actually schedule it like doing CPUs scheduling in a
+database as well which is not typically what you would use something past life I am so embarrassed
+to admit like they're really hard to get right they're hard to tune like you get them working 99.9%
+of the time but then they'll have weird problems on shutdown or race conditions all sorts of
+terrible things the rust ecosystem includes this phenomenal multi-threaded work stealing scheduler
+called Tokyo I think you can use that both for the network stuff which is great but also because
+it's so high quality you can use a separate thread pool for CPU bound tasks as well because
+basically in databases you have the same basic idea where you're trying to do cooperative schedule
+and you do some work and you have to return control by schedule and let figure out what the next
+thing to do is I've been quite pleased we were able to work that pattern into the data fusion code
+base all the CPU work is done on Tokyo thread pools as well you have to be careful not to run the
+same work on the CPU bound tasks on the same thread pool as the IO bound tasks which takes a little
+finagling but at the end of the fact that you get built in supporting your language for doing these
+continuations is really mind blowing ! Rusty thing it seems like that so basically what I'm hearing
+from you is that it's a tool is more or less a one stop shop the tool train that you get with Rust
+is pretty complete and it has a lot of the stuff that you normally go somewhere else and it leaves
+space for tool building companies and that even the scheduling side on the thread side is that  good
+that you can use it also for internal purposes yeah you know like so from my perspective if you're
+built like Rust is a phenomenal choice for building performance critical you know infrastructure
+where performance and resource efficiency matter right like that's one of the reasons why it's good
+for web assemblies well I think it's passable like you could plausibly  build websites and stuff
+with I've seen people does web frameworks and stuff but if I were doing that I would not build web
+frameworks with Rust like it's totally unnecessary the web frameworks are never CPU bound or like
+all that's really about managing complexity and libraries and stuff so like there's a lot of better
+choices in my opinion than Rust for the application tier but if you're building a database or some
+database intensive application or some network thing or something where performance really matters
+because you've got to a million files Rust is pretty hard to beat so whenever something that is
+resource intensive something that you don't want to get wrong use Rust for anything for web for
+instance there are other choices because that was also something they had in mind you know there are
+a lot of these purists that are just going all the way and then they make a lot of efforts to make
+something look good and it's even more complex than it should be Rust has the low level primitives
+to manage memory and control that carefully but it comes with overhead of like now you have to think
+about that a little bit more versus like when you're writing a web handler you probably don't care
+about the allocation of the intermediate object or whatever it doesn't matter in the grand scheme of
+things so I think Rust has more power than you need for a lot of the internal web stuff I also think
+there's some subset of people who really love low level worrying about where's the memory owned and
+who owns what and making it really faster and like there's a bunch of people that's we care about
+the low level details that you have to worry about in Rust you know but if you're down in a database
+and that stuff really matters like Rust really starts shining okay great and my final question how
+about documentation yeah I don't know how the Rust community did it but they're like obsessed with
+documentation and so the actual Rust project itself is I think very very well documented there's the
+Rust artifacts the standard library and the compiler and stuff so that's all well documented and
+then there's the overarching community and how the Rust community decides what to do and communicate
+about status of their project I think the Rust people have really done a phenomenal job of being
+open and if you want to know what the current status of anything is you go read pages and pages of
+stuff on GitHub and I think actually that's basically best practice for open source communities
+these days like the Apache Software Foundation seems to be very popular for many projects these days
+I've now been involved in it for many years has very very few actual requirements on the projects
+but the one of them that really is basically everything happens publicly so there's one or two
+things that happen non-publicly but everything else is public in some way or other it's on public
+mailing list or it's on GitHub issues or whatever and I think that it may not sound that important I
+think that alone is really critical to building community trust but also people trusting enough that
+they want to get involved because they can see and they can be part of the discussions there's no
+magic behind the scenes viewing going on people have full visibility the Rust organization itself is
+very good at that as well I think okay okay and how the decision being taken because that was also
+one of the things that I had in mind that one of the things that was very useful in the Java space
+even though it was slower than expected was the Java community process it's very bureaucratic and it
+moves slowly but as you mentioned the community felt that it's part of it and people can chip in it
+seems that Rust has something similar yeah it's the same thing like very similar there's a process
+to make you know they call them RFCs in Rust but it's the same basic idea where they whoever wants
+to make a change writes up why and explains what and then there's a community comment period where
+lots of people can well I don't know the exact criteria for what's required to get one of those
+passed but in Apache we basically strive for consensus all the time and I think most people are
+pretty reasonable about it another important thing is you don't make everyone sign off on it you
+just basically give everyone the opportunity to object which is a very important difference because
+it means one person's sort of apathy you can't slow the whole process down but they also have an
+opportunity to participate if they actually want to but they have to put the work in to participate
+okay thank you for the time Andrew very insightful conversation I'll give a good evening thank you
+everyone

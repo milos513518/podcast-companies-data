@@ -1,0 +1,347 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Building Resilient Event-Driven Microservices in Financial Systems with Muzeeb Mohammad
+DATE: 2026-02-16
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/building-resilient-event
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2263616639-infoq-channel-building-resilient-event.mp3
+DURATION_SECONDS: 2107
+TRANSCRIBED_AT: 2026-11-04T09:49:59Z
+----------------------------------------------------------------------
+If you're the kind of senior engineer, architect, or technical leader who people look to for what's
+next, QCon London is probably on your radar. Join us in London from March 16th to the 19th, where we
+go deep on the topics that matter, like the architectures you've always wondered about, engineering
+productivity, and applying AI in the real world. This isn't about trends for their own sake. It's
+about getting practical insights from senior practitioners to help you make smarter calls on where
+to invest your time in tech. With software changing fast, QCon London is a conference that helps you
+lead the change. Learn more at QConLondon.com. Hello, and welcome to the InfoQ podcast. I'm Thomas
+Betts, and today I'm speaking with Mouzeeb Muhammad. Mouzeeb is a senior manager of software
+engineering at JPMorgan Chase and a senior member of IEEE. He specializes in designing secure,
+resilient, and high-performance distributed microservices for large-scale financial platforms. And
+that's what we're going to be talking about today. So, Mouzeeb, welcome to the InfoQ podcast. Thank
+you so much, Thomas. It's a very pleasure to be part of this podcast. I'm looking forward to share
+some of my experiences where I worked, you know, my previous employer, as well as the current
+company. Well, great to have you here. InfoQ has covered event-driven systems before, but in your
+view, what makes a good event-driven system? How do they differ from traditional, say, request and
+response or monolithic architectures? So, we actually do have a lot of applications built in the
+monolithic technology stack, like, you know, RESTful APIs, you know, SOAP-based web services. But
+the challenges that we were facing is, I think, to, you know, to time to the market or to scale up
+the solutions. I think we were having some of the, you know, common challenges, the industry
+experiences. So, we have tried some of the event-driven approaches. You know, very specifically, we
+started with the Kafka is one of the architecture patent. We started seeing a very good improvement.
+I will explain some of the examples that we successfully implemented at SCI. SCI was one of my
+previous employer. So, part of, you know, when a customer tries to open a checking account, you
+know, it goes through various systems behind the scenes. We were actually kind of not reaching the
+SLA within the time. So, what we did was, we introduced a Kafka event-driven system in the back-end
+processing. So, for example, customer goes to the SCI.com and try to open the account, a checking
+account. So, what happens is, behind the scenes, we loosely decoupled the whole back-end processing.
+You know, I think the customer checking account goes through the credit check, you know, it looks at
+the various factors like whether the customer is eligible to open the account or not. And once those
+systems are loosely decoupled, so basically, the customer account information is getting published
+to a couple of topics. And then there are a couple of consumers, basically. Fraud check is one of
+the consumer. And account opening is one of the dependent systems, which basically takes the
+customer information, opens up a brand new account in the system. You know, I think we have seen
+this particular implementation help, you know, navigating through a customer journey very
+efficiently. And also, the various dependent systems are like asynchronously processing the end-to-
+end flow. So, this is a completely decoupling solution we implemented. And ultimately, you know, I
+think the SLA we were able to achieve within the agreed timeline. Yeah, I think you talked about the
+customer journey. And I think that's what works with event-driven systems. You're talking about the
+events. And if the business process says, well, the customers request a new checking account, and
+then that's the first event that happens. And then other things trigger off of that. Oh, we need to
+do a fraud check. We need to do this. And eventually, there'll be an event that says the new
+checking account was created, or maybe the checking account was declined. But there are steps along
+the way, and each of those events happen. And so, you would have different message streams, right,
+that process those. And you design the system to be asynchronous. And it's, I think, sometimes
+counterintuitive that we're making all these things that are asynchronous and out of band, but that
+can actually speed up the process. You mentioned, you know, meeting your SLA demands. How does that
+trade-off happen? How do you do things separately, and it comes out faster? What we have done was,
+we basically, part of this whole customer journey, when you look at the architecture solutioning, so
+we introduced one, I think there are like multiple Kafka topics, for each of the downstream
+application. For example, fraud check is one of the downstream application that, you know, process
+independently. And the new account build, when the customer basically, applies, was the fraud check
+is successful, you know, the next process is to invoke the new account build. So, what we did is, we
+had two different Kafka topics, and each of the topic is consumed by multiple consumers. Right, so,
+fraud check process is one of them, and then credit scoring check is one of the process. And then
+there is an actual new account build, that is another process. So, all these different downstream
+systems were subscribed to one of the Kafka topic. And each of the process, independence,
+independently process their, you know, things. And at the end, we are basically letting the customer
+know that your account is successfully created. And then there is a notification process goes back
+to the customer. You know, I think the main success criteria, what we have seen is, when we
+introduced asynchronous processing, and when we let the downstream applications process
+independently, and also we have a freedom to deploy the changes more frequently. So, because of this
+asynchronous nation and decoupling, we let each team deploy their application solutioning
+independently, without impacting each other. Yeah, so there's that process for the full developer
+experience, the full CICD-like cycle, and software delivery lifecycle of, not only can the software
+get better, but where we find there's a bottleneck, we can now target just that, as opposed to
+working on the whole monolith. So, there's a little bit of an aspect of good reasons to do
+microservices, to break it up, to have individual teams be able to work on individual processes. And
+also, the fact that you had to redesign it to be asynchronous, I'm assuming. So, it used to be like,
+start the process, like customer requests, and then like, you're waiting for that one thread to
+basically finish, versus now it can fan out and do parallel work. Is that one of the benefits you're
+seeing? Is that all these things can go independent, you know, side by side, as opposed to serially?
+Exactly, Thomas. That's what we used to have. So, we used to have one monolithic, big giant
+application, you know, that handles all of these processes systematically, like, you know,
+synchronously. When the customer, there is a UI application, they're tightly coupled with this
+monolithic web application, and then, you know, it needs to process everything like step by step. If
+one of the steps fails, we are not letting to process the other systems. So, because of this
+asynchronous decoupling and microservice architecture, we actually, you know, decoupled all this
+monolithic application into multiple microservices, introduced event streaming via Kafka, and then,
+you know, we saw very good performance. As I said, you know, I think the engineering teams are
+independently working on each part of these backend processes, and we are able to deploy more often
+deployments. Earlier, it was like, you know, maybe every quarter we used to do the deployment. Now,
+it is like on-demand deployment. Whenever the team is ready to be the new capabilities, we are
+basically, you know, more frequently doing a deployment via SvSvD-pack. And you mentioned SLA's at
+the beginning. Do you see other reliability and performance benefits with splitting this up? And how
+is that measured? How did you detect and, you know, what were the metrics you used to decide that we
+are now a healthier system and it was worth the re-architecture? So, we have the observability
+pattern implemented across the different services, starting from the UI screen to all the way to the
+different microservices level. So, what we used is a concept called trace ID. So, one of the common
+attributes that we shared across the stack. So, if you want to basically see what happened with one
+particular transaction, we go to, you know, some of the observability tools like Splunk. We look at
+the trace ID and it gives the whole history, like from the beginning to the end. So, I think Splunk
+is one of our main, you know, observability tool. And also, we use Dynatrace and AppDynamics. Those,
+like, will give you, like, when there is an issue happens, tools gives you, like, more granular
+level where exactly the problem happened. So, sometimes you go to Dynatrace to drill down and find
+out where exactly the exceptions are, maybe where exactly the failure is. So, I think we rely
+sometimes Splunk, Dynatrace, and AppDynamics. Yeah. And that's all built on using open telemetry, I
+presume, and standards that the industry has come up with. Like, here's how you do all this stuff
+with modern cloud-native solutions. Now, we were talking about financial services, and especially in
+the U.S., financial services have this, like, old, stodgy mindset of, we use technology and it
+works. Like, I worked at a bank not that long ago, and we still had mainframes. I think there's a
+lot of banks that still have mainframes. Those are very much not modern technology. And you're
+talking about Kafka and event streams and stuff that's, within the last few decades, really taken
+off versus integrating with stuff that's several decades old. How do you make those systems work
+together, and how does the business adapt to transitioning from something so legacy and stable and
+reliable to, you know, this newer technology and newer architectures? Right. Yeah, I think that's a
+very interesting aspect. I think every organization has been going through this shoot. So, at SCI,
+we do have, we used to have the mainframes, the core processing. I think the whole checking and
+credit card platform was built in mainframes. So, what we used to do is, I think, we look at the
+system end-to-end, see if there is any particular domain we can build, shift and, you know, build
+outside the mainframe. So, we tried with the, very specifically in the credit card side, you know,
+we took one of the functionality called new account build. Right. So, what we did is, the system
+still relies, still goes through the mainframe. But once the mainframe builds the account, we are
+actually introduced a MQ layer. Right. So, the Cobalt, the mainframes Cobalt program basically
+publish that into one of the MQ layer. And then from distributed technology side, we actually
+develop one MQ listener that listens to the events, that listens to this MQ messages, and then
+basically translate that to a Kafka event and publish to the one of the topic. And we have a
+downstream systems, which actually consumes, I think there are like four to five consumers, they
+continuously look into this newly built account. Based on that newly created account, and we had
+some of the use cases. Whenever we open, whenever a customer opens the, you know, new credit card,
+you know, I think there is a, you know, there is a concept called priority pass. So, basically,
+customers without relying on the manual, manually opting for the priority pass. So, this, because of
+this, you know, the event streaming solutioning, a friend, we are basically creating the priority
+pass. So, it's basically hybrid solutioning, like, you know, all the way from the UI screen, UI
+screen to the mainframes to the, you know, the outside solution, what we build, you know, AWS public
+cloud, where this information is being available to the outside world. And then we are basically
+creating some of these, you know, business use cases out of it. Well, and I like how that
+encapsulation of the mainframe, the mainframe emits events effectively. Like, this is the data, but
+an event occurred. And so, it seems like event streaming and event sourcing sounds like a natural
+fit for how to use those legacy systems rather than have some tightly coupled down at the, you know,
+COBOL layer. You look at where's the business boundary? Where's the business event that occurred?
+And that's the thing we build our systems around and we respond to that. Did that mindset help with
+design and development and requirements to say, hey, this is how we build the systems? Yeah, we
+started with the hybrid, you know, solutioning and keeping in the mind. You know, I think slowly we
+are moving towards the event sourcing and event-based mechanism. The idea is once we have the data
+available outside the mainframe, and once we create the SOR system, the system of record, SOR
+system, slowly we will move away from the mainframe system. That was our main thought behind it. So,
+we are basically moving some of the functionalities outside the mainframe. And then, you know, once
+some of the critical functionalities become available using a distributed technology, it's like, you
+know, the microservices, event streaming, observability patterns. And then, you know, maybe in the
+next decade, probably you will be slowly moving away from the mainframes. And do you see the event
+streaming as a way to help move that away that you can get to this event occurred, and it doesn't
+rely on this technology implementation? If the checking account was created, you shouldn't care that
+the checking account created means this record in the mainframe exists. It's the checking account is
+created. So, is that going to help with the future migration plans? Exactly. Exactly, Tanwar. So,
+one of the mainfied we are seeing with this event streaming is, you know, I think we have a
+capability to look back the whole history of the events. And for example, customer opened the
+checking account, and then he started depositing the money. So, for each of the actions the customer
+performs, you know, we are actually relating those actions to an event. And then there is a
+capability to look back what exactly happened for the particular customer interactions with the
+system. So, I think event sourcing and event streaming is really helping us, not only just creating
+the SOR, system of record outside the mainframe, and also look back what the additability standpoint
+and replay standpoint. You know, I think all these capabilities are really helping. You know, very
+particularly this history of events, whatever the history happened, you know, we were able to replay
+those events. And so, do you have a, you mentioned a system of record. Do you also have a system of
+reference? I know that's one, sometimes one model is, we're doing this gradual transition. We'll
+have what's in the mainframe is replicated into a system of reference, but it's not the source of
+truth. We know that we still treat the mainframe as a system of record, but you can then start
+gradually transitioning, sort of using the Strangler fig pattern of, we use the system of reference
+to query stuff, but now we can get to our updates instead of writing back to the mainframe, start
+writing into the new system of record. Is that on your roadmap of how to make that transition
+happen? Exactly. So, that is our complete roadmap. So, we are looking after, I think we implemented
+in our area, like maybe five critical business processes using this event sourcing, event streaming.
+And as I said, system of reference is, you know, getting translated very nicely end to end. And we
+are looking after to become our, the distributed side solutioning becomes the S system of record.
+That is our target goal. And also, there are few patterns we implemented, apart from, you know,
+stripping the data outside the mainframe. There are a few tools like, there is a tool called CDC,
+Change Data Capture. So, moreover, there is a change happens on the mainframe. For example, IMS is
+one of the mainframe database. So, this tool streams the data, and we have a reconciliation
+patterns. So, what we do is, you know, we take the CDC streamed data, and the system of reference
+data, we compare, we have some of the solutioning implemented using some of the Java framework, Java
+and Spring. So, what we do is, we throw the day, we run a reconciliation process. We just compare
+how the data is looking at the AWS public cloud side, like the, you know, the distributed side,
+versus the mainframe side. And we generate the report out of it. So, eventually, we are looking at
+how the quality of the data is. So far, we have seen very positive results. You know, I think the
+data is, like, pretty much accurately reflecting in both the places. Once we get, like, more
+confidence, probably, some of the other processes, also, we will slowly move to the, the new, you
+know, distributed side. Yeah, it's definitely a gradual transition. How do you get all of your
+stakeholder buy-in to what is not a, you know, quick, quick win? Like, we have to do this, and it'll
+be done on Tuesday, but this is going to take a while. And how do you build the confidence into,
+we're measuring that these two systems are getting to be more in sync, and now we're at a point
+where we can trust it? How do you get the, like I said, the product owners, and the business
+sponsors, and other people that aren't just the technical side to all agree with what's, what's the
+process and how do we do that? Right. So, some of our stakeholders, like product owner, you know,
+tech manager, execute directors, we have shown them some of the successful implementation. For
+example, this new checking account, we have built, you know, using this event streaming solution
+outside the mainframe. That has become very successful. And also, we've shown the confidence by
+running through this reconciliation process, right? So, there are two, two, three, critical
+solutioning already implemented outside the mainframe. And one of the big advantage and one of the,
+one liking factor from our leadership team is that this new solution that we are building outside
+the mainframe, we are actually keep on adding additional capability and the time to the market has
+improved a lot. Whereas the mainframe system, you know, I think if you want to incorporate any of
+the changes, I think there is an auto process, a very delay lengthy process involved. So, our
+leadership team, our stakeholders, really love to see that new capability will be implemented in the
+faster way. So, with these two solutions that we implemented so far, they really love it and they
+want to basically move forward with the, some of the other critical processes, Ezra. Well, that
+leads into my next question, which is, what were the big motivations for this? I think people here
+mainframe, like, well, that's old technology, we want to get off of that. But that's somewhat the
+engineer perspective of can't we just use a new shiny thing? But there's also the business aspect.
+There's not a whole lot of people who still know how to program Cobalt. And there's just good
+business reasons to start moving away from that. You touched on a little bit of we want to add new
+features and functionality so that it doesn't look like we're still working in the 1980s. And you
+can't do that quickly. What were the other factors? You mentioned reliability and just the speed for
+the SLA is not being met. What were the other factors that said, hey, this is when it's time to
+actually go through this process and do this major migration? Yeah, I think one of the major
+challenges that we are seeing is the continuous integration, continuous deployment. That is actually
+one of the major lacking part in the mainstream side. You know, there is a lot of tools, you know, I
+think on the distributor side. There is a continuous improvement is happening. Whenever a developer
+writes a code, there is a thorough end-to-end solution in place. The moment that developer commits
+the code to executing the automated functional test to running this code scans to, you know, are
+deploying into some of the cloud regions like blue-green way, right? So, automatically it checks
+after the code is got deployed to one of the region. There is automated functional test we are
+executing ensuring the new code is meeting the expected behavior and then, you know, turning on the
+traffic to the newly deployed code. But this pattern, this solutioning is missing on the mainframe
+side. So, we are struggling. So, even to deploy, there is a lot of downtime. There is a, you know,
+some of the, we actually, there is a concept called packaging. You know, I think even the CICD part
+is very, little difficult on the mainframe side. Yeah, so the main advantages we are saying is like
+our main goal is to time to market. So, time to market is one of our main goal. We want to
+continuously add additional capabilities and we can basically speed up the things very fast. But
+whereas this mainframe, I think, you know, we have some of the challenges, right? So, that is a main
+motivation to move towards the distributed side. Was security also a factor? I know mainframes have
+a different security posture. Like, they're safe in some ways because they're not the same stuff
+that's hackable. It's, you know, oh, here's the new Linux and everyone knows how to get into it or
+whatever NPM package. So, they're sort of shielded in a way because they're legacy, but they're also
+notoriously difficult to upgrade. And even if we're not talking mainframe, if we're talking about
+other systems that are just, you know, 10, 20 years old, those things need patching. Is there some
+benefit to doing modern microservices and how do you make sure that you're not introducing new
+security issues because you're not on the bleeding edge, but closer to modern technology? How do you
+get, again, all those factors come into play with building these new systems and keep everything
+secure? Yeah, so definitely, I think mainframe has been amazing in terms of the security standpoint.
+You know, I think historically it was proven. I think we never have, I mean, continuously, you know,
+mainframe is being a fantastic job. So one of the factors, what we are doing on the distributed side
+is that we are introducing an environment as a code. So it's one of our new offering. What we do is
+we write the code to spin up the new environment and, you know, behind the scenes we are using a,
+you know, I think it's an open source tool called Terraform. So what happens is we keep on adding
+the security policies on top of, you know, this environment code. So developer standpoint, the
+developer just focuses on the business code implementation. But there is a couple of departments
+delicately working on creating these, you know, security policies on top of this platform. I think
+we call it as an environment as code. So I think the security processes are continuously evolving
+and we are actually implementing at the platform level. And developers, you know, the engineering
+side, the engineer is also responsible to, you know, expose some of the capabilities using, you
+know, maybe OAuth based mechanism. For each of the API that we expose, you know, we have a very
+thorough process involved. You know, each of the API needs to go through API governance process.
+And, you know, part of that we ensure we have this OAuth based mechanism. And we look at the each
+use case independently, uniquely. There are various patterns we follow, not only just OAuth. There
+are some of the other patterns, maybe sometimes it depends on the business use case, we go with the,
+you know, cert-based mechanism as well. So there is a X509 based, OAuth based. We are continuously
+evolving on the security standpoint. One, we are implementing at the platform environment as code
+level. And another one is, you know, looking at each aspect, what are the best practices we can
+implement? Yeah. And I think that that's a good case study of these aren't like bleeding edge new
+ideas. These are established patterns that you can go out and find. Here's how we build a good
+platform. Here's the benefits of doing that. The platform now handles widespread security updates
+like everyone gets it as opposed to each team has to individually go and patch things. But I think
+that's also a lesson for other companies that are still in the, well, we have legacy systems that
+are working and how do we make the transition? And was setting up all of those platform teams and
+creating build servers and CICD and infrastructure as code, was that a huge lift for within the
+financial services industry? Or is that something that everyone's just doing now? It's a huge shift,
+Thomas. Absolutely agree with you. Earlier, software engineer used to just focusing on the software
+requirements, business requirement, implement the solutions. Now, the software engineer is
+responsible to look after the security aspect as well as this infrastructure provisioning as well.
+So, at SCI, the engineer is responsible end-to-end solutioning, starting from the platform creation
+to the introduce ensuring the security standpoint, we thoroughly spend very good amount of time on
+the security standpoint. We look at the solutioning end-to-end, not just one particular small
+component, whether these security practices are implemented thoroughly or not. For example, whenever
+we see any business use case implemented end-to-end, if there is any PI data is being used or not.
+So, if there is a PI data, we enforce PCI compliance processes. Internally, it's SCI. So, the PCI
+compliance certifies that the PI data is properly encrypted, properly shared end-to-end solutioning
+on just one system. Each of the system needs to certify the PCI is certified. That is one way of
+doing it. The other one is we mask the PI data across the systems. Whenever there is information
+stored, shared data in transit or data at rest, we ensure the data is basically getting masked when
+we are basically going with this logging or observability standpoint. So, my ultimate point is the
+engineer looking at every solution very carefully, thinking the security in the forefront, always
+looking after the business use case if there is any PI data involved, ensure certain regulatory
+processes thoroughly followed, and we are doing consistently across the different systems. So, just
+like security and all those things are coming in, or all this new platform stuff is coming in to
+financial services, we have to ask about AI on every episode of the podcast, I think. Where does AI
+fit into financial services? Is it something that everyone is pushing for, like we need to show that
+we have AI, or is there a trend to stay away for it and let it mature a little bit until it's a
+little bit safer? And how do you add AI into the product or into how you're building the products?
+And how do you do that safely and securely and ensure that you're getting whatever goals you're
+hoping to achieve by having AI incorporated? So, I think internally at SCI, we started implementing
+some of the proof of concepts. One of the ideas we started exploring is anomaly detection. Anomaly
+detection is like one aspect. Without engineers spending a lot of time looking at the various
+metrics like Splunk, Dynatrace, UI, ScreenSight, it's taking a lot of engineers' effort. So, what we
+are doing is, there is a proof of concept we are trying to come up. We are actually building one AI
+model. That AI model continuously gets the various observability metrics. Logs is one of them,
+traces. And we feed this information to this AI model. So, this AI model, we spend a good amount of
+time fine-tuning and looking after a very specific one which is really doing a good job in terms of
+site reliability engineering. So, we have chosen one particular model and then we are continuously
+feeding this different observability metrics to this model. The model is actually doing a lot of
+analysis and giving a different aspect like where the problem is. So, it is basically giving us a
+very clear information where the problem is actually occurred because if you look at our end-to-end
+solutioning, there are close to 50 plus microservices involved and the engineer needs to spend a
+very good amount of time to look after each of the system logs and fine-tune and find out where
+exactly the problem realized. But using this AI anomaly detection model, I think as per our initial
+result, it is showing very promising. So, the engineer straight away knows where exactly the problem
+is based on this AI model output, analysis output and we have successfully implemented one proof of
+concept. It is showing a very positive result. Likewise, we are also looking after the other areas
+as well. One more previous proof of concept we are doing, which is more on introducing dynamic
+security policies. I think some of these policies relies within the microservice code level. So, we
+want to basically see if we can spin up a common platform level, the security policies. This AI
+model, basically continuously look at the various incoming payloads. based on that dynamically apply
+some of the security policies at the platform level. That is another proof of concept we are doing.
+But so far, it has been amazing. The kind of result it is showing, it is very promising. Yeah, so
+you are talking about anomaly detection for anomalous behavior of how the system is performing to
+say here is a bug. When somebody says anomaly detection with financial systems, I am thinking fraud
+or there is an unusual card transaction. But you are not looking at that specifically. You are
+looking at this from the engineering side, how to make sure the system is behaving and something
+went weird and a human might not notice it, but the model you are creating is able we brainstormed
+some of the use cases. I think the one that you highlighted, fraud detection system. There is some
+thought we have given. Not only this fraud detection, there are some of the other use cases we are
+exploring. I think we are at the exploring stage. But the kind of result these two POCs gave us,
+very good confidence. Eventually we will be implementing at the business driven use cases as well.
+So I think that leads us to let's just look ahead, like 5-10 years. Since you're in financial
+services, where do you see software changing? Do you see us moving more into these event-driven
+services and that's catching up with the industry? And will AI be more involved? What's your
+predictions? We are looking for if we talk about the next decade or so, I think one of the major
+shift is happening is on the software engineering side. I think earlier we used to spend a good
+amount of time to deploy one particular business-driven solution, to develop and build and deploy.
+But now speed to the market is drastically improved. We have some of the tools internally, the
+engineers can start using some of these AI tools to speed up the application development all the way
+to deployment. So, that is one aspect that is continuously evolving with this new AI revolution. So,
+I think time to the market is one aspect. The next decade, you will see a significant change. And
+also, we started looking at the advantages of AI capabilities. Very soon, we will be implementing
+some of the solutioning on the business-driven use cases. So far, we have implemented at low risk
+level. But I see in the next decade or so, you will see a lot of business-driven use cases
+implemented in the financial sectors, starting from checking account all the way to, there is a
+concept called taxonomy. So, when the customer applies for the credit card checking account, or
+checking account, they get to know where exactly the system the customer request is. Right now, the
+whole thing happening at the back end, within the bank, but customer can see more visibility where
+exactly the request went through, where exactly it is stopping. I think the whole inside, you will
+get it. So, my ultimate point is, maybe in the next couple of decades, you will see a lot of
+business-driven use cases implemented using AI. Well, I like how that circles back to our opening
+discussion about how having event systems makes it more visible to see, here's what has happened.
+And surfacing those to the customer can also be useful in saying, here's a better customer
+experience, here's a better product experience, and also helps design and architect the systems. So,
+I think it's a great place to wrap it up. So, Muzib, thanks again for joining me today on the
+podcast. Thank you so much, Thomas. It's a pleasure. And listeners, we hope you'll join us again
+soon for another episode of the input the Q podcast. podcast. Thank you.

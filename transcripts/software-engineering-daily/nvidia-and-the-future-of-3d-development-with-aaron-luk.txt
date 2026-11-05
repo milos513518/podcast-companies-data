@@ -1,0 +1,230 @@
+EPISODE 1650
+
+[INTRODUCTION]
+
+[00:00:00] ANNOUNCER: Producing 3D films, games and simulations is a complex process often involving multiple teams and tools. At Pixar, pipeline engineers needed to write lots of glue code to integrate different workflows and file formats, which was a big challenge and led them to create the universal scene description or OpenUSD.
+
+OpenUSD implements abstract data models for producing 3D worlds and is now an open-source project. Making full use of OpenUSD required a software framework. This motivated NVIDIA to create Omniverse, which is a modular development platform that enables individuals and teams to develop OpenUSD-based 3D workflows and applications. 
+
+Aaron Luk is the Director of Product Management for Omniverse and was previously a software engineer at Pixar where he helped create OpenUSD. Aaron joins the show to talk about the origins of the technology, how it works, digital twins, industry impacts and more. 
+
+This episode of Software Engineering Daily is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him.
+
+[INTERVIEW]
+
+[00:01:15] SF: Aaron, welcome to the show.
+
+[00:01:17] AL: Hi, Sean. Thanks for having me.
+
+[00:01:18] SF: Yeah. Thanks so much for being here. Let's start off with some basics. Who are you? And what do you do?
+
+[00:01:23] AL: Yeah. I'm Aaron Luk. I'm a Product Manager for USD, universal scene description, in NVIDIA Omniverse. I've been there since 2019. Yeah, coming up 5 years now, which is exciting. Because, yeah, we're coming up on our first GTC in 5 years that's in-person. And five years ago is when we launched Omniverse at GTC. It's a nice anniversary both for me and for Omniverse. 
+
+Coming up prior to Nvidia, I worked at Pixar for eight years where USD was one of my main projects there. And prior to USD, I worked on particularly a lot of technologies from which USD is derived like the Presto animation system. As well as predecessors to USD, particularly in Pixar's own interchange pipelines. Particularly a cache format called TidScene.
+
+[00:02:05] SF: Oh, wow. Yeah. You have a great sort of background and work history for leading a product for Omniverse, which we'll be getting into. And I feel like NVIDIA has had this way of kind of looking at different industries and fundamentally asking, "How do we make this thing better? How can we make this industry grow?" From gaming to being pioneers in AI. To now even autonomous vehicles and now what they're doing with Omniverse. 
+
+I guess your perspective first is that this is like a fair description. And the second thing I'd want to get into is what is Omniverse for those that maybe are less familiar with it? 
+
+[00:02:39] AL: That's a really good observation. One of the things that's very unique about working at NVIDIA is that I think there's this stereotype now in Silicon Valley and tech that tech is out to like disrupt business. And I think you've hit on where NVIDIA's approach is more to reach out to industry folks. And how can we help you do better? How can we help you grow? It's a lot of ways the technology is similarly super innovative. But it's a much more collaborative way of evolving and adapting that technology as a community. 
+
+In terms of Omniverse, there was this big realization that NVIDIA had that USD is this data ecosystem for simulating the world. It had been proven out as a data ecosystem for simulating contained worlds that were nevertheless very rich and very detailed at places like Pixar and as NVIDIA saw that grow into other studios. And I was so exciting in sort of my last few days at Pixar when we were really on track to open-source USD there. And so, I got to be in the room with all these other studios that were starting to play with it and things like that. 
+
+And the thought I had at the time was, "Wow. This is great. Because we can finally stop solving the same problems in isolation." And NVIDIA kind of takes that vision and applies it to, "Oh, well, why should we stop with filmmaking? We can all solve the same problems together for the real world as well." And Omniverse is the platform for that. It's a developer platform that is built on top of USD with USD as the foundational data models to simulate the world.
+
+[00:04:11] SF: Yeah. And I think you're kind of underserving it in some ways with just, "Oh, it simulates the world. And then anybody can do that of course." 
+
+[00:04:19] AL: Yeah. We can definitely pick that apart in terms of, yeah, what it means to simulate the world. Yeah.
+
+[00:04:22] SF: Well, I want to go back for a moment to something that you said there around solving each of these sort of problems in isolation. What were some of those problems that continually get solved independently in isolation over and over again that were able to essentially be abstracted through USD and then eventually over to Omniverse? 
+
+[00:04:41] AL: Yeah. The major one, this is going back decades in Pixar history, was that every department in Pixar eventually had their own tool for doing what they did. Now it presented itself maybe as a single application at Pixar. But there were basically multiple run times for animation, for rigging and so on. And, effectively, you have these different file formats for all of them. And that's fine. That's great. It allows each of those departments to do what they do best and get the tool that serves them best as well. But it becomes a real nightmare for the poor pipeline engineers who have to build a glue code between all those tools. And I was one of those pipeline engineers. 
+
+And you go through decades of that kind of pain and you realize maybe we could abstract the notion of a file format entirely. Such that you can have all these specialized runtimes. But the same data can kind of flow in and out of them accordingly. That was just one of many of the key architectural realizations around the Presto animation system. And then USD was sort of the effort to then take that even further and abstract even the lowest level data models of Presto. Such as the abstraction of the file format, and the composition engine and the notion of this populated scene graph. All of that can then be abstracted to not just serve the Presto animation workflows but sim/cache interchange workflows as well. 
+
+Pixar could then effectively get Presto workflows inside of Maya for set modeling and things like that. And in Houdini and Katana at the time for lighting in and so forth. And so, that abstraction then plays itself really well now in the real world as well where, yeah, there's all sorts of specialized digital content creation tools, CAD modeling software, all these things. That now the challenge is how do you get them to adopt USD, right? 
+
+And adopt USD doesn't even necessarily mean linking against the Pixar runtime. But it does mean understanding the foundational data models, and the schemas and things like that. And speaking that as a lingua franca. And that's kind of what we're doing in the core specification working group and the Alliance for OpenUSD where I'm serving as chair of that working group. And what we're doing there is formalizing data specifications for USD that is completely platform agnostic. It's not tied to any C++ runtime or APIs. It's all about, "Hey, given this this root –" in USD, it's called layer. Which may or may not be a file, right? But it's the root of what could be a network of layer stacks that have all your content aggregated together. 
+
+Given that, compose the results. Track all of the places where content can contribute to the final scene and then populate your scene graph with those results. As long as you have an implementation that does that, the way we specify in AOUSD, you're compliant with it and you can interoperate with USD accordingly. That turns USD into a data interop story. There's also the software interop story, which is the traditional one where you link against Pixar's USD binaries and then you can embed them into Maya, Revit and so on.
+
+[00:07:44] SF: Essentially, you've created a canonical representation or an abstraction that is standardized across all these applications. At least the ones that are adopting this format. And then that allows you to solve some fundamental problems in terms of being able to connect these different sorts of disparate systems together through this unified file format. And then what does the actual file format look like? Or what does it actually contain? 
+
+[00:08:10] AL: The abstract notion of it is that there's a document model that says a USD layer is made of these metadata fields that are keyed by these values. And they have these data types and so on. That is like the first thing that we're specifying in AOUSD. 
+
+Concretely, on top of that, right now there are two main actual file formats in which USD manifests. One is USDA, which is the human-readable file format. And USDC, which is the binary create file format that Pixar provides, which is highly optimized particularly for low-time and cache playback. 
+
+There's also a third prominent file called USDZ. That was a collaboration between Pixar and Apple, which is the sort of the packaged file format for content deliveries. That's so you can load those natively on your iPhone, and any iOS device and any Mac device. Things like that. But those are just kind of the concrete manifestations of the abstract data models. 
+
+There's also a notion of file format plugins in USD. And in fact, those three formats I just mentioned are all implemented as file format plugins to USD. At its core itself, USD actually doesn't have a file format. It's all plugins. The first file plugin that we wrote specifically for USD was Alembic, which is the cache file format that was developed I think at Sony and ILM. 
+
+What that really enabled was that ILM already had an Alembic pipeline but they could then now stitch multiple Alembic files together via USD. And that's sort of the beauty of the USD architecture is you could adopt as little or as much of it as you want. If you have an existing pipeline like an Alembic, you can still leverage all the superpowers of USD while maintaining all of the other pipeline tools that you have that speak Alembic. 
+
+We could see this playing out in Industry as well with partners like Siemens where file from a plugin to something like JT, which spans quite a lot of really interesting data models for industrial world can flow lusciously through USD.
+
+[00:10:01] SF: in terms of Omniverse, this developer platform that you talked about – and it's really like a suite of applications. Can you go into some detail in terms of like what are these individual components of Omniverse? And how does someone kind of use those to do some of these things around simulating the real world for different types of use cases? 
+
+[00:10:21] AL: Yeah. Sure. Omniverse has sort of presented itself as a set of sort of reference applications. But at its core, you can think of it more like a Swiss army knife of APIs and a couple key SDKs with which developers can – you can develop your own applications. But more importantly, you can integrate USD into existing applications like you've seen in the classical USD integrations of Maya and so on. Right? 
+
+The major components there are the APIs to be able to write to USD, to query it, and to render it, and so on. But the key thing that Omniverse adds are these live collaboration aspects to it, which USD already kind of does as well. Omniverse kind of superpowers them. And, again, leveraging the abstraction of USD's architecture. 
+
+There are components a live file format which is optimized to then track changes between USD content and apply like the minimal amount of changes accordingly when you're connecting USD content across multiple applications and things like that. 
+
+There's also a technology that we have called Fabric, which leverages another abstraction of USD in that the runtime data layout can be recompiled into something that's more vectorized. You can get more game engine-style performance for physics simulations and things like that. And that leverages USD's Hydra architecture which allows you to sort of translate USD into other scene graphs that can then feed the renderer. But it all kind of still speaks USD and that it's still honoring those abstract data models. But it doesn't necessarily have to manifest in the literal USD stage. Those queries can still be honored by other data layouts. 
+
+[00:12:04] SF: I really was fascinated by the idea of the live collaboration and some of the things that you can do around basically the real-time part of that and being able to do small updates that can be immediately actually realized in these 3D models or these scenes. Can you give an example of a use case of where someone is using that and kind of like how that actually manifests? 
+
+[00:12:25] AL: Yeah. I mean, there's definitely the classical sort of media and entertainment case that, even way back from 2019, that was the first demo we showed where we showed sort of a set dresser, a shading artist and working together. And even a modeler. They're all working on the same asset. And then there's this one RTX renderer that shows all of their results kind of working at once. 
+
+At the time, that workflow was already somewhat revolutionary for media and entertainment. Although, a lot of the pieces for that already existed. It just didn't have like quite that glue that Omniverse provided for that. 
+
+In the industrial world, that way of working is relatively new. Because the phases of the industrial designing, manufacturing are fairly segmented, right? They traditionally don't happen at the same time. They certainly don't happen in the same tool. And they don't happen on the same data. There's there's always this sort of hard export between phases of that in there. And Omniverse kind of seeks to change that. And I think it's building off of trends where the industry is already training toward digital twins anyway. But Omniverse sort of fulfills that promise by saying, "You can have the same source data feed. All of those phases." You don't have to. But you can. And so, even you can have a product that is designed, manufactured and advertised all using the same source content.
+
+[00:13:42] SF: Yeah. I love the idea of the digital twin essentially mirroring operations in the physical space with the digital version. In the context of like manufacturing or something like that, how does that actually work? What are the inputs essentially back to the digital space for actually keeping that updated and then going in the opposite direction as well? 
+
+[00:14:05] AL: There are a couple aspects to the digital twin. One is you could actually build one before you build a physical facility. And that gives you a lot of ways to go through lots of iterations before you actually break ground and really play with different layouts and things like that. And particularly optimize safety, optimize efficiency, things like that. 
+
+Once you've built your facility or if you have an existing facility, you then have you a network of sensors providing IoT, data, monitoring, temperature, number of people in a space, all that stuff and feeding it back into the digital twin that you can monitor accordingly and optimize. 
+
+There was a key use case that we got from BMW that was really interesting for digital twin. Where it's like let's say some fuse goes out or something like that and you can't really – without a digital twin, it takes a long time to find it. Then if it's something that's complicated, you might have to go find like the manual to fix whatever the issue is. With a digital twin, you could have a tablet or some other mobile device that directs you exactly to where the problem is. And it brings up exactly the part of the manual. It even guides you literally with where your hands should go to fix things and things like that. And you could save millions of dollars of lost revenue if your whole production line is stopped for this fix.
+
+[00:15:20] SF: I think a big part of some of the value with some – as we kind of move to being able to do more sort of digital simulation of real-world task is reducing sort of the risk of failure. If you look at something even like drug design, so many clinical trials, which is the most expensive part where you're actually having people test something, they fail. If you can reduce the risk of failure and have more confidence essentially that a trial is going to be successful, you can reduce the cost and reduce essentially the time to market for drugs. And I would think that translates to lots and lots of different types of industries.
+
+[00:15:54] AL: Yeah. For sure. You can always run many more simulations virtually than you can in the real world. And that's especially important, yeah, like you said, for healthcare. But certainly, for autonomous vehicles. There's no other way to really, really ensure that autonomous vehicles are safe other than running it through just so many hours and situations that you would never want to put it through in the real world.
+
+[00:16:16] SF: What are some of the hard problems associated with actually creating these digital simulations based on real-world IoT information? 
+
+[00:16:25] AL: I like that question. Because, to me, the difficulty is not where you would think. Traditionally, you think, "Oh, simulations are hard because they're computationally expensive, and so on." But, ultimately, math is math. Physics is physics. And math is math. The challenges are I think going back to first principles, data modeling. 
+
+Even though math is math, everyone does have their own different solvers and simulation engines and things like that. The challenge is actually in the data modeling. The challenge is getting all the right folks in a room to agree on, "Okay, what are the canonical inputs to these simulations that we can agree upon such that –" again, a platform agnostic. It doesn't matter which engine you're running. You will get the same visual result that the sensor can train on and things like that. Yeah, it's about getting all the folks who have implemented simulation engines in a room and agreeing on it. 
+
+We did this for physics again starting in 2019. And eventually, it got accepted into the Pixar repository. There's a physics schema that NVIDIA, Apple and Pixar collaborated on. And even though we all have different physics engines, right? We all agreed upon, "Okay, this is how you describe a rigid body, and so forth. And once you run the simulation, it should behave like this." Yeah, that's something we look forward to also taking to AOUSD and making a norm or specification out of that as well.
+
+[00:17:45] SF: How does some of the real-time nature of the collaboration and how some of this stuff work transforming some of these industries? You mentioned that in some of the classic places where this was used, it wasn't necessarily that different than what was happening previously. But it made it easier for people to essentially collaborate. But when you're going to net new industries that maybe have not worked in this way, is this something they're really excited about and it's really transforming those industries? And what is the impact of that like? 
+
+I think about even something like data analytics. Years ago – or not that really that long ago. But one of the big problems with data analytics is that a lot of your time was spent – you'd have to know the question. Come up with the answer. You come to a meeting. Here's the answer. Someone asks a question about something else and you're like, "Oh. Well, I don't actually have that." And then I need to go back. Dig into that. Come back a week later. And it slows down essentially your learning cycles. 
+
+But now with like modern data platforms, tools like Streamlit and all these new analytics platforms, you can make adjustments essentially on the fly. And it speeds up this flywheel of learning. Is that something that's also happening in this space when applied to this real-time collaboration around actually essentially simulating the real world with the digital world? 
+
+[00:18:58] AL: I think so. Right? In any case in which you have multiple stakeholders who can collaborate on the same data set, the problem-solving space I feel like becomes a lot easier. If I understand your question correctly, there's a lot of times when, yeah, you talk about problems without a concrete data set that illustrates the problem. And you can kind of go back. You go back and forth a lot and then it becomes a lot of just speculation of what a solution might look like. 
+
+But, yeah, USD provides this way. Let's say you have some data set that's super proprietary. But I could imagine writing some sort of obfuscation tool that rematches all the geometry or something like that and makes it unrecognizable to whatever it's supposed to be. But it still has, let's say, the same performance characteristics and geometric complexity of something that you want to optimize against. Then other stakeholders in the USD community, all the engineering talents at NVIDIA can help optimize accordingly against that data set. 
+
+[00:19:55] SF: Is there adoption challenges in these newer industries where – is there essentially a resistance to new technology that might change an existing industry? 
+
+[00:20:05] AL: I wouldn't frame it as resistance to new technology. A lot of it has just been about educating about UDS's abstraction. Because it manifests as a file format, sometimes there is a misunderstanding. Like, "Hey, is USD trying to displace some existing file format that already has – is already really important in the data ecosystem?" And I think more and more, the message is resonating where it's like, "No. USD is trying to grow existing data ecosystems. Not trying to displace any existing data ecosystems." 
+
+[00:20:34] SF: And then what's some of the tech that exist behind the scenes to make essentially this collaboration possible? 
+
+[00:20:41] AL: As I said, the abstraction of the file format is a big one. And the composition engine is probably one of the biggest innovations of the OpenUSD technology itself. The algorithm is called LIVRPS. It stands for Local, Inherits, Variants, References, Payload and specializes all of those refer to composition arcs within USD, which is a way of effectively linking content together and assembling a composite of all the content on top of each other. 
+
+And the power of that is that all of that content is still preserved. Even though you get the composed results, it's non-destructive. In that all of the weaker layers in this composed layer stack are still preserved on disk, or in-memory, or in your database, or what have you. And so, Pixar used this a lot such that the modeler can provide the base geometry. And the riggers can add rigs to it. And the animators animate on top of that. 
+
+You have the base geometry and the T-pose or whatever. And then only the points are overridden in the animation cache and things like that. And you can imagine that kind of thing playing out super well in industrial cases as well where there's this baseline of the facility and manufacturing facility. And then each factory planner can take over their own space of that factory and really play around with it in a way that other factory planners can see in context. But then they could also effectively work in their own space without stepping on each other. But they're still collaborating together.
+
+[00:22:10] SF: And then can you discuss some of the scalability and performance aspects? How do you do this for different size projects and different, essentially, types of complexity, I guess? 
+
+[00:22:21] AL: Yeah. Scalability is an interesting thing. And a lot of that comes down I think to best practices in asset structuring. And in particular, there is this notion in USD called the model hierarchy. And so, you have your entire scene graph. And every node in USD scene graph is called a prim. Short for primitive. And, certainly, yeah, the more prims you have in your scene graph, the more you're going to pay for it. 
+
+But you can also use the model hierarchy to identify what are the most significant sort of sub-roots of your prim hierarchy. For example, you might have a lot of meshes that make up a car. But to certain users, consumers of this USD, the only thing that they care about is that the root of that tree of meshes is a car. And they only need to operate on that top-level node from there. And that's one huge way in which you can deal with scalability as well and get better performance by effectively abstracting details in the scene graph. 
+
+And I know your question was about scalability and performance. But I think just best practice of structuring do have benefits beyond scalability and performance as well. What I just described to you is effectively how do you make grammars out of USD? You have all these details and you can abstract them into, effectively, tokens. 
+
+And now I think you probably see the parallels. What I'm describing is not dissimilar to a large language model. And as you have better structure, you're effectively building more data to train large language models about USD structure. And then now things get really interesting in terms of generative AI for USD to assist with all the workflows that we described above in terms of factory planning, and filmmaking, and so on.
+
+[00:24:12] SF: Yeah. Then, essentially, we could get to a place where you're really just like describing a scene or describing what you need. And then the generative AI portion is essentially writing the file in the USD format that you need because it understands the grammar of that and how to produce it. And then, essentially, you're able to do that. That really opens up – one, it's like speed. Because now I can basically converse with the product in the way that I might converse with you. And then on top of that, it opens up probably the types of people that can interact with it and well and get do creative work.
+
+[00:24:46] AL: Yeah. For sure. Especially, since a lot of these industrial personas, they don't have kind of the look development background that a film artist would have. But it sure helps their work to have that quality of imagery and tooling available to them. And they can describe it via AI. And then I think everyone wins.
+
+[00:25:05] SF: And then in terms of where things are today though, if I want to get started with using Omniverse to build something, how do I actually get started? What's kind of the entry point for that? 
+
+[00:25:16] AL: Yeah. There are a lot of entry points. Certainly, just signing up for Omniverse and getting the free downloads is a way to go. We have a DLI course in which you could start playing around with USD with Jupyter Notebooks. You don't have to install anything. You could just play around with Python in your web browser. Things like that. 
+
+We also have some tutorials and example plugins on GitHub that you can build and play with yourself. And, yeah, we tried to make them like kind of as small as possible to sort of illustrate little mini-concepts. Things like that. Those are the kind of good hands-on ways to go. But we also have a lot of good documentation on docs.omniverse.nvidia.com around USD and particularly USD best practices. 
+
+I haven't finished reading it yet. But I'm a big fan of this book, Software Engineering at Google. And I'm pretty sure I like that narrative style. And it's especially good in terms of framing best practices where I think there's sometimes there's this misconception of best practices. Like, "You must do it this way or else." And that Google book is not like that. That Google is, "Here are some ways that we found to work really well for us. Here are some tradeoffs to it. There's no one right way to do things." And I think that very much applies to how you work with USD as well. 
+
+We've written a lot of sort of whitepapers that go through some of the best practices certainly that we found from my past life at Pixar as well. But certainly, on Omniverse. And a lot of those asset structuring patterns that I talked about before, one of our – originally, Matt Kurek, he likens them to design patterns and programming. And so, inside of the single pattern, you have things like the classes plus specialized patterns and so on and so forth. Model hierarchy patterns arise. Yeah, I think they're like that sort of way of learning USD by sort of experiencing that narrative arc. The way you do for software engineering best practices is something that I would recommend as well.
+
+[00:27:07] SF: Yeah. I mean, it makes a lot of sense. I mean, the value of things like design patterns or best practices is the pattern recognition. But you also, if you're an expert, you should know you know when to essentially break those rules or when it doesn't make sense to follow the best practice and do something else. 
+
+What are I guess like some of the – because this is a platform that essentially anybody can use and it's very – I have like core building blocks. I can do a variety of different things. What are some of the surprising applications of Omniverse that you've seen? 
+
+[00:27:37] AL: When I started Omniverse in 2019, the original elevator pitch was that it's Google docs for 3D. And certainly, that still stands. But certainly, at that time, I wasn't envisioning these industrial use cases now. Certainly, everything I've talked about was already a big surprise to me. 
+
+One thing that maybe not a surprise per se but something that really excites me is that, when I started at NVIDIA, I was living in Berlin. I lived in Germany for seven years. And one of the projects that is using Omniverse is a digital twin of the German Railway System. Digitale Schiene Deutschland is building a digital twin to again optimize safety, optimize efficiency. And it's especially cool because it's a green initiative that's partially funded by the European Union. That's definitely exciting to me in terms of improving public transport. And, yeah, really using – yeah. I certainly didn't thought when I was working on this at Pixar and when I first started at NVIDIA that it would result in something that would help diffuse climate change.
+
+[00:28:40] SF: Yeah. I mean, that's fantastic. I mean, I think one of the things that a natural byproduct of sort of lowering the barrier to entry to something, even if we can get to the place where you can do this like we were talking about through large language models, and I can just speak to it, suddenly, you open the doors to people have completely different backgrounds and experiences that can kind of figure out like, "Oh, this actually makes sense for the thing that I work on in, I don't know, geology." And as someone from the origins working at Pixar, you're probably not going to be able to necessarily make that mental leap because you're not a geologist in this example. But by reducing the barrier to entry, suddenly, anybody can kind of come in and make those mental leaps. And you get all these – opens up all these new types of use cases where you can really transform industries.
+
+[00:29:25] AL: Yeah. No. I've kind of made a career out of being a software generalist. And it's allowed me to sort of dip my toes in all sorts of domains.
+
+[00:29:34] SF: Absolutely. What do you think was one of the – or at least what are some of the challenges I guess that was faced during the actual development of Omniverse and the rollout of that product? 
+
+[00:29:45] AL: Yeah. Certainly, in the early days, even I didn't – I knew how powerful the abstraction of USD's architecture was. But we didn't have a full graph of how to leverage that yet. And yet, we still need to do enough exploratory work to prototype early versions of the live collaboration technologies that I described earlier. 
+
+A lot of those early experiments were sort of modifying USD itself to sort of see how fast you could make certain code paths and things like that and just figure out what the lower bounds are. And it turns out you can get pretty good results. But, ultimately, it was not the correct architectural direction to go in, right? And it was something that, certainly, the more I thought about it later, you remember that USD, like I said, is carved out from the lowest levels of the Presto software stack. 
+
+And so, it makes sense to sort of honor that and have these higher-level architectural abstractions just like Presto has. And that's eventually how we sort of hit upon Fabric. Wo we took a lot of the learnings that we had from those experiments in modifying the USD code and abstracted them into Fabric. 
+
+And fabric now has this like really natural way of interacting on top of USD alongside USD. And there's been really awesome success stories there. Particularly, I like the one from Cesium who has a geospatial data platform. And I really love their data pipeline in that they have USD. And so, they're assembling scenes in USD. But they also have a USD that points out to their 3D tile format, which is encoded in glTF. And so, you can have a full glTF tile set inside of a single USD prim. In Omniverse, that glTF data actually gets slurped up and compiled into Fabric and to feed the RTX renderer directly. 
+
+That story, you would think, "Oh, but these are all interchange technologies. They're all competing. Right?" But they're not. They're all complimentary. They all speak the same data model. And they can all travel the pipeline losslessly and give you that beautiful result with real-time rate tracing.
+
+[00:31:54] SF: And then with this approach, I guess this also allows I would think applications that couldn't talk to each other previously. Suddenly, they're able to essentially talk in some fashion. You can kind of bring different pieces of software together. Is that fair? 
+
+[00:32:10] AL: Yeah. That's right. And it's all about sort of aligning them on the data model. 
+
+[00:32:14] SF: With all this simulation work that's going on from Omniverse, from things that we're seeing in drug design, I wonder at what point are we going to be able to model essentially a business? If you think about startups and the risk involved with investing – and investors have lots of ways of trying to decide, "Does this make sense or not?" But are we going to be able to at some point basically put this into some sort of business idea, software idea into some sort of simulation to have some confidence about whether this thing would work or not? 
+
+[00:32:46] AL: Oh, you mean in terms of totally new businesses. Simulating how their business plans might play out over X number of years? Things like that? 
+
+[00:32:53] AL: Yeah. Exactly. Yeah.
+
+[00:32:55] AL: I don't see why you wouldn't be able to do something like that, especially if you have a lot of past data to draw upon. Again, define a data model for the past data that you have from other businesses that may or may not have been in that space. And define the factors that you want to weigh against. Allow for some amount of randomness in terms of things that you didn't anticipate. Start with that. Let the model learn from that past stuff and maybe learn about other factors that you didn't consider. And then you augment the model accordingly. 
+
+Yeah. I'm definitely not an AI expert. But I feel like it's all about parameterization. If you define the right parameters, I don't see why you wouldn't be able to run a simulation like that.
+
+[00:33:38] SF: Yeah. And then in terms of Omniverse, what's next for that? And what's the future look like? 
+
+[00:33:43] AL: Yeah. The mission of Omniverse within USD is more of the real world and USD. The more the real world, the more industrial world you have, the more context you have for training AIs. And so, concretely, some things that we're about to deploy. Next month is the next release of OpenUSD. This will be 24.3. And something that we worked on for last two years very closely with Pixar is UTF8 support, which basically means you can honor source content from internationally-encoded – particularly industrial sources. Concretely, this allows manufacturing data, industrial data from Asia to travel through USD losslessly. 
+
+My most idealistic side of me imagines lots of underserved folks who want to make their own short animations in their native languages. And these aren't like Latin, Roman-based languages. They can then use Omniverse to make their own animations for that. Their own short films. But in the industrial world, that's really important. Like I said, all that source data that is in other languages to travel through USD and go all the way through from design, to manufacturing, and so forth, losslessly. That's one example of the real world coming into USD more of it. 
+
+There's a proposal from Autodesk. A couple of proposals from Autodesk that's really exciting as well around text and line styling in USD. An industrial that's particularly important to be able to do design reviews to basically markup certain designs or factory layouts in one tool and then be able to see those notes in – you can then conduct design reviews just like you do any collaborative workflow in USD across tools. 
+
+And so, that's something we're really excited to collaborate with Autodesk on. We certainly have a lot of use cases for that as well. And it's particularly interesting. Because I talk about simulating the real world. These things don't exist in the real world. These annotations. But they're really important for folks who are sort of observing the digital world as if it's real and making decisions on it accordingly. Yeah. Those are two things in particular that I'm excited about as well. 
+
+Outside of technology, too, we're very committed in Omniverse to, again, keep contributing to the corpus of best practices for USD. And so, in addition to the literature around assets structuring, we've had some really good conversations in ASWF, the Academy of Software Foundation. There's a working group in there called the Assets Working Group. 
+
+And so, we had a really good conversation with folks from WebFX and Animal Logic around what does it mean to use variance in USD? It's certainly a very powerful mechanism in USD. That means you can have subgraphs in the scene graph that can be toggled accordingly. That's a very popular way to have geometric variance and material variants on the same object in your scene and things like that. 
+
+It's how we're doing product configurators as well in Omniverse. But there's definitely a lot of ways in which you might use that improperly. There are better ways to do it where you get better performance. That's a very rich area to explore together with the community members. And that's something that we're looking forward to publishing more literature on. Yeah. And the outcomes of that are, yeah, again, just better fidelity in 3D and better AIs trained from that context.
+
+[00:37:04] SF: Yeah. It feels like it's kind of, in many ways, early days, a lot of greenfield opportunities to change industries. But also, really innovate from a technology standpoint.
+
+[00:37:13] AL: Yeah. And do it all together as a community. I think the nice thing about USD is it's not just a collaborative technology. But it's kind of a collaborative conversation. It's sort of a technological platform. But it's also a conversational platform in which everyone can kind of come together. And like I said, stop solving the same problems in isolation. 
+
+[00:37:32] SF: Awesome. Well, as we start to wrap up, is there anything else you'd like to share? 
+
+[00:37:35] AL: Yeah. I definitely want to tell folks about OpenUSD Day at GTC in March. This year, it's going to be Tuesday, March 19th. It'll be following Jensen's keynote on the previous day in which there'll be a lot of great announcements around Omniverse, and USD and all the usual goodies that he's able to bring out. 
+
+But, yeah. We love doing these kinds of OpenUSD days. We did one at SIGGRAPH last sigra last year. And there's going to be a lot of great talks. I'll be sort of giving more updates on the state of USD as it is in both AOUSD, and in the community and in Omniverse. There's going to be a lot of great speakers from Adobe, Samsung, [inaudible 00:38:09], Amazon Robotics sharing their findings and sort of talking about their own USD journeys. 
+
+Everyone's journey is a little bit different. And I probably learned more from those folks than people learn from me. Yeah. it's a really good opportunity. Also, like I said, it's the first GTC that's in-person in five years. And, boy, we did a lot remotely and things. But there definitely is something special to being in-person and really learning together and exchanging learnings together. And, yeah, just seeing what other folks are doing. 
+
+And, yeah, like you said, there's always a surprise of like, "Oh, I'm supposed to be this USD expert." But like Steve May, who's the CTO at Pixar, he also says, "Oh, I didn't realize you could use USD that way." And there's always nice surprises like that. And happens more likely when you kind of have these off-the-cuff conversations in person.
+
+[00:39:00] SF: Yeah. Absolutely. It's hard to like schedule the meeting of like tell me something surprising today. It's hard to put that in the agenda. I totally get it. I think people are ready to get back to seeing people in person. I still remember very vividly when I went to my first in-person conference after the kind of first couple years of the pandemic. And how refreshing it was to remind myself that, "Oh, it's actually really nice to see people in person, and talk to them face-to-face, and learn and so forth." 
+
+[00:39:26] AL: Yeah. For sure. 
+
+[00:39:27] SF: Well, Aaron, I want to thank you so much for being here. Before preparing for the episode, I didn't really know a lot about you know OpenUSD and Omniverse. But I think this is one of the most interesting and transformative technologies I've heard about in quite some time. I'm really excited to see where things go from here.
+
+[00:39:42] AL: Awesome. Thank you so much, Sean. Let me drop the link on OpenUSD day before I go. So, it's www.nvidia.com/openusd-day.
+
+[00:39:52] SF: Awesome. And we'll add that into the show notes. Thank you. 
+
+[00:39:54] AL: All right. Thank you, Sean.
+
+[END]
+

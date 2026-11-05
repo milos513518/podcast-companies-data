@@ -1,0 +1,626 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Applying Machine Learning To The Problem Of Bad Data At Anomalo
+DATE: 2023-01-24
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/anomalo-data-quality-monitoring-episode-15
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63853053874545814414245e9d-c668-42c5-8bf9-6af3b2643c69v4.mp3
+DURATION_SECONDS: 3564
+TRANSCRIBED_AT: 2026-09-17T03:24:13Z
+----------------------------------------------------------------------
+ Hello, and welcome to The Machine Learning Podcast. The podcast about going from idea idea to
+delivery with machine learning.  Your host is Tobias Macy, and today I'm interviewing Jeremy Stanley
+about his work at Anomelo, applying ML to the problem of data quality monitoring. So, Jeremy, can
+you start by introducing yourself?  Absolutely, Tobias. Hi, everyone. My name is Jeremy Stanley. I'm
+the CTO and cofounder here at Anomal.  And do you remember how you first got started working in
+machine learning?  Yes. Vividly. I mean, it wasn't called machine learning when I got started in it.
+I'm gonna date myself already. I did an undergrad in, math, and, you know, convinced myself I was
+gonna get a PhD in math and went through most of the coursework for that PhD, did research, all in
+partial differential equation. So I you know was deep in the theoretical side. I did some applied
+work and work with tools like MATLAB and Mathematica and then realized that I didn't wanna be a
+mathematician and try to, you know, vie for a handful of really good, you know, math, PhD research
+positions. And so I went in the industry, and I got a job at an insurance company. And, you know,
+this was around 2000, right after the dotcom.com bust. And so you could convince an insurance
+company to hire somebody with a math background, and I started taking the actuarial exams, believe
+it or not, which were terribly boring. And I went through the first couple of them and then, you
+know, somehow convinced the the the management of the insurance company I was at that we could use
+deep learning models. Well, they weren't that they were just neural nets back then use neural
+networks to predict the mortality risk for people that were that were trying to get life insurance
+and were being denied for it due to preexisting conditions. And so using a ton of open data on
+survival outcomes and, you know, complex information about, you know, the diagnosis and prognosis of
+the folks, could you get to a better estimate of that? And I had no idea what I was doing. I was
+reading Christopher Bishop's Neural Networks for Pattern Recognition book, and I just read the book
+cover to cover and did all of the exercises. And at the time, I started coding it all in c plus plus
+without any real idea what I was what I was doing and and created a a prototype to do this. And it
+never would have worked. There wasn't enough data. Neural networks were not the right tool at the
+time. And so it was all kind of a fantasy at the time, but I was enthralled with it and what could
+potentially be done with it. And I ultimately used that experience to go to Ernst and Young, a big
+consulting firm, and learn how to build predictive models, is what we called it at the time, to
+predict insured behavior. And I went from, you know, kind of off the deep end coding things in c
+plus plus not even understanding databases to, okay, let's go all the way back to statistics and,
+regression models and, kind of basic, basic technologies and tools, and try to do it in the right
+way, and and spend about 4 or 5 years there, doing doing that and kind of really, really helpful
+experience to try to use small datasets with rare and extreme outcomes, and you're working with a
+bunch of really smart statisticians and mathematicians to try to build models to predict insured
+behavior.  And so in terms of what you're doing now at Anamalo, can you describe a bit about what it
+is and some of the story behind it and why you decided that you wanted to spend your time and energy
+on this specific problem of data quality monitoring?  Yeah. From those early days of, using machine
+learning models to predict, you know, insurance behavior, I've gone through a bunch of different
+technology companies ranging from, you know, advertising technology for real time bidding systems
+to, you know, building models to, do recommendations for, you know, commerce and publishing
+platforms to being at Instacart, which is where I was before Anomilo. I ran data science and machine
+learning at Instacart and worked on a lot of really interesting problems ranging from, you know,
+logistics, routing, supply and demand forecasting, things on the marketplace side with
+recommendations and personalization, on the catalog side with enrichment of the catalog data. So a
+lot of really interesting challenges and encountered tons of data quality issues along the way in
+all of those different, scenarios and venues. And I left Instacart spent about 4 and a half years
+ago, and my cofounder left a little bit after I did, Elliot. He ran product and growth. And we got
+together and and knew we wanted to work with 1 another. We'd we'd worked really closely together at
+Instacart, both on the exec team and and working on some really interesting problems together, and,
+you know, trusted what kind of a startup should we do? What are the best ideas that we each had? Put
+them on a whiteboard, talk to each other through them. And data quality was 1 that rose to the top.
+There was 1 other, which I don't I don't have to go into right now, that we that we played with and
+built for a little while. But data quality, it really resonated with us for 2 reasons. 1 is we both
+Elliot, as a product exec, seeing it and trying to drive and make intelligent growth decisions all
+around data. And myself, you know, building machine learning models, recommendation systems,
+analytics practices, data engineering workflows, seeing data quality constantly, you know, kind of
+cripple and prevent businesses from being effective with data. So we knew there was a real problem
+there, and we'd looked at, you know, the market of the kinds of tools that were were out there. And
+the state of the art was build a bunch of rules, and we had done this at Instacart. We had a system
+that had, you know, a 1000 different rules that had been coded in SQL by, you know, data scientists,
+ML engineers, product engineers, analysts. It just didn't scale. We were constantly hitting data
+quality issues, that we hadn't written a rule for, and constantly having to maintain and update all
+of those rules. And so that was the state of the technology landscape around it, and we knew we
+could do something fundamentally better.  And what is the role of machine learning in the product
+that you built, and why did you decide that machine learning was the proper hammer for this
+particular nail?  So there's really as I've as I've, you know, spent a lot of time on this, have
+have come to the conclusion there's 3 different ways of thinking about data quality, 3 different
+kind of approaches or concepts that you can apply. The first 1 are rules. We call them validation
+rules, right, a hard and fast constraint about the data. And what's beautiful about validation rules
+is it's actually the only way for an expert, a subject matter expert about the data, to express
+their expectation about what the data should look like. You know, using their knowledge about the
+system that generated the data or about the business that the data is in context with, right, they
+can express that knowledge and validate whether or not it is true in the data. Now, the downside
+with validation rules is they're incredibly difficult to scale. If you've got thousands of tables
+with hundreds of columns and each table might have hundreds of meaningful segments of data, You
+know, who's gonna write all of the rules for all of those segments, for all of those columns, for
+all of those tables, and then who's gonna maintain them over time as the data changes and evolves?
+And so it's just not scalable, and I like to compare it to, you know, testing software. When you
+test software, you can write unit tests, and, you know, the unit test that passes today will pass
+tomorrow, will pass the next day until the code changes. Data is much, much more chaotic. Right?
+Data is constantly changing and evolving for a wide variety of reasons. And so you need if you're
+going to measure the quality of data in our production system in the real world, you need something
+that can adapt to that chaos and can scale to the scope of data that companies are are capturing
+independent upon. So the other 2 approaches that use machine learning, 1 is time series, metric
+based monitoring. So instead of creating a rule, instead, define all of the metrics that you care
+about and monitor all of those metrics for unusual changes. And it's a pretty powerful tool as well.
+The main problem with that is if you try to boil the ocean and compute all of the metrics, right,
+for all of the tables, all of the columns, all of the segments, you end up with this huge deluge of
+alerts coming from a bunch of, metrics that are always changing. There's always gonna be something
+changing in any given table at any given time. And the question is, does it really matter? And how
+do you kind of cluster and group all of those things together so that you have a meaningful story
+about a change in the data? And so the final approach that 1 that we've invested the most in is what
+we call unsupervised data monitoring, and it's essentially building a machine learning model to
+detect material changes in a table. And to do that and be able to allocate the changes down to
+individual records. And the point of this is to have, you know, 1 algorithm you can point at a
+table, and it can online learn about that table and changes that are happening in the data over time
+to be able to detect really unusual changes that could be adverse and then explain those changes to
+the end user without having to boil the ocean and compute, you know, a whole bunch of different
+metrics. And so I can I can tell you more about that algorithm and what it does and and why it's why
+it's useful? But if we kind of compare and contrast these 3 different approaches just to fully set
+the stage, the downside to this unsupervised algorithm is it is sampling the data. It can't analyze
+every record. And it's statistical in nature, so it's it's never going to find a needle in the
+haystack. Right? And so compare that to the validation rules. The validation rules, you can you can
+use those to say the data is perfect in some way, and you can have the user bring their subject
+matter expertise. If you contrast it to the metrics, when you define a metric, you say, I really
+care about, you know, the time it takes for a user to complete this event. You're saying that the
+slice of data in a table that's used to compute that metric matters to you a great deal, and you
+want to be really sensitive to changes in it. And so that's a useful thing to solicit from a user.
+The unsupervised monitoring is gonna treat every row, every column as being, you know, equally
+important and pay pay as close attention to them all.  And in terms of the particular machine
+learning approaches that you are using, I'm wondering if you can talk through some of the kind of
+categories of machine learning and the different paradigms that you're applying to be able to
+address some of the specific capabilities of data quality monitoring and specific types of alerts or
+information that you're trying to surface with those particular ML approaches?  So the time series,
+you know, approaches are are pretty straightforward. Right? It's it's time series anomaly detection.
+You know, the specific context of it is a little bit different from what is often time series are
+used for. Often time series are used to make, you know, longer term projections, right, over the
+over the course of multiple days or multiple time periods. You know, here, we're interested in, how
+unusual is the most recent value in any given time series and being able to quantify the degree of
+unusualness. Right? So we need to have really good confidence intervals, or actually, ultimately, be
+able to estimate the quantile, right, how how unlikely is any given observation that arrives for the
+most recent observation in a time series. And then we wanna be able to help explain that and kind of
+characterize how and why the time series model fit what it did. And so you need to be able to tell a
+story around it. The more complex machine learning is in the unsupervised, where we're just pointing
+the algorithm at a table and asking it to detect material changes in the table. And the way that
+that works, I can walk you through it. So imagine let's simplify the situation. Imagine we have a
+set of data from a random sample of records from today in a given table and a random sample of
+records from yesterday. And I want to find out, well, has something changed in the data from
+yesterday to today? So 1 of the insights that we use is if you build a machine learning model that
+turns that into a classification problem, try to predict on which day did each record arrive on. You
+can use an algorithm like gradient boosted decision trees to predict, okay, label yesterday's
+records as 0, today's records as 1, and try to predict 0 versus 1. If the gradient boosted gradient
+boosted decision tree can't learn anything about, you know, the labeling of the zeros and ones, then
+you can conclude that the data from yesterday and from today was drawn from the same, you know, data
+generating distribution, right, same data generating process. If it finds that there's some material
+difference, then you can use algorithms like Shapley Values to identify exactly where in the data
+did that change originate from, what columns, what values, And then you can begin to characterize
+that change, to identify, you know, is it happening in a specific segment, in specific columns, or
+groups of columns in the table. And so that's the core of the algorithm. And what we're trying to
+detect are unusual changes happening in the table. And I'll talk a little bit more about that
+because that's actually a part of what makes it hard, is how do you identify what changes are
+unusual. But the specific things we'd love to know about range from simple things like there's a big
+increase in null values in a column. And it could be the column was never null, or it could be the
+column was always 10 to 15% null. And all of a sudden, it shot up to, you know, 18 or 20 or 25
+percent null in an unseasonable way. Right? You know, maybe the null values are are higher on
+Mondays, but today's a Tuesday, and so you wouldn't expect to have that many null values on a
+Tuesday. Or it could be a drop in a segment of records. So, you know, I'm a social media platform,
+and I'm measuring all of the events in my social media platform. There's, you know, 150 different
+types of events. And if 1 of those events suddenly starts firing 10% as often as it normally does,
+I'd love to know about that. Right? That's an unexpected change in the distribution that I would
+care about. It could be a distribution change in 1 of the columns. It could be a credit scoring
+dataset, and you've got credit scores in it. And those scores typically are normally distributed,
+you know, centered around 700, and all of a sudden they've skewed to the right. And that would be a
+really important change that you'd want to know about. Or it could even be the relationship between
+2 columns has changed. Column x is always this value and column y is this value, And now all of a
+sudden that relationship is broken. You know, maybe some join upstream is is is failing or
+identifiers are are changing in some way and the and the relationships have changed. So all of those
+changes that I've described, you can detect in this setup that I described of label yesterday as 0
+and today as 1, because, you know, there's going to be a significant distributional change in the
+data labeled ones versus zeros. The thing that makes it actually really difficult well, there's a
+couple, but 1 of them makes it really difficult is there's lots of other things that constantly
+change in data. And so how do you control for them? And some of them are mundane, and obvious, like
+the date. Right? There's always a created at. That created at is always getting bigger. And so, you
+know, you're gonna your your your, gradient boosted is gonna obviously identify that the created at,
+if it's encoded, is, you know, seconds as an epic. Right? That's always larger on 1 dataset than the
+other. And so you need to be able to remove things like that. Another example would be integer IDs
+that are auto incrementing, again, always getting larger. But then there will be a lot of things
+that are more subtle, and it really comes down to how chaotic the underlying data is. And so the way
+I like to think about this is there are some datasets where, you know, barring some structural
+change, you know, maybe in the system that's generating the data and and barring maybe some day of
+week seasonality that you can control for, the distribution shouldn't be changing that often. And,
+you know, it's going to be pretty consistent 1 day to the next. There are other datasets where they
+are changing all the time. And so the most common example is any dataset where there are humans in
+some control structure in that dataset taking actions and affecting the data in a material way. A
+good example is marketing datasets. Marketing datasets are influenced by campaigns. Campaigns are
+influenced by marketing managers. They are setting up campaigns to start and end at random periods
+and doing experiments, and that data is just gonna be full of chaos. Right? Not only are the
+campaign IDs changing, but the targeting parameters of the campaigns are changing, and so the
+geographic distribution and the, you know, the channels that the data is hitting are changing. And
+so, the other big part of what we do is we take this underlying algorithm that is able to detect
+changes from 1 day to the next, and we capture lots of metadata about it. And it comes down to the
+SHAP values and, summaries of all those SHAP values, and we use that metadata to detect how chaotic
+different features of the data are over time and to dampen those and to essentially, set higher
+thresholds for the algorithm to detect material changes or, in some cases, kick the features out
+altogether, because they're simply too chaotic.  And in terms of the characteristics of the data
+that you're working with and kind of the scale and potential issues with quality or variability. I'm
+curious how that influences or constrains the types of algorithmic approaches that you're using to
+build and train your models and some of the issues around kind of latency and accuracy that you also
+have to contend with to be able to kind of hit the optimal point for being able to deliver the
+features that you're promising to your users?  Yeah. There's a there's a bunch of interesting things
+there. The the first 1 is and so I can describe some of the requirements and context that we're
+operating in. So 1 important piece is that, you know, this is being deployed often in a VPC
+environment, with, you know, big public companies, could be financial services companies. We work
+with a company that does identity management for the federal government, for IRS tax returns. These
+are companies that cannot take any risk whatsoever with the data that they have in their data
+warehouse being exposed to public Internet, or being exposed to, you know, SaaS providers. And so,
+the algorithms need to run in this fully autonomous environment without us even having a lot of
+insight into them in many cases. They need to run across data from wildly different verticals. So it
+could be a connected health care device. It could be a real estate company aggregating MLS listings
+data. It could be a, you know, it could be an ecommerce application. It could be financial services
+and insurance. It could be, you know, anything under the sun. And then it needs to work across all
+the different, common cloud data warehouses, and all the SQL variants that they support. And so the
+scalability side of it, you know, the datasets can have, 1 record a day, right? So they can be very,
+very small, very important data. And so 1 of the companies that we work with is Carta. They don't
+have a tremendous number of transactions. You know, there's not huge volumes of equity transactions,
+but each transaction is very important. Or it could be a social media platform that we work with
+where they're tracking every event in the platform, and it's 40, 000, 000, 000 records a day, and so
+a huge number of records. So it can be a very large scalability in terms of number of rows, can also
+be pretty wide in terms of number of columns. You know, most tables have somewhere between 5 50
+columns, but we have some some customers with tables that, for some reason, have a 1, 000 columns in
+them. And so oftentimes, our algorithms need to scale with, you know, number of rows times number of
+columns, which can be can be challenging in those situations. So those are that's some of the
+context. In terms of latency and run times, the algorithms themselves are usually running on a daily
+cadence. And so it's not something that needs to run-in real time. Instead, it's, you know, each
+day, analyze, the most recent days' worth of data to detect, are there any material data quality
+issues, that are new and adverse in this dataset that we should notify about? You can run it as
+often as every hour in some circumstances if you wanted to. In general, there's a trade off there,
+and this comes to the accuracy piece. The more often you run it, the more likely you are to find
+something that you don't actually care about. And, you know, some human is going to have to look at
+that and interpret it. And we work really hard to explain things and produce a lot of visualizations
+and context and summaries to kind of lower the bar of how much work the human has to do to
+understand the issue. But still, if you're running it every every hour, it's 24 times that you're
+flipping the coin of, am I gonna find something,  you know, on smaller slices of data than if you're
+running it once daily. I'm also curious about some of the kind of operational aspects of how you
+think about the optimizations that you want to spend your time and energy on for the models that
+you're building and training and some of the ways that you're thinking about kind of the kind of
+return on investment of what you're building versus how much it's costing you just to operate it and
+how that impacts the ways that you're able to market and sell the product that you're building, the
+kind of margin management, and some of those operational challenges that you have to deal with to be
+able to use sophisticated algorithms for a task that is sometimes difficult to be able to compute
+the kind of return on investment for the end user? Yeah. It's a it's a it's a tough,  tough question
+and a and a and a big part of what I think differentiates Anomilo is our ability to do that well, if
+you really come down to it. You know, in the very beginning, especially bootstrapping, it wasn't
+obvious to us, you know, how do we tell if we're doing a good job or not? Right? You don't have any
+customers in the very beginning. And then eventually, you have pilots, but still it's small sample,
+and, you know, each customer is different. And so we've invested a lot in what we call a
+benchmarking process, and that benchmarking is is using public data and data contributed by,
+customers and design partners of ours. We take those datasets and we run our algorithms to detect
+anomalies on them as they are. And so, you know, we'll step through, say, a 100 days of data in, a
+table and, you know, measure everything about the performance of the algorithm, its, runtime, its
+memory usage, and whether or not it flagged anomalies, how strong they were, where they were. And
+then we reset everything and run back through the dataset another time, introducing chaos into the
+data. And we have a whole chaos library that we built early on, and this chaos library has about, 50
+different types of chaos that it can create. To give you an example, it could introduce null values,
+or it could shuffle, randomly the the values in a column without changing their distribution. Or it
+could multiply them all by a constant. It could reverse the string order. It could delete data. It
+could add synthetic data. And so we have, these different chaos functions, and we have a random,
+chaos application that will draw a random chaos operator, draw a random table or column, draw a
+random fraction of data to apply that to, and then try to apply it, see if it's successful because
+not all chaos operations can work with all data, and then keep trying until it gets 1 that's
+successful. And then, you know, that becomes know, an anomaly that's introduced or a data quality
+issue that's introduced. And we ask the question in the benchmark application, is the algorithm able
+to recreate it? Is it able to identify that? And so now we can measure, you know, the the ROC of
+the, the the anomaly scores that the algorithm is spitting out, where we've got, you know, days
+where we haven't introduced any chaos are are, you know, 0 outcomes, and days where we have are 1
+outcomes. And then we can also answer, you know, how accurate are we at identifying where the chaos
+was introduced and kind of correctly explain it. And so we will do this for, you know, many, many
+different datasets, drawing many different random chaos samples. And we have an application that
+spins this up on Spot instances and runs this benchmark and produces a bunch of visualizations and
+analyses of the results. And that's how we were able to iterate through to something that worked
+well. And each time we encountered something in the wild of, oh, it looks like, you know, there's a
+bunch of time columns in this data, and most of the time, most of the time columns are all actually
+relative to the created ad. And we're treating them as not being relative to the created ad, and
+causing issues where we're, you know, we're saying that there are anomalies and there aren't, or
+we're not clustering them correctly. Let's try to fix that. We can introduce a change. You know, in
+this case, the change might be just, you know, compute the relative offset of all of the timestamps
+to the created app and use that as a feature instead. And, you know, are you now able to identify,
+anomalies more accurately and explain them more accurately? The explainability  types of
+explanations that you need to be able to produce and the level of detail that's necessary for the
+kind of predictions or discoveries that you find with your algorithmic approaches and being able to
+present them in a meaningful context to the end user so that they can actually take some,
+substantial action to either address or ignore the kind of discovery that you've made?  Yeah. We've
+learned a bunch of things about that. So, you know, 1 of them is there's a wide variety of ways that
+you can summarize these issues. And the most powerful tool that we developed early on with these
+algorithms is the ability to, you know, using Shapley values, take the results of the model and
+credit the anomaly, down to each individual value in the table. And so I end up you end up thinking
+about, I've got this sample of data from today and multiple different prior days. And in addition to
+the data as it exists, I have this kind of shadow matrix that's of the exact same, you know, shape.
+But all of the values in that matrix are floating point, you know, values indicating how anomalous
+that value appears to be. Using that, you can then, summarize the issue by aggregating across rows
+or aggregating across columns. And, what we what we do is we have algorithms that run on top of that
+and try to come up with a natural language explanation for the issue. The column x, you know, has a
+significant percentage increase in values y that were not there before, or the distribution in
+column x is shifted. And we have what we call explainers of different classes that apply to that to
+try to try to turn it into natural language. And it's tricky to do that well. It's easy to end up
+having something that sounds reasonable in theory but comes out as being confusing. And so we
+actually have a pretty high threshold for only producing those if we're pretty confident they're
+reasonable. And below that, we kind of punt and say something complex has happened. And then
+everything else is visualizations. I mean, you're right. In the end, a picture is worth a 1, 000
+words. Right? A picture is worth a 1000000 data points. And so, in many cases, rather than trying to
+force ourselves into a natural language explanation, we'll create visualizations that could, you
+know, take the affected columns and summarize them in such a way that the specific values that were
+affected are highlighted, and you can easily compare the distribution 1 day to the next. And so
+that's a common way that we visualize things. The most effective way that we found to use this is to
+actually use it as a search algorithm for unexpected changes that are happening in the data. And
+then we take those and think about them as like hypotheses. It looks like it's possible that there's
+been a distribution shift in this column. Let's take that and now build a time series model that's
+going to pull the last year's worth of data. And, let's make sure that the time series model is
+itself also anomalous. And then we can use the results of the time series model and show that to the
+customer and to the end user, and it will give them even more confidence because now they can see a
+much longer time series. And it can be presented in a way that is easier for them to wrap their head
+around than having to think about, you know, everything that the that the unsupervised algorithm
+itself did. As you're talking about  the operations and meta operations that are going on, it sounds
+like you have the machine learning models that are focused on the customer data and being able to
+run the detections there. And then you also have additional ML models that need to run against the
+outputs of the kind of first layer. And I'm curious how you are managing some of the operational and
+infrastructure aspects of being able to build and deploy and kind of automate the execution and
+retraining of these models so that you don't pull your hair out kind of having to keep an keep keep
+a watch on every single thing. Yeah. You know, this is where some of  I give myself some credit here
+for my experience building systems in many different contexts and kind of having made lots and lots
+of mistakes. And the things that I think we did here that really help us are, 1, the models are
+retrained every time. There's no we don't maintain any state. The models are constantly retrained,
+which sounds kind of crazy. Like, why would you do that? But it actually turns out to be a big
+advantage. And a part of the advantage of it is I mean, obviously, you don't have to maintain
+statefulness of the models themselves. But also, keep in mind, what are the models trying to do? The
+model training algorithm itself is what it's telling us if there are anomalies. And so it's not like
+we're trying to train a model and then use that model to make predictions in lots of different
+contexts. Instead, it is the model training process itself that is of value to us. So we literally
+just retrain it and throw it away every day. And all that we save are summary statistics about the
+models. And then in order to leverage those summary statistics, we'll reload history of the summary
+statistics and use our time series models to process those. And so as long as we've benchmarked the
+algorithms for training the unsupervised learning well and we've benchmarked the time series
+algorithms well, and we've got, you know, separate benchmarks for both of those, where we can rely
+on them, you know, being accurate and reliable when they're built, you know, on demand each time the
+check runs. What are the constraints? What do you give up when you do this? Well, 1, you can't use a
+deep learning algorithm for this. You know, it would be infeasible to every day for every table for
+every customer. We're talking, you know, 100 of millions of tables, right, to, train a very complex
+model. The model needs to be able to train quickly, you know, in in, say, you know, 5 minutes max.
+And so we actually sample, the data aggressively to be able to ensure that we can do that. The
+downside to that is it does give, there is a limit to to how much the model can detect. Right? It
+can't detect a 0.1% shift in a table if you're sampling 10, 000 records. You know, that's not going
+to be a large enough sample size to detect that small of a change. In practice, what we found is if
+you wanted to be sensitive to that small of a change, you would end up sending so many alerts that
+the users would walk away from the system. And so it's just it's not even practical to find those
+things, from the user's experience, even if you wanted to invest the computational resources.  As
+far as the tooling and platform design that you are building for being able to support this product.
+I'm curious, what are some of the the key decision points that you look to for figuring out whether
+there is something that you can pull off the shelf versus what you have to build custom because of
+the specific constraints that you're working within?  Yeah. In the end, so everything is being
+deployed in our customer's environment in in VPC. And, you know, it could be on a single instance,
+inside of a bunch of Docker containers, or it can be in Kubernetes. And so what we can't do is use,
+an AWS service, right, and make external calls to it or, you know, any cloud service. So you can't
+you can't do any of those things. It has to be inside of the containers, and you've got to you've
+got to ship everything that you need, you know, to the environment where this is going to be
+executed. And so, ultimately, if our back end is is Python. And so if there is a Python library that
+is licensed in a way that we can, you know, package and deploy it inside of the application, we can
+use it. If there isn't, we can't. And, you know, that makes it pretty straight straightforward. You
+know, we do we do assume that there's a cloud storage bucket that the customer sets up that we have,
+write and read access to, to have a long term state. And then our application ships with a Postgres
+DB that we use, to be able to store, you know, data about the algorithms that are running.  As you
+have been building out this platform and iterating on some of the algorithmic and operational
+aspects of building some of these kind of anomaly detection, what are some of the ways that your
+kind of scope and focus have shifted and evolved, and some of the ideas that you had going into this
+about how you might approach the problem have had to be kind of reconsidered or reworked?  I'll give
+you you know, there's there's a few things we could talk through here. Probably the first thing that
+I had to dispel, the first misconception I had to dispel, was I assumed that if there were
+unexpected changes happening in the table, that, someone was monitoring, that someone would want to
+know about that unexpected change. And in many cases, this is true. But in many cases, it's not. And
+the reason is a lot of companies maintain and collect a lot of data they don't know anything about
+and they actually don't really care about. And so if you go into the, you know, average, cloud data
+warehouse deployment, I would hazard to guess that you could go in and apply random chaos operations
+to 80% of the data, 80% of the columns that are being stored in that data warehouse, and no 1 would
+ever notice. And it wouldn't actually cause any harm, because that data is not being used. It's not
+being used to drive a decision. It's not being used to drive a machine learning model. And, and so
+you have to be very careful about how you alert on things if, people are tracking data they don't
+care about. I remember going to customers and walking them through a history of issues happening in
+tables in the very early days. And then kind of going around the room and going, well, I don't
+remember why that column is there. Does anybody know? And it's like, oh, well, Sara recorded this 5
+years ago and then left 4 years ago, and we don't know why. And no 1 uses it anymore, but it's just
+it's just there. And yeah. Yeah. Suddenly, it's null, but I don't think anybody cares. That's a
+pretty common story. And so we had to figure out ways of allowing users to target Anomalow at the
+data they cared about and also constrain what we found and what we alerted on to only be really
+adverse issues that, you know, customers would obviously want to consume alerts about. So that was
+definitely 1 issue. I think another is the challenge of what we're dealing with, how long the tails
+are. A simple example is we need to be able to know how to tell time in a table. And that sounds
+kind of obvious. There should be a time column that everyone uses in any given table, if it's
+measuring time, that query is going to be executed against. I've been surprised at the variety and
+types of how different time columns are measured, ranging from, yes, there is a created at timestamp
+to, oh, well, actually, it's stored in a string format, in a very specific string format. Or, oh,
+actually, it's stored in 3 different columns year, month, and day. And they're each string
+formatted, and they don't have leading zeros in them, to, you know, it's stored as an epic. Right?
+And so our algorithms need to be able to translate the SQL queries that are executed to efficiently
+use those time columns to be able to get slices of the data in ways that, you know, don't require
+the warehouse to query the entirety of the data. Another interesting challenge we run into is, you
+know, you would think that sampling, would prevent you from running out of memory because we only
+ever take 10, 000 records at a time, as an example. Well, what happens the first time you run on a
+table that is a bunch of API responses that include payloads from the API in the log data as JSON.
+And now a single row could be a gigabyte of data because it's got this massive JSON payload. And so
+how do you avoid ever actually pulling that into the application and running out of memory and, you
+know, being proactive about that, not just in strings, but also in arrays and other complex data
+types that are stored. And so, yeah, it's it's it's amazing. Every every week or 2, you work
+exponentially growing the number of customers in their in their use. And so you would expect there
+to continue to be new issues. And it's just surprising the the frequency with which we keep
+encountering, oh, I never thought I would see a situation where data was stored in this way, in this
+in this kind of in this kind of circumstance, and this general machine learning model needs to be
+able to handle it gracefully.  As far as the building of Anomilo, I'm curious. What are some of the
+ways that you're dogfooding the product to be able to actually iterate on the capabilities as well
+as to be able to just run your own operations and make sure that you're working with data that is
+valid and meets your expectations  as well? So we've got a couple of fun things that we do there. 1
+is we monitor a bunch of public data, and, this is how we, you know, got started with Anomal in the
+very beginning. We began with, you know, Google BigQuery has a a public datasets project that you
+can connect to. And, there's a lot of interesting public data from municipalities around the world
+from all the cryptocurrency datasets. There with the COVID pandemic, there were a bunch of projects
+to track data associated with COVID. 1 of my favorite datasets is this, gdelt online news, dataset
+that Google has put together where they track news articles going over the wire from all over the
+world, and they do NLP to identify which news articles are associated with COVID. They do sentiment
+analysis on it. And so it's a really fascinating dataset that, you know, includes lots of geographic
+information and information about the URLs. And you can track the state of the new stream on the
+pandemic using Anomalow. So that was a great way to start, and we still do that today and kind of
+pressure test things in that environment frequently. And then as we've, you know, grown and added
+more customers, you know, 1 thing that's challenging for us is we, like I said earlier, we deploy in
+VPC. And in many cases, customers don't want any data to come out of that environment. So not just
+data from their data warehouse, but even metadata about the tables that are being monitored or the
+columns in those tables. They might contain strategically valuable information about the initiatives
+the company is working on, the investments that they're making. And so even that data can't leave
+leave the environment. But in most of our environments, we're able to get exception exception
+tracebacks. We use Sentry. And so we can get all of the Sentry logs. And in some environments, like,
+we run our own SaaS version of Anomalous and some customers use that SaaS version, we can get a lot
+of monitoring. And so, you know, we are using dbt, moving that data, and transforming that data in
+Snowflake, and we run Anomalo on top of, that data. And, you know, we can detect sudden changes in
+usage in Anomalow. We can detect, you know, outages or structural structural problems happening in
+Anomalo that we wouldn't have detected otherwise if we weren't using Anomalo on Anomalo. The other
+fun thing that you can do in some cases is there are views inside some data warehouses that are
+query, level statistics. You know, how many, how many slots did a query consume, how long did it
+take to run, who executed it? And so inside of our customers' deployments, we can use Anomalow to
+monitor Anomolo's queries and identify if there's anything unusual happening in the query
+distributions that are being executed by Anomolo.  In terms of the ways that Anomilo is being used
+or the ways that you've been able to apply machine learning in this context of data quality
+monitoring? What are some of the most interesting or innovative or unexpected, experiences that
+you've had? Yeah. I think the  the first 1 is just how a generic algorithm, like what I've
+described, is broadly relevant across, you know, every every domain with structured data. You know,
+there is a somewhat limited kind of surface area of the shape and structure of structured data, and
+it's it's why gradient boosted decision trees have been so effective. They can work with, you know,
+arbitrary data. You do have to come up with a, you know, automated encoding team, which is 1 of the
+pieces of IP that we had to build here. How do you intelligently encode into features every dataset
+that you encounter? But then it really does work on everything. And, you know, every time we'll sit
+with a new customer and look at the kinds of results that are coming out of it, the signal to noise
+ratio is really, really high. And so that's been surprising. In terms of actual use cases, that have
+been interesting, 1 1 fun aspect of Anomal, though, is in the end, it becomes this, you know,
+automated system that can execute queries against your data warehouse and analyze and visualize the
+results of those queries and tell you if something unusual changed. And so we've been surprised at
+how this will start with a kind of core, you know, data quality initiative, but but then people will
+latch on to the tool and start to use it for other purposes. And, you know, 1 is is, fraud and
+detecting unusual behavior. And so we've got several customers that have used Anomalow to detect
+individual entities that are doing unusual behaviors, you know, spiking, you know, account creation
+or, you know, unusual usage patterns of a platform. And, you know, it's by no means a general
+purpose fraud tool. I would never, you know, encourage anyone. If you've got a fraud problem,
+there's, you know, a ton of work that you need to do in correctly, you know, collecting data around
+that problem and building a model and validating that model. But if you just want to detect unusual
+patterns for entities, that's something that we found a lot of customers use in AMLO for. Another
+interesting example, and this is 1 we facilitated, is the core algorithm that detects drift in data
+over time, right, that I described before, you can also take that algorithm, and we've decoupled it
+from time. And I've created a version of it where you just get to compare 2 SQL queries. And so you
+can use an AMLO and run this on a 1 off basis or have it recurring, where you drop in SQL query a
+and SQL query b. And we will sample records from both of those queries, and they can be even across
+2 different platforms. You could do you know, 1 could be from your Postgres secondary, and the other
+1 could be from Snowflake. We'll take the samples from those 2, run the machine learning algorithm
+to detect any differences, and summarize them. And that opens up a whole bunch of interesting use
+cases. The obvious 1 is I want to compare 2 datasets, right, my production and my staging dataset,
+maybe after some transformation. To see, did I affect the data, and what was the distributional
+effect of the transformation? But you could also use it to, say, control that to compare the control
+group and the test group in an AB test and use this to identify, are there any meaningful
+differences in those 2 populations in this table? Or you could compare 1 marketing campaign to
+another marketing campaign and all the attribution data that you have and find out what are the
+meaningful distributional differences in those data. And so it ends up, for customers that are savvy
+and kind of, you know, really, really using the product, they end up using it for a pretty wide
+variety of of use cases. And as far as your own experience  of operating in this space and building
+these ML projects? What are some of the most interesting or unexpected or challenging lessons that
+you've learned either about the problem of data quality monitoring or about some of the vagaries of
+machine learning itself.  You know, I would say early in my career when I was in insurance,
+explainability was paramount. You had to have explainability. You had to go through regulatory
+approval, or you had to be interacting with an underwriter who was going to make an important
+decision about a business or someone's, you know, someone's care using the results of your model.
+And so explainability was was paramount. And the way we achieved that was by keeping the models very
+simple, and that was kind of the the general constraint. We would almost always just use,
+generalized linear models and, you know, carefully constructed feature sets to try to make the
+models be explainable by default. Then I spent the next 10 years of my career in domains where
+explainability didn't matter at all. You know, I'm just trying to make the the most optimal bid on
+an advertising impression in, you know, 50 milliseconds. And I don't need to know why. Nobody needs
+to know why. If it works, it works. Or I just need to figure out how best to route, you know, 10,
+000 deliveries over the next, you know, x hours in in in y markets. And, you know, in the end, we'll
+measure the delivery per labor hour, and if that's great, we've done our job. It doesn't really you
+don't have to explain it. Explainability was important, but it was important for the modeler you
+know, to understand the physics of the world they were building models in, to come up with better
+hypotheses for how to improve the models. And so I was always a huge believer in visualization. And,
+you know, I've I've, you know, fell in love with ggplot, you know, over a decade ago. Now we use
+Altair. And, you know, anytime I was involved in any machine learning initiative, if I was
+personally doing work on it, I would generate hundreds of different types of visualizations to try
+to look at the problem from many different angles, but it's all to build intuition versus to have
+something be explainable as a part of the product. And so I think in what we're doing now, the
+interesting challenge is, how do you build something that is generalizable, can work in arbitrary
+environments where we actually can't inspect what's happening ourselves, but is going to be
+explainable to the end user? And, you know, I think that that's been, you know, SHAP values have
+been a big part of that, and then leveraging all of the visualization to create the narrative for
+the end user on top of that. And for people who are  working in this space of dealing with data
+quality issues? What are the cases where Anomalow is the wrong choice? Or maybe specifically to your
+product, what are some of the cases where machine learning is the wrong solution?  Yeah. I'll answer
+both of those questions. So, you know, where machine learning is the wrong solution, I I hinted to
+this earlier. If you know that a table should all should be unique on an ID, then the only way to to
+ensure that is to is to test it, you know, with a validation rule. Machine learning can tell you if
+the table was unique and suddenly became nonunique, but it can't tell you that it should have been
+unique from the very beginning. It never was. And so the role of rules is still really important to
+bring to bear, you know, the human subject matter experts' judgment about the data. And, you know,
+metrics, I think, are still really important because when you declare a metric, you're saying this
+slice of data really matters to me. So, you know, 1 1 thing I going back to your earlier question
+about something we learned, in the beginning, we were just building the unsupervised learning. And
+it was really powerful, but it wasn't a complete product because you needed to be able to declare
+metrics and monitor them for unusual changes because they they matter, You want to pay attention to
+them, and you needed to be able to ensure the data was perfect in some ways. And so what we
+ultimately built was a system that could do all of these things together. And I think that's much,
+much more powerful, and it's scalable because of the unsupervised learning. You don't have to do
+rules. You do them when you want to, and I think that's a big distinction. Now, places where
+Anomalow is not the right choice. I think there are a lot of situations where you want to assess the
+data quality, the quality of data in a different context. And, you know, the context Anomalow is
+really good at is data is being updated regularly. You know, ideally, each day, you know, new data
+is arriving, if not much more fast faster than that. But there are some domains where the data
+arrives every quarter, And it's actually very difficult to use machine learning on quarterly data.
+It just it it it I I would almost argue it is impossible. The reason is you just don't have enough
+history. In order to get history, you'd have to go back, you know, 10 years, 20 years to have enough
+history to to make some judgment about whether or not changes in this quarter are unusual in an
+automated way. Well, almost all things about humans change dramatically over that time period. So
+unless your quarterly data is about, you know, ice core measurements, right, from, you know,
+geologic ages, like, this is just not gonna be stable enough. And so, in those contexts, you've just
+gotta rely on human human judgments and rules. Another good example, we've talked to companies and
+pharma that do massive clinical trials. Those clinical trials will be 1 off huge investments that
+will generate a giant corpus of data, and they'll want to understand the quality of that data. And
+because it and kind of inherently lacks this notion of time and change, right, we're looking for
+regressions in data introduced by, you know, humans or changes in process because it lacks that.
+Instead, it's just this, you know, sudden big sample. That's not a very good use case for us either.
+And as you continue to build and iterate on Anomilo  and explore some of the different applications
+of machine learning to this problem space, what are some of the things you have planned for the near
+to medium term?  Yeah. So there's a bunch of exciting things that we're doing with Anomalow. 1 of
+the things is where we began Anomalow really focused on data quality, this kind of deeper dive into
+the data itself and understanding as the data changed, you know, inside of the table, the actual
+records, their distribution, their values. But there's a lot of data that you can get about, tables
+in modern warehouses just from metadata and from SQL queries. And so we're expanding Anomalow to use
+a lot more of that data to do more, you know, fully automated monitoring for observability, and
+that's going to add a bunch of other features and functionality into Anomalow, and I think it will
+complement what we're doing in the deeper, you know, fully automated data quality monitoring. So I
+think that's 1 really exciting thing that we're doing today. You know, there's a lot of other things
+on the machine learning side itself where we can take the algorithms we've developed and continue to
+improve them and come up with, like I said earlier, you know, using using the algorithm as a search,
+basis for interesting issues and then fully qualifying those and explaining them with an additional
+layer on top. So we wanna continue to expand that so that there's, you know, more ways that you can
+use Anomilo for for anomaly detection and get really rich, you know, fully validated explanations
+as well. Are there any other aspects of the work that you're doing at Anomilo or the operational
+aspect of building and running these ML models or some of the kind of algorithmic or systems design
+questions that we didn't discuss yet that you'd like to cover before we close out the show? You
+know, I think that 1 of the most  interesting things, that we haven't really talked about we talked
+about our benchmarking, but the other thing we haven't talked about is how we test these. We talked
+about the long tail that we're exposed to. And so, you know, if I sit back and I think about, you
+know, what is it makes this so difficult? In the end, we have around a 100 different types of checks
+that have different types of business logic use variations of the machine learning algorithms and
+SQL and just core business logic in them. Those 100 different checks, they need to apply to 10
+different classes of data warehouses ranging from Snowflake to Postgres to Azure Synapse to Oracle
+or Teradata, right, each of which will have their own idiosyncrasies in how the SQL needs to be
+crafted and the nature of the types and the results that you'll get back. We need these to work for,
+arbitrary data from arbitrary different verticals and different structures of data. We need them to
+work in an environment we don't control and have clear insight into. And finally, many of these
+algorithms are they will be learning iteratively over time, storing metadata about their
+performance, and improving over time. And so 1 of the biggest challenges is, well, how do you have
+good unit test coverage for that 5 dimensional space, right? And each time we encounter a new issue,
+we wanna make sure that we never see that failure case again. We never throw that exception again or
+never miss that kind of anomaly again. And so we have a really, really extensive unit test library,
+and we run those unit tests, on a bunch of, synthetic, you know, data that we've created and
+replicated across every different back end that we support. And so we have, you know, near 99% unit
+coverage on the back end, you know, code that runs all of this, and we'll run those unit tests on
+every PR for each of the 10 different backends. And it's invaluable to have that. It means that we
+can, as the code base and the surface area continues to grow and get more complex, we can make
+complicated changes and refactor things and be very certain that we're not gonna introduce issues
+and, not be able to solve some of the long tail issues that we've encountered before. So I'm really
+glad  we made that investment. It's been really, really valuable. Alright. Well, for anybody who
+wants to get in touch with you and follow along with the work that you and your team are doing, I'll
+have you add your preferred contact information to the show notes. And as the final question, I'd
+like to get your perspective on what you see as being the biggest barrier to adoption for machine
+learning today. It's interesting. I mean, it it's it's a hard question to answer right now. And, you
+know, a part of it is because of what we're seeing happen with large language models. You know, in
+the past, I think if you'd asked me this 5 years ago,  I would have said that the secret to a
+machine learning model being really effective in production is this combination of deep
+understanding of the problem you're trying to solve and how to develop the right fitness function
+for that problem that's going to meaningfully move, right, the objective. Combination of that with
+an understanding of the appropriate algorithm to bring to bear that can actually move that, and then
+the engineering skill to to be able to put that into production and manage it effectively. And
+getting all 3 of those things together is really hard. 1 of the things that I found most effective
+is to have teams of people that have a shared common goal, where the success of the machine learning
+algorithm is that team's goal. And they've got you know, the product, the machine learning, the
+engineering skill sets all on 1 team working very, very closely together, reporting to the same
+person, right, trying to drive to that outcome. It's interesting now with these large language
+models that some of that is going away. Like, these models can be applied to natural language in
+almost any form, and, you know, you can do it just through an API call. And so, you know, the
+generalization ability of, the latest generations of models is really amazing. And, you know, I'm
+excited to see where that generalization ability continues to go from here, and at what point does
+it begin to apply to structured data? At what point will we be able to have models that can
+generalize across many different structured datasets? In the end, the business context and the
+fitness function and kind of how you integrate it into the product, that sense is always going to
+matter. And so probably that's still the place where I think, you know, the opportunity is missed
+most often. There's a ton of machine learning models that are put into production that never had a
+hope of of having any impact because they weren't optimizing for the right objective. And, you know,
+oftentimes, you won't find out about that for months or years to come. And so, you know, probably
+that's still the thing, but it's interesting how much it's changing, and then also how many new
+tools are being developed to make the engineering side of developing models and putting them into
+production much, much easier. You know, I don't really worry about those things today because we
+can't use a lot of them. Everything has to be deployed in VPC, and I'm not really in a position
+where I want to go back and question the decisions I made 4 years ago. But if I were starting
+something again today, I'm guessing the tool stack would look very different. Alright. Well, thank
+you very much for taking the time today to join me and share the work that you've been doing at
+Anamilo  and some of the interesting challenges that you have encountered of dealing with applying
+machine learning to this question of data quality. Definitely, appreciate the time and energy that
+you and your team are putting into that, and I hope you enjoy the rest of your day. Awesome. Thank
+you, Tobias. Thank you for having me.  Thank you for listening. And don't forget to check out our
+other shows, the Data Engineering Podcast, which covers the latest in modern data management, and
+podcast. In it, which covers the Python language, its community, and the innovative ways it is being
+used. You can visit the site at the machine learning podcast dotcom to subscribe to the show, sign
+up for the mailing list, and read the show notes. And if you've learned something or tried out a
+project from the show, then tell us about it. Email hosts at themachinelearningpodcast.com with your
+story. To help other people find the show, please leave a review on Apple Podcasts and tell your
+friends and coworkers.

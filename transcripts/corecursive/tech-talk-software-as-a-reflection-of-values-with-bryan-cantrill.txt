@@ -1,0 +1,763 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Tech Talk: Software as a Reflection of Values With Bryan Cantrill
+DATE: 2018-12-18
+SHOW: CoRecursive
+LINK: https://corecursive.com/software-as-a-reflection-of-values-with-bryan-cantrill
+AUDIO: https://traffic.libsyn.com/secure/corecursive/024_-_Software_Values.mp3?dest-id=628353
+DURATION_SECONDS: 4744
+TRANSCRIBED_AT: 2026-08-05T18:14:19Z
+----------------------------------------------------------------------
+Welcome to Code Recursive, where we bring you discussions with thought leaders in the world of
+software development. I am Adam, your host. I really value those other alternatives. I think they're
+extremely important in every domain in software. And I think that when you make one of those
+idiosyncratic decisions, you are almost certainly making it for more deeply held reasons than
+someone who is making a safer decision. If you're deploying OpenBSD into production, there's a good
+reason for that. If you're using Rust, if you're using one of these things that isn't the default
+choice, to me there's a greater likelihood that you've been more thoughtful about that decision.
+More thoughtful about the values that you have for this job, for that decision. That was Brian
+Cantrell, CTO of Joint. He thinks that we need to be aware of what values programming languages and
+open source communities have, and how those values either complement or conflict with our own. That
+sounds a little vague, but it's really not. Brian just wants us to think carefully about trade-offs,
+but I'll let him explain that. If you haven't subscribed to the podcast yet, I recommend you do so,
+so that new episodes will be delivered to you automatically. I've also set up a Slack channel for
+the podcast. If you want to chat about this episode, or just hang out with myself and fellow
+listeners, you'll find a link on the website. Brian, I saw you give a talk where you had this super
+interesting idea that I hadn't heard before, that programming languages, software systems, have
+values. What did you mean by that? I think everything has values, right? I think that we don't
+really talk about it because sometimes it's so implicit. But we do the things that we do because of
+what we think is important. And we think different things are important at different times. And
+that's what causes us, in part, to make different decisions. And I think that programming languages
+often have a very opinionated idea of their values, of choosing among things that are positive, but
+emphasizing some things more than others. And I think that's very important that programming
+languages do that. We talk about the right tool for the job often. What we often implicitly mean by
+that is finding the values of a programming language or system that match the values of the engineer
+and the problem at hand. And to make that more specific, I mean, you know, kind of a classic value
+is around performance. How important is performance relative to, say, expressiveness or relative to,
+say, the speed of development or ease of use? And these things are often intention. And there are
+jobs where you're going to want to pick something that is going to be the highest performing thing
+at all costs. And there are jobs where you'd want to pick the thing that's going to allow someone
+who doesn't have previous experience in the domain to actually be able to implement successfully.
+And those are very unlikely to be the same thing. And so I started to get very explicit about this
+in terms of values and the values that platforms have and how we select among them, in part because
+I was trying to figure out several years ago what went wrong with respect to the Joyent and Node.js
+relationship. So I'm the CTO of Joyent. Joyent was the company behind Node.js. So we hired Ryan Dahl
+way back in the day, 2009. Part of the reason I came to Joyent was because of the big bet on
+Node.js. And the Node.js experience, there are parts of it that were really great, but ultimately it
+ended somewhat in disappointment. And trying to understand why that was. Why did we have this kind
+of amicable, or sometimes not so amicable, divorce effectively with Node? And sometimes coming out
+of a bad breakup can be very healthy in terms of being introspective and trying to figure out where
+things went wrong. And with respect to Node, I really think that where things went wrong for us was
+with our values. I think that our values were not Node's values. And Node's values really are
+JavaScript values. That's the other kind of realization for me. Even though I kind of had visions of
+Node diverging a bit from JavaScript's values and becoming dynamic server-side programming. But
+really, at the end of the day, Node really is JavaScript's values. And there are great things about
+JavaScript's values, absolutely. But they were a poor match for our values at Joyent. So what are
+JavaScript's values? JavaScript's values are allowing really every person on the planet to write
+software. It's around growth. It is around allowing everybody to develop software. It is very broad
+and then understandably pretty thin. Because it's not designed around rigor as a first principle. I
+mean, to say that it is type unsafe is almost putting it too gently. I mean, it is so easy. And I
+remember in one of your earlier episodes, your interview with Jim Blandy, he talked about his own
+incredulousness, the fact that you can have a typo that crashes a program. And it really is
+frustrating. There are times it just feels like, boy, JavaScript, you don't have to give me this
+much leeway. You could actually just let me know that I'm accessing this property over here, that
+I'm not accessing in any other way elsewhere in this program. But that would cut against
+JavaScript's core value of allowing for highly dynamic software. And I've been known to say in the
+past, and certainly I believe it, that JavaScript is the failed state of programming languages,
+which sounds overly pejorative. But there is no central authority in JavaScript. I mean, yes,
+there's ECMAScript and so on. But no one is going to tell you that you've misspelled your variable
+name. And that gives you tremendous freedom, but also tremendous peril. And it makes it such that
+you are allowed to write many different styles of programming in JavaScript. And it's all about
+JavaScript accommodating your existing idioms, your existing way of thinking. And that, in turn, is
+all about JavaScript growing as much as it possibly can, being used as broadly as it possibly can,
+which is great. But it's not the way I want to live the rest of my life. And in particular, it was
+really frustrating when that did come into tension around things like rigor, around debuggability,
+around observability, around safety, where we would advocate one. And when I say we, I mean not just
+we enjoy it, but we who believed strongly in, say, rigor, would be advocating one path. And those
+that were trying to get the language in as many hands as possible would be advocating a different
+mutually contradictory path without really understanding where the other was coming from. And
+especially with something like rigor, where no one is going to say, hey, by the way, I want to have
+like a sloppy language where it's really easy to get stuff wrong. And it's not like people don't
+believe in writing correct software. It's just that when you actually need to make a decision where
+you have to choose between supporting correct software or a construct that will make it easier to
+write correct software and a construct that will make it easier for more people to write in this
+language, JavaScript is going to choose the latter every single time. So you had this falling out
+with JavaScript. So at the opposite end of the like anybody can do whatever they want, the failed
+state model seems like Go, where it's like you will format your code this way. Yeah. And then you've
+got, it is funny, isn't it? That Go is, it is at the opposite end where Go then makes a bunch of
+decisions for you that do feel like it's kind of infringing on the, your own, the own way of
+expressing yourself. So yes, it's like how your code is going to be formatted. And on the one hand,
+I like consistent style. Consistent style is important. Um, and there's lots of reasons why a
+consistent style is important. On the other hand, mandating a consistent style seems, it's too, it's
+too much. Um, or mandating one style, um, is to me too much. Um, and there are lots of things like
+that, which are kind of strange autocratic decisions in Go that aren't necessarily well socialized.
+Um, and often there are, are reasonable reasons to not want to, um, make that particular decision.
+Um, and they kind of permeate things. So it's like, you know, if JavaScript is a, is a failed state,
+Go is kind of a strangely autocratic one. Um, and I, in one talk I likened, um, you know, going from
+JavaScript to Go is like going from Somalia to Turkmenistan. Um, and, and actually it's funny,
+someone on the internet who, uh, apparently is Turkmen, um, and knows both, uh, Go and JavaScript,
+um, got ahold of this and said that, that this was the most apt analogy he'd ever heard for Go
+because it, it does kind of capture the, you know, the, the, the strangeness of some of the
+decisions that Go is made, not to take anything away from it. I mean, I think there are some people
+that are actually really comforted with, with those decisions having been made. Um, and I mean,
+there's lots of things with Go that are fine or good. Um, but it felt somewhat lateral for me from
+JavaScript, albeit totally differently. Um, but it's, it's kind of a lateral move. And, and again, I
+think that, you know, those decisions that Go makes, I think, and maybe I'm falling into this trap
+myself. I don't mean to be pejorative about the decisions that Go has made or the decisions that
+JavaScript has made because for the values of those languages, they are the right decisions and they
+make sense for the community that chooses those values. And, you know, you, one shouldn't malign
+those values, um, because that makes sense for certain jobs or certain people or certain communities
+at certain times. Um, I just would stop short of saying that they make sense for all communities or
+all people at all times. Um, and for me personally, I would say both of those left me looking for,
+for something else. What values were you looking for? Well, I mean, I'm really a C programmer at the
+end of the day, um, or I have been historically. Um, I mean, I'm a systems programmer. Um, I, I,
+I've done OS kernel development for my entire career. Um, I, um, I, I like low level systems
+development. Um, I, I like being that layer that's close to the machine. I like abstracting the
+machine. Um, I think that there's, I haven't gotten over, um, my, my kind of fixation with providing
+that lowest level abstraction and the total magic involved in that. Uh, and for software that's at
+that layer, um, you really have to pick performance above everything else. Um, for those
+abstractions that are going to be closest to the machine, they, they have to yield the maximal
+performance of the machine. Um, you, anything that, that you do in that layer is, is machine
+capacity that you are taking away from the software that you're going to run. So it has to be highly
+performing and it has to be highly reliable. I mean, we really expect our operating systems to work
+all the time as we should. I mean, we've got very high level of a very high level of expectation for
+our operating systems. Um, and you know, I grew up in an era in, in the, the eighties and nineties
+when operating systems were kind of garbage, honestly. I mean, the, the, the two operating systems
+that you had to choose from, if you had a personal computer were DOS slash windows, um, and macOS,
+macOS nine, which is not both of these operating systems, um, didn't really use, they were not
+modern in, in the regard that they were not actually using the, the, the memory protection that the
+microprocessors had support for. And so as a result, an errant application could crash the operating
+system. Um, and which fortunately we don't live in that era anymore. Uh, we don't live in an era
+where, you know, people have to reboot their desktop a couple of times a day or where they'll,
+they'll run a strange program, which will crash their machine. Um, I mean, yes, it happens, but it,
+it happens nowhere near as frequently as it did happen. But the boot was fast though. Like, uh,
+true, true. Hey, uh, well, especially now, if you go back and actually run those, I mean, honestly,
+to even call them operating systems is almost an exaggeration because they provide so little there,
+there are almost what we would call an executive, but they run now. I mean, they were relatively
+quick, um, on ancient hardware. I mean, you run them, God only knows how fast DOS would boot on, on
+a Skylake, you know, um, yeah. Once you actually got past the bias, I mean, the irony is that, that
+we are still run firmware that dates from that DOS era. Um, when we, when you actually do, I mean,
+it's almost embarrassing that if you do boot a Skylake system, it will take as long or longer to
+boot than a similar server machine from decades ago. Um, because the firmware itself is still so
+knuckleheaded. Um, but in terms of the operating system from reliability perspective, we really do
+expect it to be absolutely reliable all the time. So those to me are my values. My values are, I
+want highest performance. I want, I want total robustness. And historically C has been the language
+that provides that. Um, the C has had, has shared those values and even, you know, C plus plus has
+been, um, has made the wrong choices for the operating system kernel and generally for embedded
+development. Um, for that lowest layer of software that, that runs on the hardware, we have
+generally not used C plus plus. We have used, um, strictly C. So I was kind of hoping that not that
+I was ever going to write an operating system kernel in Node.js, but I did hope in, in 2010 that
+Node.js would allow us to write, um, better, faster upstack system software. And it wasn't wrong,
+um, in that the, the, it was a big leap forward. Um, it, it was much lighter than running Java, for
+example. Um, but it ultimately did leave us lacking. And the point that I found myself at, you know,
+not too long ago was like, all right, well, what's next? Because it's not going to be Node, um, for
+me. It is not going to be, I'd already kind of decided that it wasn't going to be Go for a variety
+of reasons. Um, it was certainly not going to be Python again, and not to malign Python. Python's
+great and is very important in many domains, but not in the domain that I'm in. Um, what's it going
+to be? And there, there wasn't a whole lot out there, um, with of course the, the notable exception
+of Rust. I'm just, I keep on thinking about this, uh, writing an operating system in Node.js. Uh,
+what would you call it? Undefined? Or? Oh, God. Yeah. I mean, well, and the thing is to even do that
+is, is almost an exaggeration. Because like, if you're writing an operating system in a dynamic
+managed language, the operating system itself is that runtime that you can't see when you're writing
+your program. Um, because that's the thing that is actually doing the scheduling, is actually doing
+the garbage collecting, is, is doing the, the, the just-in-time compilation. Um, so that's what your
+operating system becomes. So there, there wouldn't be a Node operating system. What you're actually
+saying is you want to run V8 as an operating system. Um, and even that would be, it would be
+nightmarish for, for many. Oh, God. I mean, it's, you wouldn't even want to think about that.
+Although, actually, you know, having said that, in the 90s, there, and I was at Sun, um, in, uh, the
+90s and, and early 2000s, um, Java was such a, obviously, as you can imagine, was such a big thing
+at Sun. Mm-hmm. That we wanted to not only make Java operating systems, but Java-based
+microprocessors. And it's like, that is, that's insane. I mean, I, I can understand the enthusiasm
+of the era, but to, to dope bytecode into silicon is to totally miss the point of bytecode. Um,
+makes absolutely no sense. And those things all, I mean, they all did not succeed. Um, be great to,
+be great to have, like, a, a book on all of these kind of failed experiments. Because, I mean, they
+do fail for somewhat interesting reasons. Um, it, I mean, each, each failure is a little bit
+different. Um, but they ultimately fail because they're trying to push something, namely Java, or
+this high-level language, into a spot that it really does not want to be. It's not designed for, it
+doesn't add much value. Yeah, I, I don't know a lot about firmware, but I know the people who work
+on it, um, like, like memory allocation is, is very important. Like, I don't know about a GC running
+on some little piece of firmware. Well, you definitely wouldn't want to have a GC. Um, I think that
+you, um, when you're writing that lowest level of software, you just need to manage everything very
+explicitly. And to a certain degree, it's a simpler world. Um, because, you know, you're not, it's
+not a distributed system. It's not a, it's not sloppy. It's kind of like you've got, it's, it's
+orderly in that you have a, you know what memory is mapped where, um, and you can control that kind
+of universe. But in return, you, the software that you write, um, needs to be very cognizant of what
+it can do and what it can't do and when it can do it and when it can't do it. So, you know, when
+you're the operating system, you are responsible for the illusion that is memory. For memory is
+ultimately an illusion. Yes, it is sitting on capacitors and DIMS, but the operating system is
+providing that key abstraction, um, that allows you to actually allocate memory. And as a result,
+because it is the one providing that abstraction, it simply cannot allocate memory dynamically
+whenever it wants to. And we've got many contexts in the operating system in which you cannot
+allocate memory. Um, we've got contexts in the, in the operating system where you cannot block, um,
+and you can't block because by the way, you're in the scheduler code, actually dealing with the
+mechanics of blocking. You can't obviously block in that code path because you're the, you are the
+software responsible for the abstraction that is to block it to yield or what have you. So in those
+worlds and, you know, firmware is, is kind of an extreme of that, where the firmware is not running
+software generally above it. Um, it's not a full operating system, but it is certainly interacting
+directly with hardware beneath it. Um, and as a result, it can't make arbitrary references. It needs
+to be, uh, arbitrary memory references. It, it, it operates in a constrained environment and it
+needs a programming language that's going to be able to abide by those constraints, which these
+dynamic languages aren't designed to do. Um, I, I need to take it as a personal mission to learn
+more about, well, just about operating systems, like how they actually function. Um, I know I took a
+class on operating systems, but I feel like that was a long time ago. And yeah, there's a lot there
+and, and we kind of gloss over it. I think day to day you, you don't gloss over it, but I do. Like,
+I mean, there's a mind numbing amount there. Um, and you know, in, in one of the challenges with,
+with operating systems or system software in general is it can be very hard to even see what's
+there. Um, and you know, one of the technologies I worked on, um, earlier in my career is something
+called D trace that allows you to dynamically instrument the system to see what it's actually doing.
+Uh, and even today we use D trace all the time to understand what the system is doing because
+seemingly simple abstractions are wildly complicated. And that seems to be true all the way down.
+Um, you know, there's that expression turtles all the way down. And what that is, is meant to mean
+is that you are standing on abstraction. That's standing on abstraction. That's standing on
+abstraction. Um, and you know, from, um, when you want to actually observe all that, that can be a
+real challenge, um, because you want to turn the system inside out so you can actually see what it's
+doing. Um, but it is absolutely stunning how much a simple operations at. So you, for example, if
+you want to open a file, you know, how complicated is it to open a file? It is basically of
+unbounded complexity to open a file. Um, and you know, something like D trace allows you to
+actually, as a, as a user of an operating system, follow that code flow through the, the, the whole
+operating system. And, you know, one of the reasons we actually developed D trace, I mean, among
+other things, we wanted to understand the system ourselves. But, um, when I, you know, I took the OS
+course, my OS course in college and, and TA'd it for a couple of years. Um, I envisioned D trace
+being used as a pedagogical tool to actually teach operating systems. Um, and it's been fun to see
+that get picked up and particularly in the free BSD community. Um, and there's a, the, the latest
+free BSD books, um, really use D trace a lot as a teaching tool to learn how free BSD is
+implemented. So if you're interested in operating systems, I would, I would encourage you to check,
+check that out. Um, George Neville Neal's latest on that. Um, the, the design implementation of free
+BSD, um, and where you can actually like understand yourself what this thing is actually doing, um,
+and appreciate it's just nearly unbounded complexity. Um, because it seems like anything simple is
+much more complicated than you think it could possibly be. Yeah. I'm going to check that out. I
+remember like Joel Spolsky, uh, he had this, uh, article before talking about like somebody painting
+a road where they would like put the can down and then they would paint a line and then they would
+walk back to the can and dip the brush and how like they, they slow down. Right. Because the, the
+can is getting further and further away. And he, his point was that like software is rife with this
+where people just don't understand. Um, they're just calling like paint line. They don't realize
+that they're walking back to the can every time. And I think that that's endemic. I think we will,
+we would not want it to be any other way. I mean, I think that, that it is, it's imperative that we
+build and utilize abstraction. Um, we need those abstractions. So you actually don't want someone
+who's opening a file to be burdened with the outrageous complexity of opening a file. Um, it is
+important that that abstraction stay tight in that regard, but it's also important that there's
+enough reference for that complexity that you're not trying to open a file hundreds of thousands of
+times a second or what have you. Um, where you, so you need to have enough reference for the
+abstraction to not abuse it. And that's a very, that's a tall order where we say, Hey, you don't
+need to know how this works, but Oh, by the way, you might need to know how it works. Um, when
+everything goes sideways, um, and we may have to turn this thing inside out so you can figure out
+why your software is not performing as well as you think it should be. Uh, and that, that's a huge
+challenge and one that I think we're still grappling with. So do, do operating systems have values?
+Do they fit in the same framework? Oh, absolutely. I, I, absolutely. Yes. Yes. Perhaps, uh, uh,
+perhaps more than anything. Um, but no operating systems have got very clear values, I think. Um,
+and the, you know, part of, uh, you know, we work on an operating system, Lumos, um, which is a,
+it's a Unix derived operating system. It traces its heritage back to open Solaris. And, you know, a
+lot of people wonder like, why don't you just, you know, use Linux like the rest of the world or
+like, or why does free BSD exist? Or why does open BSD exist? Or why does net BSD exist? Or, you
+know, why can't the Mac just run windows or the windows just run, um, run Mac OS. And I feel that
+these different systems actually have a very important place in that they do speak to very slightly
+different values. Um, and they allow P and clearly there are values that transcend all of these
+systems. And clearly all of these systems care about performance. Clearly all of these systems care
+about reliability and robustness, but the way they reflect that are, they're slightly different, um,
+in each system. Um, and, um, you know, I, I think those differences, I think those differences
+should be accentuated. I think it's good. I think it's important. I think that you'd be hard to
+argue that open BSD doesn't serve an extremely important purpose, even though it's not run by that
+many people. Um, open BSD is an operating system that picks security above all else. They will put
+themselves in an arbitrary amount of pain to have a secure system. And that's an important choice to
+have out there. And that's an important because they do represent those values. As a result, they
+make choices that other operating systems don't make. Um, but often the choices that open BSD makes
+are choices that other operating systems come to later when they realize that actually, um, while
+they may not choose security over all else, security actually is more important than they
+necessarily realized. So it's important to have these kinds of different points out there making
+different choices. Um, and we, I don't think we want to live in a homogenous world where there is
+but one set of choices being made. Um, and that means I don't want to have just one operating
+system. I don't want to have just one database. I don't want to have just one cloud. I don't want to
+have just one programming language. Um, and maybe as a result, I am, am fated to be constantly, uh,
+doing things strangely. Um, I know I was having a discussion with another CTO and who was, they're
+using Slack. And I said, well, you know, we actually don't have this particular problem you're
+describing because at joint we use Mattermost. Um, we've got our own Mattermost server and he's
+like, do you guys have to do everything differently? Like, can't you just do, can't you just do one
+thing like the rest of the world? I'm like, you know, we, yes, we're able to do, but I actually,
+that said, I really value those other alternatives. I think they're extremely important in every
+domain in software. And I think that, um, when you make one of those idiosyncratic decisions, um,
+you are almost certainly making it for more deeply held reasons than someone who is making a safer
+decision. If you're deploying open BSD into production, that there's a good reason for that. Hmm.
+Almost certainly, you know, if you're using Scala where someone else would have used Java or someone
+else, you would have used Python. Um, it's probably a good reason that you're using Scala. That's
+not a ill-considered decision. Um, if you're, if you're using Rust, if you're using one of these
+things that maybe that, that isn't the default choice, to me, there's a greater likelihood that
+you've been more thoughtful about those, that decision, more thoughtful about the values that you
+have for this job, for that decision. Um, and you're making what is a, a, a choice that maybe is
+something that other people aren't as familiar with and it can be easy for others to kind of deride
+that choice. And I think you gotta, you know, you gotta stay strong when you, when you are, um,
+making a choice that, that is a bit idiosyncratic in that regard. Well, I like that because I'm on a
+team that does Scala at work and not everybody does and they don't understand. And it's also a great
+justification for, for why, uh, you're using Rust instead of C. So. Yeah. I mean, and I think that
+it's, um, it's an unfortunate kind of human attribute that when we see something that we don't
+understand, we often respond to that antagonistically. So, you know, I, I'm, I'm sure there are
+times when, you know, if you're, if you're in a group doing Scala and you're in a larger
+organization that doesn't understand that the value that it brings, I, I'm sure there are times when
+that can feel antagonistic. Um, and you know, that's where I think kind of understanding these
+things as values can help you better explain to someone why decisions have been made, um, or why we
+feel this is the right tool for the job. Um, because that way, you know, you're not falling into the
+trap of like, look, Scala is just better than your thing. Um, it's like, well, no, it's actually
+more nuanced than that. It's just that, you know, for this job, the values of Scala are a, are we
+feel a better fit than the values for what might be a safer alternative. No, that's a great
+perspective because people get blind to the values they don't care about, right? They, they just
+don't even consider them. So because it's a better fit for the things I value, then it's just
+better. Exactly. And they do that implicitly, which can be very frustrating. Um, and especially when
+you're choosing between things that are like, everyone agrees that, you know, programmer
+expressiveness is good and robustness is good, but, or not really understanding that there are times
+that those, these things are intention. Um, and it can be, it can be frustrating. So yeah, I'm, I'm
+hoping to get people to, um, to think a little bit more about why they might want to choose or not
+choose, um, certain technologies in part to encourage people to make more different kinds of
+choices. I just have big believer in heterogeneity of systems and of thought. So what were the
+values of Rust that made you go there instead of like, it sounds like C is your default, but, but
+here you are. Yeah. And I would say C is my default. And I, I think that historically we've done
+things and kind of, you know, C when it's down stack, um, or when it's, um, it's really performance
+critical, um, node when it's up stack. Um, and the question I had was, boy, you know, Rust, uh, on
+the surface of it, Rust has some really compelling values. Rust is, is highly performing. Um, it's,
+it's memory safe, which is really interesting. Um, and we can kind of, you know, get into how they
+actually, um, yield that safety. Um, it's, um, and it's really rigorous, but it's also, um, trying
+to, to provide programmer expressiveness and allow you to develop software quickly. Um, that to me
+was really interesting and I wanted to, you know, check that out basically. Does that actually, uh,
+would Rust be able to deliver on all these things? So, uh, and in particular would, would Rust be
+able to yield high performing artifacts? Because if you, if it doesn't yield high performing
+artifacts, it's really, um, it's not going to be applicable to the things that, that I would want
+to, to use it for. So I kind of, I, I, you know, finally found something that was the, or had the
+kind of right time, right fit for, for something to, to, um, merit learning Rust, um, and dove in.
+And I, I think that, um, you know, I've been Rust curious for a long time. I've been kind of, you
+know, reading the blog entries and, you know, listening to kind of experience and kind of, and had,
+had heard, you know, people's experience with it. I think that I was letting myself be a bit too
+intimidated. I mean, Rust has got this kind of infamous learning curve. Um, I actually don't think
+the learning curve of Rust is that bad at all. Um, I think that the, uh, and I, and people
+listening, maybe concern, maybe the themselves in the situation, I think like, God, I just like, I'd
+Rust just sounds like it's, it's just magic. Um, it really isn't, I, I think it does need to be
+learned. Um, it's not something that you're going to, you know, you don't want to simply download it
+and start banging away. Like that is not, uh, that's not going to work well. Um, but if you sit down
+and I, you know, I really recommend you that you've obviously been interviewing Jim Blandy. I think
+that the Blandy book is terrific. The Rust programming language book is terrific. Um, but, um, by
+Steve Vapak and Carol Cobain and, and, and community, but you really want to sit down with the, a
+book and actually learn it. Um, and you know, with, with Jim's book, um, I, Jim Jason's book, I did
+something that I haven't done for a very long time, which is, you know, they have this kind of intro
+chapter that has an example program that they work through. And I sat down and I typed in that
+example and it was really valuable. You know, it didn't take that long and it, I was able to, you
+know, the inevitable typos got me kind of getting a feel for the compiler error messages and so on.
+And at the end of it, I had something that worked, albeit something that I had only copied. I hadn't
+actually, you know, thought of it myself, but I, it got enough of the kind of the brain working on
+it that it made it much easier to go and actually understand these other elements of Rust. So on the
+one hand, there are elements of Rust that are definitely novel. I mean, the, the ownership model is
+absolutely novel and it's incredibly important. On the other hand, it is not nearly as arduous as
+it's made out to be. To the contrary. I mean, I, what I see is that in many of these languages where
+it's super easy to get started, your day one is really fast and that's great. But then on day 100 or
+day 300 or day 500, you actually have to wade in to even more complexity as you need to understand
+the implementation details of say the garbage collector to understand why your program isn't
+performing or why is there this 150 millisecond GC pause. It's like, well, now you need to figure
+out, you know, is it, is it the young generation or the old generation that, you know, which garbage
+collector are you using and what's all the nuance of that garbage collector? And do you have an
+object graph that is large and connected errantly and all this other complexity that you now have to
+go deal with? And in, in, in this regard, I think Rust kind of shifts that cognitive load from that
+hundredth day or that 300th day, much more towards the first day or the second day, which on the one
+hand can feel overwhelming. But on the other hand, once you get it, which doesn't really take long,
+I don't feel the artifacts that you're yielding are much higher performing and with much less
+surprising dynamic behavior, um, where you're not going to have the surprise 150 millisecond GC
+pause, um, in Rust. You had this list of values when you did this talk, like approachability, like
+screw approachability. I feel like, um, I say that because like, um, I, you'll be using a
+programming language for so long. Um, maybe approachability is fine, but like there should be, you
+shouldn't be afraid for your language to have like expert level things. Like, I think that's right.
+Yeah. I think that that's exactly right. And I actually, I love the sweet spot that, that Rust is
+trying to hit, which is like, look, let's, we're not going to pick approachability over robustness.
+We're not going to pick approachability over rigor, but that doesn't mean that we're, so we're going
+to make this as rigorous as it needs to be. And then let's make it as approachable as it can be. So
+I actually think that, you know, Rust in part, because it's trying to, I think, fight a bit of its
+reputation. I think it's incredibly approachable. In particular, the compiler's error messages are
+amazing. And, and I think that especially when you make kind of, um, early on when you are not
+dealing with the borrow checker, you'll get these incredibly verbose, helpful error messages out of
+the compiler. And it's, you know, using, you know, ASCII art and colors to highlight exactly where
+your error is. And you got, you think to yourself, boy, this is like, you are really going out of
+your way to help me. Like, this is great. And you can just almost wonder if the compiler's like,
+look, I need you to hold on to those positive vibes because at some point I'm going to give you, you
+know, cannot move out of borrowed context. And you and I are both going to be shrugging our
+shoulders trying to figure out what's going on. Um, so I, I, I think that Russ tries to make it
+itself as approachable as it can, um, as you know, a term that they use a lot, the Russ community,
+not the first community to use this, but they definitely use it a lot is ergonomics. Um, and I like
+ergonomics. It's different than, than approachability because it's saying, you know, we need to, we
+want to make this construct comfortable. It doesn't mean that we're going to, we're going to make
+this construct any less rigorous. Um, and there are lots of ways in which they have, um, and
+continue to make it ergonomic in ways that new programmers won't even be aware of. Um, I mean, the
+rust 2018 dropped today. Um, and you know, one of the, uh, one of the, the big changes in rust
+recently is something called non-lexical lifetimes. Uh, historically lifetimes of an object in rust
+have been lexical. Um, and one of the big frustrations of rust is when, or can be with a borrow
+checker, a big fight with a borrow checker will happen when you are done using something. So you are
+effectively done borrowing it by you looking at your code, but because it is still lexically in
+scope, the compiler treats it as still being borrowed. And that can be really frustrating because
+you want to have some way of telling the compiler, like, no, like give it back. I'm done with it.
+Like I'm not using it anymore. And with non-lexical lifetimes, the compiler is a lot smarter about
+realizing like, oh, I get it. Okay. You've actually used that thing for the last time. So now you
+can give it back. And as a result, the borrow checker just silently does the right thing. And there
+are going to be, I, there's going, there is absolutely going to be a new generation of programmers
+that come to rust in, in the next six months to a year. And they're not going to know what the fuss
+was about, about the borrow checker. Just be like, I just don't think this is that bad. It's like,
+well, it's not that bad in part because the compiler has gotten a lot smarter and it can tell when,
+when ownership can transfer back. Because it can tell when you're done with something. So that, I
+think that that's going to be a big positive change to the language. Yeah, that's awesome. I
+thought, I saw you on this panel and somebody was asking you, hey, why doesn't rust have a GC? And I
+felt like he kind of missed the point that maybe what they're shooting towards is kind of like a
+static, like compile time GC. And right now that involves some hops and loops, but, but that's the,
+the arrow. That's exactly what it is. That is exactly what it is. It is. And as a result, you know,
+it's the compiler trying to figure out at compile time, some of these dynamic attributes. And it
+does an amazing job. And, and even in it's, that is getting better. And then as a result, you can
+totally reason about the performance of the system. And, um, you know, folks that deliver high
+performing software in GC languages do exactly this. I mean, the irony is the person asking that
+question is Cliff Click, who very accomplished software engineer. Cliff would tell you, oh, I can
+write absolutely high performing software in a GC language. Like, okay, Cliff, how do you do it? And
+he would talk to you about how you do it. It is all of the things that cognitively you have to do
+for rust. You know, he'll be like, oh, I'm going to pre-allocate my map. I'm going to hold on to
+this. I'm going to move on. You know, I'm going to, I'm going to do all of these kinds of implicit
+things that basically don't generate large amounts of garbage for the GC to collect. But he's been
+able to do that because he's implemented the VM a couple of times. Um, rust allows effectively
+anybody to get to those kinds of results. Um, albeit with slightly higher cognitive overhead when
+you're developing in it. But again, I think it's ways that are actually intuitive. Once you
+understand what rust is trying to do, the, the intuition around it, around it grows really quickly.
+And as a C programmer, you know, I, one of the things that's funny about C is that you can feel the
+underlying assembly that the C wants to write with rust. I can feel the underlying C I can feel what
+it's trying to do. So when, you know, constructs like the, the parameterization of lifetimes makes
+total sense when you understand what it's trying to do. Um, and as a result, like I have not really
+had a, yes, I had some early fights with the borrow checker. Um, you know, and everyone's going to
+have, there are going to be a couple of things that are going to drive you to the break of tears
+early on. Um, but you know, once you break through that, it becomes actually, I think a lot simpler
+to write software. Um, because there are so many things that you don't have to worry about. And then
+the artifact is high performing. I mean, that's the thing that's really very impressive is that I
+found my rust, my naive rust was outperforming my carefully written C. That's a big statement,
+really. Yeah. And it's, it's for a bunch of reasons that are, I mean, every time I say this, you
+know, people get upset that I'm making it an overgeneralization. So I'm not saying I've clearly, it
+is not the case that, that every rust program is going to outperform every C program, or even that
+for the same task, a rust program is going to outperform a C program. What I found though, is that
+it is, it is easier to deliver very high performing software in rust than it is in C for a variety
+of reasons, but not least the fact that the strength of the ownership model allows rust to be truly
+composable. So you can use much more powerful data structures. And in particular, the reason my
+particular program was faster for rust than it was for C is because the default balanced binary tree
+implementation for rust is not a red black tree or an APL tree, but it's an actual, it's a B tree.
+And a B tree is a much more sophisticated data structure, historically used in databases. But the
+rust observation is one, a B tree makes, actually makes sense for all in an all memory system
+because the memory hierarchy is so spread out. And two, the composability of rust actually allows
+for a B tree to be implemented. A B tree is gnarly. It is hard to implement a B tree in a way that's
+composable, in a way that doesn't allocate auxiliary memory, which is the reason we've always used
+AVL trees in the kernel. But boy, to be able to use a B tree instead and it's delivering a higher
+performing artifact is pretty compelling. So on the one hand, yes, it's the, you know, B trees are
+higher performing than AVL trees. On the other hand, I could not practically use a B tree for my C
+implementation. And not only can I for my rust implementation, it's like the only choice to make
+because it's the balanced binary tree for the kind of the default collections. Like, unless you say
+something more controversial, we'll just call this one. Naive rust is faster than C. That'll be the
+podcast. That's great. That'd be great. Yeah, I certainly get, get some attention. We, you know,
+it's funny. It's like, I had a blog entry on this looking, cause I, you know, I, I discovered that
+my, my rust is up forming my C and I'm, and I had kind of pledged to go investigate it more deeply.
+And then I had a followup blog entry where I investigated it like pretty deeply with a, an extremely
+long disclaimer about how I was not trying to make a, um, gross kind of comparisons. How I was
+really, you know, it's kind of making a specific comparison that my specific, and still people are
+like, God, how can this guy make such a ridiculous statement? I'm like, I'm really not. I'm like,
+can you not read the eight paragraphs of disclaimer? Like how much more disclaimer do you want me to
+provide? Um, but I think despite the disclaimer, one has to acknowledge that yes, it was easier to
+develop a higher performing artifact in rust for this particular problem. I forget. I think I had
+this guest, uh, Stephanie Weirich who works on, on Haskell. And she was saying like something to the
+effect, like when you give the compiler more information, uh, like in theory it can do more
+optimizations. Like, so rust just knows more. I assume is one of the advantages. I think that, and
+that's an advantage that they are not even fully appreciating. I mean, in terms of like the, the
+rust compiler folks appreciate that those advantages are possible, but they have not yet begun to
+really deliver on that stuff. That is true. Um, there, in fact, actually, when I first looked at it,
+I'm like, oh, okay, this is because rust is able to actually do true, um, memory disambiguation. So
+one of the problems you have in C is that you, the second you call any external function in a file,
+C has no idea what that function is touching and not touching. Um, this is called memory
+disambiguation to disambiguate, um, what memory is referring to what. And because C is fundamentally
+unsafe in its construct, it, it can't reasonably, I mean, compilers have tried to do memory
+disambiguation, but it's really hard to do, um, because the language doesn't help you at all. Um,
+rust is able to, is able to do that really cleanly and crisply. And I think it can yield even much
+better performance than they're getting now by, by leveraging that more deeply. Um, because it's,
+it's my understanding that they're not doing a whole lot of what they could potentially be doing in
+the future. And I think this is a domain where there's going to be a lot of really interesting work.
+And as a result, you're just going to see, you know, your extant rust code getting faster and faster
+over time as the compiler gets smarter and smarter and smarter and smarter and smarter in a way that
+is not really intention with rust's other goals. And one of the problems with C is that as C, there
+are certain levels of optimization that the compiler can't reasonably apply because they actually
+will result in a slower artifact in a bunch of other cases. Um, and you know, my, and I say this not
+as compiler optimization person, so, you know, cut me some slack, but my, my intuition is that there
+will be fewer cases like that with rust. There'll be more cases of, um, unequivocal optimization
+that can be had because the compiler just knows so much more about what is going on because you, the
+programmer have agreed to this grand bargain where you're going to work with the compiler to
+generate a higher performing artifact, which is a terrific bargain. Yeah. The, the thing, first of
+all, I also know nothing about compilers. So before I stated, um, the, um, the problem is sometimes
+I think compilers get sufficiently smart. Uh, your model is going to break down that you were
+talking about before. Do you understand the C it's going to write? Uh, like that will change if it's
+able to do smarter things. Right. And this is where C can get too smart for its own good, where it
+can do say memory disambiguation that then makes the system, a system that was safe becomes unsafe
+because that, um, the system was implicitly relying on the compiler's inability to perform that
+optimization. Um, and we've actually got a lot of code like that in the operating system kernel. Um,
+so yeah, where the, that is an example where the optimization breaks the model and yields an
+artifact that doesn't. And if you look at, it's always interesting to take a C compiler and look at
+its minus O5 optimizations. And those almost certainly have warnings associated with them about
+their, their limited applicability where they can result in, in slower code if they're used more
+broadly. Yeah. Or, um, I'm thinking of a specific example that I, that I'm going to get totally
+wrong, but like, um, somebody on Stack Overflow talking about like this, this Haskell Fibonacci
+program that was running much faster than the C program. And then when it was looked into in depth,
+like, like the Haskell compiler, I just realized that the Fibonacci was only evaluated once and had
+just like compile time calculated it. Right. Like, so that's right. That's great. And yeah, I mean,
+that's the kind of freedom that Rust is afforded, um, by the programmer having shifted that
+cognitive load is that we can in principle, um, see some of those opportunities. Uh, and I, I think
+we're going to, I, the other thing actually that got it that I love about Rust though, you know, the
+couple of things we just don't talk about frequently enough. Um, I love the, all of the explicitness
+around mutability, which obviously C has as well in terms of const and so on, but there are so many
+ways out of it. You can just cast away the const. So like, what's the point? Um, whereas in Rust,
+you can't cast it away, right? You, if something is, is mutable or it's not, and if it's not
+mutable, like you can't mutate it, um, you can't just magically make it mutable. If it's mutable,
+they can only have one owner and so on. Um, but that is going to afford, I think a lot of
+opportunity to the degree it hasn't already a lot of opportunity for optimization as well, because
+it knows that like, there's going to be no store to this, um, because it's not mutable. Um, and
+that, you know, that in turn allows values to be cached and so on. And I, I think there's just going
+to be a lot of opportunity at Rust is, is already performing really well. Um, and because those
+values are so, are, are so crisp in the community, I think we're going to see it perform even better
+over time. And like, um, no, no pointers. That too. Yeah. And it's funny because like, that is
+probably a bigger deal to, that is like the big deal with Rust. That's huge. And it's great. I
+think, especially if you're coming from C++, that is a huge win. It is a huge win. I mean, I don't
+mean to, to, to, uh, minimize the memory safety, you know, from my perspective, like I'm able to
+write safe C, um, from a memory access perspective. So, um, the safety is great. I'll definitely
+take it. It's nice. Um, but it's not as big of a win. Um, but I think for most people, it's actually
+the bigger win for me, actually the safety that we don't talk about as much with Rust is integer
+safety and overflow safety. So, um, Rust is persnickety about overflow, um, which is actually great.
+It's one of these things where, you know, the Rust compiler will be like giving you a hard time
+about something. You're like, oh, come on, Rust, like just like lighten up already. And then you
+look at it, you're like, actually there is actual potential overflow here. So, okay. Thank you,
+Rust. Um, and there are lots of, uh, around, um, sign extension safety around overflow safety that
+Rust, um, which are, I mean, I can write memory safe C. I say that with, with pretty high
+confidence. Um, although it's much easier in Rust for sure. And I would prefer Rust because writing
+memory safe C does, um, induce cognitive load. Writing integer safe C is actually really hard. Um,
+and the, the kind of the worst bugs that I have had in my production code have been because of
+overflow that can then be exploited. So the, the, the, the overflow, the integer on safety then
+tacks into the memory on safety in that the, um, malicious code will induce integer overflow that
+will then allow a guard to be snuck past. And then you, you leverage the memory on safety to either
+corrupt memory or utilize a gadget or what have you. And now you've got an exploit. Um, and so the,
+it's with Rust, it's the integer safety plus the memory safety, um, that yield that more secure
+artifact or something we haven't spoken about here at all, but it's another huge factor in Rust. Um,
+and for any internet facing code, I would absolutely write it Rust first because it makes it so much
+harder to generate some of these kinds of common pathologies. I think that like certain, like we
+were talking about programmer value, programming language values, and it's like, there's trade-offs
+between all of them. But I think sometimes like there's things that once you, once they get hit on,
+once they take off, then, uh, like they sort of, they'll become table stakes for like future
+languages. Um, so I think that null, like we should just get rid of null. Like, I think we've had a
+couple languages that don't have null. So like that, like no, no new language should have null. I'm
+calling it. Yeah. I mean, I, I, I think you're probably right. I mean, I think that the, in that if
+you want that C is always going to be your answer and there is going to be, to be clear, there's
+still going to be a place for C in the universe. Um, and, um, you know, C, C having a sentinel value
+that denotes unmapped memory is, you know, I know it's been called the $8 trillion mistake or
+whatever. I don't quite buy it. Um, but, um, because you have to have some way of indicating that
+this points to nothing, that this points to void effectively. Um, and if we weren't dying on null
+pointers, we'd be dying because we're referencing void. So, I mean, to me, it's kind of six and one
+half dozen the other. Yeah. But can we, can we just use like, uh, you know, we just use like a sum
+type like we, we have to. Oh, totally. Yeah, absolutely. And I think that you, I mean, an algebraic
+type obviously solves that. And, um, I do feel that like, yes, for new languages, we need to be done
+with sentinel values. There is no reason to have a sentinel value that that should be an algebraic
+type. Um, I'm totally with you. And then, uh, it's interesting to think like what else, uh, could
+be. Like something, um, that could be like new table stakes, right? Like, so, um, this kind of
+borrow checker, like what, will there be other languages that take this approach? Uh, yes,
+absolutely. No question in my mind. And to me as not a PL person, the, the, the whole ownership
+model I think is relatively novel with rust because for most languages, you know, they develop
+something that is kind of punitively novel. And then any PL person would be saying, oh no, no, no,
+no. Like that was done. Like that was that ages ago. That was, you know, Simula did that or Oberon
+did that or Modula four did that. You know, some of the, some language that, you know, some
+unverifiable claim, um, that the, and actually I did the, uh, when working on D trace back in the
+day, uh, D trace actually did advance the state of the art in terms of dynamic instrumentation of
+systems. And I, knowing that I was going to get some grief from like main framers, um, I educated
+myself to a great degree about the tracing facilities that existed on the, on effectively every
+system I could get my hands on. Um, and, and indeed some folks, well, you know, D trace is
+interesting, but actually I had this facility on, on OS three 70. I'm like, what are we talking
+about GTF? Cause we're talking about GTF, like let's go, like it's on and we'll talk with GTF is the
+generic trace facility and it's a tracing facility on the mainframe, but it is not what D trace
+does. It's not dynamic instrumentation. And if you want to like throw down over GTF, let's roll. Um,
+and inevitably like the claims would kind of disappear. Um, so you know, there's this kind of thing
+to, to subscribe, but well, Multics did this or, you know, Simula did this, what have you with the
+ownership model. I, I, to me, it does seem that it's pretty novel. Steve in four, Steve Gladbik
+informs me that it actually, uh, does trace its roots back to clean, which is a language apparently.
+So, uh, there's a language called clean. It's been around since the eighties. Um, so maybe, maybe
+clean is the pioneer of, uh, the, uh, affine types, um, or the, the ownership model. Um, but
+certainly it is not been used in a broadly used language. Um, in that regard, rust absolutely
+represents a, a step forward to the state of the art and there will absolutely be rust derived and
+there should be rust derived languages or rust inspired languages or languages that have, um, that,
+I mean, one of the things that I thought, I mean, my God, can we please get rid of bash? Um, bash is
+humanity's dirtiest secret right now, as far as I'm concerned, that the, the amount of software load
+bearing software that we have written in bash, um, in part because no programming language, um,
+well, or it's in a foreign language bash makes it very, very easy to string together the output of
+different Unix commands. It's approachability again. Approach. That's total approachability wins,
+but in a horrible way, a horrible way, a horrible way. And God, there is so much lethal bash out
+there. I mean, you can almost pull up any bash script and find subtle bugs in it. Um, and can we
+please get a, a rust ethos coupled with bash approachability in some new language, um, that allows
+me to vary, that is wholly designed around executing other programs and stringing their output
+together rigorously, um, and then handling those failures rigorously. It just feels to me like
+there's a real place for that. Um, that could be me. And I mean, Excel, uh, I think that, that there
+is a, a, a large amount of the world that runs on Excel that nobody, uh, talks about that. That's
+just another side factor, like, like VB, like scripts and like, there's like large, I'm sure that
+there are large head funds that are just some Excel book with like giant formulas, millions of
+dollars trading in and out per second, like tied to some Excel. Oh, I mean, how many people's
+payroll depends on Excel in some way, shape or form. I mean, I'm sure, um, it's very load bearing
+and, you know, perhaps less load bearing than it was historically, but is it? Yeah. That's another
+example where we could really use a lot more rigor. And I think that we're going to see rust
+inspired language. I mean, I think that the big statement that rust has made is like, Hey, you don't
+have to choose between some of these things. Um, and especially as the, you know, the ownership
+model gets, um, fleshed out from the perspective of an implementation and especially as people then
+wrap their heads around it cognitively. Part of the reason that, that rust is a bigger cognitive
+lift is because it is the first language to really use this and, or really have this. And you do
+have to kind of wrap your brain around it, but once you do, it opens up new vistas. So I think there
+are going to be other, other languages that adopt a similar model. Um, and as, as you say, like no
+more null pointers would be great. So like I, um, preparing for this interview, I went onto YouTube.
+And I like watched a whole bunch of your talks. Um, that can be dangerous. I know it can totally be
+dangerous. So, um, I'm just going to throw out some questions that have nothing to do with what
+we're talking about and see how it goes. Sure. Absolutely. Uh, so, uh, should I invest, uh, in the
+stock market in either Oracle or Uber? What would be your preference? Oh boy. Uh, yeah, I mean,
+okay. So look, I have been saying for a long time that Uber is going to be the poster child of the
+coming bust. Um, and I think that Uber has, and I think we're seeing this with just that the
+business model, um, there is zero barrier, zero barrier to entry. There is not much network effect.
+Um, there is perfect rider competition and perfect driver competition. So I think, you know, Uber
+has really disrupted the obviously livery. I mean, as has Lyft, but it's not clear if they
+themselves can endure being disrupted by the next wave. Um, and you know, there's a lot, you know,
+Uber's doing a lot of kind of crazy things that have got nothing to do with that kind of core
+business. Um, so yeah, I will not be an investor in the Uber IPO suffice it to say. Um, now I will
+say that I have, and I've learned this about myself many times over. I am often right on trajectory
+and I am often wrong on timing. So for all I know, the Uber IPO will be, you know, some barn burner.
+And, uh, I mean, I was, I thought that Bitcoin was unsafe at any speed in 2009. Um, and if I could
+only have been like, okay, look, fine. Bitcoin is unsafe at any speed. Why don't you just take a
+hundred bucks and put that into Bitcoin in 2009, which is when I first heard about it, uh, by about
+a hundred dollars, the Bitcoin in 2009, uh, you know, um, but the thing is like, I would have sold
+it when it was worth $200. I, you know, I would be fooling myself to say that I would have held on
+until exactly the peak because I don't think cryptocurrency makes sense as a means of exchange or as
+a store value. Um, I, and then you were actually asking about Oracle and clearly Oracle is my
+opinions of Oracle, I guess are well known. Um, but I think that they are on a very dated model. Um,
+and I would say a lot of headwinds for Oracle. So I'm going to be an investor in neither Uber nor
+Oracle, uh, nor cryptocurrency. I'm not sure what that leaves, I guess. Um, but leaves Amazon. Oh my
+God. They are so dominant. I, I, it almost takes your breath away cause they, and they are so at
+reinvent. They are, they're still executing with such drive and focus. It is like someone is, is
+chasing them. And yet I think they're just putting more and more distance between them and the other
+infrastructure providers. Um, and I say this speaking as an infrastructure provider that's
+putatively competing with Amazon. I mean, they are, um, yeah, they are a really tough company to
+compete against. Um, it's, it's pretty, it's pretty stunning. Um, what they're, and I don't know
+what the future holds in that regard. I mean, I've been saying that I believe heart of hearts. I
+still do believe this, that we are not going to be renting our compute from Jeff Bezos. I really, I
+believe that, that, that not all of us are going to rent all of our compute, but with every
+reinvent, I'd begin to, I doubt that just a little bit. I'm like, maybe, you know what, screw it. We
+all are going to rent our compute from Jeff Bezos. We just say, you know what, give it up. We're
+going to compute is going to be re-briotized. You're not going to be able to buy your own
+microprocessor. The only person who's going to be able to buy DRAM is actually Jeff Bezos for the
+Hive cloud, which is what you're going to run everything on. And let's just all give up. Have you
+read the Everything Store book? You know, I haven't. Have you read it? Yeah. It's super good. But
+definitely you get the, like, he's not to be messed with. Like, he's like a, you got the
+perspective. He's like a true poker player that will, like, crush another company. Just, you know.
+He is the ultra apex predator of capitalism. He is a super predator. And I think that the, in fact,
+the only thing that gives me true hope and solace for the future is he is of such a voracious
+appetite that there is, there is no capitalist enterprise that he's going to view as off limits. And
+as he begins to compete with all of humanity, I think that there's going to be some sort of backlash
+at some point. Because he, no, it's stunning. I mean, there is just, the ambition seems to know no
+end. But it's ambition that is, unlike, you know, Elon Musk ambition that, you know, Elon said that
+there's a 70% chance he's going to die on Mars, which is a very kind of strange way of phrasing it.
+I mean, the ambition from Bezos seems to be backed by incredible execution. Yeah. Also, I think they
+just announced a AWS, like, blockchain thing at reInvent. Yeah, the crypto blockchain one doesn't
+make sense because, like, it's distributed, but only within AWS data center. I'm not clear if it
+sounds made up. Like, it sounds April Fool's-y. It does sound April Fool's-y. I mean, God, that
+would be a great reInvent, wouldn't it? Where they, like, announce all this stuff at the end.
+They're like, you know what? God, we were actually fucking with you that whole time. I can't believe
+you guys bought all that stuff. Like, AWS Outpost, come on. We're not going to let you run. And the
+blockchain stuff, you guys ate that one up? Like, there was no detail there. Yeah, maybe they are
+going to, like, they'll prank us. Certainly, we would all fall for it. Should, I'm just going to hit
+you up with random tech questions now. You bet. Should we be trusting Microsoft now, since they're,
+like, .NET's open source and all this great stuff? Yeah, it is a newer, different, I would almost
+say a kinder, gentler Microsoft. It is shocking. I mean, especially given where Microsoft was,
+certainly in the 90s, where it was so, I mean, not just homogenous, but I think so oppressive with
+respect to other ways of thinking. So proprietary, so devious in so many ways. I mean, the findings
+of fact from the Netflix case really merit a reread. There are so many underhanded techniques that
+Microsoft was engaged in. And yet, you know, here we are. They really have changed, I think, pretty
+fundamentally. They've always had the, they obviously have the cash to go do some really interesting
+things. And they're kind of making all the right moves. I mean, when Sasha became the CEO, what,
+three years ago, I jokingly said that, oh, yeah, here's what he needs to do. He needs to open source
+.NET. He needs to open source Windows. And he needs to buy GitHub. And that was a joke, okay? Like,
+that was a joke. I really want to emphasize that the buying of GitHub especially was meant for humor
+value. I didn't think that they would actually do it. And, you know, people would be like, do you
+think they would actually buy GitHub? I'm like, I think they should. And, wow, they did. So
+Microsoft, I think, is kind of getting back to, it's, you know, Microsoft at root is not a
+monopolist. Microsoft at root is a developer tools company. That is what, you know, Gates famously
+wrote, you know, the basic interpreter on the plane or what have you. I mean, it's the, ultimately
+they are, I think, they're kind of the base DNA. They understand the way the developer wants to
+develop software. And they then later incarcerated themselves onto this Windows monopoly. And
+Windows was kind of crappy because they're not an OS company. That's not who they are, what they're
+about. And so Windows was always kind of not very good. It was certainly before they pulled in the
+DEC VMS folks, it was terrible. And then Windows NT was better, obviously. It became, you know,
+better as time went on and is probably fine now. But very interesting to see them really embrace
+Unix. And not in their classic embrace, extend, extinguish, but actually truly embrace it. It's a
+different company. You know, I don't know. I have to, I would still stop short of really embracing
+any Microsoft technology myself. But that's really because of my own bigotry and my own resentment
+over Bill Gates having robbed me of my childhood by forcing me to use DOS when Unix was actually
+available. I'm not sure that's his fault, is it? I blame him personally. Look, I mean, like, I think
+the, it's great that we're curing tuberculosis and we're kind of opening up schools and I honor the
+philanthropy. But let us not forget that underneath that, there actually is the Bill Gates that
+forced us all to run DOS and wrote very snippy letters to anyone copying his basic interpreter. So I
+think that it's, but actually that's being unfair because Microsoft really is, I think, changing
+into a wholly different company. And one that is much better positioned for the future. I mean,
+Saatchi has just done an incredible job. And I think it will be, you know, business schools will
+read about Saatchi's work at Microsoft as one of the great turnarounds, I think. A great cultural
+turnaround. Really, really very impressive. I think that's all my random questions. Oh, how about
+this? GPL, good or bad? You know, it's interesting because, and we are in a new era for open source
+in that we are so firmly in the open source era that there is now a desire among those who created
+these open source artifacts to reproprietorize them. And so, because the thing about the GPL is that
+it doesn't say anything about taking the software and running it as a proprietary service, which is
+what Amazon is doing. And so, you know, people tried to address this with the AGPL, which is really
+not good news. And in general, they have tried to do this in by asserting rights that the copyright
+holder doesn't generally have. Like, if I'm going to make something open source, I really don't get
+to tell you how to run it. And you get to kind of run it however you want to run it. And if you want
+to run it and charge people to use the thing that is the service that results from it, that's going
+to be what it is. And I don't really have a way of extending you the right to use this without the
+right to resell that. I think asserts rights the copyright holder doesn't have. And I think the big
+issue right now is not kind of the GPL versus, you know, BSD versus the Apache license.
+Unfortunately, I think the Apache public license is winning out. It's a better license than the GPL.
+I'm a big fan of the MPL as well. But I think the real heat now is moving to this kind of nutty
+trend around the commons license, the common source where the idea is that we are going to have the
+– there's some open core effectively that everyone can use. But there are proprietary bits that if
+you want to resell this as a service, you're going to have to pay me. And, you know, I think that
+it's been misnamed, first of all. But I think that this is going to be a trend that is going to not
+blossom into something larger because I think it runs – it's so antithetical to open source. I think
+open source is here to stay. And that means that, yes, Amazon is going to be able to make that
+software into a proprietary service. And if you don't want Amazon to do that, you shouldn't open
+source it. I don't think there's going to be a middle ground there. Yeah, because it seems like a
+good idea, especially when you think about Amazon, right? When you're like, hey, we built this. We
+should be the ones who can decide – like who can charge to run it. I don't know. It is. And this is
+what the – I mean, I guess it feels right, but it is actually – that's actually perilous. And this
+is what the Commons Clause is trying to do, but it feels like you should be able to say that. But if
+you can say that, then what's to prevent you from saying, hey, okay, so this can be used – this can
+be used only in the US. You can't use this in Canada because I've decided that I've got something
+against Canadians. Or this can be used in this industry, but it can't be used in that industry. So
+I'm going to be – I'm a bank and I'm going to open source this software, but you can't use it for
+financial services. It's like you kind of can't do that. I mean there's a very good chance that you
+just like flat out can't do that because that's like saying here's this book and you can buy this
+book, but you can't read it on a train. You can only read it on a plane. It's like, well, it's
+actually my book. And if you – when I buy the book, I get to read it on a train or on a plane and I
+can put it next to – on my bookshelf, I can put it next to an author that you disagree with or not.
+What I can't do is I can't make a – I'm limited in terms of what I can do about a derived work from
+that book. But if you've given me a license that tells me I can make a derived work from it, I don't
+understand how they're going to be limited in terms of how that derived work can be used. So I think
+it's going to be a real challenge. It's tricky because like in the cloud world, like everything runs
+in AWS. So there is a – like it seems like we should be heading towards more and more proprietary
+software just offered by the cloud providers, right? Right. So I actually – that is the world that I
+don't think we want to go towards. And I think that – and it's going to be very interesting to see
+how all this shakes out because I don't think we want to be in a reproprietized world. I think it's
+happening though, isn't it? Or like – It's happening to a degree. It's hard to know how much it's
+happening because AWS gives us no real insight into what's making what. So we don't know how high
+margin some of these services are. You know, I don't think that there are services based on open
+source software at AWS that are throwing off Oracle-like margins. That could be wrong. I don't know.
+Maybe that's wrong. I think if those services do exist, there's clearly not much barrier to entry
+for another cloud provider to do that or someone else on AWS to do that. So I got to believe that
+the economics will ultimately keep everything in check. And I also think that people don't want to
+have vendor lock-in. So one of the things we certainly see is that people are – there was a time
+when people were building on every AWS service they could find. And now they are – they're
+restricting themselves to those kind of core infrastructure services because they actually do want
+to be future-proofed and do want the ability to move on to a different cloud. So yes, S3 and yes,
+EC2 and EBS, what have you, and ELB, but not trying to build something that depends on, you know,
+SQS or something that depends on Kinesis or something that depends on Redshift or something that
+depends on some of these other services. Or what is their blockchain thing even called? It's called
+blockchain on AWS, which is not a very distinctive name. Blockchain. Oh, God. I mean, man, this is
+turning into Microsoft from the diabetes. That was the interview. I feel like I could have had
+interesting conversations with Brian for the whole afternoon. So hopefully you didn't mind that this
+episode is a bit long. Usually I don't ask people about random tech news. But let me know what you
+think. Too long? Not long enough? Let me know. I'd like to thank the many people who recommended the
+show or the last episode, the little typer on Twitter, on Reddit, or wherever else. Special shout
+out to Rich Seymour on Twitter, Cryo and Neyfried on Reddit. There's also some great discussion
+about the book happening on the Slack channel. The channel is brand new. There are multiple tens of
+us on there at this point. Hey, Ruttevic, Graf, Bloodworst, and John are the most active members at
+the moment. But it's been great chatting with everybody who's on there. Until next time.

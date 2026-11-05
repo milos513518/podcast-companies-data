@@ -1,0 +1,200 @@
+EPISODE 1796
+
+[INTRO]
+
+[0:00:00] ANNOUNCER: Ableton is a music software and hardware company based in Germany. The company developed Ableton Live, which is a digital audio workstation for both improvisation and traditional arrangements. The software is remarkable for successfully blending good UI design with a powerful feature set. This has made it popular with new musicians as well as professionals such as Tame Impala, Knowledge, Mac DeMarco and Daft Punk, among many others.
+
+Tobi Hahn is Ableton's engineering manager. He joins the podcast to talk about software engineering for Ableton Live. Kevin Ball, or KBall, is the Vice President of Engineering at Mento and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies, founded the San Diego/JavaScript Meetup, and organizes the AI in action discussion group through Latent Space. Check out the show notes to follow KBall on Twitter or LinkedIn or visit his website kball.llc.
+
+[EPISODE]
+
+[0:01:09] KB: Tobi, welcome to the show.
+
+[0:01:12] TH: Thank you so much, Kevin. Thanks for having me.
+
+[0:01:14] KB: Yes, I'm excited to get to chat with you. So, let's maybe start. Do you want to give just a brief introduction of yourself a little bit of your career and then maybe a little bit about Ableton and Ableton Live, which is what brought us here?
+
+[0:01:24] TH: Sure. So, I've been working with Ableton for quite a long time. I started here right after doing a PhD in math and wanted to get out of academia and into a more practical kind of thing. Started as an engineer on a team that was called the Engine Team back then and made my way through various teams. At the moment, I'm the tech principal for Live and also an engineering manager for part of the team.
+
+[0:01:54] KB: Awesome. Well, and let's maybe do just a very quick, like, what is Ableton? What is Live? What are these things? Then we can dive into the details.
+
+[0:02:02] TH: Sure. So, what is Ableton? We make software and hardware for musicians, that is composers, producers, live performers. And Live is a digital audio workstation with a focus on live performance, obviously, but also works well in the studio or for producing, composing, all that. A lot of people who used live, use it from their bedroom. We call them bedroom producers. But we also have professional artists that I don't want to name people here, but everybody would recognize these names, I think. So, we have a wide variety of users using our product.
+
+[0:02:45] KB: That's awesome. Well, audio is such a fascinating space because you end up with very different constraints than a lot of software developers end up with. Let's maybe dive in a little bit starting with the tech stack. What does the tech stack look like for Ableton Live? Is it the same across other Ableton product books? Are you different? What does that look like?
+
+[0:03:03] TH: Oh, that's a very deep question, very good question. So maybe a little bit about the history, Ableton just celebrated its 25th anniversary and the code for Ableton Live goes back all the way to the start of Ableton because that's what started the company. So, what we're dealing with is a lot of code that has evolved over 25 years. If you imagine 25 years ago, the world looked a little different, and also tech stacks look different and that still influences to some extent what we use today. So, Live is mostly a C++ application and it is also cross-platform. Cross-platform originally means that we support Windows and macOS, but since the release of Push Standalone, which also runs live on an embedded Linux computer. So, we fundamentally have three platforms on which Live has to run and that means we have to have a lot of support infrastructure. There are not that many frameworks you can just pick and choose from.
+
+Also, C++ has grown and evolved a lot over the years. So, in '99, I think it was a time of like when the first C++ standard came out, but there was still a lot of incompatibilities between compilers and the standard libraries I'm told wasn't in a very usable state. That means we have a lot of homegrown classes for things that people would nowadays probably just use from the standard. We have various classes for pointers, smart pointers. Some of them are not so smart as what I sometimes tell new colleagues. We also have various string classes, also sometimes with different encodings. So, Live traditionally, or the legacy code base traditionally uses UTF-16 encoding. Some of our newer parts use a UTF-8 string encoding. So, we also have some string conversions going on back and forth and a lot of that kind of legacy that comes with the software but also makes it interesting to work in.
+
+[0:05:28] KB: Yes. I feel like this is an under-discussed area in software development. We love to focus on the new shiny, but most of us then go to a conference, learn about the new shiny, and go back and work in our legacy code base. I'd be curious how you deal with some of those kind of constraints? How do you keep the product evolving and not get bogged down? What does that look like?
+
+[0:05:49] TH: This is an interesting question. One of the things is, I think a good example here is our Vue framework. So, because we're in that many cross-platform choices available back on the day, we have our own homegrown Vue framework for better or for worse. But when you think back to like the early 2000s, screens were nowhere near where they are today, and you have display resolutions of maybe, I don't know, 800 by 600 or 24 by 768. Some of those resolutions. And now we have 4k, 5k monitors, standard, sometimes even more.
+
+The issue for us as engineers that comes with that is if you have that much screen estate, you can also display a lot of things on the screen. Back in the day, everything was rendered on the CPU on the UI thread. At some point, that just didn't scale anymore. So, we're targeting kind of a 60 hertz frame rate. And for a 4K monitor, we can't get 60 Hertz with CPU-based rendering. So, when we realized this, we said, "Okay, what are our options here?" Porting to a new UI framework, we tried that for a while, but had to learn the hard way that a big rewrite isn't a good idea. The short story is that in order to get the kind of performance that we need, we would have had to hand-optimize a lot of -
+
+[0:07:31] KB: Which then loses you a lot of the benefits of the framework. Yes, totally.
+
+[0:07:35] TH: Exactly. So, we said, "Okay, then we have to learn how to render stuff on the GPU." We first had a project to accelerate Mac rendering using Apple's metal technology. And we're now in the process of doing the same on the Windows side. Hopefully, then, we'll have rendering that scales for the 21st century with display resolutions that we have these days.
+
+[0:08:03] KB: Yes. Well, that kind of gets into some interesting constraints that you face in some way similar to gaming, right? You have frame rate, latency, constrictions, you have the video, but also in audio, especially if you're doing live and you're looping and you're doing all these different pieces, like how do you deal with those kind of real-time audio latency constraints?
+
+[0:08:22] TH: The audio stack obviously is a whole different beast because if you have a UI dropout, like a little stutter on the screen, like maybe it gives off a bad impression. But if you have a click in your audio or too many clicks, then you will notice that, and that will sound very ugly, and people will report that as a book if it happens in their setup too often.
+
+So, the constraints that we have is we have a driver callback. So, the operating system tells us, "Hey, please prepare a new audio buffer." As a user, you can choose, okay, what is the sampling rate for my audio interface and what is the buffer size? If it's a larger buffer size, that means we have more time to compute more data. If it's a smaller buffer size, we have to be able to react faster. So, that is a bit more taxing on your CPU. We then have to schedule all the work that needs to be done to compute all the audio that is needed for that next buffer. Also, obviously, process the input if you do live recording from your microphone or other inputs.
+
+[0:09:32] KB: Got it. I may be off base here, but I remember hearing at some point that macOS in particular was a lot more supportive of real-time audio than Windows. I obviously don't know in the Linux case, do you end up having to handle each of the different OS systems differently to keep things up to date? Or how does that end up working?
+
+[0:09:50] TH: We have driver backends for several architectures on macOS. We have a core audio backend on Windows. The background we support is ASIO. We also have MME, but that's not really suitable for professional kind of audio, so we recommend using ASIO on Windows. On Linux, I believe we're using ALSA, I would have to look it up, to be honest.
+
+[0:10:15] KB: Is the model enough that the abstraction can all live in the driver, or does that end up leaking into other parts of the codebase?
+
+[0:10:22] TH: We tried to abstract that away, and as you can imagine, the audio interface parts are some of the oldest code and also some of the people who founded the company, they couldn't like hire really the best engineers on the market back then as a startup. So, some people also learned coding while they were here, but built this company that supports all of us now. Where I'm getting at is that that code is a bit of a spaghetti code and we do have to look into making that simpler. It's just a thing. It's a bit of a legacy that comes with it and it's one of the refactoring projects that we have going on, like slowly chopping away there, and finding better abstractions that make it easier to maintain this kind of code and maintain this offer going forward here.
+
+[0:11:12] KB: Yes, the engineering manager geek in me wants to dive in, like, how do you manage that type of refactoring project and sort of prioritize against ongoing development and things like that, keeping it moving?
+
+[0:11:23] TH: Also, a very good question. Engineering management here at Ableton, I think, works a little different than in some other companies. We're more a product-focused company, so we have heads of our products. So, we have a head of the Live unit who is like the product owner who decides what features we build and individual teams have team product owners who negotiate then with the product owner what their team is working on. We also have technical chapters on the site who get together regularly during sprints but have four dedicated chapter sprints per year where they can come together as a technical team and work on technical apps.
+
+[0:12:12] KB: Moving into another area that's really interesting to me, which is around UI design for music production. So, we touched a little bit on this as you talked about adapting to larger screens and being able to do this, but kind of how do you think about the trade-offs and in particular, like things like balancing the sort of recording and composing piece of things versus live performance, like there's completely different interfaces. What does that look like for Ableton?
+
+[0:12:37] TH: Do you mean in terms of performance, where to give computing performance?
+
+[0:12:41] KB: I was honestly thinking from a UI design standpoint, if we go into that or how you're thinking. I mean, I don't know, we could dive into performance as well. Where do you spend your thought on the UI side?
+
+[0:12:52] TH: On UI design, I try to not interfere too much because we have excellent designers for that kind of work.
+
+[0:13:00] KB: Fair enough.
+
+[0:13:01] TH: And we try to build what they ask us to build. Obviously, we have some constraints because we have to maintain our own UI framework so we don't have all the new shiny bells and whistles that come with UI frameworks where they have full-time teams working on the framework. But in general, it's a process, a collaborative process, where a designer and engineers get together, explore in prototypes, "Okay, what could this look like?" Designers have a design language. When they want something new that hasn't been there before, they go ask team, "Okay, how expensive would it be to build this kind of extra-large button," for example.
+
+[0:13:44] KB: Makes sense. Thinking about that and kind of tapping into the legacy and the fact that you have these frameworks then, is the sort of design UI side. Does that feel separated? Is it like conceptually a separated front end or do you have a little bit of those kind of deep linkages or spaghetti code into how the backend is implemented in pieces like that?
+
+[0:14:04] TH: I think the design language and the UI design is separate from Live. I would assume that if you ask a designer the same question, they also say, "Okay, we have legacy that we carry around in our design language." But I'm not confident enough to say that. But we have on the engineering side, the UI framework has also a lot of legacy that it carries like the widgets have grown. We like to think of it of a bit of a widget zoo with deep inheritance where people added a functionality for a feature they needed in one device or another. And it's one of the things we have identified as something that we need to improve a little bit.
+
+But as you mentioned earlier, it has to be prioritized against a lot of other things against features and other technical improvements. On the UI side, we actually looked at the problems that we have and said, "Performance is actually the most important thing right now and we need to do accelerated rendering before we can look at API improvements or widget refactoring and cleanups."
+
+[0:15:14] KB: That makes sense. Another area that I'm interested in, you mentioned at the beginning, Ableton is a software and hardware company. So, what does that end up looking like for you all? Is there a co-design process? Are the groups independent? Is the software designed for the hardware? How does that relationship flow through the company?
+
+[0:15:34] TH: We have a remote script framework to control hardware and built on top of that is the API that we also used for the first version of Push. Push 2 then came with a full-color display that had a lot
+more pixels also. Interestingly enough, the rendering technology that we use on Push 2 is what we tried to use for live what I mentioned earlier. It wasn't good enough for Live, but for Push, it just did the job. So, that code ended up there. But Live and Push share a lot of code, especially with Push 3, we have tethered in standalone. In standalone, it is a Linux computer running Live. There's obviously an additional part of the software that does all the Push UX rendering the display, but for standalone also doing mundane stuff like connecting to Wi-Fi, that kind of thing.
+
+That code is very close to the live code. A lot of it lives in Python. We have a Python API into Live, which is mostly the same API that we also expose via Max for Live and these two evolve in lockstep. It's the same code base for our newer products, Note, and Move. So, Note is an iOS app that we also have. Move is a small growth box that we just released. We also have some shared code, but it's much more loosely coupled to Live. So, there are modules and libraries that we share, especially around all the sound generation and effects. We want sound continuity across products. If you make a jam on Move and open it in Note, or open it in Live, you want to be able to finish that song or continue with the song sounding the same way.
+
+So, we try to have sound continuity here, which means reusing some of the device DSP across products. But the audio engine, for example, on Note and Move is a new audio engine that we rewrote from scratch with the idea that maybe it could replace the Live engine one day. But I think we discovered there is a lot of knowledge and special cases and functionality in the Live engine that would just take a lot of time to add to the new engine. Some of it is shared, some of it is quite separate.
+
+[0:18:23] KB: Yes. That reminds me a lot of what kind of like Mozilla went through when they started building Servo as a new browser engine and then in Rust, and then they started trying to pull things back. Some things are easy to pull in because it's nicely isolated and you can separate it. Some things, it turns out there's a ton of embedded value in that legacy code.
+
+[0:18:43] TH: Pulling back things is a good keyword. So, one of our engineers on our real-time live audio engine team noticed that there is a component in the new engine that we can also use in the old engine for some performance improvements. It's a bit technical. So, we split up. The Live Set conceptually is a graph where audio flows in some directions it can also have a cycle so we don't forbid you from routing your outputs back into your inputs. Obviously, we have to break those cycles when we create the engine. Then we try to split this engine graph into parallelizable domains. As soon as all the inputs for one domain are ready, we can compute that domain and then make the output ready to whatever output domain needs it. This domain scheduling algorithm is something that is also very old in the code base.
+
+So, today's architecture looks different than the architecture of computers back in the early 2000s. We had to go and make some performance improvements there. And she is, okay, we can use a work ceiling queue that we have in the new engine also for this domain scheduling algorithm here. Some of the parts do actually make it back into the Live engine.
+
+[0:20:10] KB: Yes. Well, that kind of goes to an interesting thing. You mentioned, a lot of this code is legacy and some parts of it are really deeply spaghettied and some parts are not. What are the conceptual chunks that go into audio software? To put a little context, I have a web background and a lot of web servers, "Okay, you've got your data layer, you've got a stateless web server, you've got a frontend server." There's well-defined chunks. For someone who's new to audio, what are those well-defined chunks that go into a piece of software like Ableton Live?
+
+[0:20:42] TH: We have in Live as chunks in the software, I would say, is at the core is a data model layer that represents your Live Set. Then on top of that data model, we have a view, which we then display on screen. It can also be more than one view with Push. And you can control the data model from this UI layer. We then have another conceptual view on it, which is the engine, abstract engine representation of the Live Set, which says, "Okay, this Live Set corresponds to this engine graph and this is then responsible for building the audio engine out of the individual DSP modules that we have."
+
+[0:21:33] KB: You mentioned for that, you can break apart the graph, you can break the pieces into these parallelizable chunks. Then is it a direct render? Is there like, is it a compilation sort of pipeline of some sort? I'm just kind of wondering, once I have one of these parallelizable chunks, is that immediately renderable into audio? Or do I need to take it through some sort of processing phase to get there?
+
+[0:21:58] TH: So, you have some inputs there. These inputs can be audio inputs, but can also be parameter inputs when you have, I don't know, gain parameters or distortion or some other parameters that go in. You can also have MIDI inputs if it's in the MIDI part of the signal chain. Then you have processors who compute for one buffer of audio. What is the output for those inputs that I have and potentially some state that carries over from previous buffer.
+
+[0:22:33] KB: Got it. Okay. That makes sense. So, what is that then like how much connection is there state buffer to buffer? Is each chunk mostly stateless or you're carrying a lot along as you go?
+
+[0:22:44] TH: That really depends on your processor. For example, a mixer doesn't really have a lot of state. It only has how much gain to apply. It doesn't need to keep any previous audio buffers around, but for something like a limiter, you need to have a little bit of a look ahead to see how much limit you need to apply for the next audio buffer. So, you have, depending on what you choose, some look ahead where you say, "I need that much gain reduction over the next buffer." You can also have devices like echoes. And then you obviously need to keep however long your reverb tail is for a reverb around. So, some of these are quite stateful others, not so much, and I think it depends a lot on what you do in a specific module.
+
+[0:23:40] KB: That makes sense. Then, as you're doing these processing chunks, is there like a synchronized clock that is going along, like you might imagine in a CPU or something like that, where it's like, okay, this is for the next 20 milliseconds or whatever that is. Or how do you do all those synchronized pieces?
+
+[0:23:54] TH: We have a scheduler class, which provides this kind of clock and which synchronizes events that need to happen within buffers, for example, if you have a ramp of some parameter that changes over time. But conceptually, every domain has its own domain scheduler, which is the source of truth for time for that audio domain.
+
+[0:24:22] KB: Got it. So, then when you have this, sorry, and these may be very naive questions because I'm completely new to audio processing, but you have this sort of graph of here's all the different pieces that need to get rendered. I'm going to take this chunk and go render it. Is that limited to a particular cycle in the clock or those things might have different clock cycles that they're on?
+
+[0:24:43] TH: It all goes back to audio driver. The audio driver says, "I need the next audio buffer." Then we need to compute the full buffer over the whole graph. Some of the pieces of the graph might be able to render in parallel. For example, if you imagine you have separate tracks and no routings between those tracks, then those effects don't depend on each other. You can, if you have enough CPU cores, render them in parallel. You can also render them sequentially. Depending on when you render them, the respective domain scheduler has to run the time for that buffer. Does that make sense?
+
+[0:25:24] KB: I think so. So, your chunk size for rendering is driven by the request from the OS of, "I need this buffer," which then corresponds in some ways to a length of time. But then each domain scheduler is keeping track of where is that in my domain? What amount am I rendering here?
+
+[0:25:39] TH: Exactly. There's also latency involved. Some devices like the limiter that I was mentioning, or a compressor. They need look, be able to look ahead a little, which adds latency to the audio computation. That means you need to then delay other tracks for the same amount of latency so that everything ends up in sync. That means you also need to take the latency of each device into account when you calculate, okay, what time is it now for me?
+
+[0:26:12] KB: Wow. So, the scheduler sounds like it is actually one of the really fun and meaty problems that you're tackling here.
+
+[0:26:21] TH: It is. I think it's also very much at the core of the old audio engine, I personally have not worked too much on the schedule. I've sometimes worked with a scheduler, so I can't give you too many insights into fun engineering problems that we're solved. I didn't solve any there, but this is one of our core components for our engineers.
+
+[0:26:46] KB: That makes sense. Another thing that stands out, and maybe we've already touched on. This is like the way that you integrate with not just your own devices, but other devices, and you have control surfaces for a vast range of potential inputs. What does that end up looking like on the software side?
+
+[0:27:02] TH: For other devices, we support plugin standards on Windows. This is VST version two and three on Mac also audio units. We then try to map those plugin standards onto our own abstractions. Control surfaces are a different beast because we define the API into Live there and we work with then hardware manufacturers to write control scripts to integrate into Live so that when you press a clip launch button on the surface, it actually launches the respective clip, or it highlights the correct part of your Live Set that is currently controlled by your external MIDI controller.
+
+[0:27:51] KB: Got it. Are there other parts of the architecture that we haven't dived into yet here?
+
+[0:27:58] TH: There are some other parts. A big part of Live is the browser, which is not a web browser, but it's the thing where we display what effects are available, what samples you have in your  sample collection, what presets you have, what plugins you have installed, and this is backed by a large database on the same computer, obviously. There are quite a few engineering challenges around that.
+
+[0:28:34] KB: I imagine starting back 25 years ago, you probably don't just have a SQLite thing that you're able to query there, or is that?
+
+[0:28:41] TH: I think it is a SQLite database under the hood, yes.
+
+[0:28:44] KB: Nice.
+
+[0:28:47] TH: And we're also constantly iterating on the browser, trying to improve the user experience. Sometimes users disagree initially. For Live 12, one of the big features is that we now have tag-based search in the browser. So, you can tag all your presets, all your sound, and then use those tags to filter what you have. Some users prefer the old style of navigating a tree structure. I think this is where we believe that if you use it for a little bit, then this is actually the better solution, and it also neatly ties in with another feature that we have there, which is auto-classifying your sounds.
+
+So, we try to analyze all the sounds that you have on your hard drive, and then you're able to say, "Okay, give me a similar sound to this one." This is quite a neat feature to explore what you have in your collection, and also quite an impressive engineering challenge. I wasn't on that team, but I was very impressed when I saw that feature at the first time.
+
+[0:29:57] KB: I'm curious. So, is there - I don't want to push you into a direction you're not super familiar. But like, can we dive into what does that analysis look like? What are they using under the hood there?
+
+[0:30:06] TH: So, if my understanding is correct, we train a custom machine learning model there, and we have a neural net that we used to do the similarity search on those different sounds to cluster them and say, "Okay, this is the closest sound based on the analysis that we have here."
+
+[0:30:29] KB: Okay. So, talking about machine learning, there's a bunch of stuff going on in that space, and I know some of the enthusiast groups I'm involved with are really excited about Generative AI around music, and I think a lot of it right now is, you can get, generate a track, or you can generate something, but the tooling isn't really very advance for actually arranging or doing anything like that. Is that a domain that you all are pushing into? Or just kind of people are importing clips once they're already generated? Or what does that look like for Ableton?
+
+[0:31:00] TH: I mean, we're obviously exploring what it means for music making, but it's also a bit of a sensitive topic because a lot of artists, I think rightfully have the impression that their art is used often without them being compensated for it. So, there is something to navigate what is ethical to do here and what possibilities do we have. Also, we are not any of the big companies that can host like big clusters of GPUs to train models. So, I think there's something like our sound similarity search that we can use and there are other features where we're looking into if we can use machine learning for them. So, it's definitely something on our mind, but it's also something where we have to be a bit careful and be sure to do the right thing here.
+
+[0:31:58] KB: Yes, that makes a ton of sense. Since none of the companies that are doing that actually have any useful, as far as I can tell, like mixing and editing tools, you could be the neutral third party. All right, you generated it. It's on you to navigate the ethical things. You can import it here and manipulate it.
+
+[0:32:16] TH: Sure. I mean, you can use any kind of recordings or a sound that you created from elsewhere in Live and then edit and produce your final track with it. It's definitely one of the things that we try to be good at one of the key workflows of Live.
+
+[0:32:32] KB: So, let me move us in another direction, which is kind of what are you all working on now that gets you excited that you can talk about? You mentioned the performance side, right? So really improving the performance and rendering on the UI side. What else are interesting upcoming projects for Ableton and Ableton Live?
+
+[0:32:53] TH: So, for user features, we have a policy that we don't talk about it until we publicly announce it. But maybe I can try to think of some engineering refactoring challenges that come up. So, one of the things that is more of a bit of a bookkeeping is like keeping all our third-party dependencies up to date. We integrate quite a bit of open-source software. But we're not in the same situation as with a web framework where you have a package manager where you say, "Okay, please update to the latest version and then you regularly fix the bugs." 
+
+We unfortunately update a little less frequently, but we still have to do that because Apple keeps releasing new compilers on new versions of macOS that we want to support. Also, Microsoft releases new compilers and we just have to keep up with what's going on, what's out there. A big challenge that is coming up, I think, is looking at what is happening with Windows arm space. Some of the machines that were released look like they might be quite interesting for a music maker. We're looking into, is there a market that we can justify to go in that direction? This is, I think, an interesting also engineering challenge.
+
+We solve a lot of the hard problems, I believe, with a port to Apple Silicon when Apple announced their migration away from Intel. For example, back then, we still had a number of like written assembly routines, and we did not want to port them to arm assembly.
+
+[0:34:41] KB: Understandably.
+
+[0:34:43] TH: So, part of that project was to porting assembly routines to standard library facilities with state atomics for example, or state threat, those kinds of things that the standard library provides and where we can rely on the compiler to generate code that is optimal.
+
+[0:35:05] KB: That makes sense. It actually reminds me of another topic related to this cluster. If I were to describe a lot of what I've heard here, you have a whole cluster of things related to the fact that this is a 25-year-old application. That just kind of plays out through all parts of your process and what you're needing to deal with. Something you mentioned very briefly, but we didn't dive into is onboarding and onboarding new engineers. When you have this huge stack of legacy and embedded knowledge and all of these different things, onboarding someone to that feels like also a big area of challenge. So, I'm kind of curious how you approach that. What does an onboarding process look like for a software engineer coming into this stack of 25 years of knowledge and spaghetti code?
+
+[0:35:52] TH: An onboarding process is a bit of a challenge here, because even if the person knows their way around C++, they have to learn all of our own in-house idioms. That, to be honest, can take a while. An onboarding process, we work in feature teams, and a new engineer would be assigned to a feature team. They would then get a team buddy who is their buddy for everything in the first couple of weeks to help them navigate the organization, the code base, whatever they have, and explain the fundamental idioms, like the smart pointer types that we use on the go.
+
+But it can take quite a while. Some experience that people repeatedly make on the team is, okay, they get to know one part of the code really well, and then they move to a different team or their team pivots to a different feature, and they have to learn new things. One of the qualifications that we look for in engineers when we hire is being able to dive in and start swimming, metaphorically speaking.
+
+[0:37:05] KB: Yes, absolutely. So, I think about that and I think about throwing engineers into a new code base and then I'm obviously thinking about, okay, what does the test framework look like to support them so they can make mistakes more safely? What does the observation or observability stuff look like so that you know if something's screwed up? What does that look like within Ableton? Do you have a good CI/CD setup?
+
+[0:37:26] TH: As you can imagine, this also grew a lot over the years. Interestingly enough, for a very long time, we went without.
+
+[0:37:36] KB: It doesn't shock me, to be honest. Once again, the gap between best practices, what you hear at the conference, and what most companies are doing.
+
+[0:37:44] TH: I think about 15 years ago that led to a bit of a quality crisis where we realized, okay, we have to do something, and we have to start writing unit tests back then. We had a visual kind of test suite. We would try to play back event scripts of user events. You can imagine those things break very frequently and it's also not clear if it breaks. Is this expected? Is this actually a bug? So, we got rid of that.
+
+The first thing we introduced was unit tests using a homegrown test framework. There weren't that many mature ones to choose from back in the day. The next thing we added was an acceptance test layer. So, we started using Cucumber, which is a Ruby framework that allows to - it has a wire protocol that allows it to make calls into other applications, including native applications. However, we also made a classic mistake, I would say, by hooking into implementation details. That bit us because the Cucumber team heavily refactored or rewrote, I would say, Cucumber several times with really fundamental architectural changes that were incompatible with our internal hooks.
+
+So, we had to stay on an ancient version of Cucumber, which only was running on a very old outdated version of Ruby. At some point, it was like, "Okay, what if our operating systems that we have to use aren't running that version of Ruby anymore?" Fortunately, one of the chapters took this on as a task and rewrote our own version of Cucumber in Python, we call it Cornichons, because it's little cucumbers, and now we control the whole code. It was surprisingly straightforward project. I mean, I should also add one of our most experienced engineers was on it, but still we were afraid of this kind of rewrite for a long time because we knew we had legacy there, we had things we had to clean up. And when we actually did it, it was surprisingly quick to do it. We had to adapt a number of tests to the new framework to make sure everything stays the same.
+
+I think it was mostly due to some of the internals that we were depending on that we didn't want to reproduce one-to-one where we had to change step definitions of what they're called to map them to new ones. But now our acceptance test suite runs on our own Python-based Cornichons. We have our in-house continuous integration system. So, we actually have servers and a team that provides us with VMs on these servers. On pull requests, engineers can trigger runs on that CI system. We also have two CI systems. We have what we call old CI and new CI. Old CI is based on a very old version of Jenkins. New CI is a more recent version of the tech stack, and it's a very big project to actually port from the old CI system to the new CI system.
+
+But at the end of the day, the system gives us a green or a red. That means, okay, we can release this build, or we can't. And engineers know, okay, I can merge this pull request, or I have to look why this test is failing.
+
+[0:41:38] KB: Well, that makes it a lot easier to do what you described of jump in and swim. I think one of the definitions I once heard that stuck with me for legacy code is legacy code is untested code. So, in some ways, you don't have legacy code anymore. You've got this great test suite around it.
+
+[0:41:54] TH: We have a big test suite now. I would still say there are probably parts that are not tested or not tested enough. Some things are just very hard to test, like the system audio integration, changing audio drivers, for example, is something that's not something that we can do well in a unit test these days. But over the years, we've added quite a bit of test coverage, I would say. We also have a strong code review culture. So, as I mentioned, engineers work on teams and we have the rule that every code that gets merged to main either has to be paired or has to be reviewed by at least one other engineer.
+
+It takes a bit of time to learn, okay, what engineers should you pull in for run-of-the-mill feature pull request is often your teammates. But if it's touching a subsystem that you're not familiar with, then you need to know, okay, I need to call this engineer or I need to ask that person who's been around for longer for a code review to help me. You can also reach out to these people earlier, obviously, to pair. 
+
+[0:43:10] KB: Awesome. Well, we're about at the end of our time. Is there anything else people should know about software development at Ableton?
+
+[0:43:17] TH: Maybe one thing to mention is what makes it fun working here is the great team and the great colleagues that we have here. I believe we have a very supportive team culture here and we also have our flaws, but this is one of the things that I enjoy most like coming into the office or coming on to Zoom, and working with these amazing people who make all of this possible. So, I think I can't give the team enough praise here for what they've done, especially this year with a release of Live 12 with Move last year, with a release of Push. So, we have a great team and I'm really proud of it.
+
+[0:44:01] KB: That's awesome. I feel like one of the things I've learned and as I've gotten up there is life's too short to work with jerks, right? You want to work with people that where you get into work and you're excited to work with them.
+
+[0:44:12] TH: Yes.
+
+[0:44:12] KB: Awesome. Well, let's call that a wrap. Thank you, Tobi.
+
+[0:44:15] TH: Thank you so much, Kevin.
+
+[END]

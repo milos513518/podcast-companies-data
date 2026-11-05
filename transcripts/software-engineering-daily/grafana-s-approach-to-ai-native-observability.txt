@@ -1,0 +1,330 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/07/SED1929-Grafana.txt
+EPISODE: Grafana’s Approach to AI-Native Observability
+DATE: 2026-07-02
+SED: 1929
+HOSTS: Matt Merrill
+PAGE: https://softwareengineeringdaily.com/podcasts/grafanas-approach-to-ai-native-observability/
+----------------------------------------------------------------------
+
+EPISODE 1929
+
+
+[INTRODUCTION]
+
+
+[0:00:00] ANNOUNCER: Advanced software systems have long been more complex than any single engineer can fully understand. Observability is the established solution to this problem. But with AI agents now generating code, deploying changes, and operating autonomously, the challenge of understanding large software systems is entering a new dimension.
+
+Grafana is an open-source observability platform and one of the most widely used in the world. The company builds tools that help teams collect, visualize, and act on telemetry data across logs, metrics, and traces. They are now extending that capability into the agentic era with AI- powered investigation and monitoring tools.
+
+Anthony Woods is a co-founder of Grafana Labs. In this episode, he joins Matt Merrill to discuss how AI-generated code is straining software operations, why telemetry data volume has become as much a problem as a solution, how Grafana is adapting to a world where agents are the primary consumers of observability data, and what keeps him up at night about where the industry is headed.
+
+Matt Merrill is a software engineering leader with over 20 years of experience building and scaling software teams across enterprise and product-focused organizations. His background is in back-end development, cloud architecture, and distributed systems design. He currently architects and delivers software products and leads a team of engineers at DEPT Agency. You can learn more about his work at code.theothermattm.com.
+
+[INTERVIEW]
+
+
+[0:01:48] MM: Hello, welcome to Software Engineering Daily. I am Matt Merrill, and I am here today with Anthony Woods, the founder of Grafana. Before we start, I am going to let him introduce himself.
+
+[0:02:00] AW: Thanks, Matt. Thank you for having me on the show. Yes, I'm Anthony. I'm one of the co-founders, there were three of us, at Grafana Labs. I'm based in Sunny Perth in Western Australia. It's a beautiful city. It's just far away from everything, which is okay. I spent a lot of time on a plane traveling around.
+
+I have a background in tech. I started off as a systems and network engineer. Then kept building automation tooling until one day I found I was just writing code full-time and becoming a software developer. And so, that was a lot of fun, being able to bring together all different parts of a system with tools we can build.
+
+And about 12 years ago, Raj Dutt and I, we started a little company called Grafana Labs based on Grafana, the open source project that Dutt had created. And we took that love of open source and of helping people understand the data and telemetry that getting out of systems and turned it into a business.
+
+[0:02:47] MM: That is awesome. I am super excited to talk to you because I am a back-end nerd. I've done pretty much backend stuff my whole life. I've always been at the intersection of back-end and DevOps. And so super excited. Today I want to talk about software engineering operations in the age of AI. And I kind of want to go into how you're doing this at Grafana itself, because that's a company at scale in this age. And also, what you're seeing happening with customers, because I'm sure you're seeing a lot of it. I think where I'll start is when you look at how software teams operated 5 years ago versus today, what do you think are the most significant shifts you're seeing in software operations?
+
+[0:03:29] AW: Yeah, I mean obviously things are shifting and changing very quickly. That's one of the big changes is just the speed of change, right? Both from a capability and tooling of what's available, but also just on the demands on engineering teams, right? The pressure for them to continually deliver more and faster.
+
+We've seen the big shift from building monoliths into microservices and the benefits that had for teams to have smaller teams with smaller scope so that they could move faster, right? And that has really worked. But the consequence of that is now we've got these very complex distributed microservice architectures where no one actually knows how the whole thing works together.
+
+They just might know their own little piece. And we've certainly seen that both internally for how we build our software. We find that that model works really well for velocity of development, but also adds that complexity.
+
+And so the way we combat that complexity internally and the way we see our customers doing it is with better observability tools. It just means collecting more telemetry data to understand what's happening. We look at all of these small little microservices. And they're really just little black boxes that are pushed into your production. And observability is that tool that turns that black box into a glass box, right?
+
+When it inevitably breaks, and they always do, you've got visibility to kind of see inside, see what happened, what went wrong. And that's becoming increasingly important now with the shift to AI where a lot of the code is not being written by a human, but it's still going to break. And so you need to have that visibility to know what's going on inside.
+
+And this is another thing I think that we've seen. 10 years ago, I remember maybe the conferences, maybe Monitorama, or something like that we would go to, there was this big push around. Measure all the things, right? Just because people wanted to capture more telemetry.
+And that really has come back to bite people with just the costs, right? We've got so much data now we're ingesting. It's expensive to ingest all that data and process it.
+
+But also, we see so many of our customers who run into problems where now they just have too much data. When things go wrong, they don't even know where to start looking, right? They're just overwhelmed by this ocean of data that they've got. Trying to help people trim that down and focus on what's the important data that you need to be able to solve the problem, not being overwhelmed, I think is really important. And so that's a good problem to have.
+
+And then I think the other big thing we're really seeing across the world is open source and the advantages, especially on the operational side. We're seeing technology changes fast. And historically, it was open source is a risk for a business because, "Oh, can you trust it? Do you know what's going to happen? Who's going to look after it?" Whereas now, businesses are looking at open sources as a must have just because that's where innovation is happening. You
+
+look at things like Kubernetes, right? You look at what we're doing with Prometheus ecosystem. Look at OpenTelemetry is a great example.
+
+Organizations are realizing that just to future-proof what they're doing on the operational side, they need to adopt open source technology, open source standards in these open ecosystems just to be able to get access to the innovation that's happening, but also move away from those kind of vendor lock-ins that people desperately want to avoid today.
+
+[0:06:23] MM: I am admittedly not familiar with OpenTelemetry. Could you say a little bit about what that is?
+
+[0:06:28] AW: Yeah, definitely. Anytime you're building an application and you want to kind of instrument it, there's a lot of choices for how you go and do that. When I'm writing my code, I want to emit logs, I want to collect traces or emit metrics. And so there's been a lot of different ways. A lot of vendors provide proprietary kind of SDKs and things that you can use. And so OpenTelemetry is the open standard, right? It's been around for a while, but now we're seeing where it's got the velocity, it's got the input, and people are actually using it and getting a lot of value out of it. And so it's a growing ecosystem.
+
+And so it's really just a standard practice for how you instrument your applications, and you collect that telemetry. It has you very good kind of semantic conventions, right? Things look the same. That way when you've got different teams working on different projects, building things slightly differently, the telemetry that's coming out of it should all look familiar, right?
+
+If I haven't worked in that team before, but I can go and have a look at their logs or look at their metrics or the traces, it should look familiar. Things should be named consistently where things are understandable. And just having that kind of consistent approach really helps. And obviously the huge advantage here is you don't want to have to be re-instrumenting your applications every time you change your observability vendor, right? It's a thing that you just want to do once and never have to think about again, but still have that ability to go and change the observability vendor over time or add additional tools or different capabilities. Having that open ecosystem, open standards and vendor neutral approach is very attractive for a lot of organizations.
+
+[0:07:51] MM: The HTTP of logging, that's the way I'm hearing it. Yeah, that's awesome. I can't believe I'm not familiar with that, but that is very interesting. And I'm assuming Grafana supports this. Are you supporting the project itself too?
+
+[0:08:04] AW: Yeah, definitely. We're I think the third contributor by number of commits that we made to the project. We're obviously very heavily involved in it. A lot of the products that we build within our Grafana Cloud platform. We have more opinionated solutions of how to do observability, how to do application observability or infrastructure observability. And a lot of that is built on the OpenTelemetry ecosystem.
+
+[0:08:25] MM: Gotcha. Cool. What you said about open source and open standards to me also intersects with AI quite a bit, which is where I want to kind of spend a lot of our time, right? And so one of the benefits, the many benefits that I see of open source is that it's well documented because it's out on the internet. These models can, for better or worse, scrape all this information and support it very easily without some sort of vendor lock in or paywall or something like that. Are you seeing that happening already in this space or perhaps not? Is it not caught up yet?
+
+[0:08:58] AW: No, definitely. I mean, we're really excited, certainly at Grafana Labs, with some of the AI capabilities we've been able to build into the product. Things like our Grafana Assistant, where we had a team - we were worried for a while. We saw AI coming. If you'd asked me 18 months ago, how's AI going to impact operation? I was like, "I'm not seeing anything useful." But then we did see that big kind of shift with some of the new models that came out beginning of last year, just at the end of 2024.
+
+And so we thought we were behind. We were like, "Oh, how would we catch up?" And then we had a team of just two people during one of our quarterly hackathons who put together the MVP of what is Grafana Assistant. And it was just amazing at how well it worked. It was able to understand what people wanted to do within Grafana and knew how to use Grafana. And so we were like, "How did you guys do this? Why does it work?" And they kind of shrug, "I don't know. It just does."
+
+But as we thought more about it, the thing that we realized was we've spent more than a decade building this great open source ecosystem of we've got 25-million-plus users around the world who love and use Grafana. But also, they blog about it, right? They write tutorials. They write guides on how to use Grafana to solve certain things. Everyone's got public GitHub repos, which has got their Grafana dashboards in it. And they've got configuration for how they've deployed it. They got a whole bunch of public information. And it's this information that the foundation models from, Anthropic, or Google, or OpenAI are trained on, right?
+
+Out of the box, the models know our technology. They know what our users are trying to do, and they know how to solve those problems for it, right? We've been able to kind of leap ahead of our competition by not having to go and train expensive models, right? We can just use the foundation models and then just build a tighter integration and build more tools and a more kind of integrated solution into our product rather than having to do all the expensive part of it. That's a huge advantage that we've found. And great minds we had 12 years ago when we decided to focus on open source. There's a great plan that we put in place. But it really has helped. And we see this a lot where even simple things asking Claude Code to instrument with OpenTelemetry. It knows how to do that, right? It can go and do that for you and add that to your code and make sure that it's collecting the telemetry that you need.
+
+[0:11:05] MM: That's amazing. It almost seems like good karma, right? You've put out this good thing into the universe, and now you're getting something back.
+
+[0:11:11] AW: Yeah. And it's a big kind of value for our organization, where we just have this mandate that comes from Raj itself is we just do the right thing. We do the right thing for our employees. We do the right thing for our customers. We do the right thing for our vendors. We just think that when you do that, it comes around, and people will do the right thing for you.
+Yeah, I'm a big believer in doing the right thing, and it's worked out really well for us.
+
+
+[0:11:31] MM: We used to have a saying at a company I work for, is like just do good work, and the rest will follow. And we knew more of that. You don't have to answer this if you don't want, but are you afraid that somehow this might turn around and bite you in the butt and somehow replace the tools. I don't personally see how that might happen, but I'm curious if that's on your mind.
+
+
+
+[0:11:51] AW: I mean, I'm generally a very optimistic person. I think there's certainly risk there, right? We can't just sit around and hope for the best, right? We are definitely seeing a change with observability. I think the main thing, especially for us, which is scary for Grafana Labs, is we've built our reputation on being the company behind Grafana, the dashboarding and the visualization tool, right? And it's something that users interact with.
+
+And what we're finding more both our internal use cases as well as our customers is that more and more, it's not humans that are interacting with the data anymore. It's agents that are going in doing queries, looking at what's happening in your environment. Trying to understand and kind of derive some kind of insights from it. And so we are seeing that shift where there's less about the dashboard itself. And so we're definitely making changes within our product to support that.
+
+We announced last week at GrafanaCON, we've got our new GCX project, which is our kind of unified command line tool. And it's designed for agents to be able to interact with our Grafana Cloud Service and all of your data and access it that way. But that said, I still believe that one of the things that's really important when it comes to AI giving you information is the trust but verify kind of piece of it, where it's pretty smart, it's pretty clever of what it can do. But sometimes it gets it wrong. And so you need to be able to have that information that you can go and look at to say, "Hey, how did you come to this conclusion? How did you make this decision?" Etc. And often the best way to remember that is still a graph, right? It's like, "Hey."
+
+And so we have that in Grafana Assistant when it'll do an investigation for you, it'll come back and explain to you, "Hey, I went and looked at this data. I saw this trend, or I saw this spike. And so that's why I've then gone down this rabbit hole to go and look for this problem." And so being able to just explain that with a graph is really easy, right? And that's something that the user is still going to want to be able to consume.
+
+[0:13:41] MM: That makes sense. It makes a lot of sense that, at the end of the day, mostly what you're looking for is the answer to a problem or a question that's causing a problem or a pattern or something like that. Are you doing things proactively? Is the tool looking at these patterns proactively at this point?
+
+
+
+[0:14:00] AW: Yeah. I mean, we have a few different things that we do. The age of AI, I think we're in it, but there's a lot to it. I mean, everyone kind of now just associates it with LLMs and kind of generative AI, but there's still a lot of other AI practices that we use internally to be able to get better quality data, right? Because the LLMs are great when you can give them a lot of context and kind of quality data, but it's the classic junk in, junk out. You want to make sure that they are getting kind of clean data coming in so that they can make the right decisions. And so we use a lot of kind of AI tools internally to understand your telemetry data.
+
+One a couple of things we do that for is we have something called a knowledge graph, right? Where we kind of look at all the telemetry and build a graph of all the different entities and how they relate to each other, right? So that you can say, "Hey, I've got this application." That's great. But I know that it's running on a pod, right? And that pod's running on a node, and that node is in a certain cluster in a certain region. And so you can kind of know the relationships, and that's great when we hand that off to the LLMs. Because then, suddenly, when they do see a problem, "Hey, I'm seeing a latency spike for this application," they then can traverse the telemetry and understand, "Okay. Well, I can find what node this is running on." And it's like, "Oh. Oh, look, I can see that that's got a resource contention problem. Oh, look, your latency spike is because you've got a noisy neighbor who's consuming all the resources." Right? And simple things like that. Sounds simple to us. But being able to understand all of that telemetry becomes really important.
+
+And the speed at which things are changing, right? In the old days, you would just have a CMDB database, and be like, "Oh, I can describe all my assets here, and it's a static thing." And the reality is every time you have one of those, they're out of date by the time they get updated. And so we wanted something that was dynamic and just generated by the data that's actually being ingested in real time. So that way, it's always up to date and it's always a representation of what your environment actually looks like.
+
+[0:15:41] MM: If I'm hearing you right, this is different layers and different applications of different machine learning, AI models that feed into reasoning models that can help you identify those patterns and things like that. That's awesome.
+
+[0:15:56] AW: Yeah. And I think that's really important. I think that's what we're seeing is just that the LLMs are very smart, but you have to give them the right data for them to be able to come to the correct conclusions. And so that's really what we put a lot of effort and a lot of focus on is how do we make sure that we're curating the data set appropriately. And we can use a lot of machine learning kind of tools to do that, as well as leveraging things like the open standards and open ecosystems. Leveraging things like OpenTelemetry means that we know the naming conventions and the semantic conventions, so we know what the data is representing. And that's kind of public information, so the LLMs can understand it as well.
+
+[0:16:28] MM: That's awesome. Just to pivot slightly, I think one thing on my mind is observability has been about humans understanding what's happening in a system. But as we use LLMs more in the applications themselves, we start to lose a lot of control and understanding of what's happening there. How is operations changing with that paradigm shift right now that you're seeing with your customers?
+
+[0:16:55] AW: Yeah, definitely, from our perspective, we see the shift to this kind of like agentic model of software design, right? It's just a new design framework. We had mainframes, right? And then we had monoliths. And then we've moved to microservices. And now we just see this agentic as just a new way of building software, right? It's got some different problems that are introduces of how we understand what's happening. But the tools we have for the most part get you a long way there, right?
+
+As we think about how do we understand what these agents are doing, it's typical kind of , application observability or APM, right? You want to be able to collect that telemetry to know what's happening. But then now we got some new types of data and things that are coming out that we want to collect as well, right? A lot of the conversations to understand. So we can go and run our evals and do interesting things, "Hey, are you actually giving correct responses?"
+
+And then, also when things go wrong, trying to understand, "Well, how did it get there?" Right? What was the input that kind of caused it to kind of go off the rails? And so we're seeing definitely demand across the market where people want tools that can just do this, that can just build into their agent framework. And so that's something we've had to do internally as well as we're building out our agents and capabilities, we needed to kind of understand this.
+
+
+
+And as we like to do at Grafana Labs, we're a company who just keeps scratching our own niche and solves our own problems. And then we share that with the world as products. And so we did the same thing, right? We announced last week that we now have in Grafana Cloud our AI observability capability, which does does this, right? It builds on top of OpenTelemetry to collect reward telemetry, and then collects additional things. The conversations and other data that's really important. And then builds an experience where you can go and have a look at the things that are important to you when you're building agents, which right now is reliability and quality, as well as cost, right? How many tokens am I burning for all these conversations?
+
+And which certain kind of workflows within my stack are the ones that are using the most tokens? And that could be a good thing. Often, we care about token usage because we want to see adoption. We want to see people using the tool. We're in the kind of phase now, the growth phase, certainly for AI. But there's going to come a time in the near future where, suddenly, people are going to be like, "Wait, let's think about how we can spend less on our tokens." We want to kind of give that visibility. Yeah, we want to give visibility to our users so they can understand what these systems are doing, right? And be able to kind of dive in. And when things do not go as planned, be able to kind of have the data they need to understand what went wrong so that we can make changes, right? So that we can improve things over time.
+
+[0:19:17] MM: Yeah. One of the questions I had was what you're seeing your customers, what does it mean to monitor an AI feature in production? And I think you explained a bunch of that. But what I'm wondering too is what are those hooks? What are those hooks into something like OpenTelemetry? If I'm sitting there thinking about how I might prompt a model to do something to me, are people saying, "As part of what you're doing, log out your reasoning steps to OpenTelemetry," or something like that, where you have another agent that does that. Or is it more deterministic coding before and after calling. What are you seeing in terms of those? Are they integrated with the APIs themselves in some way too?
+
+[0:19:59] AW: Yeah. For a lot of the - there is some good integration. You think about a lot of the tool calls, right? They're not really any different to any other kind of RPC call that you're making, right? Where you're going to want to measure is it actually getting a response, right? Am I getting valid responses coming back? You're going to want to look at latency, right? How
+
+long are these things taking to respond, right? Because that's going to impact the user experience.
+
+And you talk about what does monitoring mean or what does observability mean? Why do we do it? The main reason for it is to make sure that we're meeting our customers needs or our users needs. Meeting their expectations. One of the ways we do that with observability and the simplest approach we have is around the concept of SLOs's. Service Level Objectives.
+
+Rather than saying, "Hey, I'm going to go and monitor my CPU usage," because do I care if I'm using 100% CPU? Not really. Because I'm paying for a CPU, shouldn't I be able to use 100% of it. What I actually care about is what is the quality of the service I'm giving my user. Am I seeing a latency spike? That's something that I care about. And so being able to kind of pick what are those kind of core user experience, things that I want to make sure my application is delivering on. Reliability is a simple one, but even like latency. Depending on what your business is, you're going to have your own objectives.
+
+And so, those are the things that you're going to want to measure over time. And then as they change, then that's when you know something's wrong, right? If your users are constantly getting 500 errors, well, you know something's gone wrong, right? Or if maybe something simple, where if you see traffic drop off on your site, maybe that's an indication that something's wrong and you want to have someone go and look at it, or you want to have an agent go and look at it and give you an idea of what it might be.
+
+But there's ways to kind of collect all this data today, a lot of logs, a lot of traces, etc., where you can bundle this data. One of the challenges with traces, for example, one of the challenges we have with traces with this agentic model is just the volume of data. Those conversations that you want to have usually exceed what a trace can recently contain within a single span that it can send. We're having to use kind of supplemental kind of data stores to store that kind of information.
+
+And this is where we see then one of the nice things we like to be able to do in Grafana is we've built this ecosystem around integration and interoperability. We call our big tent philosophy, right? Being able to kind of bring data together from lots of different types of data sources and
+
+be able to kind of draw those correlations. And so we're able to do the same thing. We can go and build a new database. It could be a SQL style database that's storing all this information.
+
+But within Grafana, we can just stitch that together and be able to have you kind of correlate between my traces, where I've got all my traditional kind of APM data, but then be able to also tie that to all of the chat history or all of the other kind of context information that you want to go and store and be able to then visualize that in one place.
+
+[0:22:36] MM: Nice. Cool. Back to what you're doing inside of Grafana itself. You mentioned that awesome hackathon assistant thing. In terms of like just day-to-day operations, where are you seeing AI have the most operational wins for you? Maybe it's even outside of observability of itself.
+
+[0:22:57] AW: Yeah. I mean, we're definitely very bullish on AI capabilities across the organization, right? We have a mandate of like, "Everyone, try and use AI wherever you can." Right? So we can take advantage of it where possible. Obviously, we're seeing huge adoption and use within software development. It is great for building software for getting code out there and just being able to innovate quickly.
+
+We're actually quite fortunate because we see kind of the role of a software engineer is changing, right? It's less about the code, and it's more about engineers are becoming more product managers, where it's really about kind of understanding the user problem and then being able to explain that to your agent and will go and build the code for you. And that's something that we're again fortunate with at Grafana Labs where we've always had this kind of bottoms up kind of culture where our engineering teams have been responsible for the roadmap.
+
+We have a great product team and great product managers, but they're there to facilitate. So they bring the information in from our customers. They bring information for what's happening in the industry. And we can see and come and facilitate the conversations. But at the end of the day, we like our engineers to be responsible for the product roadmap, because we want them to own it. Part of that is because we are building products for engineers, right? So they do have good kind of intuition and insights needed.
+
+
+
+[0:24:04] MM: That's the dream. Yeah.
+
+
+[0:24:06] AW: Yeah. And so we've always had engineering teams and had a big focus on giving them autonomy to go and make decisions about product and to think about what are the needs of our customers and how can we go and solve that. And so that's now helping a lot with the tools that we've got where they are already experienced at being kind of mini product managers themselves. And so they're able to kind of leverage the tools quite effectively to go and build things and get new products shipped and delivered.
+
+The other area we see it where it's interesting is obviously more on the operational side is investigations. Understanding what has gone wrong. Again, I talk about the Grafana Assistant started as MVP. One of the things that we like to do with our products, we're scratching our own itch. And before we obviously release products to our customers, we want to make sure there's good product market fit. And the way we do that is we just make it available to our internal teams. And if they start using it without anyone telling them to, then we know it's a good product. And we saw this with the assistant, right? Soon it was in there, people started using it. They get paid for something, they just send the assistant, "Hey, can you go and tell me what do you think it is?"
+
+And it's remarkably good at doing those investigations and going through and finding the problems. That's been really powerful. We leverage that a lot to go and understand. It's not always right. But often, even if it's not right, it's going to kind of reduce the surface area that you need to go and look at, right? Because it will come with some suggestions, or it might exclude some certain problems, right? It really does accelerate our team's ability to go and find that root cause and solve those problems.
+
+The other area that we're seeing more and more, which is a little bit scarier, is as we see AI shift from just the development side into more of the deployment side. When do we start giving our agents keys to go and just, "You've written the code. Why don't you just go and deploy it?"
+
+[0:25:40] MM: This is where I get uncomfortable. This is where I get uncomfortable, yeah.
+
+[0:25:44] AW: I mean, it's a scary prospect. But I don't think we're far away from it. I mean, obviously, we see a lot of things in the news cycles with agents going deleting people's production databases. People, obviously, are a little bit scared about these kind of things. But me personally, I don't think we're that far away from it. But I'll caveat that a little bit.
+
+And I think one of the things that we see is that we don't inherently trust the AI to do the right thing. That's okay, right? We shouldn't, right? We should be kind of cautious. Because if there is an opportunity for it to do something wrong, it will find that opportunity eventually. But for me, I don't think that's any different to how we treat people, right? The number of times I've said to someone, "Oh, we don't need to worry about the normal kind of process. It's just a small change. It's not going to affect anything. I'll just deploy it in production." Right? And then it's like, "Oh, oops. I didn't expect that was going to happen."
+
+And so, always, we need to protect ourselves from ourselves already today. And so certainly at Grafana Labs, we have a whole bunch of tooling in place in our CI/CD pipelines that put physical gates in place where it just prevents you from being able to do the wrong thing. You can't go and do a change where the blast radius is global, right? Like it has to be small blast radius, limited impact. If something does go wrong, it's not going to impact all of our customers all at once.
+
+We have things around cost management, right? When we do a change, we have a CI check that runs and says, "This is going to increase spend by 10x." And you can't do that, right? And so like we have got all these physical gates in place that prevent people from making mistakes. And that also works then for agents. Once you build these gates in place where they're hard blocks that stop the agent from accidentally shooting itself in the foot, you get closer to this reality where you can start to let it do some things in your environment. And I don't think we're far away from that.
+
+But I think that having those controls in place is an organization maturity thing, right? It's taken us a long time to build that, right? Because we add new checks in place every time something goes wrong that we didn't expect were going to happen. And that's easy enough to do with people, because we move much slower. The scary thing for an agent is that they can move very
+
+fast, right? So they can make a lot of mistakes very quickly. And so we're going to have to make sure we've got the right kind of controls in place.
+
+And so that's going to be I think the thing that will allow us to give the agents a little bit more control to go and deploy things. They can write code, they can go and deploy it. They can observe it and see is it having desired effect? Is it working correctly? If it's not, make some more changes, go and deploy it, right? And just shorten that feedback loop so that they can base their changes based on direct feedback from users and what's happening inside the production environment. But it's a scary thing, but I also think it's exciting, right? I think it's an exciting challenge, right? Because we want to get to that place where we can free it up.
+
+Because right now, as software engineers, often our job is to balance the how do I deliver faster and balance that against how do I keep the system reliable and meeting my customers' expectations, right? And so we can write a lot of code right now. We can develop a lot of new features with the AI, but we're still kind of bottlenecked on how quickly can we get that in production and validate that it's actually working. And so I think once we can get past where we can give agents a little bit more control, then that whole cycle then accelerates a little bit faster. And so we can then ship faster, and we can get better insights and kind of keep iterating and going. And it's a scary prospect, and I think there's going to be a lot of pain along the way. But I do think it is coming. We just have to find ways to do it in a controlled, safe, as possible, approach.
+
+[0:29:04] MM: Yeah, there's definitely a risk analysis that needs to happen there, and how you step slowly into that, and if you have the right checks and balances. I can't wait for some of the stories that'll come out from this. Honestly, it's going to be unbelievable.
+
+[0:29:17] AW: I'll give you an example of what we're doing at Grafana Labs. One of the things we're automating is when we see - we do a deployment, and be small scoped into a specific subset of users, right? And then we can go and look at that and make sure it works. And so we have some automated checks that we can leverage Grafana Assistant to go and say, "Hey, are there any problems? Are there new errors showing up, et cetera?" And if it does find problems, we just have it automatically open a PR to roll back, right? And so those kind of actions we're seeing kind of creep in.
+
+
+
+We still have a user look at that and approve that PR before it happens, but it's the simple things, like, "Oh yeah, this is just a simple roll back. Can approve that." And it will just roll back to the previous release and we can then go and fix it. And so we are seeing these things where we're slowly giving the agents a little bit of operational control because they can do things much faster than we can. But we still need people in the loop right now.
+
+[0:30:04] MM: Yeah, self-healing system. It also depends on where that change or what change it's making what it's affecting. I don't know how I'd feel about an agent deploying like a data migration on millions and millions of rows of data. But thinking a front-end fix, something like that, something that could be easily rolled back. Hey, why not?
+
+[0:30:22] AW: Exactly. Yeah. And I think that's where we're going to start is those safer operations. We're going to be more comfortable giving the AI tools. But we'll definitely see there'll be bunch of young startups where they're very risk-tolerant. I just care about moving fast, right? And they'll go nuts, right? They'll just let it do whatever it wants. And some databases will get deleted, but that's okay.
+
+[0:30:42] MM: Hopefully not important ones. Let's talk about the people using these tools, right? As AI handles more of this operational work, how do you see the role of like SRE, DevOps engineer, platforms engineer changing? Do you think they're getting bigger, smaller?
+
+[0:31:00] AW: I mean, I think right now they're bigger, right? Just simply because the volume of new software getting deployed is just growing so quickly, right? That said, I think they're getting left with - well, for me personally, right? They're getting left with the harder problems, right? So a lot of the toil, the simpler work that the SREs used to do, can be done by the AI now and be done by the agents now, which then leaves the SREs to focus on more high value kind of piece of impressions around the hard problems. How do I go and diagnose this? Or thinking more strategically around how do I build a more reliable way of doing things? More kind of process- orientated. Or go and find you know how that AI is not supporting the needs of the business or helping you kind of drive things forward.
+
+Right now, I think there's just growing need for it. We're shipping a lot of code. It's of questionable quality sometimes. We do need more of that kind of SRE kind of practices to you know make sure we are thinking about reliability. Make sure we understand, "Can we measure it? Are we making sure that, as we're building cool features and new tech, is it delivering the value that we want it to have and meeting our customers expectations?" And most importantly, when things go wrong, do we have the data to be able to understand what happened. What went wrong so we can go and fix it? I think that's definitely the case.
+
+As that changes over time, I think, yeah, we're still going to need those practices. The thing that scares me the most both from an SRE perspective and also software development is just that, because all of the easy things are being kind of taken care of, that's kind of the work that you give your junior people or new grads, where you just have to go and do it. And as you're doing it, you learn, right? You learn how these systems work. You learn what to do. But as we take that opportunity away, it's like how are we going to give people the opportunity to develop the skills that they need to become these experienced kind of senior SREs that we're still going to need, but they're not going to have that path, right?
+
+And so that's the thing that scares me a little bit is what's going to happen in 10 years time when we realize that, "Oh my god, we just don't have anyone who has the skills that we need." I don't know how we fix that. I think it's the same with software development, right? We still need really experienced software engineers. But the new grads and kind of juniors aren't getting the opportunity to develop their skills, where they can have that experience, right? Where they've learned things the hard way and have gained that experience, right? They've earned it by making a lot of mistakes along the way. But we're taking that opportunity away from people. I think that's the scariest thing for me when we think about the future.
+
+[0:33:16] MM: The high-level thinking that's needed just keeps getting more and more and more. And it goes from reactive and detail-oriented things to proactive high-level thinking. Yeah. I'm in the software engineering game. We're seeing the same thing.
+
+I wish I knew who the author was. But I saw an interesting thing of one potential way out of this is to go back to like an apprentice journeyman master model, which I am a huge fan of software is craft. And I thought that that was really interesting, where it's like the only way that you are
+
+going to get this experience is by sitting a shotgun to an experienced person and feeling the pain with them and seeing their line of thinking. I think that's especially interesting with SREs because you're reacting to these potentially nasty problems and trying to unravel that. And so I thought that was a really interesting one.
+
+[0:34:09] AW: Yeah. It is an approach. I think the scary challenge is it's an expensive approach where you're not getting immediate value from, right? And I think a lot of businesses and organizations are going to be like, "Sure. Why don't we just let some other company be the ones that train all the people, and we'll just keep using the agents, right?" I think it's going to be very difficult to find that.
+
+I think one area where we do see this opportunity is still open source, right? We'd love to kind of engage with our community. We do get a lot of young people who come and contribute, and that's our opportunity to kind of coach them, right? And being open source, we're happy to invest that time to nurture those people so that we can help them develop their skills over time.
+
+I will see there will be more of those community-driven kind of ecosystem, because I do think this idea of training people up to be productive so that they can leave and go get a job at another company. It's not going to be an attractive option for a lot of organizations.
+
+[0:35:01] MM: It's a really good point. Yeah.
+
+
+[0:35:04] AW: I do think more of that like as software engineers as a community, I think it's our opportunity to find ways to kind of nurture those people coming through and give them opportunities. I think open source is a great way to do that, right? There's big code bases.
+There's opportunity to write code. There's ways we can kind of communicate and share ideas and help kind of train and coach people a little bit to give them the experience that they're going to need.
+
+[0:35:23] MM: Well, also, not all apprentices in the trades are paid either, right? And so we've been spoiled in this tech industry. High paid internships that lead you to a high paying job. The playing field may be leveled. But yeah, good points. Good points.
+
+[0:35:38] AW: Yeah. But I think even like a lot of the people I talk to, colleagues I've got, even still people we hire today. I love to go to we do our onboarding in-person and get people to go and talk to the new starters of what's happening. And a lot of them have similar stories, backgrounds to me, where they're very self-taught, right? And I think that's true within this industry where a lot of people love the technology. They're excited about it. They love the fact that things are changing all the time, and there's always new things to do. And so you have to have this mindset of wanting to go and teach yourself and learn new skills.
+
+And so I think that's still going to happen, right? But I think open source is a great avenue for that where it's an opportunity for you to go and do something off your own bat to develop those skills that you're going to need in the future. Because the speed at which things are changing in this industry, you have to be committed to a life of learning. Because you blink and there's a new JavaScript framework.
+
+[0:36:27] MM: I hadn't planned on talking about this, but I feel like it could be fertile ground. So, are you seeing open-source projects struggle with the amount of code that agents are producing? Or what are you seeing in your area?
+
+[0:36:38] AW: A little bit both from the volume as well as the quality. It's very easy to have an agent just go and build a feature, right? But just because it works doesn't mean it's code that you want to maintain over time. And so that's I think where we're seeing the challenge is I think this is still where there is that challenge with the AI assisted kind of code tools, where we put a lot of thought into kind of like the architectural design and guiding principles for how we build code. And every organization is different, but you end up building your view of the world and how you want code to look. It's got consistency. And so it's much easier for your teams to kind like people to move around between your teams, right? Because the code bases are all similar kind of layout. You're using similar kind of practices for how you go and build code. And so things look a little bit more consistent.
+
+Whereas when you start getting the AI in, it doesn't care about those kind of things, right? It's just going to find a solution that works and go and throw that code in. And so there's a lot more work that has to go on to think about and care about maintainability, right? That certainly affects open source, where you don't just want to accept any pull request that adds any new feature.
+
+You want to think about is that feature right for this project. Is that something that we can maintain over time? How does that impact kind of the rest of the ecosystem?
+
+And so that's where we're seeing the challenge is that you'll get people that will just submit a pull request that'll be 20,000 lines of code that the AI is generated for them. And you're like, "Well, no. We're not going to review this. It's too big. It's too much." This is not how we build software. You need to kind of break this into smaller chunks, and so that it can be reviewed, and so it can be maintained over time and understood.
+
+And so I think that's the challenge that we're seeing is code is a collaborative business, right? Especially for open source projects. And so the agents have to fit into that collaboration mindset of not trying to overwhelm people with too much change all at once, because it's just not going to get accepted, right? It's too hard to review. It's too hard to maintain over time.
+
+[0:38:31] MM: And to your earlier point, these things might be learning moments for people that are less senior, too. Yeah.
+
+[0:38:37] AW: Yeah, definitely. Yeah.
+
+
+[0:38:39] MM: Let's move towards the future a little bit. What's the operational problem that you think AI and these tools are going to crack in the next 2 or 3 years that people are still doing manually right now, even right now with the existing tools that we have?
+
+[0:38:52] AW: Yeah, I mean, I think right now we're at the stage where AI can be that first responder when something goes wrong in your environment, right? An alert gets fired because you've got an SLO burn, and it's like, "Hey, error rates have spiked. Something's wrong." You're going to page your on call person. But at the same time, you can go and spin off - certainly in Grafana Cloud, you can go and spin off an investigation. So, "Hey, go and try and work out what's wrong." Right?
+
+By the time your on-call engineer gets in front of their PC, there's probably already a response to say, "Hey, this is maybe what the problem is." They may have worked it out or it may have excluded a whole bunch of things. Having that, I think, is where we're going to see over the next
+
+few years. And that's just going to get more reliable and more accurate over time. We're going to build more playbooks. We're going to build more skills for it so it can do more interesting things. But I think that's where we're seeing it, is that first responder, as soon as you notice something wrong in the environment, it will go in and it will try and troubleshoot that and find that root cause for you. That way, instead of it taking an hour to find that root cause and kind of solve the problem, we're now talking in 10 minutes, right? We can go and get things patched up and move on.
+
+We're still going to have the follow-up process, which is so important for our SREs, is to go and actually don't just stem the bleeding. Let's go and fix the problem. That's still going to be important. But again, you can leverage some AI tools to kind of process more data and kind of do those kind of things. But I think the near term, so the next couple of years, that will just be standard, right? There'll just be an expectation that 60%, 70% of the problems are kind of resolved before your on-call person even gets in front of a computer.
+
+[0:40:18] MM: Yeah. Because right now, for resiliency in systems, we rely on redundancy and things like that. But I think what you're saying is what we're starting to trend towards is actually in a limited sense, but a self-healing system, a dynamic self-healing system, which is pretty amazing.
+
+[0:40:36] AW: Yeah. And I think that's going to be really important just because of the speed at which software is being shipped, right? If you want to move fast, you're going to inevitably break sooner, and more frequently, right? Because you're trading speed for accuracy, right? And so the need for better observability just becomes more apparent. You're going to want to make sure you've got the data that you need so it can go and fix.
+
+But also, we're just seeing AIs are being able to use that observability data to understand what went wrong. And that feedback can be really fast. And that's just going to help us be able to ship things faster, but also maintain the level of reliability that our customers expect from us.
+
+And I think the other thing that we're seeing AI very good at is obviously processing huge volumes of data, right? Going and looking for those kind of trends, those hidden things that a user hasn't noticed. We do a lot of that internally, where we can just say, "Hey, just go and query
+
+a huge volume of logs and find what's interesting." We're seeing that use case change. We've recently made changes to Loki, so a log aggregation system, to just be able to do that smarter and better, right? To fit with that use case of what AI agents want to go and do. We've made a whole bunch of architectural changes and performance improvements so that it can query 10 times faster. Yeah, more importantly, when you give it a query, it can reduce the volume of data that it needs to go and scan and look at to go and do that.
+
+[0:41:52] MM: I'm curious at a high level what those architecture changes look like. That sounds like a very interesting problem. You can't talk about it.
+
+[0:42:01] AW: I can. Yeah. Yeah. We announced it last week at GrafanaCON. It's in open source, right? Yeah, I can definitely talk about it. I mean, I'm allowed to talk about it. Whether I understand it as well as the people who have written it, that's a different question. What we really think about is Loki was designed for cost efficiency. How do we store huge volumes of logs as cheaply as possible? And the way we do that is just don't index them.
+
+The use case we designed for was the developer use case where you just want to kind of grep basically through your logs. Look at the log message. I'm like it's not that message. You just keep excluding things. Or you might have, "Oh, I'm looking for a certain string process."
+
+[0:42:38] MM: Process of elimination.
+
+
+[0:42:39] AW: Right? That's what we kind of optimize it for. But more and more, we see people wanting to do more kind of analytic style queries or needle in a haystack queries more often, where they're like, "Hey, I've got a transaction ID. And I knew it happened sometime over the last four days." Go and find it everywhere in their logs. And so Loki was designed to be cheap to ingest data, but we wear the cost on the query side, where we just brute force it. We'll just go and look at all the data and look what it's trying to do. And it can do that quite efficiently, but it still takes time when you're talking about terabytes and terabytes of data that you want to go and process every second.
+
+One of the big changes we've made is we kind of introduce kind of similar to like Bloom filters, but it's a slightly different kind of approach, where we can then know which portions of the data
+
+to go and look at and which ones we don't need to worry about. If you're doing that needle in the haystack query, we can very quickly say, "Hey, actually, you don't need to go and look at the petabyte of data we've got. You actually only need to look at these 10 terabytes that we've got here." And it can do that very, very fast. That's one of the ways.
+
+The other way is we've just put a lot of effort into the query engine itself just to optimize it and just make it faster. Being able to paralyze it as much as possible because that's easy to do with compute systems today, where we've got a huge volume of compute where we can just go and spread out the workload and get things done as fast as possible. That works insanely well for us as a cloud provider, where we've got the benefits of kind of statistical multiplexing, where we've got thousands of users all using it, right? We can provision a very large infrastructure estate.
+And not every user is querying all at once, right? So we can say, "Hey, this one user is querying at this second, they can go and use a thousand cores." And then the next second a different user uses a thousand cores. And so we can get really fast response times because we've got a bigger environment that we're able to kind of build on top of.
+
+[0:44:18] MM: Efficiencies of scale. Yeah.
+
+
+[0:44:19] AW: Exactly. Yeah.
+
+
+[0:44:20] MM: Ooh, man. I would love to just talk about that for an hour. That sounds interesting. All right, so couple of wrap-up questions. This one I'm really curious about. What's an operational scenario that keeps you up at night, especially related to AI? Something that you think the industry isn't taking seriously enough right now?
+
+[0:44:38] AW: Well, that's a good one. I think one of the challenges for me is just a lot of the AI agents that are being built today are just black boxes, right? And we don't know what they're doing. Sometimes we don't want to know. I think that's the scary thing is the speed at which these systems can operate and make changes and do things, right? Because we've moved from the chat to this agentic model, where it's like let the AI do things, and not just respond to questions. That scares me when you've got these black boxes that are just no one knows what they're actually doing, right?
+
+We have a mandate internally where engineering teams are leveraging AI wherever they can to build software, right? But at the end of the day, the person who merges that, they're responsible for that. They're accountable for that. And so I get scared about when that starts to erode, and it's like, "Well, who's actually accountable for the things that are getting deployed into our production?"
+
+I was having a conversation, someone, actually just yesterday talking around kind of like this governance problem. We're seeing more and more agent-to-agent communication. What happens when you've got an agent in your organization talking to an agent in another person's organization, and they're just doing things and something goes wrong. Who's accountable for that? Whose fault is that? Who's responsible for kind of remediating that and take accountability. That's the thing that scares me the most is around - well, I guess two things. One is the black box aspect of it of like what are these things actually doing, and the other one is the accountability. Who's responsible when things go wrong if we are giving all this autonomy to our AI agents?
+
+[0:46:06] MM: Some really interesting legal and contractual things that'll come out of that as well. Yeah, that's a really good point. It always comes back to humans anyway, right? What's the throat to choke if something goes wrong?
+
+[0:46:17] AW: Yeah, that'll be the most lucrative career in the future, where it's just AI scapegoat, right? Blame me. Yeah, I'll take responsibility.
+
+[0:46:28] MM: Blame me. AI insurance. Ooh. Okay. Hey, do you want to make a new startup? No, I'm just kidding. All right, let's close with - I always like to leave the audience with something. If you could give one piece of advice to our audience about how to evolve their operations for an AI-first-world, what would it be?
+
+[0:46:45] AW: Yeah, definitely. My strong opinion about this is don't go and build an AI solution. Make AI part of the solution. We've got so many great products out there. You don't need to go and write a new product that's AI-first or something. Really, where we see the value in AI is when it's behind the scenes, right? When it's not in your face there. It's just things just seems to
+
+magically work, right? And you don't think about it and you don't know why. You just know that it works, right? And you got the response that you want.
+
+As we think about AI, I think that's the approach that we want to have is leverage it. It's great capabilities, but it doesn't need to be the only thing that you're doing. You think about when the internet came along, right? it was a new and shiny thing. And everyone's like, "Great. It's now internet-enabled." Now we don't care. It's just an expectation that things should just work. And it happens to work because it's leveraging the internet and the technology that we have. I think AI, we're in that same phase. Right now we're in that hype cycle where everyone wants to label everything with, "Oh, it's AI. It's AI. It's AI." Where, really, users are going to care less and less that over the time. What they actually just care about is does it work, right? Is it doing the thing that I want it to do. And does it make me happy.
+
+I think that's the focus is just making sure that your AI kind of works with existing kind of workflows. It's coming to meet people where they are and help kind of accelerate what they're doing and not trying to force them to have to go and do things they don't want to do.
+
+[0:48:04] MM: Well said. Well said. Well, thank you very much. Really appreciate your time.
+
+
+[0:48:10] AW: No worries. Thank you.
+
+
+[0:48:11] MM: Learned some very interesting things. Thanks for being here.
+
+
+[0:48:14] AW: Thanks a lot, Matt. It's been a pleasure.
+
+
+[END]
+
+
+
+

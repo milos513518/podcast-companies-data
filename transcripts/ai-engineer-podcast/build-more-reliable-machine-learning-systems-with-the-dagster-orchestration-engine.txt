@@ -1,0 +1,495 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Build More Reliable Machine Learning Systems With The Dagster Orchestration Engine
+DATE: 2022-12-02
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/dagster-ml-orchestration-episode-14
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63853053846104646175159ac5-5d5d-4265-8110-45ee0d55871fv5.mp3
+DURATION_SECONDS: 2743
+TRANSCRIBED_AT: 2026-09-17T03:24:13Z
+----------------------------------------------------------------------
+ Hello, and welcome to The Machine Learning Podcast. The podcast about going from idea idea to
+delivery with machine  learning. Your host is Tobias Macy, and today I'm interviewing Sandy Rizza
+about the role of data and machine learning projects. So, Sandy, can you start by introducing
+yourself?  Yeah. I'm Sandy. I'm the tech lead on the open source Dijkstra project. My career has
+been a mix of working as machine learning engineer, data scientist, data engineer, and then working
+on sort of general purpose software that helps people in those personas do their jobs. And do you
+remember how you first got started working in machine learning? Yeah. So I was working at Cloudera
+almost 10 years ago. If you aren't familiar with Cloudera, it was basically the company or the first
+company that was trying to make money off of Hadoop. I was a software engineer, and my job there was
+contributing features to the open source MapReduce project and the open source, you know, Apache
+Spark project. I had taken ML classes in college. And the reason I was kinda originally interested
+in joining Cloudera was I was excited about this idea that if you had lots of data, you could build
+really powerful ML models that let you answer questions that were kind of fundamentally unanswerable
+before. I had seen this lecture by Peter Norbigg on this topic of the unreasonable effectiveness of
+data, where he basically showed that you could beat state of the art results on a bunch of natural
+language tasks by using simple models with tons of data. And so Cloudera had a data science team. It
+was run by Josh Wills. And if you don't know him, he was kind of 1 of the first Internet data
+science personalities. He's also a very talented data scientist, but he helped to define the domain,
+define the term. His boss at the time was Jeff Hammerbacher, who founded the original data team at
+Facebook. Many claim actually coined the term data science. So I was excited about machine learning
+on big data, and I basically begged Josh to let me join. I contributed to this open source library
+of machine learning algorithms that we had that were written in MapReduce, and he kindly let me on.
+Data science has come to mean a bunch of different things over the years, but, you know, in in that
+role, a lot of it was basically machine learning consulting. So, for example, I would go to a bank,
+and I would help them figure out how to turn all their transaction data into some sort of fraud
+model that they could use to predict transaction fraud. Or I would go to a telecom company and help
+them figure out how to turn all their their interaction data into some sort of churn model that
+could help them figure out which of their customers were likely to stop using their their service.
+That was really fun getting this kind of, like, broad exposure. And I liked that. But I also found
+it frustrating that I couldn't go deep on problems. Like, so much of being successful in machine
+learning is being able to deeply understand a domain and all the intricacies of how to model the
+features of that domain, and there wasn't really that opportunity. So I ultimately left to move on
+to jobs where I could be working on a single ML application over a large period of time and spent a
+number of years in that role. I can also talk about how I got uninvolved in machine learning.  Let's
+dig a bit into that because, you know, this is an ML focused podcast, but that doesn't necessarily
+mean that everybody listening is actually working in ML. And it's always fun to dig into some of the
+kind of behind the scenes because it's easy to get swallowed up by the hype of, oh, ML is amazing,
+and it solves every problem. But, you know, it'll be fun to hear about sort of why you maybe fell
+out of love with ML.  I still fundamentally believe ML is amazing, but I found that in these various
+roles that I was in, doing machine learning was just a big pain. So much of machine learning was
+building machine learning pipelines. And the tooling that was out there to build these pipelines
+just did not feel like it matched the needs of what I was trying to do. I would end up spending half
+of my time in these roles building kind of bespoke internal tools to help myself and my team be more
+productive at building machine learning pipelines. And I got excited basically about trying to do
+that for a more general audience, which led me to join elemental and work on DAGSTER, which is kind
+of a more general purpose version of these tools that I had worked on internally at these companies
+when I was in a more machine learning forward role. I think a lot of the dream for my current role
+is that when I go back to being a machine learning engineer, I'll have a set of tools that will
+allow me to do my job a lot better. In terms of the kind of ML ecosystem,  the topic at hand for
+today is the conversation around orchestration. And for anybody who maybe isn't already using
+orchestration or, you know, maybe has a different concept of what that constitutes. I'm wondering if
+you can start by giving us a definition of orchestration from your perspective, particularly as it
+pertains to the context of machine learning so that we can have a common baseline to work from?  So
+I think orchestration is fundamentally about modeling dependencies. In a world without
+orchestration, you end up with this big pile of stuff. So in the world of machine learning, the pile
+is gonna include chunks of code that transform data or train models or evaluate models. And then the
+pile is also gonna include data assets. So these are the datasets that you operate on, the machine
+learning models themselves. Every object of these chunks of code will read and produce. And so
+concretely, this often manifests as huge Jupyter Notebooks with mountains of cells and then file
+system with tons of files. Like, you know, training set underscore final final dot CSV. And the goal
+of orchestration is basically to introduce some order into this chaotic pile. So to say, this is the
+function that builds the feature set from the base datasets, and this is the function that then
+takes the feature set and uses it to train the machine learning model. And then this is the function
+that takes the machine learning model and back test it. And here's a single system that knows how to
+execute all of them and do it in the right order. So orchestration in the context of machine
+learning is basically a harness for defining machine learning pipelines. When you've gone and
+explicitly define these dependencies between these entities, you suddenly get this whole host of
+advantages. So you get to offload a ton of cognitive burden because the system becomes in charge of
+remembering what has executed, what needs to be executed. You get reproducibility because you can
+guarantee that you're doing the same thing every time you retrain or back test your model. And then
+you have an easy path to production. So being able to put a machine learning pipeline into
+production basically means being able to take your hands off of it and have it run on its own. And
+if you define your dependencies in a common harness, you're almost all the way there to doing that.
+I think, you know, 1 way to better understand the role of orchestration and machine learning is to
+compare it to some sort of similar concept. I think there are a couple of common misconceptions
+about the role of orchestration in machine learning. 1 of them is that orchestration is just for
+production that you bring in an orchestrator at the time that you decide to deploy your pipeline. I
+think fundamentally understanding dependencies and executing stuff in the right order is just
+important in a training iterative environment. It's just that most orchestration systems are really
+clunky, and it's too painful to use them at at that stage. That's not some sort of, like,
+fundamental limit of the utility of orchestration. The the other 1 is that the word orchestration
+often gets used interchangeably with workflow management. I think there's a lot of overlap between
+those 2 concepts, but also there's a distinction, at least in data heavy domains. So workflow
+management is all about executing work in the right order. If you use a tool like airflow, the
+fundamental abstraction is a set of tasks with dependencies between them. Do you wanna execute in a
+particular order? But what workflow management ends up missing is understanding of the data assets
+that those functions are operating on. So if you only model dependencies, like, execute this task
+after this other task, you miss a lot of what's actually going on. Even if the datasets that you
+build features from are updated hourly, likely don't want to actually retrain your model every hour.
+It wouldn't change significantly. It could be really computationally expensive to do that. But
+capturing that dependency, even though it's not a execution dependency, is still really important.
+You know, if you make a change to 1 of your core datasets and need to backfill everything, then
+you're gonna need to use that dependency.  To your point of orchestration being seen as this
+heavyweight piece that I do after I'm done with the machine learning kind of experimentation and
+testing part, what are some of the aspects of maybe the existing suite of orchestrators or the kind
+of ecosystem of options and utilities for doing that orchestration piece that make it maybe painful
+or cumbersome to bring in earlier on in the development process?  I think in development, you
+basically want the experience to be as lightweight as possible. I think for most machine learning
+engineers, that means working in a native Python environment, defining functions or executing cells
+within a notebook. If you look at a lot of existing orchestrators, they're heavyweight in a couple
+of ways. 1 is that they require you to run sort of, like, long running services in order to do their
+job. So if you're using airflow, you have to run a scheduler process. You have to provision a post
+database. You end up in this world where you're, like, running multiple Docker containers just on
+your local machine to be able to do like a simple training or data transformation step. Another 1 is
+the ability to separate the way you do things in local development from the way you do things in
+production. So even if you want this, like, really tight, lightweight development loop when you're
+experimenting with your models, you know, when you actually deploy that ML pipeline to production,
+want the ability to isolate things. Maybe have each step execute inside of its own Kubernetes pod,
+store intermediate results in s 3 instead of a local file system. So you need a system with the
+right abstractions that allows you to do the lightweight thing, you know, at the time when you need
+the lightweight thing and then do the heavyweight thing at the time that you need the heavyweight
+thing. And of course, this is a, you know, a big lead up and has informed a lot of the design
+choices that we've made when building Daxter. The first priority for us has been this very
+lightweight local development experience where you can execute, you know, your entire pipeline just
+in a REPL without loading any external processes. And then if you want to have, like, a web UI and
+get a deep understanding of what's been happening over a series executions of your pipeline, you can
+load that up as well, and that's very lightweight.  From your experience as somebody who is building
+an orchestrator and who has a machine learning background, I'm wondering what your perspective and
+evaluation or assessment of the current ecosystem of orchestration options looks like. Some of the
+ones that come to mind of orchestrators that are focused specifically on ML are things like Kedro or
+MLflow or Metaflow or Kubeflow. I'm wondering what you see as kind of the interesting
+differentiators of what makes those specific to ML and maybe some of the challenges that that
+introduces versus a more generalized orchestration engine that can also accommodate the requirements
+of machine learning?  I am likely to take a somewhat extreme and hard line stance on these kinds of
+issues. I fundamentally believe that you don't need special and those specific tooling for most and
+those specific tasks. Machine learning engineering is a subset of software engineering, and a lot of
+the tools and practices that work generally for moving data around, for orchestrating data work just
+as well within a machine learning context. And you get a lot of advantages by not trying to
+specialize too much. So every machine learning pipeline happens within the context of an
+organization's broader data infrastructure. You'll have a few steps that are training your model and
+perhaps running some evaluation on that model. But that's within this, like, much larger context of
+data transformations that are happening. For example, prior to the steps where you're training your
+model, you're gonna have some feature engineering steps, and those are often gonna depend on just
+more generic data transformation steps that are used to derive the core data that ultimately gets
+used to train and evaluate your model. And then after you've actually trained your model, often
+there's a whole other set of steps that are required to understand the ultimate impact that it'll
+have on your business. So, for example, if you're building a model whose job is to figure out what
+loans to get to give out, often a new version of that model, you can you can take that and infer
+some rough revenue impact on your business. Like, how much will this change the set of loans that
+that we give out? How much will we improve our ability to determine what's a good loan to give, and
+what's the dollar amount of that? So if you have the ability to orchestrate the ML steps across
+these broader steps, you have this ability to answer these much bigger questions. Like, if I change
+this fundamental way that we model this core dataset, what is the ultimate revenue impact that's
+gonna have on our business via the effect of that change on the model and the model's effect on the
+business?  As far as the specifics of machine learning workflows and some of the ways that those
+introduce challenges to this question of orchestration, some of the things that come to mind are the
+need for being able to manage different experiments and be able to, you know, understand what are
+the different steps in the execution graph so that I can run it all the way through to completion
+and then say, actually, I wanna branch from, you know, step number 3 and go a different direction
+with it, but I also wanna be able to preserve the alternate branch that I came from, or I wanna be
+able to version the data along with the code so that I can be able to, you know, backtrack and go
+back to where I started from. And then also the potential for introducing cycles in the graph where
+most orchestration and data pipeline workflows focus on an acyclic graph, so I don't want to have
+any cycles and just some of the ways that that complicates the question of being able to bring an
+orchestrator into a machine learning workflow, particularly in that kind of early iterative phase
+before you get ready to put it into production.  As you brought up, it's really important for an
+orchestra to be able to like, if an orchestrator wants to participate in the machine learning
+development process, it has to be able to handle these kind of patterns that show up in machine
+learning, but don't show up as much in traditional data pipelines. And as you point out, this
+branching is really important. This ability to do this kind of iteration, stop in the middle, pick
+up where you left off, or pick up and pursue a different line of experimentation. Right now in the
+world of Dagster, we have a integration with MLflow that we think is useful for tracking the results
+of machine learning experiments because MLflow gives us domain specific view of those experiments
+that we think users find very useful. But the core orchestration, we think, ends up pretty similar.
+Whether you're doing basic data pipeline or machine learning orchestration  In terms of the kind of
+integration with MLflow and being able to hook into that system for managing that cycle, what are
+some of the kind of interfaces or pieces of information that need to be exchanged bidirectionally to
+be able to support that iterative machine learning process that can be owned by this MLflow system,
+but still be able to hook that into the broader set of dependencies for being able to manage some of
+the data transformations and, you know, data integration piece that's necessary as sort of
+preparatory for that machine learning workflow?  At its basic level, Dijkstra has a concept of a
+run, and a run is simply an execution of your pipeline. But runs have this branching quality where
+you can kick off a DAG server execution from the middle of a pipeline and sort of give it a run ID
+that has a parentage. So understands the root run that that run was based off of. And then,
+essentially, the MLflow integration kind of ends up mirroring this ontology to MLflow. And so MLflow
+has these tracking IDs that you can track MLflow experiments. We essentially track this
+correspondence between DAGs that runs and these MLflow tracking IDs.  For being able to balance that
+degree of flexibility that's necessary in the development flow with the repeatability that you want
+as you go to production, what are some of the ways that ML engineers can think about structuring
+their kind of development process so that when they do have something that they're ready to go to
+production with, they don't then have to do a whole bunch of extra cleanup and maybe even in some
+cases, rewriting what they've already done to be able to say, okay. This is ready to go to
+production. But being able to say, I'm going to do my development work in such a way that when I'm
+done, it's ready to go. I don't have to rework everything.  There's this interesting trade off where
+flexibility and repeatability can sometimes be at odds because the flexibility, you want to be able
+to change things sort of as quickly as a lightweight manner as possible. But with repeatability,
+often you end up needing to annotate or structure what you're building in a way that makes it easier
+for some external system like an orchestrator to to execute it in production. I think there's
+aspects of this trade off that are real, but aspects of it that are also a little bit overblown. And
+I think we deal with it a lot right now because the existing orchestration tools are very clunky in
+the way they allow you to define data transformations. So if you have a tool that essentially allows
+you to define functions and have those functions depend on other functions, you're not really
+writing that much code you wouldn't otherwise write if you were just working in a notebook. I don't
+wanna come out and say that you should use an orchestrator instead of a notebook. I think often
+being able to have the, like, super lightweight flexibility that a notebook gives you is really
+important, especially during exploratory data analysis. It was actually interesting. I was recently
+talking to a friend who is a scientist who is telling me that he sees notebooks as clunky, and he's
+familiar with the RStudio based approach where he basically just selects a bunch of code and runs
+that code. And the idea that notebooks impose this constrained notion you have to put some of that
+code inside of a cell is difficult. So I definitely don't want to come out and claim that you should
+be doing everything inside Daxter instead of doing exploratory data analysis. But I think the dream
+of a very the dream of a very lightweight orchestrator is that as parts of your pipeline become a
+little bit more a little bit more stable, you can factor them out and then they become these widely
+available, widely reusable data artifacts, data assets that other analysis, other machine learning
+models can take advantage of and become very straightforward to productionize.  In that terminology
+of data assets, which I know is something that the DAXTER project is very focused on supporting as a
+first class concern. What are some of the elements of a machine learning workflow that would
+constitute those various assets? Obviously, the model would be 1 of them, but I'm wondering what are
+some of the useful ways that you have found to think about this asset oriented view of the  clear
+when I talk about what an asset is, ultimately, it's some persistent object produced by your data
+pipeline that lives inside your data platform that captures some understanding of the world. Our
+original impulse was to call this a table, but then we realized that there's all these other maybe
+model machine learning models separately. We realized that ultimately they fall under this common
+umbrella. When systems that try to model these concepts separately lose a lot of the ability to
+consider them interchangeably. So an asset is a machine learning model, a dataset, maybe even a
+report or some sort of visualization. In the world of machine learning and, you know, especially
+training machine learning models, there's common data assets that come up. So as you mentioned,
+Tobias, there's the model itself. And when you talk about an asset, you're often talking about kind
+of an umbrella that might include a set of individual objects, like, the different partitions. So,
+for example, if you train your model 20 different times and you wanna keep all of those around, then
+you might say the asset is the model, but it has 20 different partitions, which are these different
+sub assets that compose this model. The other big ones are, of course, your training set, your label
+set. You derive your model basically from those assets, and then those will depend on other core
+datasets that might not be built specifically for the purpose of machine learning and might be
+useful in a bunch of other applications as well. Downstream of your model, there's gonna be an asset
+or maybe a set of assets to help you evaluate your model and understand it. For example, when I was
+working at Motive, which used to be called cheap trucking, we had this model that was basically
+trying to understand the affinity between particular truck drivers and particular shipments that
+were available for those truck drivers to carry. And after building our model that sort of did this
+recommendation, there were a set of other processing steps that we used to actually understand what
+we thought the impact of that model would be on the set of recommendations that we would make. And
+so each of those steps produced a data asset that was useful to inspect and understand. Last of all,
+when if you're doing batch inference, the world is a little bit different if you're doing online
+inference. You might not think of data assets in the same way. But if you're doing batch inference,
+often that output of that is asset as well. So the asset is gonna include the predictions that are
+produced by your model on real world data.  That question of batch versus streaming also is
+interesting to dig into in the context of orchestration. And I'm wondering if you can talk to some
+of the ways that orchestration can be applied to that real time or continuous approach of, you know,
+machine learning or training or being able to deal with continuous data flows.  I really love Tyler
+Akerau was the or perhaps 1 of the tech leads on MillWheel at Google's streaming system, has this
+really great blog post where he talks about different ways of understanding streaming. And a big
+takeaway is that when we think about streaming, we're often thinking about this notion of unbounded
+data, unbounded in the sense that there isn't like a discrete beginning point and end point to this
+data as data keeps coming into the system, that automatically implies changes to downstream data.
+From what I've seen, at least in training pipelines, pipelines, it's very rare that you actually
+need any sort of real time, like, latency in the training pipeline, but you do need to operate with
+this concept of unbounded data. So you need to you need to fundamentally structure your system and
+your machine learning pipeline in a way that acknowledges that, like, data is going to keep coming
+in and think of it as a stream instead of a fixed set. So in the world of Dagsdale, our focus is
+still fundamentally batch in the sense that we're not running and triggering computations every
+second or triggering them every minute at the fastest. But as we do that, we are thinking about
+those computations as contributing to 1 sort of long dataset instead of individual separate instead
+of individual separate chunks.  In terms of the Daxter project itself, I know that the original
+focus was targeted at the data engineering use case, but the design of the system also brought kind
+of data science and machine learning workflows in as first class concerns. And 1 of the interesting
+aspects of that is the fact that it is intended to be able to span across those different roles
+where you might have data engineers and machine learning engineers working on the same code base or
+at least working within the same system. And I'm curious what you see as some of the benefits or
+some of the ways that it influences the team topologies or the team interactions as they go from
+collecting data and preparing it to actually doing the machine learning development and model
+deployment and model maintenance?  I think the biggest 1 is we talked about before. Dijkstra takes
+this very asset oriented view. You know, modeling pipelines in terms of the assets they produce, not
+just the tasks that they run. I think that sort of shines especially in a cross team context.
+Because if you think about the interface between a data engineering team and a machine learning
+engineering team, it's normally a set of datasets that kind of sit at the boundary. So the data
+engineering team will be responsible for maintaining core data definitions, and the machine learning
+team will be extracting features from those core data definitions and using those to build machine
+learning models. So we focused heavily in Dexter on being able to try to model this entire asset
+graph. I mean, of course, those boundaries end up quite leaky. In my experience, I would say, you
+know, 40% of my time as a machine engineer ended up being tracing down changes that had been made to
+upstream data and the impact of those changes on models. So I think you want a sort of porousness
+and transparency to that boundary while still being able to find these stable data asset interfaces
+between these different teams.  And in your experience of working with data scientists and machine
+learning engineers for adopting Dagster and this concept of orchestration, what are some of the
+pieces of user education or some of the challenges or maybe even areas of pushback that you've
+experienced and ways that you helped them kind of understand the benefits and understand how best to
+adopt and adapt something like Daxter into their general workflow?  As we talked about before,
+Daxter offers this asset based way of viewing data pipelines. And for users coming from systems like
+Airflow, they're not necessarily familiar with this kind of like paradigm. And it kind of strongly
+resonates with some set of people. Many people have actually ended up building internal systems on
+top of airflow that look kind of similar to Dexter. But to other people, it can be very foreign. To
+other people, it can be very foreign. We don't expect everyone who uses the extra to sort of
+immediately buy into the asset model. So our set of asset abstractions is built on top of a more
+general purpose set of abstractions that we call ops and graphs, which allow you to model
+computations in a similar way to systems like airflow that focus on tasks. So we've seen that when
+people sort of get into the asset way of looking at the world, they tend to catch on pretty quickly.
+1 of the biggest points of friction that we're working to sand down right now is situations when you
+have very dynamic assets. So, for example, if you have a asset that is partitioned, but you don't
+know the partitions ahead of time, so maybe it represents some sort of dataset that's composed of a
+bunch of different files that come into DAGSTER, but you don't yet know about what the names of
+those files are gonna be. It's not necessarily a file per hour or a file per day. That's something
+where users coming to Daxter and trying to use its asset layer has fumbled a little bit, and we're
+focused right now on sanding that down and making it more flexible in that way. Given the fact that
+you have a background in machine learning and data science, and you're now part of a team that is
+building an orchestrator, I'm wondering what are some of the  elements of your experience that
+you're bringing to be able to feed into the overall design and product direction of DAXTER so that
+it is a more natural and easier adoption phase for people who are coming from similar backgrounds or
+working in machine learning and data science? I think  1 of the areas that my perspective comes in
+the most is basically kind of a impatience and unwillingness to deal with boilerplate. So if you
+look at software systems that are designed primarily for traditional software engineers, you see
+this a little bit if you sort of compare the standard Java way of writing an API versus the standard
+Python way of writing an API. In Java, it's just a lot more verbose. There's a lot more classes that
+fit together. As someone who's been in this situation of wanting to really quickly be able to tweak
+my code and try something new in an exploratory experimental context, Having the sheer number of
+characters be small, I know it sounds like a bit of a silly thing or a vanity metric, but, like, the
+amount of typing that you need to do to try out a new chain is really important. So I'm constantly
+pushing during development just to make the API as a streamlined as ergonomic as possible because I
+know I'm going to, you know, in a machine learning context, going to have to be, you know, typing
+the same things over and over and over again as I try out new ideas when I'm experimenting with a
+model. The other thing is outside of the action of purely typing characters onto a keyboard, there
+are these other elements that influence how smooth and ergonomic the local development and model
+experimentation process feels fundamentally. When you're experimenting with model, you'll make
+changes to code or make changes to source data, and you'll likely want to execute stuff, but not
+everything. So maybe, you know, you have your large machine learning pipeline graph and you change 1
+thing and you only want to execute the things that are that are downstream of that. So much of
+machine learning development is waiting, waiting for features to be recomputed or waiting for an
+expensive model process to finish training. And so, you know, I have felt that pain very acutely.
+And I want to wait as little as possible. And also maybe just a fundamentally impatient person.
+There's a feature set that we've started on that I'm excited about expanding inside DAGs. There is
+memoization capabilities that make it so that you don't have to recompute any part of your asset
+graph that wouldn't be changed by the most recent changes that you've. As you said, waiting for
+things is kind of the  hallmark of really anybody who works in software. You have to wait for things
+to download and install. You have to wait thing for things to upload and deploy, then you have to
+wait for the model to train. Progress bars make up a significant portion of our life. And machine
+learning in particular, as you said, can have very long and expensive cycles where you need to be
+able to run a model against a GPU cluster to be able to get the throughput that you need so that it
+takes a day instead of a week. Sometimes those can be difficult to either reserve time on, or you
+have to coordinate with other people for being able to make sure that you're not all trying to jump
+on the same box that has the specific hardware that you need. I'm curious if there are any aspects
+of Daxter that can help with some of that resource management piece of being able to say, okay.
+These 3 jobs all need to be able to execute on this GPU cluster, And I know from previous executions
+that they're all going to take roughly 3 hours to complete. And is there any way for to be able to
+say, you know, I want this done by x time? And so you can then intelligently say, okay. I'm going to
+sequence them this way so that everybody's job gets done by the time that they need it.  Right. So,
+yeah, first of all, I wanted to agree with what you said that machine learning is is unique in this
+way that the progress bar is often a long progress bar. Not only that, as a traditional software
+engineer, you often know what you want your program to look like at the beginning. And if you're
+able to just write it bug free, then you'd have to only test it once. Whereas in machine learning,
+engineering and machine learning in general, experimentation and trying stuff out is the norm. So,
+like, you expect that you're gonna have to rerun your program a bunch of times And having that be a
+really ergonomic process ends up being really important. Particular question about scheduling and
+resource management. So right now, Dags there has kind of fairly basic scheduling primitives like
+you can put things in queues, make it so that different jobs aren't going to try to execute at the
+same time and make it all orderly. But we're really excited about some functionality that we're
+working on that's going to be released likely in our next major release, which actually allows you
+to do more intelligent scheduling. The idea there is that often you have a better understanding of
+when you need the result by than when you actually care about something running. And if you're able
+to express that to the system, essentially as an SLA, we call it a freshness policy. The system can
+actually be intelligent about when things run, Try to avoid running things multiple times. It would
+only need to be run once if you have some sort of shared data asset that a couple of different
+pipelines take advantage of. I think the longer term vision for this, which I'm pretty excited
+about, is actually being able to use historical data on how long things have been taking to inform
+these scheduling decisions.  And then the other aspect of that is knowing that sometimes these
+training runs can take a substantial amount of time, and you don't want to have to get halfway
+through and realize, oh, shoot. I forgot to, you know, set this 1 parameter that I wanted for this
+experiment. I'm curious if there are any strategies or even facilities in Daxter to be able to
+manage some of those, policies is the right word to say that I want to make sure that I cross all of
+my t's and dot all my i's before I kick off this expensive cycle. And so being able to do some of
+those kind of safety checks before you get halfway down the road and then waste, you know, an entire
+day of training before you realize that didn't do the thing you wanted to do.  In general, it's
+obviously very tough to catch. Mistakes are very smart and we are very dumb as humans. I think
+there's a lot that you can do to catch some of the most basic ones. So a couple of things that
+Dexter does. Dexter has a config system. And so what that means is often when you're launching a
+machine learning pipeline, you have a set of hyperparameters that end up as input to that training
+process. You'll supply those as configuration. Daxter can verify those and make sure you're
+supplying what the pipeline expects. And then it has the ability to run checks, has the ability to
+run checks, arbitrary checks that you specify on inputs to make sure that they are basically sane so
+that you're not training your, you know, enormous neural net on the dataset with 2, 000, 000, 000
+Knowles.  In your experience of working both as a machine learning engineer and data scientist and
+on an orchestration engine and helping both data engineers and ML engineers adopt this workflow?
+What are some of the most interesting or innovative or unexpected ways that you have seen this
+challenge or this requirement of orchestration addressed in teams, particularly who are maybe
+adopting a more purpose built system where previously they were, you know, doing some kind of
+homegrown ad hoc approach.  I think some of the coolest ways that I've seen machine learning
+practitioners use Dagster is get pretty fancy with the way they do memoization and avoid
+recomputation. We've seen some people implement strategies where they'll, let's say, take a hash of
+their source code. And if that source code changes or a hyper parameters change, they'll use extra
+features that offer a primitive version of this, but they'll go much farther and allow you to avoid
+recomputing things that don't need to be recomputed. I think another set of things we've seen is how
+people use Daxter alongside notebooks. There's a bunch of different ways to use notebooks in the
+context of machine learning pipelines. 1 philosophy is basically that you use your notebook for
+exploratory data analysis, but you slowly move everything out of it into your data pipeline as it
+hardens. Another philosophy is you just leave the notebook full and execute that notebook as a step
+in your data pipeline. And so a lot of users have pushed us for this integration with paper mill
+that allows you to essentially parameterize a notebook and execute as 1 of the steps in your data
+pipeline. So you can keep your logic inside the notebook and make it really easy to re execute in a
+exploratory context.  In your own work of operating in this space, what are some of the most
+interesting or unexpected or challenging lessons that you've learned about the overall orchestration
+challenge in machine learning workflows?  I think the biggest 1 is that people want to do
+everything. So as I mentioned earlier, at Clover Health and KeepTruckin, I was working on these
+bespoke systems, internal systems that allowed us to structure our machine learning pipelines. And I
+was able to impose a lot of constraints and say, you know, if you want to do something, you have to
+do it this way. But once you're building a system for a full general audience, many people who have
+needs that you can never even dream of. You can't be this constrained. And there's this fine line of
+building something that is opinionated, but not too constructive. I think it ultimately ends up
+coming down to building the right escape hatch. So, for example, we're having this very opinionated
+asset oriented framework, but allowing people to descend into this more general purpose orchestrator
+and do things that are imperative, that have side effects when they need to and not totally breaking
+the model when that happens. I think we talked about this a little bit before, is that there's so
+much in common between machine learning orchestration and general data orchestration. I think, you
+know, we often have conversations internally about what do we build to make DAGSTER more attractive
+to machine learning engineers. For example, when we think about the modern data stack or analytics
+engineer persona, we've put a lot of effort into building integrations with and air by and these
+elements of this whole other stacks were like, what's the analog of that for machine learning? And
+we actually often struggle to figure out what it's missing, because in a way, the kind of
+traditional data orchestration set of needs overlap so much with machine orchestration set of needs.
+As we talked about, of course, there's this flexibility, this experimentation, visibility, these
+branched workflows that you talked about before and model some degree of cycles, at least in the
+human workflow of dealing with machine learning graphs. But it's kind of surprising how much there
+is in comp. In that  space of the kind of modern data stack as it applies to analytics, I'm
+wondering how you see the current state of the ML ecosystem, if there is any sense of a convergence
+on a, you know, common set of practices, or if it's still very much a kind of wide open field and
+there aren't any obvious, quote, unquote, best practices or maybe winners in terms of the kind of
+category of products, and what your kind of sense is as to where people are able to, you know, build
+consensus on this is the right way to do this versus this is the way to do this for my use case, but
+it's not going to be adaptable or adaptable to every use case?  Great question. You know, I don't
+feel like I've seen the same settling in the world of machine learning that we've seen in the world
+of data engineering and analytics engineering. I think, you know, it might be because the, like,
+fundamentally the compute paradigms have not yet settled down. Like if you look at the way people
+are transforming data in kind of a standard PI pipeline, they're using SQL. And that's a language
+that has existed since the dawn of man. Whereas in the world of machine learning, the models that we
+use, the way that we structure our computation is still evolving quite a bit. Right. Like most
+models we use, the way we start our computation, are still evolving quite a bit. The most popular
+machine learning is now we're not even heard of like 5 years ago. I don't know exactly when
+transformers came on the scene, but it's like shockingly recent that transformers were introduced
+and hardware is moving really fast in the world of machine learning. So I don't think we're going to
+see the same kind of settling in machine learning tooling until the machine learning compute
+frameworks have settled down, which still, you know, surprisingly seems far from happening. I think
+if you looked 10 years ago, there was data science and machine learning engineering was not even a
+turn. I think that there's become this general acknowledgment that software engineering practices
+are a really important part of the machine learning workflow. And I think there's generally some
+sort of standardization on, you know, the notion that you should be modeling your machine learning
+training as a pipeline and using sort of like standard software engineering practices for dealing
+with it. So I think there's some philosophical settling that's happened, but I don't think the tools
+have settled quite in the same way they have in the modern data stack.  And for people who are
+exploring this space of using orchestration for their machine learning, what are the cases where
+either orchestration writ large might be the wrong choice or specifically, DAXTER is not well suited
+to their needs?  We talked about earlier. I think there's a point of super lightweight
+experimentation and exploratory dataset and exploratory data analysis where bringing in an
+orchestrator is going to slow you down more than it's going to benefit you. You know, a lot of
+difficulties are getting the right feel for what tool makes sense at which stage in the pipeline. A
+lot of the difficulty is getting a sense for which tool makes sense at which stage of the machine
+learning development life cycle.  And as you continue to build and iterate on the Dijkstra project
+and explore the applications of orchestration  for ML engineers and ML teams, what are some of the
+things you have planned for the new to medium term? You know, 1 thing we've thought about is, do we
+build bespoke integrations with individual machine learning libraries? So for example, should
+Dagster have a TensorFlow integration and a PyTorch integration? Ultimately, they all have Python
+APIs and DAGs are built on Python functions. So you can just use those directly. I think having DAGs
+are trying to intermediate would sort of cause more pain than it cause benefits. I think 1 of the
+biggest things is what we call runtime asset partitions. This is the ability to define a data asset
+and say, it's going to be composed of a bunch of subassets that aren't necessarily defined
+explicitly at the time you define your data assets. So each of the asset could, let's say,
+correspond to a configuration of hyper parameters for an experiment that you're running. And then
+maybe each time that you train your model with 1 set of hyperparameters, you kind of essentially
+want to imply this entire downstream sub asset graph that corresponds to those hyperparameters. So 1
+of the things that we're excited about is basically building this functionality into Dags there.
+Another area, and we've talked about this a little before, is to build kind of more sophisticated
+and complete memoization functionality. So you can really model changes to your code and your source
+data and use that to determine what needs to be re executed.  Alright. Well, for anybody who wants
+to get in touch with you and follow along with the work that you're doing, I'll have you add your
+preferred contact information to the show notes. And as the final question, I'd like to get your
+perspective on what you see as being the biggest barrier to adoption for machine learning today.  I
+think 1 of the biggest barriers that people often try to use machine learning before they try
+techniques that aren't machine learning, but that might do just as well for the problem they're
+trying to solve. So often a well chosen heuristic will do just as well as a machine learning
+recommending a product or detecting fraud or similar. But for situations where machine learning is
+the right approach, which are many, I think machine learning is exceedingly easy to try out, but
+exceedingly difficult to productionize. And that's largely because machine learning is at least as
+hard as building good production data pipelines. Building machine learning pipelines is kind of this
+hard mode for all the reasons that we talked about earlier, because you have this branching, this
+whole set of considerations, this whole set of purpose built hardware that you need to run your
+pipelines on. So people see machine learning as this self contained thing, but it's at least as hard
+as building regular data applications, which is fundamentally hard.  Alright. Well, thank you very
+much for taking the time today to join me and share the work that you're doing on DAGSTER and your
+perspective on the utility and adoption process for orchestration in the machine learning workflow.
+It's definitely a very interesting and challenging topic, and definitely 1 that's great to get some
+perspective and depth on. So I appreciate all the time and energy that you and your team are putting
+into making that a more tractable problem for the machine learning space, and I hope enjoy the rest
+of your day. Thanks so much, Tobias.  Thank you for listening, and don't forget to check out our
+other shows, the data engineering podcast, which covers the latest in modern data management, and
+podcasts dot in it, which covers the Python language, its community, and the innovative ways it is
+being used. You can visit the site at the machine learning podcast.com to subscribe to the show,
+sign up for the mailing list, and read the show notes. And if you've learned something or tried out
+a project from the show, then tell us about it. Email hosts at themachinelearningpodcast.com with
+your story. To help other people find the show, please leave a review on Apple Podcasts and tell
+your friends and coworkers.

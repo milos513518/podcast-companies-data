@@ -1,0 +1,420 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Using Generative AI To Accelerate Feature Engineering At FeatureByte
+DATE: 2024-02-11
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/episodepage/29
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63853053836951690244e27f34-de10-4f11-a76b-35cc95bef497.mp3
+DURATION_SECONDS: 2694
+TRANSCRIBED_AT: 2026-09-17T03:33:28Z
+----------------------------------------------------------------------
+Hello, and welcome to the Machine Learning Podcast, the podcast about going from idea to delivery
+with machine learning. Your host is Tobias Macy, and today I'm interviewing Colin Priest about
+applying generative AI to the task of building and deploying AI and ML pipelines. So Colin, can you
+start by introducing yourself? Hi, I'm Colin. I'm an Australian living in Singapore, and I work for
+Feature By as the Chief Evangelist. Funny tech title, but what it means is I'm looking after
+customer success. I'm spreading the word of how feature engineering is very important and how it can
+be done better. And do you remember how you first got involved in the area of machine learning? Oh,
+that's one of my favorite stories. I started out my career as an actuary in an insurance company,
+and I was doing pricing and underwriting and so on. And I'd go into the management meetings, and
+every time I'd go in, I'd get ambushed by the marketing manager. And the marketing manager very
+quickly became my enemy, and he'd always go, you're setting the prices too high. Very easy to blame.
+We're not making budget because you set the prices too high, not because he doesn't know how to
+market. And I knew I hadn't set the prices too high, but I'd lose every time because he was in
+marketing, and he was better at talking than me. And then one day I got very annoyed, and I went
+back to my office, and I slammed the door. And it's like, what can I do about this? And I'd been
+reading Sun Tzu, The Art of War. And it's like, don't let the enemy choose the battleground. And
+he'd chosen words as the battleground. And I thought, well, what's my strength? My strength is data
+and analysis. So what could I do with some data and some analysis that would show he was wrong? And
+I figured out, this is back in 1995. It's a long time ago, and I'm showing my age now. I figured out
+how to build a model to predict whether someone accepted a quote. Because I'd started getting a new
+data feed from a call center where people would call in, give the details, give them a quote, and
+they'd say, yes, I want to buy it. No, I don't want to buy. And it very quickly showed that you
+could go up or down about 10% in the price before it made much difference at all to whether someone
+bought the product. And particularly so if you offered them a monthly premium. Because people have
+that cognitive bias. They don't multiply by 12. And it's an annual amount. They go, well, that's
+only a small dollar amount. So that's how I started out. And then I just gradually got more and more
+involved. I started building neural networks. Very, very, very simple ones back then. Later on, I
+realized that if I wanted to do price elasticity, I had to get lots of premium quotes so I could
+figure out what was going on. And one of the insurers put their prices inside an image so that you
+couldn't get it. And so then I had to figure out how to do my own OCR. And it just gradually moved
+on from there. And then it expanded beyond insurance. And I haven't worked in insurance for about 10
+years now. Yeah, it's always fun hearing how people get faced with a particular problem and will
+take engineering and problem solving and figure out how am I going to bring these skill sets to
+bear? How can I then leverage that into successive levels of complexity and build a career out of
+that? And it's turned full circle because now part of my role is marketing. I'm going from marketing
+being the enemy to marketing is what I do. But that's also what we've seen the industry do in
+general. Marketing has become much more a data-driven profession than it was back then. Absolutely.
+And so bringing us now to the topic for today, can you just start by giving the 30,000-foot view of
+the steps that are involved in building an AI and ML pipeline? And then we can start picking it
+apart from there. Sure. And some people might do it differently to me. Everyone has their own way.
+And that's the only way you should do it. But coming from more of a business background than an
+engineering background, I always like to start with properly defining the problem. I've seen too
+many people solve the wrong problem. And I want to start with the business problem, not the
+mathematical problem. And I want to understand how the business works. I want to understand how the
+data was generated. I want to understand what they're going to do with the prediction. Is it a
+prediction they want? Is it a decision that they want? What are the costs and benefits of errors one
+way or another? And I like that because I get to learn things every time I do that. And I get to
+talk to real people, not just the data scientists. Then, and this is where people might take
+different pathways, I start with feature ideation. Even before I've looked at the actual data. Now,
+some people like to look at the data first. But I like to go, what data, if I could have any data in
+the world, what would I like to get? Because sometimes, if you only just think about what you've
+got, you don't go and go, wait a sec, there is some other data. Like I did with the price
+elasticity. There was a new data source. And I stopped and thought, ah, I can use that instead of my
+traditional data. And so I do that first. Now, to be fair, there's a lot of iterating back and
+forth. When you then go and tell, what data do we have? What does it actually mean? And then you go
+back and you do some ideation of that. And then you go, wait a sec, could I link it to this? So
+there's a lot of backing and forth about that. Then you've got to build those features. What I say,
+that's one of the most painful things to do. I can code. I can do Python. I can do R. I can do SQL.
+I'm not going to pretend that I can write production code because I'm a data scientist, not an
+engineer. But you start prototyping the things. You start to see what they look like and then you
+discover more things about the data you didn't realize. Why are there missing values here? Why is
+this price negative? There's things like that. Then it's, let's run some experiments. Let's feed it
+into a machine learning model and see what it does with it. Once again, you discover more things
+about the data that you hadn't realized. Why did it just do that? And then you try and optimize,
+which is which features am I going to have? And what I want is a diverse set of features. I don't
+want too many because it becomes unmanageable. I don't want too few because then the model is just
+going to underfit. And so I try and find some diversity there and we tune that. Then we get to the
+difficult bit, which is deploying. All the courses stop at this point of time. All the data science
+competitions stop at this point of time. So how do you get a production quality data feed that runs
+off live data? Because typically I've been working off snapshots until then. How do I get the
+machine learning algorithm into production as well? How do I connect that all up? How do I get the
+output of that to actually make decisions? Is there a decision rules engine or do I have to write
+some more code at the other end? Now, I've oversimplified that a lot. But as you'll notice, a lot of
+it was about the data and about learning more about the data. Absolutely. And I appreciate that your
+starting point is what is the problem that we are actually trying to solve? Because as you alluded
+to, engineers, people who are very steeped in the code and the technology will often try to approach
+it from the, oh, I have this tool. So this is my hammer. So I'm just going to go ahead and pound on
+that nail until it lays somewhat flat. Yes. Yes. And particularly, I've looked at a number of
+marketing problems. And people often solve the wrong marketing problem, which is which people have
+bought this product in the past. But often that's not what you want. It's who will buy it if I try
+and sell it to them now. And so it's who will respond to a marketing campaign, not who would buy it
+regardless of whether there's a marketing campaign. And so now, given the rough framework of these
+are the steps involved in the pipeline, in your experience and in your work with customers at
+Feature Byte, what do you see as the stages in that process that are prone to repetition and
+therefore amenable to automation? So almost everything is prone to repetition, but everything's
+different. It's one of those horrible things. Because every problem is different, you're going to
+come up with a different set of features to solve it. But if you're going to be efficient about
+this, you're going to try and reuse some of those features and reuse some code. Some things are just
+boilerplate. If you're doing anything with a customer, one of the first features you want to use is
+their age. You don't have to recode that every time you use it. Similarly, where do they live? You
+don't want to recode that. You might have had it geocoded somewhere. So feature ideation is
+something that you do iterate and iterate and iterate. You can't do it on the margins. You can't do
+it a single feature at a time. Because as I was saying before, what you want is a diverse set of
+features. And what I find is people just keep coming up with the same type of feature with just tiny
+little variations. Now, you've also got to align the data with the unit of analysis. So there's a
+ton of aggregation you have to do. And for different problems, you might aggregate the feature at
+different levels. It might be at customer level or it might be at product level. There's different
+levels you could do that. The feature selection. There's a lot. And there's definitely repetition in
+that because it's once again, it's an iterative process. I've seen people do that entirely manually.
+I've seen people do that just using feature importance. And I'll just pick the top end and I'll try
+a few different ends. I've seen people try and really optimize that and use genetic algorithms.
+There's a lot of things there. And then you get to the deployment. And this is where I do think
+there's a lot more opportunity to make things repetitious by making them standardized. Because it's
+just too hard to deploy if everything is bespoke. So given the fact that there are opportunities for
+automation, there are repetitive elements, but there is also a lot of nuance and detail within some
+of those cycles of repetition. What are some of the features that are available in the current
+generation of generative AI models that lend themselves to helping with some of that work without
+necessarily fully automating it? But what are some of the ways that that generative AI can be
+brought to bear and accelerate the capabilities of the humans doing the work? Yeah. So I'm going to
+take a step back just before the Gen AI. Gen AI, if you want to make things that you can reuse,
+you're going to have to standardize them. So you're going to have to standardize the way the data
+looks, the way you interpret it, and the way that you manipulate it. And I'm going to take through
+those steps. So the first thing is what's the data look like? That's actually a well-solved problem.
+You get data warehouses, for example. You've got data dictionaries. But the understanding of the
+data, that's where we're starting to see new products coming out there and the rise of the semantic
+layer. So more than this column contains a numeric that's a floating point. It is, well, no, this
+column is actually the paid price. It is non-negative. And it's at this unit level. It's for a
+specific product or it's the invoice total. It's gross or net of GST. That level of semantic, having
+that in there, saves you a lot of unnecessarily manual repetition. And it saves you key man risk as
+well. When someone leaves and they're the only one that understood what that data meant. Now, Gen.ai
+can help you do that tagging. We have found it to be pretty good, actually, at doing that.
+Particularly if you've got a data dictionary that has a free-form text that describes what the
+column is, what it contains. And you give it some metadata about the contents of the column. So I
+found that to be particularly useful. But what you've got to have is an ontology for it to do that.
+If you just give it free-form, it doesn't really help you much. So it comes back to that
+standardization. Now, you're going to override that at times. For example, I did that yesterday. I
+was looking at some telco data. And one of the fields was the number of dependents that the customer
+had. Dependents aged under 18. And Gen.ai said this is a lookup attribute. It came from a slowly
+changing dimension table. And that was correct. But I knew more about that. And in the ontology, I
+went down further. And I said this is actually a head count, which was one in our ontology. There's
+a thing called a head count. Now it knows that this is a number of people. So we can do that. The
+next stage along is feature ideation. Once again, you've got to try and standardize how you present
+this. You need to have a description of the use case. You should be defining the unit of analysis.
+And that will be an entity or a combination of entities. And then you want to generate some
+features. Now, if you do that, I've seen a number of tools out there that brute force feature
+generation. And you literally end up with thousands of features. And that's not a good thing. I
+remember trying a few years ago to help a bank. I think they had 5,000 features to be generated. And
+they're going, our validation team is never going to let us use any more than 25. And we don't have
+time to look at all 5,000. So one of the things we've started doing is asking Gen AI to, within the
+context of a use case and with the description of a feature. So you've got to have a description.
+You've got to have some characteristics, some standard characteristics. Rank it for this use case.
+So that I can start to see what are the top 50 or so from common sense perspective. Not from feature
+importance yet. That's a separate problem. But can you start to just rank these for me and throw out
+the ones that make no sense? So like, you know, you could, and I saw one by a brute force that it
+said, time since the last time they changed gender. And I was like, that's not going to be a very
+helpful feature. Yet it had come out of brute force. So that's something that saves me a ton of
+work. Now I still need to go and use my domain knowledge. Because Gen AI only knows generic info. It
+doesn't know this specific business. It doesn't know how exactly the data was collected, how it's
+being used, the exact categories, if it's a categorical field. But, oh my goodness, it saves me a
+lot of trouble. We've also been starting to use Gen AI to create the description of the feature
+based upon the metadata about the feature. And that's proving pretty good for talking to the
+business people. And as data scientists, we keep wanting to use maths when we talk to people. And
+the eyes glaze over. My wife is a fashion designer. If I start talking about my work, you can see
+she's not listening. But, you know, same with business people. What they really want to know is what
+does this mean, not what was the mathematical calculation. And so we're doing a bit of that. And
+that saves, every time I show this to a data scientist, they go, oh, thank goodness. I hate doing
+that. To me, they're there where we've started doing some stuff. There's some other stuff out there.
+I recently saw a demo from Data Robot. And they're using Gen AI to help explain the machine learning
+models, their behaviors, what's important, how to interpret the diagnostics. Once again, a really
+useful thing. So you don't have to be a PhD to look and go, does this model make any sense? So in
+general, it's like using Gen AI for general knowledge and using it to turn jargon into plain
+language and vice versa. Yeah, definitely. Yeah, definitely. It's interesting that we are able to
+use the generative AI models to use their semantic mappings as a means of being able to assign the
+semantic relevancy to information and be able to bring together those things like ontologies and
+data dictionaries and try to figure out what are the appropriate rankings. But also because of the
+fact that we are using these models to be able to say, okay, these are the pieces of information you
+need to be paying attention to. And those are the things that are going to have a substantial impact
+on the final product, on the final model that is going to be business critical. What are the steps
+of validation and verification that need to be incorporated into that overall development cycle by
+the people who are leading that AI model to make sure that the information that it's giving is
+actually accurate, particularly given the fact that these generative AI models have a tendency to
+generally accept a term as hallucinate, but at least to provide answers with confidence that are not
+factually correct. Yeah, yeah. So there's a few things you can do. So as we were saying before, it's
+really important that you standardize a number of things so that you constrain the problem. The more
+constrained the problem, the more likely you are to notice when Gen AI is doing something silly. And
+the more you constrain it, the less opportunity it has to do something silly. And it's not just the
+Gen AI that can do something silly. The human operator can as well. So to give you an example,
+earlier this week, I was working on some telco data and I forgot in the use case to say that this
+churn problem was for telco prepaid, no, sorry, postpaid cell phone accounts. So we didn't even know
+it was telco. So it just generated a bunch of features for me that didn't make sense because that's
+not how a telco works. So you can't just accept things on face value. So one of the things you
+should look, and if you can get the Gen AI to tell you why it suggested something, that's a really
+good thing to go through. Read the explanation and express skepticism if it doesn't make sense. Now,
+you might be wrong or it might be wrong, but at least raise those things. The other thing is it's
+always good to have an independent validation of not just your model, but your feature engineering.
+I see in the regulated industries like banking, they fuss a lot about the model and they forget to
+check whether the data pipeline makes sense as well. So having someone independent look at it helps
+as well. And another thing I've started experimenting with is when it recommends something, go and
+test it. What was the feature importance? If it says this is important, was it actually important?
+And vice versa. If I've got something that's important and it says it's not, I'm going to flag that
+as well because maybe there's something wrong with my data pipeline and I've got target leakage or
+something silly like that. Another element of validation and verification beyond a human going
+through line by line and checking saying, yep, that makes sense or nope, that's completely bonkers.
+There's also in the engineering discipline, the concept of unit testing and integration testing and
+having some automated validation. I'm curious, what are the opportunities and limitations of being
+able to apply some of those principles? So we do that. We don't use Gen AI to do that, I've got to
+say. And I think that's a good thing. Looking at things completely different ways is how you find
+problems. So we defined a whole bunch of standard tests and we've chatted to some companies that
+already have some of their own as well. And they use GitHub and they've automated some of these
+tests. You need to be able to do that so that what you're testing is being done a different way to
+the way it was generated. So you can have unit testing for how fast does this feature get generated.
+It's no good having something for a live use case if the feature takes too long to calculate or even
+worse, the data isn't available at that time because you're using a data warehouse and it's
+refreshed once a day. Now, we deal with some of that a different way. We put in guardrails that are
+all time aware so that it doesn't matter what the Gen AI says. It can't do it. We just don't let it
+do certain things. One thing that's really important, too, is to be able to identify downstream
+effects. And that's why, once again, having a really good structure around everything matters. If
+you have free for all in how you code feature engineering, it's impossible for you to track
+downstream consequences. And so, you know, data scientists may get a bit upset. Oh, yeah,
+restricting this and this and this. But the moment they have to go and debug why something broke,
+they'll start to realize why that's happening. Another thing is you want to abstract away as much
+complexity as possible. Make everything standard modules, standard categories so that a human can
+look at it and instantly get what it's doing. They don't have to go through spaghetti SQL. Well,
+I've got to say, I could never debug SQL. It's just beyond me. And I speak to data engineers that
+it's not beyond them, but they hate it. Absolutely. Going back to the sequence of steps that you
+outlined at the beginning of figure out what is the business problem, go through the feature
+ideation, do some of the feature engineering, start to experiment, optimize, productionize. I'm
+wondering of those steps, if there are any that you find people leaning on the generative AI more.
+And what are the cases where people rely on their own engineering acumen or intuition and say, if I
+try to bring the generative AI in for this part of it, then I'm just going to get a whole bunch of
+garbage. Yeah. So there's pluses and minuses both ways. So like one of the innovative things that I
+saw was in a huge health tech company in the US and they get doctor's notes, which are all free form
+text. And they're using Gen AI to read it and answer and turn thing and pull out structured features
+from that. So in amongst all this text, somewhere the doctor wrote what the patient's temperature
+was. Excellent. Yeah. It's much better than trying to force the doctors to fill in things. They
+don't like change. On the other hand, that caused problems because they were using a generic Gen AI.
+It might have been chat GPT. It might have been co-pilot. I don't know which. But the problem is
+because it was an external one. The provider would do version changes over time. They lost
+replicability. And so that was a problem with using Gen AI. Another problem is that Gen AI can come
+back to replicability again. Even if you haven't had a version change, Gen AI is stochastic. You can
+ask the same question twice and get two different answers. One of the tricks I've seen one data
+scientist do is to ask the Gen AI multiple times and look for the most common answer out of those.
+But I do like the idea of using Gen AI to turn unstructured data into structured features. In that
+overall workflow of pipeline design, development, deployment, incorporating generative AI into the
+different inner loops of that cycle, what are some of the aspects of the developer experience that
+you have had to consider and that need to be addressed to make sure that the incorporation of
+generative AI into that flow is an enhancement and an accelerant to that process and not something
+that is going to detract from the overall experience or bring people out of their state of flow? One
+thing that's just vital for keeping data scientists engaged is to let them see and edit anything
+that gets created. It's no good just saying that AI created this. You should accept it. Data
+scientists are too skeptical to do that. And plus, their ego say, I've got to make a change to it so
+I can add value. Now, often that is value. So the Gen AI only knows generic knowledge. At one telco,
+I spoke to one of the senior data scientists and he says, would it do this? And I'm going, nah, it
+doesn't know how to do that. He says, and what it was, without doing churn, and once again on cell
+phones, these were prepaid cell phone accounts, so the opposite time. And he said he knew that if
+someone was topping up frequently on small amounts, there are much higher churn risk than if they
+topped up infrequently with large amounts. But the Gen AI didn't know to do that. So he says, how do
+I do that? And I says, let it generate a generic one for you. Now, let's get it to spit out the code
+for what it just did, and we can go and edit that. Oh, thank you. That's what you need to be able to
+do. I hate black boxes that firstly don't tell me what they're doing, and secondly, don't let me
+edit it for things that I know when it doesn't. And now, beyond just the steps of doing the problem
+statement, feature development, experimentation, you then say, okay, I've got a model training
+pipeline. I think this is going to work. I'm ready to put it into production. What are some of the
+elements of productionization, ongoing monitoring, retraining, where the generative AI can also be
+applied to that set of loops? I've got to say that that's something that's not as mature yet, but
+there are things you can do. So as I mentioned before, having the Gen AI explain what the model is
+doing, I think helps a lot. I have seen, I often use Gen AI just personally for when I've got to
+write manual code. And often you have to patch things together when you're going into deployments.
+Now, really good ML Ops, you don't have to do that. But there's always those damn exceptions. And
+what I've seen is some of our engineers doing this for how do I connect to this server? I haven't
+done this type of server before. What are the connection settings? I want to do this, this and this.
+Or translate. I've got this connection setting for Snowflake. How would I do the same thing for
+Databricks? So it's particularly useful when you want to switch from one thing to another, where you
+want to set the security settings. And my favorite, because I'm not an engineer, what does that
+error message mean? And we're doing some research at the moment. How can we use it to recommend to
+us what to do when the data drifts? That's always the problem. The world keeps changing. Can we help
+it to quickly pop up some recommendations after we've noticed data drift? What could we do about
+that? Yeah, and could it generate some sample data or some settings for us to fix that as a quick
+fix? And also being able to identify the difference between data drift and concept drift, where
+maybe the world is changing, but the actual data is the same, but the conceptual applications and
+the semantics around it are shifting as well. Yeah, and possibly suggest to us why that's happening
+and what we could do about it. Yes. And then given the fact that as you are incorporating generative
+AI, and as we addressed earlier, it's not always going to give you correct answers, even though it
+thinks they might be correct. What are the elements of risk and some of the risk mitigation controls
+that need to be understood and applied in the process of bringing generative AI into that inner loop
+of development and deployment? I think you should always treat it with suspicion, not because it's
+particularly worse than anything else, but it's a bit of a catch because it's designed to look like
+and behave like a human. And we tend to trust humans more than we should. So we're likely to trust
+the gen AI more than we should. So I'm a great fan of putting in validation rules. So we're talking
+about what do you do at prediction time? There should be, you know, you should be able to define
+predictions should always lie in this range here. You know, if it's outside of that, there's a
+problem. So if I've got a patient temperature, and it tells me the patient temperature is one
+degree, I should be able to flag that. That just doesn't make sense. You know, so a whole bunch of
+validity rules, I need to be make very clear which version of a gen AI I'm using at any point of
+time. And for different use cases, who's using what version, that whole version control, it can
+become quite a problem when you're in a big organization, by the way, using many gen AI eyes, and
+changing them over time. The downstream consequences. So if a version changes, you now have to flag
+that your features are going to be different, and that your model needs to be retrained. Because if
+it's pulling out different values or suggesting different values, your model isn't trained on those.
+As I said before, because it's stochastic, sometimes it's good to run it more than once and see how
+varied the answers are. And to that point also of model versions and also different models
+specifically, I'm wondering if there are any useful guidelines or evaluation criteria that you have
+found for saying, okay, for this particular problem statement, we're going to use OpenAI GPT 3.5.
+For this one over here, we're going to use Llama 2. For this third one, we're going to use Falcon.
+And I'm just wondering, what are some of the criteria for being able to say, okay, these are the
+capabilities that I need. This is how I'm going to decide which of these models I'm going to use and
+whether it's going to be an open source model that I self-host or a managed model that I'm just
+going to call by an API. I've got to say, I've got to say, I'm not sophisticated enough to know that
+in advance. Every time I've had to do that, it's an experiment. I try them all, all the ones that
+I've got access to, which one is getting me the results I want most reliably. There are times,
+though, there are other criteria. I was dealing with a company that supports here in Singapore, the
+military. Well, guess what? They can't use chat GPT. Their data can't leave their server. So this is
+where we talk to companies like Hugging Face, where you can host locally. In other cases, they're on
+an Amazon stack, so they want to use a Gen AI that's on the same platform. They don't want to switch
+between or they're on a Microsoft one, so they want to use Copilot. That's also about minimizing
+data movement as well, because that can change latency and it always causes security problems. I
+know one of the guys at Hugging Face, a guy called Rajiv Shah. He makes the coolest social media
+videos. And he talks about how having a specialist Gen AI can be cheaper, faster, and outperform the
+generic ones. In your experience of working at Featurebyte, working with customers, experimenting
+with these generative AI capabilities for the purpose of developing and deploying and maintaining AI
+pipelines in their respective models, what are some of the most interesting or innovative or
+unexpected ways that you have seen those capabilities applied? I once asked to suggest some features
+that was for credit card fraud. And I thought I was pretty good at credit card fraud. And I'm not
+going to say I'm a world-class expert, but I thought I knew enough. And one of the features it
+popped out was it said, filter it, filter the data, the transaction data, to find reversals,
+transaction reversals. I go, why? And I got it, and I got it to give me an explanation. And it says,
+that's one of the ways that people actually do money laundering in certain other ways. And then they
+make the reversal a different amount to the original amount. I go, oh, yeah, now you say it. That
+actually makes sense to me. But, you know, it is good that Gen AI can actually teach you something
+about the domain you work in at times because it's had access to what people have published
+elsewhere. So that was particularly cool. As I said before, the healthcare one I quite liked. Thank
+goodness they're working off type data and not handwritten doctor's data. I'm not sure there's an AI
+in the world that can interpret doctor's handwriting. We need more pharmacists to do that for us.
+And then the other place I've seen it used is in making synthetic data. And then there's a lot of
+reasons you might want to use this. But one of them is just to rebalance the data for fairness
+purposes. You might have some HR hiring data and it's in the tech industry and almost all of it is
+for males. But you want to make your model work for females. If you don't put in more female data,
+your optimization won't care less about the fit for females. So that's one of the things where I've
+seen it and it actually became much fairer without losing any accuracy, which is the thing that
+surprised me. But I always think of fairness as a trade-off against accuracy, but it doesn't have to
+be if you've got a good Gen.AI making the right synthetic data for you. And in your own experience
+of doing this work and exploring these newfound capabilities of Gen.AI models and how they can be
+applied to the development loop for other machine learning projects, what are the most interesting
+or unexpected or challenging lessons that you've learned personally? I've learned that Gen.AI is an
+idiot savant. It can be quite brilliant, but it has these huge blind spots. If I don't word my
+question to it the right way, it's going to tell me something that at times is the exact opposite of
+what I wanted it to tell me. So you do have to experiment. That's why we have prompt engineers. I
+do. I am hoping that Gen.AI will get a bit better. You don't, that you shouldn't need to be a prompt
+engineer to get this right. But it is a bit like, and it reminds me of, I used to be an educator.
+You've got to make sure you set the context very well before you ask a question. And it does
+surprise me at times when I take certain things for granted. And it just doesn't, it doesn't take it
+for granted. Absolutely. And for people who are interested in the capabilities of these generative
+AI models, and they're considering whether to apply it to their problem, what are the cases where
+you see it as being the wrong choice and you're better off just using the tried and true hand coded,
+just do the development work, do your own thinking, don't let the model sway you in way or another?
+So the first case I'm going to say is when your use case and the data you're using is very
+proprietary. There's never been anything like that out in the public domain. So Gen AI only knows
+what it's seen. And if it's never seen anything like what you're doing, it's not going to know how
+to do it well. And a lot of business data is like that. There are some very common use cases out
+there, credit, risk, churn and such. You're going to get good answers for that. But particularly if
+your business does things very differently, there's another example, does it differently to the rest
+of the industry. The Gen AI will assume you're like the rest of the industry. So that's one case.
+The next is I think it adds less value when your data is highly structured. And most proprietary
+data, by the way, is highly structured. Now, not all. You get telephone transcripts and things like
+that. But it adds less value in that case. And when your data is small, then the thing I mentioned
+before, replicability. There are times when replicability is paramount. Don't use Gen AI if
+replicability is absolutely essential to your use case. And then finally, there's ones where if you
+can't move data around and there is no proprietary one that you can install locally, Gen AI isn't
+going to help you at all. They'd be the four cases that I'd say, you really shouldn't use Gen AI.
+There's probably some more. And there's probably exceptions to the ones I just listed. But it's not
+the solution to everything. A clever person can do more with a small amount of data than Gen AI can.
+And as you continue to experiment with and invest in these capabilities in the Featurebyte product,
+what are some of the things you have planned for the near to medium term or any particular projects
+or problem areas you're excited to explore? One thing that I'm particularly excited about is trying
+to use Gen AI to detect anomalies in the data. Because it's got a little bit of general knowledge
+about what data should look like, ask it whether the data looks right. And that sort of overlaps
+with something I said before with data drift. But even before that, just give it some data and go,
+does this look right? Everybody hates cleaning data. Everybody hates looking after data quality. So
+we're starting to experiment with that. It's going to be a bit of work. Gen AI has a bit of hit and
+miss on what it thinks is reasonable. But another thing that we're looking at is not requiring
+people to code if they want to customize a feature. Can you just say in plain English what you want
+the feature to do or plain language? We're sticking to English for the moment because that's what
+our company is best at. Although one of our founders is French. I'm sure he really wants to do it in
+French. But yeah, being able to say, look, I want it to filter on this. And then I want to count
+that. And I want to see if it exceeds this threshold. And you should just be able to generate a
+feature by explaining it in normal language like that without having to write code. So, you know,
+we're looking at it. And that's probably going to require us to fine tune some code generation Gen
+AIs because our syntax is not something that a generic Gen AI would know about. So, to me, they're
+the two most exciting ones. The more we can simplify and make things accessible, the more we can
+flag when something goes wrong and figure out why, the better life is for all of us, including the
+data scientists who like to code. Are there any other aspects of the work that you're doing at
+Featurebyte or this overall space of applying generative AI capabilities to the development,
+deployment, and maintenance process for AI and ML projects that we didn't discuss yet that you'd
+like to cover before we close out the show? One thing I do want to try Gen AI for is for load
+testing. And can I generate a ton of data or some extreme data that I can then run through my system
+and get it to deliberately generate stuff that will be problematic? Do it at scale. Do it with
+variation. When I've seen testing in the past, people just replicate the same data over and over
+again. And you're not really stress testing because you haven't done enough situations. You're going
+to find more edge cases if you get the Gen AI to generate data for testing for you. All right. Well,
+for anybody who wants to get in touch with you and follow along with the work that you and your team
+are doing, I'll have you add your preferred contact information to the show notes. And as the final
+question, I'd like to get your perspective on what you see as being the biggest barrier to adoption
+for machine learning today. Data quality. Everyone's going to agree on this. And data availability.
+Companies come to you and they say, oh, I've got data. And you have a look at it. And literally, one
+of the companies I spoke to, it was a scanned set of into PDFs of physical paper. And it had been
+doctors writing on physical pieces of paper. And I'm going, that's not data. That's almost abstract
+art. So what people think of as data is often not data. And the volume of data you need to do
+machine learning at the moment is still a bit onerous for smaller companies. Well, thank you very
+much for taking the time today to join me and share the work that you and your team at Feature Byte
+are doing. Definitely a very interesting space as we continue to see how these generative AI
+capabilities can be applied to different problem spaces. So appreciate the time and energy that you
+folks are putting into that and bringing it to bear on the problem of building more AI. So thank you
+again. And I hope you enjoy the rest of your day. Thanks, Tobias. Thanks for giving me a chance to
+talk about things that I'm passionate about. Thank you for listening. And don't forget to check out
+our other shows. The Data Engineering Podcast, which covers the latest in modern data management.
+And Podcast.init, which covers the Python language, its community, and the innovative ways it is
+being used. You can visit the site at themachinelearningpodcast.com to subscribe to the show, sign
+up for the mailing list, and read the show notes. And if you've learned something or tried out a
+project from the show, then tell us about it. Email hosts at themachinelearningpodcast.com with your
+story. To help other people find the show, please leave a review on Apple Podcasts and tell your
+friends and coworkers.

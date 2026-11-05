@@ -1,0 +1,558 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Rebooting Enterprise AI with MCP and Kubernetes
+DATE: 2026-05-28
+SHOW: Practical AI
+LINK: https://share.transistor.fm/s/d76e02d5
+AUDIO: https://pscrb.fm/rss/p/dts.podtrac.com/redirect.mp3/media.transistor.fm/d76e02d5/e934139b.mp3
+DURATION_SECONDS: 2883
+TRANSCRIBED_AT: 2026-11-04T10:00:41Z
+----------------------------------------------------------------------
+Welcome to the Practical AI Podcast, where we break down the real-world applications of artificial
+intelligence and how it's shaping the way we live, work, and create. Our goal is to help make AI
+technology practical, productive, and accessible to everyone. Whether you're a developer, business
+leader, or just curious about the tech behind the buzz, you're in the right place. Be sure to
+connect with us on LinkedIn, X, or Blue Sky to stay up to date with episode drops, behind-the-scenes
+content, and AI insights. You can learn more at practicalai.fm. Now, on to the show. Welcome to
+another episode of the Practical AI Podcast. This is Daniel Leitnack. I am CEO of Prediction Guard,
+and I'm joined, as always, by my co-host, Chris Benson, who is a Principal AI and Autonomy Research
+Engineer. How are you doing, Chris? I'm doing great today, Daniel. How's it going? It's going really
+good. I feel like I'm going to, you know, just add a bunch of tools to my toolkit today via MCP,
+because today we have with us Craig McClucky, who is CEO of StackLock, which we'll learn a little
+bit more about and, of course, talk a good bit about MCP and other things. Welcome, Craig. It's
+great to have you. Hey, thanks for having me on the show. Yeah. Well, I kind of, I mean, people can
+look up the projects that you're working on now on StackLock. A lot of that has to do with MCP and
+AI on top of Kubernetes. Do you want to just give us a little bit of a kind of setup of why you are
+spending your time thinking about this intersection of AI, MCP, Kubernetes? Yeah, I mean, I think
+for me, it's sort of interesting. And, you know, maybe I can just introduce my background a little
+bit. You know, I'm an infrastructure guy. I've been building infrastructure technology for pretty
+much the totality of my career. You know, I built a lot of infrastructure tech when I was at
+Microsoft. And then at Google, I was happy to meet my friend Joe and we built out a Google Compute
+Engine, which is, you know, virtual machine infrastructure technology. We started the Kubernetes
+project, did a few other things, you know, inside there. You know, subsequently, we've built a lot
+of other technologies together, you know, either as in the startup context or as part of larger
+companies. You know, I think for me, there's this sort of a lot of interesting parallels. I think,
+you know, history doesn't repeat itself, but it often rhymes. And, you know, one of the things that,
+you know, that got me really kind of captivated by this whole MCP thing was, you know, taking me
+back to my earlier career. I remember the first time I saw Docker. And so Docker is a technology, if
+the audience isn't familiar with it, that enables people to package up an application and all of its
+dependencies in a single container that's then highly portable and can be deployed everywhere. And
+when I saw Docker, I saw two things that were kind of, you know, occupying the same space. It was
+one of these wonderful technologies where, you know, it solved an obvious problem that developers
+have, which is how do you package up an application so it can run pretty much anywhere with all of
+its dependencies? That's fantastic. But you could also peer through it and you could see Kubernetes
+on the other side of it, meaning an orchestration system that enabled you to build more complex
+applications that could be run the way that cloud-native organizations like Google ran their
+applications. And it did double duty. And when I saw MCP, I had that same kind of moment where you
+could see this technology occupying two spaces at the same time, which is very rare and it's very
+wonderful. And, you know, the one part of it was, you know, the one part of it was, it hints at what
+the future of a end-tier AI native application might look like, where you start to think of the LLM
+as the presentation layer and view model for an application. It's starting to describe how you would
+formalize interfaces, what that middle tier of the application looks like. If you think about
+existing databases and systems being the kind of, the sort of persistence tier for these modern
+applications. But it also, you know, pointed to a set of capabilities that I think are going to be
+extremely exciting to, not just exciting, extremely necessary to, you know, large organizations.
+Because as you're bringing agentic systems into your environment, they are stochastic. There's new
+rules. Like they're very, you know, they can be quite difficult to integrate sustainably and
+securely. And MCP really represents this small, sharp protocol that you can use to start reconciling
+the behavior of systems that are accessing the real world and also setting up guardrails and
+controls. And so I saw this and I was really captivated by it. And it started, you know, causing me
+to ask questions like, hey, I think I can see, you know, what the future might look like. And I
+think that we need to be able to operationalize this layer for organizations. And that really
+motivated me to start working on the work that we've been doing here at Stackwell. And just so
+people, I mean, we've talked about MCP on the show before. Some audience members may remember that
+some, maybe this is their first episode. Could you just give us a kind of high level of maybe a
+little bit of the why of MCP and then the what of what it is? Yeah. So, I mean, the why of MCP, like
+you have this new technology called a transformer, right? Like a large language model, generative
+AI. And one of the most remarkable and wonderful things about it is that it interacts with you in
+natural language. It's very good at interacting with your natural language. It's very good at
+dragging semantic meaning out of large quantities of information. And it's about taking data,
+turning data into knowledge, taking knowledge, turning knowledge into a decision and then turning a
+decision into an action. You know, it's this new capability. But the trick here is that there are
+some things that's good and there are some things that's bad at. It is really programmed to work in
+a kind of natural language format. So, asking it to interact with relatively traditional APIs can be
+very fiddly. It's not necessarily set up to deal with the authentication authorization process. You
+know, it sometimes isn't necessarily to be completely trusted. And so, by introducing model context
+protocol, effectively what Anthropic did was start to describe the outside world in relatively
+simplistic natural language terms with a JSON schema backing it. That would enable large language
+models to start reasoning about what tools exist and being able to start invoking those tools in a
+deterministic way. And so, the way I think about it is effectively this selectively permeable
+membrane that an organization can wrap around its existing systems that allows value to flow through
+in both directions, but enables you to start asserting the controls that you need to be able to
+enable AI systems to actually do real work in the real world. Yeah, that's amazing. And could you
+give maybe just some concrete examples of some of those kinds of systems within an organization that
+you might want to tie in this way? I know there's like innumerable and people could imagine
+anything, but just so that people have some concrete examples. Yeah, I mean, so let's just imagine
+the workflow of a recruiter, right? Like a recruiter is going to be doing their work on a day-to-day
+basis, and they're going to be interacting with email. They're going to be interacting with
+LinkedIn. They're going to be interacting with the CMS system. They're going to be interacting with
+the calendaring system, et cetera, right? Now, the way that they would do their work today is they
+would do a lot of jumping between different SaaS systems. So, I might go to Gmail and send a note to
+a candidate. I might go to the Google Calendar app to, you know, calendar something. Or I might have
+my content, my candidate management system that has some natural integration to support these
+things. But I'm constantly jumping around. And what I'd ideally like to be able to do is have an AI
+assistant that is able to access my email, is able to access my calendar, is able to access my
+candidate management system, but is able to do that in a way that I have some level of control over,
+right? Like I don't want this thing just going rampant and sending things. And so, what MCP enables
+you to do is to start taking all those systems and describing nouns and verbs. Like, what is a
+candidate? You know, what is a calendar invitation? You know, what are the actions I want to
+perform? Schedule an interview. Do this type thing. And start to describe those as discrete
+resources that the AI model can go and acquire and tools that the AI can actually invoke to do work
+in the real world. And by, you know, bubbling it up to a level where these things are described in
+relatively simplistic terms and then presented to the LLM, it can now discover tools that are
+available to it. Where it's like, oh, you want to do this? Well, let me see if I can access your
+calendar. Oh, I can. Because this calendar is now available through this MCP server. And what it
+also enables you to do is start dealing with the authentication authorization problem, right? That
+recruiter has an identity. You know, that could be like an Okta or be an Entro or one of these IDPs.
+Being able to now set it up to say like, hey, an agent that's working on behalf of this recruiter
+should be able to access these systems as the recruiter is able to. But also with certain levels of
+controls in place, because you don't necessarily just want to give these things unfettered access.
+And so MCP is really the gateway to value for enterprise systems. And this is why I think people are
+so excited. And yeah, just as to, I guess, add to that, even literally earlier today, like three
+hours ago, I was sitting at my desk in our open office. And I heard one of our go-to-market folks go
+over to one of our engineers and say, hey, I need to set up these, I forget how many it was, four or
+five MCP servers in the agent platform that we use in our platform. And the engineer would say like,
+why? I mean, I think his mind was in like cloud code world. It's like, I use my agent and all my MCP
+servers to my technical stuff. But this goes beyond that. And certainly it applies to developer
+tools, because obviously agentic things power developers now. But it certainly goes beyond that. I
+think the ones he was pointing to, I think it was HubSpot and Instantly and LinkedIn, or I forget
+which ones, but that level of things. And it's really interesting because I think, you know, what
+we're seeing, you know, look, let's be clear. LLMs are really great at writing code, right? Like
+it's one of the things that they do tremendously well. But they're getting increasingly good at a
+lot of other things as well. And, you know, like when I think about, you know, my own personal
+workflow, you know, how I tend to do work. You know, we've been partnering with Anthropic for a
+while. They introduced a tunnel. So we now have all of the Stacklock internal knowledge management
+systems are available through that tunnel to cloud. So it's not necessarily tethered to my desktop.
+I can use this on my phone. I can ask questions on my phone about things that are in my email. You
+know, it becomes a very powerful way to kind of open up the system in a way that's sort of
+sustainable. And it just fundamentally redefines how people work. But I think the key thing here is
+that, you know, what most people are experiencing today, and they assume, is that this is really
+tied to the developer's machine. If you look at the way that flawed code is structured, that, you
+know, co-worker's structured, it's using the developer's desktop as the aggregation point where all
+of the state is coming in and all of the outbound connections are being terminated. And now, you
+know, what I think we're going to start to see is this need to be able to move that off the
+developer's desktop. So you actually have this controlled entry point into an environment where an
+organization can think more holistically about what services you want to provide, but can also do it
+for Claude and OpenAI and Gemini and all of the other technologies. So it's this great democratizer.
+It's democratizing data access while preserving control. And it's doing it in a way that's not tied
+to a specific provider. So you go through the exercise of exposing your data once, setting up the
+policies once, and now you have the ability to, you know, use a pretty broad cross-sectional models.
+It occurs to me as we're talking about this, and I think for anyone that's listening or watching
+that has been kind of in it, this is very, very helpful. But I'm also a little bit worried about
+people joining. Could you kind of take a second and talk about what the stack looks like? You know,
+now you have MCP in there. You've kind of talked about some of the virtues of that and some of the
+problems. But could we actually take a second and look at what the whole stack looks like? Because
+we mentioned a whole bunch of different technologies over the last few minutes. And because I think
+one of the challenges I keep hearing this year is people trying to kind of keep up with all the new
+things that are in infrastructure. As you roll this world, we're all living in this world. But
+there's a lot of questions and people are hearing things. You know, we've talked about other
+technologies that we haven't brought in, things like a clawed claw and open claw and all these other
+things. And people are so confused in conversations that I'm having outside the podcast. Can you
+take just a little bit of a moment before we move forward into some of the specific things that you
+guys are addressing and just kind of talk about the stack and how does it all fit together and how
+people should think about that a little bit? Just a level set before we dive a little bit deeper,
+because we've already kind of gone into some pretty cool stuff. And I don't want to leave people by.
+No, no, no, I think it's and I totally respect that, you know, like everyone's at a different point
+in the journey, right? Like a lot of us are geeking about like, you know, how do we wire in this
+specific tool and optimize tool calling and deal tool pollution? And a lot of folks are being like,
+what is a tool and why would I use one? Right. So I totally respect that there's a pretty broad
+cross section. I mean, it's, you know, asking me to describe the stack. It's a very open system.
+There's a lot of different interpretations of what the stack is. But let me describe, you know, what
+problem that we might be solving. And then we describe the set of technologies that might be used to
+solve that problem. Right. So I think, you know, right now what most people are experiencing and
+what works really well for a lot of organizations is just go buy Anthropic. Right. Like, you know,
+like it's like it's almost this world where it's like back in the days of the mainframe. Just go
+buy. No one got fired for buying blue, you know, like big blue. Like, you know, like it's the warm
+blue blanket that tubs you. And Anthropic is definitely kind of, you know, starting to look and feel
+a lot like, you know, IBM did around the dawn of the PC. And for good reasons, they're doing amazing
+work. Like, you know, like we are, you know, rabid fans of their technology. And so for a lot of
+organizations, the starting point might be, hey, let me go get code code or let me go get XYZ. And
+the starting point for them is like, OK, I've got the system and, you know, it has access to my
+local file system. And so I can, you know, if I want to develop code, I can go grab some code and
+copy it locally. And then I can have it futz around with that code. Now I'll get to a point where I
+need more than the ability to just deliver, you know, this sort of code. I want to integrate this
+into, you know, a variety of different other systems. Like I want to be able to integrate this into
+technology like GitHub. Or I want to be able to integrate this into Slack. Or I want to be able to
+integrate this into whatever. And the starting point usually is, OK, well, you know, Claude will
+offer its own kind of native integration system. So they've gone and partnered with Slack. And
+they've gone and partnered with Google. And they've partnered with a variety of people. And you get
+these basic integrations in place. And it works pretty damn well. You know, you get it. You alterize
+it. Native integration works. But at some point, you're going to start asking questions about like,
+well, what about all the other systems, you know, that I use to do my work? How do I start to expose
+those? It starts to raise questions around like, what do I need to build a bridge between this AI
+system that I use to do my work and this big wide world of other technologies out there? And so for
+a lot of organizations, the answer is I need an M2P platform. And I think there's kind of what I
+think of as being four pieces that go into that. The first piece that goes into that is I need a
+runtime. I need somewhere where I can run this thing so that it's hosted. In the case of, you know,
+most developing technologies, people go NPX run. They basically just pull a package down to the
+internet. It runs locally. God help you if that happens to have been exploited by a hacker or
+something like that. And so, you know, having a secure runtime environment for this kind of makes
+sense. The second thing you need is a registry. Like, what servers do I want to use? Like, how do I
+know whether they're good or bad? You know, can I actually, you know, provide a list of servers to
+my organization that I might use? So the registry is the next important piece. The following piece
+of that is a gateway. So, hey, okay, here's these servers. Like, I want to run them in an
+environment. I want to have a single endpoint that exposes them to something like Cloud or to Codex
+or to any other systems. You need that kind of gateway technology. And then the final piece is what
+I think is a control plane. And as you go from one to 10 to 100 to 1,000 servers, as you're starting
+to reason about mapping servers to specific user groups, you need to be able to do that. And so that
+kind of starts building up this kind of what we think of as the sort of MCP gateway system, like the
+MCP kind of platform system. But that's not necessarily all that people need. The other thing that,
+you know, people start to look at is also, well, what about the LLM gateway? But maybe I want to
+start building my own agents. Maybe I want to start reasoning about using a variety of different
+models. Maybe I want to be able to institute my own tracking and policy management around, you know,
+who can talk to what. So an LLM gateway is another complement. I think of those as being kind of two
+bookends to any kind of agentic platform that a real world organization will want to use. You need
+an LLM gateway so you can start to direct traffic to a variety of different models and assert
+controls. And then you need this kind of MCP gateway so that you can start to connect real world
+systems. And then between those two bookends, you know, it gets really fun and interesting. You
+know, we can talk a lot about harnesses. We can talk a lot about like memory management systems,
+session management. You know, there's a lot of like moving boxes. We can talk about agentic
+frameworks like N8N and how they fit into that or, you know, or Crew or LandGraph or, you know, it
+gets more and more and more detailed. But what I tend to think about is, and the guidance I tend to
+give most enterprises is like, look, you know, start with a vertically integrated system and then
+see how far you can get. Then start to assert, you know, assess an appetite and ask questions like,
+as for our developers on cloud code, so for our knowledge workers, what does it look like to get
+there? And you will inevitably, you know, realize that you really do need these two integration
+bookends. You need an MCP gateway and you need an LLM gateway. Those two things, you know, typically
+you want to kind of deploy together. And then there's going to be a lot of other constituent pieces
+that you might pull into that to start creating really great experiences for your knowledge workers
+that kind of decouple you from your, you know, vertically integrated AI platforms. I don't know if
+that's helpful, but that's just how I think about the space. No, it is a great, really good
+explanation there. I appreciate that. If you've been listening to the show over the past few months,
+you realize just how transformative agentic AI is, whether that's cloud code or Hermes agent or
+custom built software that you're deploying for operational efficiencies or as new products to your
+customers. Regardless of your maturity now, this is the world that we're headed towards, this
+agentic AI world. And there's a lot of security and governance teams that aren't letting these
+agents go into production because of risks related to agency and autonomy. And how do you take care
+of things like prompt injections or insecure tool usage? There's a lot to take care of. And that's
+why I'm personally spending my time outside of the show, working with an amazing team of AI
+engineers to build Prediction Guard. Prediction Guard is an AI control plane that you run in your
+own infrastructure behind your firewall. Developers can build on top of this control plane using
+everything that they want to use. Open AI and Anthropic compatible APIs, MCP servers, frameworks
+like Langchain. But all of this is plugged into a built-in governance harness that enforces your
+organization's AI policies. And all of that telemetry goes back to your monitoring and alerting
+systems. I would encourage you to check out what we're doing at predictionguard.com slash practical
+AI. You can schedule a demo with me and the team. And I'd love to get your feedback on what we're
+doing. So visit us at predictionguard.com slash practical AI. That's predictionguard.com slash
+practical AI. Well, Craig, I have a bunch of, I don't know how many I'll get to fit in, but I have a
+bunch of selfish questions just as a practical developer of some of these things. I think one of the
+things that is some, or maybe you could help people understand is you have this, let's say it's an
+MCP server for, let's say Salesforce or HubSpot or whatever. That is running somewhere in a runtime.
+Like you said, it's hosted somewhere. Then there's this like identity authentication piece that I
+think is often very confusing for people. Or maybe a lot of times if they're building their own MCP
+server, they say, oh, well, here's this API to X system. And I have an API key for that API. So I'll
+set that as an environment variable. And just all of my traffic will go to that API. But then you
+lose that identity piece for who's using that. Do they have access to the data they should or
+shouldn't have access to? Could you help us understand like how that piece fits in the identity of
+the user, the authentication with the MCP server? What are the kind of best practices around that
+and some of the things that people could think about? Yeah, I mean, I think there's a lot to unpack
+here, right? And I think, you know, there's the world that is and there's the world that we hope to
+move into together. You know, I think this is probably, you know, it's funny. My buddy Joe, who I've
+worked with for years, you know, we built Compute Engine together and Kubernetes and Heptio and
+Tanzu. And like now he's my CTO here at Stacklock. He wrote the Spiffy paper. I don't know if you've
+heard of Spiffy. It's an identity system that's kind of a sort of the sort of zero trust, you know,
+kind of identity framework. And he wrote that paper about 10 years ago. I think we're finally now at
+a point where AI is the thing that's going to kick us over the line to actually move past, you know,
+relatively traditional kind of OIDC-based systems to something like that. But let me kind of, you
+know, tear this apart into pieces. So first and foremost, MCP as a specification was really grounded
+in like OAuth 2 workflows. So the idea being that, you know, the way that sort of Anthropix
+certainly looks at the world is you have a user, they're using Claude, they have an OIDC token. That
+token can then get pushed onto an MCP service. It's basically identifying the user to the server.
+And then what happens on the back end of that is broadly an exercise to the reader. You know, so
+basically, you know, like whatever you want to do. And I think there's really two problems that have
+to be answered. The first is an authentication problem and the second is an authorization problem,
+right? So, you know, and, you know, obviously the sort of resources that you're accessing are going
+to be, you know, sort of varied. The only thing that we really have right now that works for most
+organizations is the existing OIDC kind of tokens. And so I think we just have to accept that's
+where we are. But over time, as we're starting to build agents, agents are going to have to have
+their own identity. And it cannot be, you know, as simplistic as the way that we've structured
+identity today because it's really going to be this kind of three-legged stool. There's what I think
+of as a service account identity that's effectively identifying the agentic endpoint. It's like
+you're speaking to this specific agent. There's a set of claims that are basically provided or
+presented to that endpoint based on the role that the owner of the agent is provided. And then
+there's a set of on behalf of claims that are going to be inherited from the user who's accessing
+that agent. And that could then get chained through a variety of things. So there's a lot of really
+interesting work being done, both in the MCP upstream specification. You can start looking at things
+like, you know, the transaction tokens. And, you know, there's a lot of innovation happening in the
+IDP space around this. But that's only going to help us tomorrow. It's not going to help us today.
+You know, we actually have to get through the definition and implementation of these systems. And so
+for most people today, I think, you know, what tends to work is you first need to institute some
+kind of token exchange. So typically, you don't want to be in a situation where you receive a user
+credential and then you pass it on to another system. You want to make sure that you're de-scoping
+the claims to the minimum set of claims necessary to perform a task. And so typically, what we tend
+to do when we work with organizations is institute some kind of token exchange. So it could be, you
+know, there's four or five different patterns here that might make sense. You have, you know,
+straight paths where the API receives an OIDC token. You could have federated trust where you have
+to basically exchange the token to another federated trust domain. You have the situation you talked
+about where you basically have to exchange it for an API key. And you need to be able to make sure
+that, you know, that that action is actually pulled out of the agent's kind of purview and is
+handled individually. And so that's what we think of as being one of the primary roles of a
+technology like ToolHive is that it starts to formalize that so that the MCP tool developer doesn't
+have to deal with all of these Uki mechanics of token exchange. That all is handled in the proxy
+layer, you know, for the user. And then you just have to start setting up, you know, and reasoning
+about how you want this to be handled. A very common pattern that, you know, we tend to work with
+people to do is like, I want to use the AWS MCP server and I want to use it in read-only mode,
+right? Because God help me, like I have an agent that's running on my desktop. I don't want to keep
+watching it and having to scrutinize every time it interacts with the system. But I certainly don't
+want it deleting my RDS instance, you know, just because on a whim to clear up an issue. So how do
+you configure that to support read-only mode? And one way you can do that is actually just
+implementing a token exchange where you take your OXA token or whatever, map it to an AWS token, de-
+scope the claims, and then hand that to the MCP server or to the backend API to actually, you know,
+pass through. And that's the kind of pattern that I think a lot of people, you know, want to be able
+to institute. But it's fiddly and it requires a fair bit of work. So you really need a platform team
+that's willing to do this work on behalf of users and recognize this four or five of these common
+patterns. The other thing that I think is really important is the authorization side of the house.
+You know, I think most authorization schemes today are really grounded in the idea that, you know,
+you have deterministic systems that are accessing it. You know, having an unsupervised system that's
+starting to access resources means you really want to start pulling out a lot more policy and start
+putting a lot more scrutiny on tool calls. And so one of the patterns that we see, you know, being
+very helpful is, you know, relying on the existing OTC systems, you know, to decide whether the
+agent should have access to it because the agent's acting on behalf of the user. But then start to
+describe additional agent-only policy as code capabilities that you apply to all your MCP servers.
+So you can start to describe those in a technology like Cedar or Rego or what have you. And then if
+you've got a common proxy, you know, system, you can start to apply that to every tool call that
+you're making. And so I know that's maybe like a little bit too, you know, specific, but, you know,
+I think you do need to separate out those two things. And unfortunately, there's no easy answer when
+you start, you know, kind of having to deal with things like token exchange or credential mapping.
+The one piece of hope I can give teams is that if you have a platform team that's willing to take
+this work on, it is relatively easy to get to a point where you can just start to have relatively
+vanilla servers that rely on platform-delivered, auth and OC capabilities and you can just kind of
+snap them in and use them. And you mentioned ToolHive, which I think is super fascinating. And I
+want to make sure our listeners kind of understand also this proxy layer. Maybe a way to frame this
+question is I could perfectly well in some of the AI APIs, whether that's OpenAI, Anthropic, et
+cetera, sort of on the fly insert information about what MCP server I want to call and just handle
+that at my application layer. Right. Why is a proxy layer something that is helpful for people in
+terms of proxying those MCP connections rather than kind of integrating that at the application
+level? There's several different reasons why you want to institute a proxy. I mean, the first is
+basically visibility and governance. Right. So let's imagine you're building a system where, you
+know, you have your recruiter and they want to schedule an interview and that interview is going to
+touch three different systems and something's going wrong and you need to debug it. Like it's, you
+know, meetings are showing up on your calendar, but they're not showing up on the candidate's
+calendar or something else. And you like, you know, like if you have a proxy, which is basically,
+you have a tool, which is now describing a simple system like schedule interview. And it's kind of
+amalgamating those pieces. You can start to see a trace through the whole system. So, you know, when
+you have these workflows that are relatively complex and touch multiple systems, by having that
+single kind of proxy layer, you can start to generate observability. You can start to apply policy.
+And so it's just from a general hygiene perspective, it makes a ton of sense. A second reason why
+you may want to have that kind of that proxy or that kind of gateway technology is optimization.
+Right. So one of the things that, and I don't know if this is too deep for, you know, general folks,
+but one of the things that you hear a lot about is tool pollution. Right. So an MCP server has a
+tool description associated with it. So, you know, one MCP server will have multiple tools and
+resources. Each of those tools and resources has a description associated with it. When you want to
+make those tools available, those resources and descriptions are in the context window, you know,
+all the time. And that might, you know, over time, if you pull in three or four different MCP
+servers, you may have 150 tools. You may be burning 20,000, 30,000 tokens every interaction. Just
+saying, hey, by the way, here's the tools. Input token caching helps somewhat, but only to a certain
+point. And so being able to start, you know, kind of, you know, basically amalgamating that and
+basically saying, hey, here's two endpoints, find tool and book tool. Yes, it's going to be more
+chatty, meaning the LLM is going to go, okay, I need to use a tool. What tools are available? You
+know, find tool with a description of what you're trying to accomplish. And then, you know, provide
+back a list of tools that actually meet that description. So it reduces input token consumption by
+80 to 90% when you have these things. And so that's a very big deal versus, you know, just allowing
+the models to access that. Tool selection, you know, particularly, you know, when you're working
+with Opus 4.7, it's just so damn good. It really doesn't matter. It's going to figure its stuff out.
+But the minute you start dropping down to Sonnet or Haiku or one of the smaller systems, or if
+you're trying to build an autonomous agent, one of the hardest problems is making sure the thing
+calls the damn tool when it's supposed to call the tool. And smaller LLMs are notoriously bad at
+tool invocation. And if you start putting 20, 30 tools in there, forget about it. It's just not
+going to happen. But if you replace that with a single endpoint that can provide much more, you
+know, fine-grained guidance and distill it down to just the set of actions that a system wants, you
+can get back up to the sort of 95, 97% threshold that actually makes the system useful. So it drives
+behavior there. And then finally, less clutter in the context window generates better results.
+Context optimization is another big, you know, point of it. And then the final piece of it is just,
+you know, like, you know, project or user-based views. You know, sometimes you want to construct a
+set of tools that are specific to a task. Let me give you an example. If you're working on a GIS
+system as a developer, that's a, like, you know, kind of mapping thing. Feature means something very
+specific, right? It's a collection of vectors that describes something on the terrain, right? If
+you're interacting with a GitHub MCP server, feature means something completely different. And if
+that developer is talking about features in code code, it's going to get that thing completely
+confused, right? So being able to start, you know, formalizing the nomenclature of, like, instead of
+just describing this as a feature, but, like, describing this as a GIS feature or something like
+that versus a product feature and being able to kind of, you know, sort of augment the tools with
+something that's semantically more relevant to the task at hand enables you to improve the behavior.
+So the other reason to kind of institute this type of abstraction is that you can also start to
+create much more fine-grained tuned views for specific agents, user groups, etc. That takes of
+another tool and makes it far more intrinsically useful. Such a great explanation there. I really
+appreciate that. I think, you know, one of the things that we were kind of mentioned by name a
+moment ago was ToolHive. And as we are kind of taking the concepts that you're sharing with us and
+diving into how you guys are approaching, you know, the proxy issues and stuff, could you, for those
+who haven't had any exposure to ToolHive, could you take us into what that is as a solution and kind
+of define how it fits in with some of the context that you just now addressed? That'd be fantastic.
+And let's be clear. ToolHive is an open source project. It's Apache 2 licensed. You know, my
+background ahead at Kubernetes, it was a great open source project. I bootstrap CNCF. I love open
+source. I love communities. This is an invitation for people to party on, you know, with us in the
+open on this technology. There's nothing, there's no greater compliment than discovering someone is
+using it and, you know, reaching out later. Fork it, I don't really care. Just, it's open. That's
+what it's there for, right? And so what we built with ToolHive, the philosophy of ToolHive was
+really this, which is, look, Anthropic, OpenAI, Google are describing the Emerald City. You know,
+they're telling us about this beautiful place in the future. Someone needs to build the yellow brick
+road. You know, someone needs to build the basic procedural things that enable you to actually get
+to that destination. And so we started looking at, you know, a technology like MCP and we were like,
+oh gosh, this has to be done right. It just has to be done, you know, to enterprise standards. It's
+such an important thing. So we started asking questions like, well, look, we don't have to reinvent
+the wheel. Like there's a lot of great technology that came out of the cloud native. Which is
+something that I was very intimately, you know, kind of a participant in, in sort of in shepherding
+into existence. Can we take a lot of the learnings, a lot of the technologies out of the cloud
+native ecosystem and just repurpose them so they work really well in the AI native world? And so a
+starting point for us was like, hey, that Linux application container, it's the foundation for
+Kubernetes. Let's just put our MCP service in a Linux application container. You know what that
+means? Well, for an enterprise, that means that it's an OCI image and they know how to reason about
+and harden and scan and validate that image. We can complement that. And so what we've done with
+ToolHive is not just, you know, hey, it runs through your full SDLC the way any other piece of
+technology that you're deploying does. We also do a lot of MCP specific scanning and reasoning. But,
+you know, so we basically provided a pipeline that you can basically generate a container and then
+deploy it in a runtime environment. The second thing that, you know, we started looking at was like,
+well, you know, there's a lot of servers out there that are really useful, like the fetch server is
+probably one of the most commonly used server. Hey, I have an agent. I want to be able to access
+something off the internet. I want to use the fetch server. I might just have given that agent
+access to the totality of my intranet if it's running behind my firewall, right? Like, how do I
+constrain its view to, like, I just want it to fetch documentation. So how do I turn the fetch
+server into my fetch documentation server? And the way to do that would be to constrict which
+network endpoints it can talk to. It turns out containers are really great at doing that. So by
+wrapping it up in a container, you can start to say, hey, I'm running this thing. I don't want it to
+access my personal photos, you know, so I can describe which portions of the file system can access.
+I can describe what network endpoints it can access. So it becomes a secure environment to run these
+MCP servers that you can then, you know, control. And you can, you know, turn them up locally on a
+developer's desktop. You can turn them up in the cloud with Kubernetes and you can run one, 10, 100
+of these things. The next thing that people tend to encounter is this idea of, like, well, I want my
+developers to be able to find and use MCP servers, but I want them to find servers that are vetted,
+trusted, et cetera. So the registry becomes a very natural part of that. So basically being able to
+describe to a client that speaks the registry protocol saying, hey, here's the MCP servers for your
+organization. Here's where you can find them. And, you know, whether they're being downloaded and
+run locally or whether they're just being accessed by a proxy at a sort of hosted endpoint, the
+registry is a very important part. So we've built out an MCP registry. You know, we provide tools
+and capabilities that allow you to harden the images to your taste. You know, we'll provide a pre-
+populated set of images that we've scrutinized, we've scanned. They're coming in out of the
+community, but we stand behind them. You know, we hold to a certain standard. But we can also enable
+people to start layering in their own attribution. Like, hey, I want additional scrutiny on these
+things. And the registry becomes that critical control point. And it becomes the place where you
+start to describe the policy that follows that server down into the destination where it's running
+and enables clients to discover those servers. And then, you know, the other piece I talked about is
+this kind of what we think of as the VMCP gateway, the virtual MCP server. The ability to say, for
+this set of users, I want to expose this set of tools. And I want them described this way. And some
+of those tools might be composite. You know, I might, instead of, you know, saying to the agent that
+my recruiter is using, hey, here's Google Calendar, here's whatever, here's whatever. Maybe I want
+to build an MCP server, which has a single endpoint, which is schedule interview. And then there's a
+sort of declarative workflow behind the scene that actually goes from system to system and binds
+that whole thing in a transactional context. So that either passes or fails atomically. So you don't
+have, you know, you know, some calendar invitation showing up here if they're not showing up there.
+So you can start to, you know, build out those capabilities where you can take basic MCP services,
+building blocks, and create this virtual view on them that's really tailored to a specific user
+cohort, et cetera. And so that's another part of the platform that we've built. And then the final
+piece is just, you know, one of the things we've observed is when we built the system, most people
+were running these servers locally. But we're seeing, you know, 50% month over month growth in the
+Kubernetes use of this technology. You know, like it's astonishing how quickly we're seeing people
+actually adopt the ability to run MCP servers in a Kubernetes destination. And so, you know, we get
+millions and millions and millions of tool invocations from the Kubernetes side of the house. And so
+that Kubernetes control plane is the final piece of it. And you mentioned some of the, yeah, the
+Kubernetes side of things, the declarative nature of some of the, I think, working with Kubernetes
+at certain points, I'm certainly no expert. But I, one of the things that's always, of course, a
+great feeling is to sort of have that declarative workflow where I say, I want, I want this to be
+the state. And it sort of happens on the, on the backend, right? I'm wondering how you see that
+infrastructure side of things developing because now, because the interface that we have as
+developers, infrastructure, DevOps people is a lot of times now in natural language, sort of
+declarative in its, in its own sense. It seems like that Kubernetes control plane and, you know,
+maybe the, the downstream, the things like the tool hive and other things that would be declared
+that way would be very natural to, to, to manage and configure via, via natural language. Is that,
+is that something that, yeah, yeah. I guess, how do you see that developing and how do you see that
+fitting into kind of this? Cause these systems, like you say, maybe it's all of a sudden I have 600
+agents or I have 900 agents. Everyone's on a different maturity path here. And maybe some people are
+listening to this. They have one agent right now, but I think in the future, there's a future where
+they'll have many, many agents running in their, in their environment. And that, that can be very
+scary infrastructure wise as well. Yeah. I think, you know, one of the things that was beautiful
+about Kubernetes, you know, like it's, and this is a testament to, you know, like Joe and Brendan
+and, you know, some of the earlier people that worked on it. And then, you know, also a lot of the
+sort of hardcore Google engineers that had been sweating the details on this, the systems, but this
+idea of kind of reconciliation driven infrastructure, like the idea where you basically can chew off
+something, describe how you want it to be, and then have a system that is solely responsible for
+making that true. Right. And so I think there's, there's a lot of different directions we can go
+with this. You know, one is, you know, those reconcilers today are in principle, like deterministic
+systems. I mean, no system's really deterministic. Anytime you're dealing with the real world,
+entropy has a way of creeping in to anything that you're building, right? Just by virtue of the fact
+that, you know, life is chaotic, the world is chaotic. But now we're introducing, there's the,
+there's certainly the, the, the possibility that we can start to have stochastic systems driving
+reconciliation loops, right? And that's, that's the direction we can get, you know, kind of start
+like leaning into, you know, where, you know, we can start to, you know, describe what we want to
+have happen. And then when something goes out of conformance, invoke a stochastic system to reason
+about why it's out of conformance and then start driving it back into conformance. So I think, you
+know, one of the things that we will certainly see over the next little while is the ability to have
+self annealing, self healing, self optimizing systems. So, you know, you'll be able to, you know,
+describe what you want to have happen. You know, it'll basically generate the YAML and manifest,
+hand it off to Kubernetes. And then you'll just have very smart systems that are watching it. And
+when something goes out of conformance, it can, you know, potentially pull in, you know, obviously
+it'll try to reconcile it. And if it gets to a point where the reconciliation is not working, like,
+hey, this pods and crash actually back off, I'm at the, at the boundaries of what a reconciler can
+currently do. That's when you will have the opportunity to start pulling in stochastic systems to
+drive it. And I think that's going to be a very interesting direction for us as, you know, as we,
+you know, just get even further out of the infrastructure. We just give it to the infrastructure and
+let the infrastructure run it. Now, in terms of like what's necessary to run agents, I mean, there's
+a lot to unpack there. You know, I think that we will certainly see Kubernetes as patterns. I think
+we do need to start reasoning about like, what is the packaging, you know, definition for an agent
+look like? Like, how do we, you know, maybe is it, is it something as an OCI, you know, entity? How
+do we make other systems available? And, you know, like, like, hey, I want this thing to be able to,
+you know, generate and run code as part of its behavior, but it needs to be isolated. And so I think
+there are going to be a number of agent specific platform systems that have to be added that can
+then be, you know, fit into that control loop system and then described, you know, as, as either
+tools or other, you know, abstractions to, to agents that are running. And then I think that the
+harder question, and this one, I don't have an answer to, and if there's anyone on this podcast that
+knows the answer to this and has a really strong theory around this is, you know, like actually
+tracking agent behavior and what a reconciliation loop looks like when you want to start bounding
+agent behavior. You know, certainly evals are pointing us in one direction, kind of human evaluated,
+you know, kind of human the loop style systems. You know, being able to signal and, you know,
+sample, aggregate signal on certain patterns, you know, having other, you know, sort of agents
+watching agents where you can start to, you know, have a sort of a watching agent start to reason
+about the state of another system or behavior system. There's a lot that has to be done there. I
+don't know exactly what that pattern looks like yet. You know, we're certainly playing with ideas.
+You know, we've, we've, we've penciled out a few things. We've built a few things ourselves. But I
+think we still are just learning as a community of, of, you know, whether, you know, stochastic
+reconciliation, you know, outside of, you know, performing remediative action is, is, you know, like
+what that looks like. And we haven't, we haven't yet got there. And I think that's something that
+we're going to have to think about as a, as a community. Well, you've already kind of started going
+the direction that, that we, we usually end up the show on with, with a guest, which is kind of
+looking forward to, to, to what's next. You know, you mentioned some of those challenges that are
+yet to be, yet to be addressed in the community. What, what, maybe just as we wrap up here, what are
+some of those things that you're excited about that are maybe coming within the ecosystem and you
+see developing that you think would be transformative or, or things that maybe it is other things
+that you're kind of what, when you're laying in bed at night, you're, you're thinking about these
+problems. What, what's at the top of your mind kind of going into this? Yeah. What's at the top of
+your mind going into this next season of MCP and agents? I think the thing that I'm most excited
+about is like, you know, as for developers, so for knowledge workers, I meaning, you know, what
+Claude has done. And like, when you, when you look at an individual, like I look at my team of
+developers, right. And like, I look at our performance and, you know, we, we are very deliberate
+about instrumenting our, our, our code, you know, like we, we have Dev Lake deployed, you know, all
+of the developers have, you know, hooks. We know exactly which agents they're using, how they're
+using. We can, we can correlate the, the, the behavior. We, we treat it as a performance, it's
+almost like a performance sport. Like my developers are now performance athletes and they're, you
+know, they kind of wired up and they're, they're, they're, they're in it and we can see what's
+driving productivity. And the thing that's driving the most dramatic productivity from our
+developers is what I think of as agentic concurrency. So being able to have a system that they set
+up where they'll have 15 different agents, each with a slightly different configuration recipe role,
+performing a set of tasks with access to tools that are highly controlled so that they're basically
+running in YOLO mode. You know, it's, it's sort of on, on the path to that kind of dark factory
+story, but there's still a human operator, you know, spinning plates, like, you know, having
+somewhere between five and 15 agents concurrently running. And the productivity is dramatic, right?
+Like it's, look, it's costing us a lot of money. We spend, burning a lot of tokens, but it's more
+than making up for that in terms of productivity. I mean, I, I, I track our weekly productivity.
+This last week, our person, our engineering team's throughput went up 60% in a week, just because as
+the team is starting to get better at, at sort of systematic, you know, concurrency, our ability to
+deal with community issues. You know, we're finally over the threshold where we're actually able to
+burn down issues faster than they're coming in. Like everything is changing. What does that look
+like for knowledge workers? And that's the thing that I'm most excited about, because I'll tell you
+now, like there are things that are the same, meaning, you know, we will get knowledge workers at
+that point where they're able to spin plates and imagine themselves as orchestrating a lot of
+things, but there's a lot of things that are different. The developer's desktop, the desktop just
+cannot be the aggregation point. Their threshold for pain is a lot lower. They cannot be trusted to
+kind of build and run MCP servers, right? That has to be provided to them. They really need to be
+served by a platform team. But I think we can give people superpowers. I think, you know, the
+productivity gains we're seeing on the development side will translate to every other function. If
+we can just start to learn from what's really working well. And, you know, you know, I love what
+Anthropix done. Like they really write letters from the future. And if you just sit down and bother
+to read them and then think about what this looks like through the lens of other domains, there's a
+lot to be gained there. That's awesome. Well, I appreciate you taking time today. And also thank you
+from the community for the great work that you and the team are doing on ToolHive and other things.
+And we'll look forward to having you back on the show to talk about it in the future. Thanks, Craig.
+Hey, thanks for having me on. All right. That's our show for this week. If you haven't checked out
+our website, head to practicalai.fm and be sure to connect with us on LinkedIn, X or Blue Sky.
+You'll see us posting insights related to the latest AI developments. And we would love for you to
+join the conversation. Thanks to our partner, Prediction Guard, for providing operational support
+for the show. Check them out at predictionguard.com. Also, thanks to Breakmaster Cylinder for the
+beats and to you for listening. That's all for now. But you'll hear from us again next week.

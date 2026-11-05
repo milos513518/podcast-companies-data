@@ -1,0 +1,549 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Running Generative AI Models In Production
+DATE: 2024-10-28
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/running-open-models-in-production-episode-38
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/638656700325499663fb7787ba-54c5-4fa1-88ff-0391aba9a01av1.mp3
+DURATION_SECONDS: 3457
+TRANSCRIBED_AT: 2026-09-17T03:33:30Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macy, and today I'm interviewing Philip
+Kiley about running open models in production. So, Philip, can you start by introducing yourself?
+Hi, Tobias. Thanks so much for having me today. So my name's Philip. I work at a company called Base
+10, which does AI infrastructure for influence. And as part of that, I've learned a bunch about the
+challenges of bringing open source and custom models to production. So I'm really excited to have a
+conversation today about sort of the state of open models and the process of getting them to a place
+where you can, you know, treat them as as viable alternatives to closed models for building AI
+enabled products. And do you remember how you first got started working in the ML and AI space?
+Absolutely. So, you know, in school, I went and got a CS degree, and I was not particularly adept at
+AI and ML stuff. I I got a b minus in my statistics class and was much more of a traditional web
+developer. But after college, I got into technical writing and I joined Base 10 off of a cold email
+and said, hey, you know, I'm good at writing. I'm pretty sure I can learn this, this ML stuff on the
+job. And that was before kind of the explosion of generative AI. This was almost 3 years ago at this
+point. So I had a great opportunity to just kind of learn on the job and pick up those AI
+engineering skills along the way. And before we get too far into the operational aspects, one of the
+other nuances that has been going around a lot is what does it even mean for a model to be open?
+Open in what sense? Because there's been all of that pushback on the use of open source in the
+context of open models, and I'm wondering if you can just give your stance on how you think about
+that terminology. That is a great question. I was actually doing a sales training last month and,
+got to explain to a roomful of salespeople what open source is and how these different definitions
+exist. And I, I think I think I called it a source of, major node pedantry, as in there's a lot of
+very small distinctions, that can be made here, but they're important. You know, a truly open model
+is usually defined as open weights, open data, and open code. So you can see everything that went
+into it, you can see everything that went out of it, and you can see the process that got there.
+From there, there's also stuff around commercial use restrictions, there's questions of sort of a
+copyleft model licensing strategy where, you know, in my view, a, you know, truly open model is
+something under an MIT or Apache license. But at the same time, I don't really feel the need to be
+super pure about it in in day to day work. After all, I think the most influential open source model
+is Llama. It's not a particularly hot take to say that. And that's been released under a series of
+custom licenses and credit to Meta. I think that they've been listening to the developer audience
+and removing restrictions in those licenses that don't make sense. Restrictions like, you know, what
+you name fine tune models, restrictions like how you, can use model outputs to improve the quality
+of other models. So while, you know, I think that the legal setup around open source models is going
+to be more of a minefield in the years to come than, say, the legal setup around open source, sort
+of more traditional software, I do think that it's a it's something worth navigating because if we
+want companies, especially companies that aren't just giant, you know, FAANG type companies to have
+the economic incentive to create awesome models and bring them to us as developers, then I think we
+have to accept that there's going to be some experimentation in terms of business model to figure
+out a sort of viable path forward. Whether that's releasing certain models as open source and
+reserving the sort of pro versions of these models as proprietary or whether it's, you know, sets of
+use restrictions like we see with Meta. I just think that we're going to have to, we're gonna have
+to work as an industry to define something that both makes sense for developers and also makes sense
+for the companies that are spending, in many cases, 1,000,000 and 1,000,000 of dollars to bring
+these models to market, where they might only have a few weeks as the top dog before something else
+comes along. And to my understanding, the only model that really fits that truly open designation
+are the OMO class models from the Allen Institute, but I haven't been keeping as close an eye. So I
+don't know if maybe there have been any other entrance that map to that. There's a startup called
+Nomic that has released several models like that, text embedding models that I know of. I I'm sure
+there have been others as well where you get those open, you know, open weights, open data, open
+code. But in many cases, you might get 1 or 2 out of the 3. And I think that, you know, given how
+quickly the space is moving and how quickly techniques from one model are getting integrated into
+others, that the, you know, while while the sort of most pure definition of open source might not be
+followed a 100% of the time, the sort of spiel it of sharing all of this information and learning
+and building off of one another is definitely present in the industry today. Now getting into the
+operational aspects of actually building applications off of these models, running them in
+production. Can you start by giving a bit of an overview about the main decision points that an
+individual or team has to work through before they even get to the point of actually running one of
+these systems? Absolutely. I think this is a super important question and one that it's really easy
+to skip because you can just, like, play with the fun new toys and dive into the tech and and not
+really think about why. But I think this has to start at the product level. So thinking about, are
+you building a AI native product? Are you building an AI feature into an existing product? Or did
+your boss say, hey, we need to have AI and we need to have it yesterday, and you're figuring out a
+way to kind of shoehorn it into some place where it might not necessarily make sense. So if we're
+talking about though a AI native product, one which we kind of define as the something that couldn't
+exist without AI. So for example, a phone calling platform where you can call up and and speak to an
+AI agent or a, you know, maybe like a a video editing platform that's going to automatically cut up
+videos for you. In these cases, you have to start looking at the model level. You have to look at
+proprietary versus open source models and see what models out there do what you need. It's also very
+possible that there just won't be a model that does what you need. So the question is, can you
+prototype? Can you use a existing model to kind of prove the the product and the MVP? And then once
+you achieve some early traction, then start to fine tune and build custom models, or are you going
+to go for more of a pure play where you are becoming a research lab and your product kind of is a
+model? So kind of figuring out where where in that spectrum you and your team are operating is is
+super important because that's going to inform everything downstream. A model research lab bringing
+a custom model to market via an API is going to have an entirely different set of concerns and
+constraints than a, you know, traditional SaaS platform that's trying to build a talk to your data
+widget integration. In terms of the 0 to 1 challenge of I have this idea and then moving to I have
+something that actually works. There are a lot of minute decisions that need to be made in that
+process, a lot of experimentation that needs to be done as far as playing with different models,
+playing with different prompts, etcetera. I'm curious what you see as the biggest, maybe, cliff that
+folks run into as far as being able to actually go from idea to working implementation and some of
+the main drop off points where they decide to where where they just throw up their hands and disgust
+and say, I'm done with this. This doesn't work. I don't I'm gonna go back to what I understand.
+Absolutely. You know, I think that the first big hurdle is just having a good sense of evaluations.
+You can pretty easily get vibes off of any model. You know, I have, for example, this image model
+called playground 2 that I love to use to make blog post images, for for every blog post I I
+publish. And there have been new models that have come out with, you know, new and more advanced
+capabilities, playground 2.5, all the sort of stuff that I've tried, and show them better. But,
+like, off of Vibes, I like playground 2. It makes things that have a sort of aesthetic that I enjoy.
+So going from that kind of vibes based evaluation, which works fine for, hey. I'm just using this
+model to make header images for my blog posts, to a more rigorous and robustly defined set of
+capabilities that you need the model to have and a way of sort of testing that is, that's that's
+definitely a a critical first step. Because if you if you can't be confident that the model actually
+does what you need it to, then you can't actually build an application around it. So so, yeah, so
+it's the the evals are what the the eval is a a way I I see the first big stumbling block. You
+mentioned that model selection is one of the main decisions that can have the biggest impact on all
+of the downstream choices that have to be made. And what I have seen from my limited exposure to
+some of the product development that people go through is they say, hey. I'm gonna go ahead and
+build some AI service. I'm gonna go ahead and just use OpenAI GPT 4 o or whatever the latest model
+is. And then they say, hey. It works great. Now I'm gonna go to production with that, not even
+really thinking about the fact that it only works because the model is so massive, and that also is
+going to increase the latency, the cost, versus starting with, I wanna prove out this idea, how
+small of a model can I get away with before moving to the bigger models? And I'm curious what you
+see as some of the general approach that people take, either end of that spectrum. To be honest, I
+think that starting with the biggest best model is a great approach for prototyping because you want
+to, in that prototyping phase, eliminate as much uncertainty as possible. And so if you're getting a
+bad output or if your model isn't capable of doing what you're asking it for, you're not thinking,
+oh, should I be using a bigger model or should I not? You're just focused on every other part of
+your stack. After you have your product kind of locked in with that bigger model, then I think is a
+great place to start experimenting. You know, if you've just been, for example, using LAMA 4 0 5 b
+because, well, it's the biggest, it's the best one, rather than taking, you know, a couple weeks to
+set up all of your, you know, optimizations, your speculative decoding, your tensor parallelism,
+your, you know, multi h 100 cluster to try to get this thing to run way faster. Well, first, you
+should probably go back to those evals like we were talking about earlier and see, hey, maybe 70 b
+is going to do exactly what I need as well, and then I get all those latency and cost benefits out
+of the box, and then I can go optimize it. So, again, at the beginning, working with the biggest
+best model is, I think, the absolute right way to do it. And then after that, you can experiment
+with smaller models. You can also, of course, experiment with fine tuning smaller models for your
+domain, for your use case, which we've seen people have a ton of success with going from a very
+large expensive general purpose model to a narrow fine tune small model to get much better latency
+and cost characteristics. In terms of that early evaluation cycle of I'm just gonna throw the
+biggest model I can at the problem, you also run into the limitation of, hey. This model doesn't
+even fit on my laptop. So I'm wondering how you see folks addressing that hurdle of being able to
+even just get access to one of these massive models that require multiple GPUs in tandem to be able
+to even load the thing. Absolutely. So this is a place where I'm very privileged. I've never had to
+try and figure out how to put a model on my laptop except when I've been playing with local
+influence for fun because I get to work with GPUs all day, which is which is a very exciting thing.
+I think that, you know, at this point, there's this blog post that I read a while ago, that I think
+was called something like the peace dividend of the SaaS wars that talks about the massive
+proliferation of free tier developer tools where you can, you know, have an authentication service
+that'll support 10,000 users for free. You can have free billing. You can have free, databases. You
+can have fully you know, I've been hosting my websites on Vercel and Netlify for years and I've
+never paid them a penny. So that sort of piece dividend of the SaaS wars phenomenon is kind of
+happening as well in the AI space. There are so many different influence providers and platforms
+that are trying to compete for people's, compute workloads that if you want to experiment with just
+about any model out there, you're going to be able to find someone who's gonna give you some free
+credits to play around with it. Because, you know, the real money and influence is made from mission
+critical production workloads. It's not made from people playing around. So I think that every
+platform is trying to, you know, attract that developer audience by giving away that sort of piece
+dividend and in doing so trying to win the influence wars, so to speak. Another major decision that
+needs to be made before you can actually put something out in front of your end users is what you're
+actually trying to solve for. And to that end, you also have to consider what is the overall
+application architecture that I'm building from. Some of the main ones that I've seen are just throw
+a giant model at the problem, or the biggest one that's been gaining a lot of attention is RAG or
+retrieval augmented generation. You also mentioned fine tuning. And then as an expansion to all of
+that, there is also the concept of these multi agent systems. I'm wondering if you can talk to some
+of the ways that people need to be thinking about which one or which combination of those
+architectural approaches they want to consider and any others that I didn't mention. Absolutely. So
+I think that retrieval augmented generation is a example of a broader trend that I'm seeing, and
+that broader trend is, sometimes being called compound AI. It's the general idea that once you're
+going from that experimentation phase that we've been talking about where you're just trying to run
+one model and and see what it can do to a actual product, to an actual production use case, you are
+probably doing more than just building a chat gpt wrapper. You're probably just doing more than
+sending one request to the model and getting it back. So compound AI is the idea that you're going
+to have multiple models in a single pipeline. You're gonna have multiple steps of influence, to any
+given models. You're going to need to add in business logic. You're gonna need to add in
+authentication and routing, conditional execution. You know, we've seen stuff like companies
+building routers where it'll analyze your query and then depending on the complexity of the queries,
+send it to either a small model or a large model. All of this sort of stuff needs to get
+orchestrated in a in a seamless and most essentially a low latency way. So I've seen a bunch of
+different, you know, tools and and techniques around this this sort of idea of compound AI. You
+know, you can look at tools like Langchain as a great example, and some of their agent frameworks as
+well. And I think that a lot of these, you know, architectures like retrieval augmented generation
+or, you know, agentic workloads are kind of extensions of this. You know, we're also seeing a lot of
+stuff with, structured output and function calling being very relevant here. You know, models if
+you're going to put a bunch of models in a sequence, then you need to address the reliability issues
+that they have because, you know, if something's 99% reliable, but then you, you know, run it 10
+times, well, then it's not 99% reliable. It's 99 to the 10th power, and that's going to be a much,
+much lower reliability. So there's a lot that has to be considered, when you go into these multistep
+pipelines, but it's worth it, because, again, like, you're not trying to build chat gpt wrappers.
+You're trying to build real applications, and that generally requires more than just a round trip to
+a single model. In addition to the model selection as far as how big or how small to go and how do I
+think about the overall architecture of my system. There is also the consideration of the rapid
+succession of new model generations with new capabilities, the growth of multimodal models. And I'm
+curious how you have seen that rapid pace of model evolution impact the way that teams think about
+how to design their overall application and whether and when to actually engage with this overall
+space of AI applications. Yeah. It can be tempting to just kind of wait, you know, because stuff
+does get better over time. A few months ago, vision was brand new. You know, most language models
+couldn't really do vision. Now everyone has vision. Lana has vision. Quinn has vision. Everyone has
+vision. Mistral Mistral has vision. And, you know, function calling was new. Function calling is the
+idea that you have specialized tokens within your vocabulary that allow you to select from a set of
+options and give a sort of recommendation based on a prompt and and a set of options. So, you know,
+you might give it a set of API endpoints with documentation and say, hey. Which endpoint should I
+hit to solve this particular problem? It's very important for building agents. Anyway, so a few
+months ago, very few models had function calling capabilities. Now, like, llama 3.21b fits on an
+iPhone. It has function it has function calling capabilities. So with these rapid advancements, it's
+pretty tempting to just kind of wait and hope that time solves all of your problems. But once you
+actually dig in and start using these models, you realize that this stuff doesn't always work super
+well right out of the box. And that's a good thing. Like if everything just worked perfectly out of
+the box, there wouldn't be cool problems for us to solve as AI engineers. But because of that, if
+you're just kind of waiting around for the models to get better before you start building with them,
+then once they are good enough, then you're a little behind because you haven't been working with
+these early versions, learning where there can be pitfalls, and learning how to work around them.
+You know, a great example of this is in the structured output space. So model you know, since
+ChatGPT was released, people have been trying to get it to put out JSON. You know, there was that
+whole trend a year or so ago of saying, hey, give me JSON or my grandma's gonna die. So we've been
+we've been increasingly, you know, getting better and better tooling for that. Stuff like outlines
+is a is a great tool for for building more structured output. And if you were to look at stuff like
+JSON mode today, you would say, oh, wow. You know, this actually isn't that, that effective because
+you can't do deeply nested schemas. You can't do, you know, certain conditional fields. And if you
+don't have that background, then when you look at the drawbacks of something like outlines and you
+say, hang on, wait, why am I waiting 25 seconds for a state machine to get generated, so that it can
+apply token masks and actually enforce a more complex schema, well, then you you might not
+understand why those trade offs are being made and and why what we have now is better than what we
+had a few months ago. So, yeah, I would just definitely, like, not be intimidated by the pace of
+change in the field because it's a really good opportunity to, like, loan something today with all
+of its rough edges so that you can be part of the process of smoothing those out and not get, you
+know, caught on them down the road. Once you have settled on your model selection, you have your
+overall architecture and some of the logic built, you also have to tackle the question of the model
+serving framework. I know that at base 10, you've got the trust framework, and you also have chains,
+which was built on top of that. Wondering if you can talk to some of the main entrance in this space
+of the model serving layer and the role that it plays in the context of the application, and then in
+particular, how that contrasts with something like a lang chain or a lama index? Yeah. So the point
+of a model serving framework is you have these model weights, and you want to go to a docker image
+with a API endpoints. And that process of of getting there has a bunch of components in the stack.
+You have a model influence engine. You have a model serving engine. You have certain optimizations
+that you might be putting in there, you have some sort of model server code, you have your endpoint
+specification. So this is you know, Base 10 is certainly not the only company that is trying to work
+on this. There are a bunch of notable frameworks. There's Way, it's a very popular framework that
+does model serving. MLflow is another popular one. Other startups have Replicate has Cog, there's
+Bento ML. So there are a bunch of options for going from, okay, I have some model weights sitting in
+a hugging face repository to, okay, I have a GPU or multiple GPUs that are up and are ready to take
+traffic and and return the output of this model inference. And so, yeah, the the role of that is
+just saying, like, look. Me, personally, I don't really know Docker super well. Infrastructure is
+definitely a weakness of mine as a developer, But I can write Python code. I can write a YAML
+configuration file. I can, you know, understand how to run a tensorotllm command to build a serving
+engine. So all of these frameworks are just designed to take ML engineers, AI engineers, data
+scientists who are familiar with more of this, like, Python tooling and say, hey. Let's use the
+tools that you're familiar with so that you can get good abstractions on top of the ones that you
+don't work with on a day to day basis. So putting this into maybe web framework terminology from the
+way that I'm understanding it, you've got your blank chain or llama index, which is equivalent to
+your Flask or Django in the Python world or your Rails or Sinatra if you're a Ruby person. And then
+it sounds like the model serving layers, maybe the wizgi.py or the rack application that says, this
+is how you actually load the web service. And then when you get to the actual inference engine,
+that's analogous to something like a uWSGI or a gunicorn that's responsible for actually keeping the
+process running and handling the inputs and outputs. I think that's a I think that's a pretty good
+that that's a pretty good analogy. The one thing I would add on top of that is the layer that's more
+about the orchestration of the endpoints. So I would say that the the trust server is more like that
+Django or fast API thing. And then the langchain, and chains, like, based on trust chains and the
+other products out there for that are kind of a a new level that might be more analogous to
+something like I mean, it's not really a developer tool, but something like Zapier that's helping
+you combine multiple API calls together and orchestrate them in like a, you know, DAG type fashion.
+And now moving into that inference engine place, I'm wondering if you can share who are the major
+players in that space, what are the differentiating factors between them, how do people work through
+that decision process of, do I use BLLM, do I use the TensorFlow serving or inference engine? Like,
+what are the options? How do I think about it? And what are the ways that they're trying to compete
+on features? The 2 influence engines that I generally see the most are VLLM, which is a open source
+serving framework, and TensorRTLLM. TensorRTLLM is built on top of TensorRT. It's by NVIDIA.
+TensorRTLLM is open source. Parts of TensorRT are also open source. They're both quite good. The
+difference between the two is VLM is generally easier, and it's pretty quick to set up, like, an
+open AI compatible endpoint for basically any large language model. The downside is that it just
+can't always match the performance of TensorRT LOM. TensorRT LOM, does have a much higher learning
+curve. It can also be a more restrictive framework in terms of, for example, if you compile a
+TensorRT LOM engine for a specific GPU, you have to then serve it on that exact GPU. So if I build
+an engine for an a 100 and then I get an h 100, well, if I wanna serve the model on the h 100, I've
+gotta rebuild the engine on that GPU. But the engine, the TensorRT Lm, does do a great job of super
+high performance inference because as a framework by NVIDIA, it does a really good job of accessing
+the sort of architectural features of the GPU. That's why when we look at, for example, the Ampeo
+versus Hopper architecture, if you look at an a100 versus an h100, the h100 is 30 to 60% more
+powerful in in different dimensions depending on how you look at it from the loss spec sheet. And,
+you know, in in many cases, you might look at that and and put a LOM on it and expect that you may
+be getting twice. But due when you're running TensorRT LLM on both of them, you're actually gonna
+get more like, in some cases, 3 times the performance of an h one hundred because it takes those
+model weights, compiles optimized CUDA instructions for the specific model you're trying to run on
+the specific hardware you're trying to run it on for the specific, you know, batch of size and
+sequence links and everything about your production workload that you specify to the engine builder.
+And then it produces that artifact that's, you know, incredibly well optimized for your use case.
+And TensorRTL also has great support for stuff like quantization. You can do post training
+quantization as part of that engine building process, has great support for stuff like Lola
+swapping. So they're they're both really good, options, and it comes down to, again, VLLM being a
+great option that's super well rounded and TensorRT LOM being a great option for, you know, the
+highest possible performance, with a little bit more work. For some of that local on your laptop
+loop, I've also seen the llama cpp and olama become very popular in that context. Is that something
+that people would generally want to also use in a production environment, or is that generally tuned
+more towards, I just wanna use something quickly and easily? Yeah. Generally, the latter. So the
+analogy I like to make if we're gonna be doing web analogies, which I think are very useful, is, you
+know, a TensorRT LLM and a VLLM are kind of like Postgres or MySQL. You know, they're these
+productions type databases. And Ollama is something more like SQLite. I love SQLite. I use it a
+bunch for for local development stuff. And there was definitely a, niche set of developers who use
+SQLite very successfully in production for things. So it's not a perfect analogy. But generally, I
+do think of, you know, the the olamas of the world as more of a more of a development tool while
+stuff like TensorRT O M is definitely solely intended for production. And you also mentioned
+quantization. I know that that is one of the main ways that people are taking some of these large
+models and trying to make them more amenable to lower powered hardware. Wondering if you can talk to
+some of the ways to understand the effect that the quantization is having on the model capabilities
+and performance and some of the other knobs and levers that people can twist and pull to be able to
+get more capability out of a model without necessarily having to spring for large expensive
+hardware? There's a lot that you can do on performance optimization, and I think that I generally
+break it down into 2 different types of approaches. There's stuff that's kind of generally always
+good, and there's stuff that has trade offs. So, you know, going from running just law transformers
+on, on your on your GPU to running something like VLLM or TensorRTLM, That's one of those steps
+that's generally always good. But once you want to start getting better performance than that, you
+have to start looking at steps with trade offs. Quantization is the sort of first step that most
+people take there, and it's a very good one. If any listener wants a quick overview of quantization,
+models are big matrices. And within that, every weight within the model is a number. Generally,
+these numbers are in a 16 bit floating point format. So each one is 2 bytes. Quantization is the
+process of taking those model weights and expressing them in a smaller number format to save space.
+So you can express it in int 8, which is an 8 bit integer, or int 4, which is a 4 bit integer. The
+most recent GPUs from NVIDIA are capable of FP 8. So the, Lovelace and Hoppo series architectures
+are capable of that. So that's going to be an 8 bit floating point number. The upcoming Blackwell
+architecture has FP 4, which is a 4 bit floating point number. So the advantages of quantization are
+quite obvious. If your weights are, say, half as big, you're going from FP 16 to FP 8, then the file
+is half as big. The amount of VLAN that you need to load the file is half as much. But the bigger, I
+think, improvement is in your inference speeds. Most of the auto aggressive portion of LLM
+inference, so that's the process of creating the next token iteratively, is going to be bound or
+bottlenecked by the GPU memory bandwidth. So if your data is half as big, if your model weights and
+your kv cache and all of these different things that you are processing during inference are each
+expressed in a number that takes half as many bytes, then the amount of memory bandwidth that is
+used is much lower. So that sort of addresses that bottleneck. The downside to quantization, because
+you don't you don't get all this for free, is that you're using a less expressive number format. And
+so that's why I spent a good deal of time talking about the difference between the integer formats
+and the floating point formats. The floating point formats are important because they offer a higher
+dynamic range. So while you still in FPA only have 256 numbers, they're sort of spread further apart
+and this actually matters because model weights, you know, not every model weight is equally
+important. Just like certain neurons in the human brain receive more traffic, certain weights in the
+model are, you know, more impactful on the results. That's also why, you know, certain pruning and
+distillation techniques work, why certain speculative decoding techniques work. We can get to that
+later. But that is also why, the dynamic range of the number format that you're quantizing to
+matters so much, for your model's quality, post quantization. Because the more expressive your
+number format, the more of that model's capabilities you're going to be able to attain. So you can
+test this using something called perplexity, where you basically you test how surprised the model is
+by certain sentences, whether or not it would generate those. And generally, you want to see an
+equivalent perplexity or a very, very small gain in perplexity after quantization. And generally,
+we're seeing, like, 99.9% or or better, perplexity similarities after these quantization processes
+and mapping that to something that's indistinguishable to the user. But this can go wrong, you know.
+I don't know. Tobias, have you ever seen, like, people on Twitter saying, like, chat g p t is
+feeling kind of dumb today? I don't spend a lot of time on Twitter, so I can't say that I have. Oh,
+okay. Well, sometimes, you know, people say, like, after a certain update, you know, that that
+certain models start feeling different. And that's because you can you can definitely have these
+processes go along. So if if some, you know, shared endpoint provider is under the hood deciding to
+improve their latency or improve their unit economics by adding quantization or by doing something
+that's a little bit more cutting edge, something like speculative decoding or pruning or
+distillation. That can, in some cases, have some effect on output quality. So it's important to sort
+of understand that the trade offs exist. And as you go further and further into that applied model
+performance research space, you definitely need to keep an eye out for, as we said right at the
+beginning of the podcast, being really good at evaluating your model outputs and making sure that
+they sort of survive this optimization process. Once you have a model running in production, you're
+serving production traffic with it, that also brings in the requirement of being able to understand
+how well it's doing at serving that traffic, how well it's scaling, what are the error rates, and
+that brings in the question of monitoring and observability. From a web application or general
+request response cycle standpoint, metrics and monitoring are a generally well understood subject
+area. But when it comes to the specifics of working with some of these language models or generative
+AI models, I'm wondering if there are any nuances to that monitoring best practice or specific
+metrics that you want to keep an eye out for to be able to understand how and whether and what to do
+to improve the overall delivery or cases where you need to be able to scale up or cases where you
+need to go back to the drawing board and say, I've got this wrong. I need to start back from
+scratch. Absolutely. So once you've solved these sort of model performance problems and you're ready
+to be in production, you have a whole new set of totally unrelated challenges called distributed
+infrastructure, which is which is an entirely different specialization within computer science. And
+in terms of observability in particular, the infrastructure challenges are not dissimilar to what
+you would face in serving, you know, web applications. They're just massively magnified by the scale
+of the hardware that you're using and the models that you're running. So you still care about stuff
+like requests per second. You care about latency, but that latency is now expressed in stuff like
+times to first token, total response time, tokens per second, that kind of stuff, rather than just a
+sort of single end to end number. You care a lot about CPU and GPU utilization. You care about your
+batching. You care about your 405 100 error rates, and and logs to show what went wrong there. But
+in general, you know, the infrastructure operations for a large language model or any other
+generative AI model, if you're going to use it in production, need to have the same level of of
+tooling and the same type of treatment that everything else in DevOps has. So, you know, we've we've
+actually been working very hard recently on on making all of the all of the metrics, available for,
+like, export to Grafana and other platforms like that. Because if you have these as sort of these
+models as mission critical services within your application, then you need to, you know, treat them
+as such and and integrate them into the rest of your sort of observability and reporting stack.
+Another aspect of running these systems in production and keeping an eye on their behaviors in the
+more linear regression or deep learning style, machine learning systems. There is the issue of
+concept drift where you train the model on a certain set of assumptions, the world changes around
+it, and so the model predictions are no longer relevant to the context in which they're being
+provided. I know that there are issues around that with these large language models where they have
+a certain cutoff as far as past a certain point in time. They don't know anything about the world. I
+know that that has been exemplified by things like asking who is the president of the United States
+and getting the previous president because time has passed. Retrieval augmented generation is one
+general approach to addressing that and keeping those models up to date with the state of the world.
+But I'm wondering, what are some of the ways that that issue of concept drift manifests in the world
+of generative AI? Concept drift is, in many cases, if you're doing WAG, more of an engineering
+problem than it is a AI problem. So it's about making sure you're invalidating your caches, making
+sure your data is appropriately chunked, making sure it's up to date, that kind of stuff. And that's
+that's maybe surprising to someone coming from a data science background thinking that, you know,
+the there must be something wrong with the model when I've seen so many times on, like, my, my docs
+chat, for example, it just is, you know, finding a file I deleted a while ago and and isn't, you
+know, busted out of the cache yet. So that's, I think, the biggest difference here in the ML space
+versus the generative AI space, when we talk about concept drift and stuff, is that if you are
+observing, you know, strange behavior and, of course, if this is assuming you haven't touched the
+underlying model weights, you haven't done any of these performance optimizations, these sort of
+techniques can can certainly be to blame for changes in production behavior. But if you're just
+holding the model constant, then then generally, a lot of these times, it can be more of engineering
+challenges rather than data science challenges that are causing this concept drift. In terms of your
+experience of working in this space, working with customers who are working on getting their models
+and applications into production, I'm wondering what are some of the most interesting or innovative
+or unexpected ways that you've seen teams manage this overall process of going from I have an
+outcome that I want to achieve with AI to I have actually got this running in production and their
+journey from start to finish. Yeah. I mean, I've seen I've seen a bunch of amazing stories and I
+think the best ones come from restrictions because as, what's his name, Mark Rosewater, who created
+Magic the Gathering likes to say restrictions bleed creativity. So I think a great example is we
+were working with, you know, customers in Australia, and Australia, doesn't have H100 GPUs or at
+least didn't at the time with the, you know, regions we were looking at with the data centers, that
+we had access to. And so we learned a lot about how to split very large models over 8 or more a 10
+gs GPUs and still get great performance out of it. That's how we learned a lot about stuff like
+tensor parallelism. You know, we've also faced certain capacity constraints, especially around A100
+and H100 GPUs. So we got good at cutting h100 GPUs in half. It turns out that for a lot of things
+like, say, serving Llama 8b, you don't need the full 80 gigabytes of an h100. So you can do
+something called multi instance GPUs and, you know, quite literally split the GPU in half. And now
+you have almost 2 H100s, which, you know, multiplied by entire clusters, can definitely increase
+your availability. So while these, you know, compute availability restrictions have been a challenge
+that we've had to overcome, and have overcome through, you know, things like multi cluster, multi
+cloud, multi hardware platform, the the sort of spot solutions that came up in the interim are
+definitely fun to, fun to experience. In your experience of working in this space, helping customers
+to achieve their desired outcomes, trying to stay up to speed with the rapidly changing landscape?
+What are some of the most interesting or unexpected or challenging lessons that you've learned
+personally? Kind of like we talked about earlier with the idea of concept drift, you know, thinking
+thinking maybe it's going to be a model issue, and it's actually just that you haven't cleared your
+cache and it's pulling some old file. A lot of the hardest challenges that I faced have have not
+been AI challenges. They've been the engineering challenges around it. You know, I can think of
+times when an unpinned dependency or a broken Hugging Face URL or a, you know, update to the
+underlying model has caused weird bugs that I was convinced were some issue with one of the
+complicated parts of my code, of course, right, because the complexity must be where the bugs lie,
+but it's actually something, you know, super simple. I I do want to I do want to acknowledge that,
+you know, just just because we're working with these really cool cutting edge models doesn't mean
+that we're immune from, you know, typos and stupid bugs. That said, the, you know, the fun answer,
+the podcast answer to this question is I've learned a lot of interesting lessons on nonlinearity,
+the way that things can both break and also work at unexpected ways at scale. So like a great
+example of the upside here of nonlinearity is something like speculative decoding. So speculative
+decoding is this performance optimization technique that we've been doing a bunch of work with,
+where you have a draft model. It's going to be a smaller model, say, like, lamma 1b, and then you
+have the target model, which is LAMA, say, 70b, 45b, some some much bigger model. And the idea is
+that even though this big model is, you know, a 100 times or more the size of the small model, that
+it's not going to be a 100 times better, or or at least like the it's it's not going to work a 100
+times more often. You know, maybe the small model is going to be able to get 90% of the way there.
+So the way that speculative decoding works is the small model creates draft tokens, which are then
+verified by the large model because the process of verifying these tokens is substantially faster
+than the process of generating them. And then if the, you know, if the draft model token is wrong,
+only then does the large model actually generate its own token. This this saves a lot on the
+influence time. So that's a great example of where nonlinearity in this space can have. Great upside
+is, oh, hey. Cool. Now I'm running this very large model, but most of my tokens are being generated
+by a much cheaper one. The downside is that it, comes and bites you all the time in unexpected ways.
+So I was doing some benchmarking recently of different batch sizes, for for LM Inference, and
+specifically looking at time to first token. And it was steadily increasing with batch size. You
+know, I've got a batch size of 1, my time to first token is 40 milliseconds. Well, I guess
+technically I was looking at pre fill, but but prefill is what informs time to first token. Batch
+size of 2, okay, now it's 50. Batch size of 4, and now it's 75. And it it kept going up like that
+until all of a sudden the batch size was, I don't know, 96 or something, and it spiked from a couple
+100 milliseconds to a couple seconds. I was like, woah. What's going on here? Turns out that there's
+only, you know, so much memory available on GPU, and as soon as the batches are large enough that
+there starts to be collisions, during that prefilled process, then, the latency for time to first
+token shoots through the loop, and that's effectively a limit on how big of batches you can have at
+a certain sequence length for a given model. So there's there's definitely all sorts of things like
+that. We we also saw like we got really, really good at cold starts when models were, you know, 5
+gigabytes plus the the serving image. And then models got a 100 times bigger, and we had to re
+architect everything because it doesn't just scale linearly. So that's definitely been the biggest
+lesson I've learned working in the space from from an engineering perspective is if something is
+going wrong, it's for one of 2 reasons. Either I made a very stupid engineering mistake or I ran
+into a very cool, nonlinear problem in AI engineering. And for people who are considering how
+they're going to run their AI systems in production, what are the cases where base 10 is the wrong
+choice? That is a great question, and one that I actually have just spent a lot of time looking at
+because I've been doing some competitive positioning work. Dead so base 10 offers dedicated
+deployments. So with base 10, you deploy your model, and you get this auto scaling infrastructure,
+and the whole GPU is yours. So you can put as much batch traffic through it as as the GPU could
+support. And this is great at scale. But if you're just looking to run an off the shelf open source
+model occasionally for side projects and stuff, that's actually not the best approach to this
+dedicated deployment. What you'll probably gonna want is a shared influence end point. It's gonna be
+easier to use and more cost effective because you just instead of paying for minutes of GPU time,
+you're paying for individual tokens, which are sold by the 1,000,000, so they must be pretty cheap.
+There's a bunch of shared influence providers out there. I've been really impressed by providers
+like Block that are making their own hardware, for this shared influence approach because you're
+really getting to benefit from economies of scale with with other individual developers who are also
+running influence through that. So that's definitely an option if you're starting out, if you don't
+have enough traffic to saturate a single GPU. And if you're not doing something that has, like,
+compliance or or privacy restrictions, then definitely just throwing it into a shared influence
+endpoint is is a great way to go. And if you're just looking to, you know, experiment on top of the
+GPU and you want the absolute lowest price per hour for, say, like, an h 100, you're definitely
+better off for something like 1 pod or Lambda Labs, where you can spill up a, you can spin up a bare
+metal machine and load whatever software you want onto it and and experiment from scratch there. So
+base 10 is more of a production platform for latency sensitive, mission critical workloads, high
+throughputs, you know, compliance, security, privacy, all matter. It's those circumstances when
+people come to us. As you continue to invest in this space, stay up to speed with the evolution of
+the AI industry, what are some of the future trends and technology investments that you're focused
+on? I'm definitely keeping a close eye on local influence. I think that when Apple came out with
+Apple Intelligence a few months ago, you know, there are definitely things to criticize about that
+announcement. But one thing that I really appreciated and I do think is the future is the way that
+they kind of blend the on device influence and the cloud influence, where you have certain cases
+where for latency or privacy reasons, you can answer certain small queries on the actual end user's
+device using their built in compute capability. And then for other things, you're gonna have to
+outsource to a more powerful model running on the cloud. That's definitely an area that I'm keeping
+a close eye on, and and I think is going to have a pretty big impact in the coming years. I'm also
+just looking at the increasing competition with open source versus proprietary models. LAMA 4 is, of
+course, coming. I personally don't have any insight into when or or what it's going to be beyond
+what's what's publicly known, But I do assume that there's going to be a good deal more
+multimodality than in the existing models. We already saw that with 3.2 coming out and having vision
+capabilities. So that's another thing I'm very excited about and and looking for in the future is
+the mix between taking specialized models for single modalities and assembling them together to
+build these multimodal pipelines. Like, today, you might take a text to speech model. You might take
+a language model and a transcription models like WISPO and then llama and then some, like, type of
+text to speech or something and assemble all three of those together to build a, say, talk to an AI
+system. And now chat gpt, the gpt API has voice mode, which is a single model that kind of combines
+all of that together. So I think there are pros and cons to both approaches, and I'm interested to
+see in the long term how open source foundation models either or not either. Like, which models are
+going to embrace multimodality within a single model and which models are going to try to specialize
+in doing one modality really, really well. Are there any other aspects of this overall process of
+building AI systems, running them in production, and managing those workloads that we didn't discuss
+yet that you'd like to cover before we close out the show? I think one thing is the the compliance
+aspect. So we're seeing companies in healthcare, in finance, in although regulated industries, we're
+seeing governments and, educational institutions get really interested in building with open AI, get
+really interested in building with AI and not just building prototypes of proof of concepts, but
+building actual production systems that are used at scale. And for these companies, there's another
+sort of wrinkle in the regulatory and compliance aspect that can affect all sorts of things in the
+product decision, but also affect a bunch of things at the technical level. One thing that we're
+seeing a lot of demand for is self hosted inference and hybrid inference, where the model workloads
+can be split across multiple VPCs and can be sort of locked to specific regions, locked to specific
+influence providers, locked to specific public clouds. And so being able to still offer the sort of
+flexibility and clean developer experience of just kind of spinning up an arbitrary GPU and running
+it with the restrictions of having a, you know, certain region or a certain cloud that you have to
+operate within is definitely a challenge moving forward that more and more organizations are gonna
+run into. Alright. Well, for anybody who wants to get in touch with you and follow along with the
+work that you and the rest of the base ten team are doing, I'll have you add your preferred contact
+information to the show notes. And as the final question, I'd like to get your perspective on what
+you see as being the biggest gaps in the tooling, technology, or human training that's available for
+AI systems today. That's a great question. I think the biggest gap going back to the beginning is
+that evaluation. Even when I'm using these models for personal projects or when I'm using them for,
+you know, one off tasks all the way to when I'm seeing customers build applications on top of them.
+The sort of biggest common thread is trying to figure out how to make sure that the model is
+actually good, which starts with figuring out what actually good means and then systematizing the
+process of of measuring that. There's a ton of people doing really good work in this field. I don't
+think that it's going to be a gap or a problem forever, but something that I'm currently starting to
+learn a lot more about, and it's something that I think is going to remain a challenge, as as models
+scale and the use cases for them change. Alright. Well, thank you very much for taking the time
+today to join me and to walk us through the process of getting your model into production and all of
+the different decision points and technology choices that have to be made along the way. It's
+definitely, very helpful exercise for me, and I'm sure for everybody listening. So I appreciate the
+time and energy that you and the rest of the base ten team are putting into making that last mile
+piece easier to address and all of the content that you're helping to produce to make that end to
+end process smoother. So thank you again for that, and I hope you enjoy the rest of your day. Thank
+you so much. Thank you for having me. Thanks, everyone, for listening, and I look forward to
+learning more about all this stuff together. Thank you for listening, and don't forget to check out
+our other shows, the Data Engineering Podcast, which covers the latest in modern data management,
+and podcast dot in it, which covers the Python language, its community, and the innovative ways it
+is being used. You can visit the site at the machine learning podcast.com to subscribe to the show,
+sign up for the mailing list, and read the show notes. And if you've learned something or tried out
+a project from the show, then tell us about it. Email hosts at themachinelearningpodcast.com with
+your story. To help other people find the show, please leave a review on Apple Podcasts and tell
+your friends and coworkers.

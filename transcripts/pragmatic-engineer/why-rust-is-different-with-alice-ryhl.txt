@@ -1,0 +1,534 @@
+Why Rust is different, with Alice Ryhl
+2026-05-20
+Alice Ryhl from Google’s Android Rust team explains why developers love Rust, and what makes the language so powerful for building reliable software.
+https://newsletter.pragmaticengineer.com/p/why-rust-is-different-with-alice
+SOURCE: publisher_substack (Substack podcastUpload.transcription -- publisher text, not machine-transcribed here)
+DIARIZED: yes -- 2 speaker labels from Substack
+SPEAKERS: SPEAKER_01 62.6% (00:23:59) | SPEAKER_00 37.4% (00:14:18)
+NOTE: labels are anonymous (SPEAKER_nn). No name is inferred from them here.
+1262 segments | 11,343 words | 174 turns
+CHURN: 163/174 turns flagged -- 15 under 1.5s, 163 sandwiched inside one other speaker's run (structural in a two-speaker interview: nearly every interior turn is). Marked inline.
+READ: 15/174 turns are BOTH short and sandwiched (8.6% of turns, 0.2% of voiced time) -- that is the mislabelled-backchannel shape. Marked ** inline.
+==============================================================================
+
+[00:00:00] SPEAKER_00:  (prev -- / next SPEAKER_00)
+Rust is quietly spreading as a language of choice to build reliable and performant applications. But what makes it different? Alice Reel is a software engineer working on Google's Android Rust team, a core maintainer of Tokyo, the de facto async runtime for Rust, and is a Rust language team advisor. In today's conversation, we cover the pitch on why Rust is worth to consider, whether you're using TypeScript or C++ today, how concepts like ownership, the borrow checker, and the unsafe keyword work, and what are things that trip up newcomers to Rust, how the languages govern without a benevolent dictator, and how RFCs and additions work, and many more. If you want to understand what makes Rust different and why so many engineers say, once it compiles, it works, this episode is for you. This episode is presented by Antisysys. Verify your system's correctness without human review or traditional integration tests and avoid bugs or outages. This episode is brought to you by Sentry. Sentry is application monitoring software built by developers for developers. The first time I used Sentry was 10 years ago back at Uber where Sentry helped keep us honest on when and where our services were breaking. I also use Sentry today to help me understand if the services and APIs that built for the Pragmatic Engineer are healthy or not. Sentry shows you the full context on issues, stack traces, user actions, environment details, and even the exact line of code that caused the issue. It supports pretty much every modern tech stack, TypeScript, JavaScript, Python, Go, and others. It works on back and front and mobile, you name it. One new feature Sentry launched is Sear, their AI debugging agent.
+
+[00:01:29] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+Let me show you. I open the Seer agent and ask about what are some repeated errors happening on my backend. Seer figures out that a repeated issue is a network call failure. I can then ask for more details and debug more efficiently with this AI agent integrated neatly into Sentry. Seer is a neat tool to fix the hard issues, the ones that are just hard to debug. Check out Sentry at sentry.io slash pragmatic and start monitoring today. Alice, welcome to the podcast. Thank you for having me. It's really nice to have you here. How did you get into software engineering? It actually all started with Minecraft. No way.
+
+[00:02:04] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 8.3s, 2/4 segments under 1.5s]
+I wanted to write my own mod. for Minecraft. So I learned Java. I didn't get very far with the Minecraft modding, but that's where it started.
+
+[00:02:12] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.2s, 2/2 segments under 1.5s]
+How did you continue? Did you go to university?
+
+[00:02:14] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 13.8s, 2/5 segments under 1.5s]
+This was just before I started in high school. And then after high school, I had a year where I worked full time as a software engineer. And then I moved on to start my bachelor. Did that for three years. And then I did a master's for two years.
+
+[00:02:29] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.8s, 1/2 segments under 1.5s]
+How did you end up at Google? Was that straight out of university?
+
+[00:02:33] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.2s]
+Actually started part-time at the same time as when I started my master's and then I switched to full-time after I finished.
+
+[00:02:39] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.9s, 4/5 segments under 1.5s]
+How did you get involved with the Rust community? Was it at Google? Was it before Google? Oh, way before. Way before.
+
+[00:02:46] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 28.8s, 2/10 segments under 1.5s]
+I've been doing Rust for a long time. When I was in school, I spent a lot of time on what's called the Rust Users Forum. Well, I was answering questions, really. I have maybe 10,000 posts on there or something. At some point, I also started being active in some chat servers, the Discord server for something called Tokyo. I kept doing that, answering questions. When I saw comment questions, I would fix the documentation. That's how I got into Tokyo, which I'm now one of the maintainers of.
+
+[00:03:15] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.4s]
+And then for those of us not as familiar with Rust and Tokyo, what is Tokyo inside of Rust and why is it important?
+
+[00:03:23] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 48.3s, 5/17 segments under 1.5s]
+So Tokyo is, well, it's an asynchronous runtime for Rust. You can think of it as the standard library for Rust when you're using async. I mean, if you compare with something like JavaScript in the browser, you might compare Tokyo with the browser itself. For example, in JavaScript, you have this loop This event loop, which has all the tasks that are able to run, and then they get executed one after the other. And especially if you use the await stuff, then you can have tasks pause, and then another task starts running on the same thread. And Tokyo does something similar. It has a queue of things that are able to run, and then it will run them. So unlike JavaScript, Tokyo can be multithreaded, so you can have multiple queues running in parallel.
+
+[00:04:11] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 19.3s, 3/7 segments under 1.5s]
+This seems like a pretty core part of Rust as a language, as an ecosystem. How did you gravitate towards this? Because it sounded like you were, if I understand, you were lurking on the Rust forums, you were helping out here and there. What drew you to this part of the language or the ecosystem, should I say?
+
+[00:04:31] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 18.2s, 1/6 segments under 1.5s]
+I think part of what I liked about Rust is this feeling that As you write the code, when it compiles, it works. I mean, this has to be in quotes, right? Because obviously it's possible that there are bugs. But this is something a lot of people say about Rust, and there's a reason people say it,
+
+[00:04:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.4s]
+even though it's not necessarily literally true. How do some other languages compare?
+
+[00:04:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 6.0s, 1/2 segments under 1.5s]
+To begin with, I think to have a language that feels this way, you have to have a type system. That's where it all starts.
+
+[00:05:00] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:05:01] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 49.5s, 7/17 segments under 1.5s]
+I do think that even compared to other languages with type systems, I think Rust does a better job than many languages even others with type systems. I mean, the classic example is Java's null. It was Tony Hare who invented the null, and he called it his billion-dollar mistake because it's so easy to have... I mean, every time you call a function, you might have a crash in your program. And in Rust, I think they're really good at making sure that when you call a function, there's no chance that it might be null, right? That problem just doesn't exist. So you can't have that kind of crash. And so you have to explicitly say... this object might be null and then the compiler will force you to check for null before you use it. So you can't forget. Like you can in Java.
+
+[00:05:51] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 21.6s, 2/6 segments under 1.5s]
+Can we talk about Rust as a whole? This was a language that was created 20 years ago, in 2006. And it feels like it's become a lot more popular over time. Do you know of the scale that Rust is at in terms of usage or popularity or things along the Rust community, numbers that are known there?
+
+[00:06:13] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 7.3s, 2/3 segments under 1.5s]
+One thing I found kind of funny, I checked here the other day, and we have actually overtaken PHP and Go on the Tiobi Index.
+
+[00:06:21] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 41.2s, 8/17 segments under 1.5s]
+Oh, that index tries to estimate the usage of languages, right? Usage or popularity or something like that. Wow. Because the feeling I have, again, in general, is that Rust is popping up in more and more places, more companies are building on Rust oxide. is a good example. They decided to go all in on Rust. And there's a sense of Rust is becoming a popular place to build high-performance applications, even increasingly contributing to the kernel. As an engineer who might know other languages from TypeScript, Java, etc., what would your pitch be on why it's worth checking out Rust or working with Rust?
+
+[00:07:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.1s]
+That depends a lot on which language you're coming from.
+
+[00:07:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 4.2s]
+Let's come from TypeScript. It's one of the most popular languages right now.
+
+[00:07:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+The pit from TypeScript would be a lot different than the pit from C++. But okay. So to begin with, I think when it comes to TypeScript, Rust fits in as the backend language. That's where I would put it. I wouldn't use it in the frontend. I think it's a pretty good fit for backend API servers. One way to put it is... You don't want to be waking up at night because there are problems with your web server. You need a language that's reliable, that's going to have as few bugs as possible. I mean, obviously it would be nice if it had zero bugs, but you know, it's going to be hard to get there. But as few bugs as possible. That's the idea of Rust. I mean, I already mentioned null, but it does a lot of stuff like that. So there's no null checking and this is done through You know, it has this enum type, which, I mean, I think TypeScript can do something similar. TypeScript is actually kind of good on that front, but okay. The other thing I think is quite good is error handling. So on one hand, Rust doesn't really use exceptions. So it actually returns the error as a value. So you return a value that's either using an enum, either the result or the error. And the way this is done is that there's an operator, question mark, which says, so you write my function and then question mark at the end. And this means if this function fails, return the error. So it's really easy to handle errors,
+
+[00:08:40] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+but it's not zero characters like it is with exceptions, right? So it's explicit. On the other hand, And if you forget to put the question mark, that's a compilation error. So you have to check it. And of course you can also handle it manually. But the point is, it's this idea of there are these things where you write some code and there's some implicit error condition you didn't think of and now you just took down your server
+
+[00:09:07] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.3s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+or something.
+
+[00:09:08] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.4s]
+Another thing I quite like is how it handles documentation.
+
+[00:09:13] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+How does it?
+
+[00:09:14] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 28.1s, 2/7 segments under 1.5s]
+For one... When you have a comment, you make it into a documentation comment by having three slashes instead of two. Now, the thing is, you can, of course, write examples in your documentation. And Rust makes all examples into tests. This means that if you change the underlying code, now your test fails. So this means that you can't forget to update your examples in your documentation.
+
+[00:09:42] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.1s, 1/3 segments under 1.5s]
+Yeah, and I guess there's also things like you, can you forget to initialize a variable in Rust?
+
+[00:09:49] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+I mean, no.
+
+[00:09:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.9s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+It doesn't allow you, right?
+
+[00:09:51] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.9s]
+Yeah, you have to set a value before you use it for the first time.
+
+[00:09:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.3s, 2/3 segments under 1.5s]
+Yeah, and I guess the things with checking the format of incoming JSON, it also forces you to do that.
+
+[00:10:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 29.3s, 6/12 segments under 1.5s]
+Yeah, so there's a pretty cool library called Cerde in Rust where you have your struct, so your type with fields, and then you can say, I want to be able to pass this from, for example, JSON. And then SIRTA will, it's a macro, it will generate code which checks the JSON that it's in the same format it has all the fields you need and they have the right types and it generates native code that's specific to that particular shape of JSON so it's also really efficient.
+
+[00:10:29] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 24.8s, 7/13 segments under 1.5s]
+And again, yeah, so it helps you avoid errors. And there's this thing which, again, I learned just very recently, thanks to you as we're talking ahead of this, is the switch statement, right? So in almost every language, you have a switch for an enum, and you handle cases, and then you might have a default or everything else. And sometimes you forget one of them is not a big deal, or maybe it's a big deal. But in Rust, you cannot do that either, right?
+
+[00:10:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 58.4s, 5/19 segments under 1.5s]
+That's right. So in Rust, it's not called switch. It's called match, but it's the same idea. You can match on your enum, and then you can have a branch for each possibility at Rant B. And if you are missing one, that's a compiler error. Of course, you can have a catch-all case if you want to. but most of the time you would just list all the cases and then in the future when you add a new variant the compiler will tell you oh you need to update your code here, here, here and here. And I think this is kind of leads to another way that Rust really helps with reliability which is that if you're refactoring Rust is really good at telling you all the places you need to update. I've done this sometimes where I would refactor something. I change the code. I change the return type or whatever it is. And then I just fix the compiler errors until the compiler stops shouting. And then once I've done that, I've updated every place I need to update.
+
+[00:11:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 34.4s, 5/12 segments under 1.5s]
+I get a sense that the language designers have thought really hard of what are ways that typically go wrong in a lot of other programming languages and they just try to fix it through the compiler. The documentation example is the one where I'm still like, wow. It happens all the time. You have a comment, example or not, and then it gets out of sync and we always complain about this and we don't know how to fix it. I know I've been complaining for a decade plus. Rust is the first language where I hear an actual solution, even if it's not a perfect one.
+
+[00:12:29] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 19.5s, 2/6 segments under 1.5s]
+And I really think this pattern just everywhere you look, you have this kind of thing again and again that, oh, if you messed up, They, you know, either it won't compile or at the very least there's a lint for it. They just catch a lot of cases at compile time.
+
+[00:12:48] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.0s]
+We've had the pitch from TypeScript or similar languages. What about the pitch from C++?
+
+[00:12:55] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.1s, 9/18 segments under 1.5s]
+So here I actually think it's even stronger. The thing with C++ is that if you make a mistake, right, in JavaScript, maybe you take down your server, which is already bad enough. But in C++, when you make a mistake there, now it's actually a security vulnerability most of the time. If you do something as trivial as you did an off by one in your IRA or whatever it might be, that's a security vulnerability. And that this just keeps happening. Small mistakes become security vulnerabilities. And in Rust, so Rust is memory safe, right? I mean, we talked a bunch about different ways that Rust is more reliable. We didn't even touch about memory safety.
+
+[00:13:36] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 1.3s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Let's talk about memory safety.
+
+[00:13:38] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 27.6s]
+Memory safety is this idea that no matter how stupid the code you write is, it's not going to have a certain class of bugs. And this is the kind of bug that usually leads into security vulnerabilities. You know, the kind of thing where you read past the array and you just look at random memory. Or you destroyed an object and then you used it afterwards. So now you actually touch the memory of some other random object.
+
+[00:14:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.9s]
+And then an attacker who figures this out could populate something there eventually get that code somehow executed or configuration read and then boom The classic
+
+[00:14:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 29.0s]
+example in the kernel is let's say you have some object and you manage to make it so that the object that's actually there because the original object is gone So the memory got reused and now it has a task struct, it's called. And that's basically your process. And it has a field called user ID. And it's pretty common for code to write zeros to memory. But if you write a zero to the use ID, now you're root.
+
+[00:14:47] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.9s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+That's a root user.
+
+[00:14:49] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.5s, 1/2 segments under 1.5s]
+Yeah. That's a really classic way of exploiting this kind of vulnerability.
+
+[00:14:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 28.0s, 4/11 segments under 1.5s]
+And then once an attacker manages to do that, they can take over the... whatever your server or whatever is running and then of course from there on it can just spiral out of control, right? Once you're rude, you've lost. Yeah. Do I understand that a very strong pitch of Rust, especially coming from C++, is memory safety eliminates this whole class of bugs which can turn into security vulnerabilities, which are one of the most serious threats any software can have.
+
+[00:15:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.7s]
+Lost all of the reliability ones I mentioned in the beginning.
+
+[00:15:26] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_00)
+That is a pretty good pitch. We just talked about how Rust offers several safety features like memory safety, error handling, and a type system. This is because reliable is not about one thing, but several things at once. This is where I need to mention our presenting sponsor, Antisysys. Like the designers of Rust, Antisysys also believes there's no one's silver bullets for reliability. You need many different tools and approaches. This is why they've released Hegel Rust, a free open-source property-based testing library for Rust built by the team behind Hypothesis. Rust's compiler is brilliant at catching whole categories of bugs at compile time. But at the edge cases, the weird input combinations, the assumptions that turn out not to hold, those runtime bugs need a different tool. Hegel provides powerful, ergonomic, property-based testing for fast local development. It'll check edge cases you never thought of and catch unknown unknowns before they bring down production. And if you try Hegel and like it, your Hegel test will run in antithesis as written. So you can easily add determinism and the world's most thorough runtime verification to your reliability arsenal. Go to hegel.dev to learn more. I'd also like to mention two conferences this year where I'll be talking and where we can also meet. On the 4th of June, I'll be doing a keynote at Kraft Conference in Budapest, Hungary. This conference is one of the very best ones in Europe focused on software craftsmanship and one where I'm a returning speaker. For more details, check out craft-conf.com.
+
+[00:16:53] SPEAKER_00:  (prev SPEAKER_00 / next SPEAKER_01)
+And on the 15th and 16th of September, I'll be doing a keynote at LDX3 in New York. This is the Festival for Modern Engineering Leadership. Last year, I was at LDX3 in London, and so I'm excited to be back, this time in New York. For more details about this conference, head to leaddev.com. If you'll be at either of them, I'll see you there. And with this, let's get back to Rust and to Alice. I wanted to ask why Rust is getting so popular, but I think we're starting to answer this question, right?
+
+[00:17:22] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.5s, 1/6 segments under 1.5s]
+I think where Rust is really unique is in the combination of things. So on one hand, it doesn't have a garbage collector, and it's usable in low-level contexts, like the Linux kernel or firmware or whatever.
+
+[00:17:37] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.1s, 1/3 segments under 1.5s]
+Why is it a good or a bad thing to have a garbage collector? Java has a garbage collector, C Sharp has a garbage collector. So a garbage collector says...
+
+[00:17:45] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 29.1s, 5/12 segments under 1.5s]
+Once you've done using your objects, there's going to be a little piece of code that checks all of your objects and says, this is not used anymore, and then it cleans it up. Whereas in languages like Rust or C++, the variable is cleaned up at the end of the scope when it goes out of scope. And in the other one, they have to detect afterwards. And this kind of little piece of code that runs every so often to check all your objects, for embedded use cases, this might simply be not possible or unacceptable.
+
+[00:18:15] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.0s, 1/2 segments under 1.5s]
+The performance overhead, the fact that you will not be able to control the memory as much? Even for backend,
+
+[00:18:20] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.0s, 1/4 segments under 1.5s]
+it can be a problem because if you have a request incoming right when it checks all of your objects, like you have some sort of latency spike where it takes much longer to reply. So that's one of the reasons it can be helpful in backend as well.
+
+[00:18:34] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.2s]
+For someone who has not yet seen Rust code, how would you describe it? How it compares to, for example, TypeScript?
+
+[00:18:41] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.5s, 2/5 segments under 1.5s]
+I mean, in many cases, Rust code is similar to many of the other languages. It has braces. It's not like Python where, you know, you use indentation. It has braces. It has semicolons and so on.
+
+[00:18:53] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.5s]
+So it's pretty easy to read, even if you don't. If you know some similar languages, you can look at it and you can get a rough idea.
+
+[00:19:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 3.2s]
+Yeah, I think I think you'll figure it out. It's not that it's not that foreign.
+
+[00:19:04] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 10.8s]
+Rust has a learning curve on the side of the more difficult languages to learn. What do you see devs typically struggle with who are new to Rust and what are the things that just makes it click for them?
+
+[00:19:15] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 51.6s, 10/20 segments under 1.5s]
+I think the most tricky thing people run into is how should you put together your data structure. I mean, for your code, you can mostly do the same things as you can in other languages. I mean, that's not entirely true, but The big thing is really the data structures. So if you have, I don't know what would be a good example, let's say some sort of, okay, let's just say you have an object for a book and it has an array of pages and then you have an object for each page. If I was writing TypeScript, I would probably have a book field in the page that references the book and then the book, of course, also references the page. Right, so it's cyclic. So the book goes to the page, goes back to the book. And in Rust, you usually have to design your objects so that they're not cyclic. It has to be a tree or a deck, if you know what that means.
+
+[00:20:07] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 2.0s]
+Yeah, the direct async graph.
+
+[00:20:09] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.3s, 1/12 segments under 1.5s]
+So if you go out and actually start to use reference counting, it becomes possible to have cyclic objects? with some caveats like you mentioned, but what people end up doing when they're learning the language is that they try to make cyclic objects without anything like that. And then it just doesn't work. and they're going to run into all sorts of problems in their code while they're constructing, they're maybe creating their thing and then they get a compiler error and then they try to change the code and they get a compiler error again. But the thing that a lot of people struggle with is that they keep trying to change the code when the solution is to change the struct.
+
+[00:20:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.1s, 1/3 segments under 1.5s]
+I can see how that's frustrating Rust has another model that might be new for especially for people coming from languages typeship is Rust's ownership model What is the ownership model?
+
+[00:21:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 64.3s, 2/15 segments under 1.5s]
+The ownership is just the idea that if you have a variable containing some object then the object is only there it's kind of exclusive so for example if you have a variable let a equals your string or whatever and then you do let b equal to a then this is a move and so this means that using a afterwards is now a compiler error because its contents have been moved away and of course this is important when we don't have a garbage collector because then when b goes out of scope, it has to clean up the string. Now if a was also valid, then when they both went out of scope, It would clean up the string twice, which is not legal. In most other languages, the garbage collector takes care of this. A and B just go out of scope, do nothing, and then later it cleans up the string. But here, we actually have to do it when we go out of scope. And the ownership model allows you to move from A to B and then A becomes inactive or unusable and does not get cleaned up because it doesn't have a value to clean up anymore.
+
+[00:22:08] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.0s]
+And how does reference counting relate to all of this?
+
+[00:22:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 50.9s, 4/14 segments under 1.5s]
+In Rust we have a bunch of different types which are essentially different kind of pointers and one of the pointers is it's called arc and it's reference counter and so the idea is you have some object somewhere and then you have an arc to the object and what you can do is you can call clone on the arc and this increments a counter and now you have two arcs to the same underlying memory so the object might be really big but you have two arcs that share the same memory and when they go out of scope, the counter is just decremented and when the counter reaches zero, the object is cleaned up. So this is a way of saying this object actually needs to be in multiple places. There's no one place that owns it. And so this way you can use a counter to know how many owners are there and then when the last owner goes away, it gets cleaned up.
+
+[00:23:02] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.5s]
+And on Rust also is another thing that was new to me, the borrow checker.
+
+[00:23:06] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 66.2s, 6/19 segments under 1.5s]
+So another pointer type we have in Rust is called the reference. And a reference is basically, all it is, is that it's a pointer to the object, and that's it. So we do no checking. at runtime. So of course this means that compile time we have to make sure that the last use of the reference has to be before the object goes out of scope. And creating a reference is called borrowing, right? The owner owns the value and now we have a borrow of the value, the reference. And the borrow checker checks that the reference is Like the last use of the reference is before the object goes out of scope. So if you have, say, let's say you have an immutable reference you're reading, then if you change the object, let's say it's a vector. So I have an immutable reference, I'm reading element 5, and then I change the vector I call clear. Then the borrow checker also ensures that you can't use the reference to object 5 afterwards.
+
+[00:24:13] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.6s, 6/6 segments under 1.5s]
+Yes, because now it has been, as soon as you change it, it went out of scope, it's now cleared, right?
+
+[00:24:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 24.1s, 5/9 segments under 1.5s]
+Yeah, the way it works is that if there are mutable borrows, it ensures that the mutable borrow ends or starts before or after the previous borrows have ended, basically. So they don't overlap. So you can only have one writer at the time. or you can have any number of readers. It checks that on the scope, like in a function.
+
+[00:24:44] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.3s, 2/4 segments under 1.5s]
+This concept is new to me as someone who's not used Rust for sure. It's very interesting. One thing I read is on forums, people complaining about so-called fighting the borrow checker. What can make it challenging?
+
+[00:24:57] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 50.7s, 3/14 segments under 1.5s]
+When you write some code that uses the object in a way that doesn't follow the rules I mentioned, that's a compiler error. and fighting the borrow checker is when you can't get out of those compiler errors, I guess. I think a lot of the time this has to do with the struct. One common mistake I see is that if you have a struct with a reference in it, Rust kind of assumes that it can check the scope of that reference by just looking at a single function. But if you have your struct and you're passing it over functions, it might not be possible to make that analysis. And so you just get a compiler error. And so in this case, the solution is maybe to use a different pointer type. For example, the reference counted pointer type often solves this kind of bug. So the solution is, again, to change the data structure.
+
+[00:25:48] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 27.5s, 3/10 segments under 1.5s]
+Yeah, I'm starting to understand why you mentioned that data structures were a place of learning coming from other languages. Oftentimes the solution seems to be just think about your data structures, understand them and do it in the Rust way, right? We talked about memory safety, but there is a keyword in Rust called unsafe. What does this do and in what cases do people typically use? One, does it make sense to use and why does it even exist? That's just a naive question from me.
+
+[00:26:15] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+So let me begin with the what and let's take the why afterwards. So the what is so unsafe is the escape hatch essentially. So I explained before how there are certain bugs where if your program has one of those bugs that's usually a security vulnerability. What Rust ensures is that if you have no use of unsafe then no matter how stupid your code is you will never have one of those bugs. Now if you do use unsafe then There are still some guarantees, but it's a bit weaker. Because each unsafe operation that you can perform has a list of rules. And if you violate these rules, then you might end up with one of these bad bugs. But of course, if you don't, then it's okay. And it's interesting to point out here that unsafe does not disable the borrow checker or anything like that. It just gives you a few more operations you can perform that are not safe in general. And so you have to check yourself, yeah, this is actually okay in this particular case. I mean, let's take the vector example again. Normally when you index 5, it will say, oh, let me check the length. So if the length is at least 6, then it's okay, otherwise you get a crash.
+
+[00:27:37] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+but maybe you're writing some super high performance code and you want to avoid
+
+[00:27:42] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.1s]
+this if you want to avoid this check or if you're in a loop every time so unsafe will just avoid checks may that be is it runtime or compile time checks or both
+
+[00:27:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 34.1s, 1/9 segments under 1.5s]
+What I would say here is that vector has two different ways of getting a value. There's the normal bracket operator we'll use for other languages, which will do the check and crash your program if you get it wrong. But there's another function called get unchecked. And so if you do write vector get unchecked 5, then it will give you element 5 without checking the length. and this function, like in the function signature, it says unsafe fn. That's the function signature. And so you can only call this function from an unsafe block.
+
+[00:28:29] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.4s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Got it.
+
+[00:28:29] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.1s]
+And so all that the unsafe block lets you do is call functions marked unsafe.
+
+[00:28:35] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.2s, 2/6 segments under 1.5s]
+And then in practice, for sensible use cases of unsafe, is it usually to do with high performance code typically? Or have you seen, like what cases have you seen which are like legitimate, this is a great use case for unsafe?
+
+[00:28:49] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_01)
+So usually it will never show up in, say, a backend server. You would have zero uses of unsafe there. Generally, when unsafe is used, it's to add new features to the language. Let's say the language didn't have a vector. The language still has a function to allocate memory, a function to free memory, a function to... read at this pointer address then you could write struct vec the pointer is here and this is a raw pointer so it's unsafe to use the length is this the capacity is this so I might and then you can write your little API of course the fields are private so you can't access them from outside the module I mean if I could do vec.length equals 20 just access the field that would be pretty bad and so You can write your own vector API and using field privacy and good API design, you can add a vector to the language if it doesn't already exist. And unsafe, if encapsulated properly in this kind of API that doesn't permit you to mess it up, then you can have a safe vector that you can use from safe code and no matter how stupid the thing you do with that vector is, it's not going to do something bad. It's just going to crash or whatever, check the length properly. As long as you design your API right, you can add new language features by using unsafe. The other classic example would be to call into a C library.
+
+[00:30:18] SPEAKER_01:  (prev SPEAKER_01 / next SPEAKER_00)
+You can write a library that calls into C and you can even have a safe API and then you can enforce that you only call the C API in the right way.
+
+[00:30:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 18.9s, 3/8 segments under 1.5s]
+Can we talk about the Rust ecosystem, the broader ecosystem? And when it comes to this, the first thing that people come across, including myself, is the Crate ecosystem, Rust's package manager. What is Crate and how does it compare to other package managers in places like NPM or PIP in Python?
+
+[00:30:46] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 37.6s, 2/12 segments under 1.5s]
+So crate is just the Rust word for a package. So it's just a package of your code. So the way it works is that Rust has a tool called Cargo. And Cargo is kind of, it does a lot of stuff. It's actually a pretty neat tool that's kind of all-in-one. So it will do, it's both what you use to run your code. You do cargo run and it will compile your code. You have this thing called CargoTumel where you specify your dependencies and other information about your crate. And when you do cargo run, it will download the dependencies to something called a registry, which is basically just a directory with all the crates you've ever downloaded.
+
+[00:31:24] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yeah.
+
+[00:31:25] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 44.1s, 1/13 segments under 1.5s]
+And you can also do cargo test. It will run all your tests. cargo doc, it will generate your doc. cargo test will also run your doc test. there's even benchmarks and examples so it does all the whole suite so to say you don't need different tools to fetch dependencies and run your code and generate docs I think the biggest difference from something like pip would be that they're not installed to your machine, right? With pip, you either install things globally or you have these virtual environments. So with cargo, it's all local. You just run cargo run and it's only local to this. The only thing that's shared is this registry, which is just to avoid downloading the same thing twice.
+
+[00:32:09] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.0s]
+You told me a funny anecdote about Linus Torvalds and his reaction or what he told you about Rust and cargo.
+
+[00:32:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.8s, 6/14 segments under 1.5s]
+The first time I was at the Linux Plumbers conference, at the very end, so Linux wasn't anywhere to be seen throughout the entire conference, but at the very end of the social event, he showed up. And I went over to say hi, I mentioned I worked on Rust, and immediately he started telling me about how he didn't like Cargo. And so the reason for that is that Cargo downloads code from the internet and runs it, like any package manager. He doesn't want any code on his computer to do that other than his distributions package manager. He doesn't trust anybody else to do that.
+
+[00:32:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 23.4s, 4/9 segments under 1.5s]
+In the node world, we're seeing more problems with vulnerabilities being injected into packages. packages, just a bad actor overtaking packages, you know, they put in whatever code might be from crypto, which is, I guess, the better part to security vulnerabilities. Does Cargo have this problem as well, just like any package manager that is on the internet?
+
+[00:33:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 20.5s, 8/12 segments under 1.5s]
+I mean, in principle, yeah. I mean, ultimately, if you somehow got a hold of, you know, my keys to upload new Tokyo versions, you could upload a malicious one. I don't think we've had much problems with it compared to something like NPM, but I don't really know if we, I mean, it's a hard problem, right?
+
+[00:33:40] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.8s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+It's a hard problem.
+
+[00:33:40] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 9.1s, 1/4 segments under 1.5s]
+If somebody can impersonate the maintainer of a library, then I mean, I think they do do stuff like delete, go scratting malicious crates and stuff like that.
+
+[00:33:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.0s]
+Where do you see the Rust ecosystem being the most mature and the least mature right now?
+
+[00:33:57] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 64.2s, 6/21 segments under 1.5s]
+My opinion is that the least mature area is frontend. There have been some attempts to compile Rust to WebAssembly. and then run it on the web as a frontend as a replacement for TypeScript. But if I was writing a web server, I would totally use Rust for the backend and TypeScript for the frontend. I would not really go the WebAssembly route. On the other hand, For backend, I actually think it's a pretty great fit. And there's also stuff like command line tools. I think it's really, really great fit for that. And then, of course, we are expanding into Linux. And we are also expanding into a lot of embedded projects. And there are even projects that are like C code bases that are starting to say, hey, it's went into Linux. Maybe we should start using it too. Maybe we should have a memory-safe language too. I know that Git is talking about it. I know that CPython is talking about it. There are probably others. QEMO maybe.
+
+[00:35:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 14.5s, 1/6 segments under 1.5s]
+Can we talk about how the language is built? Who builds Rust? What the process for doing it? How does it compare to a project like Linux? I know it's not a language, but it's still a large open source project. I mean, it's really an open source project.
+
+[00:35:16] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 30.2s, 1/8 segments under 1.5s]
+I mean, you may know that it originally originates from Mozilla, but it's not a Mozilla project anymore at all. So today, there's the Rust project, which has a bunch of different teams. There's the language team which deals with the language. There's the library API team which decides on the API of the standard library. And these teams kind of govern it. So it's the people who are on these teams that run the language.
+
+[00:35:47] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 19.3s, 1/5 segments under 1.5s]
+And one interesting difference compared to some other popular languages like Python or projects like Linux is they have a benevolent dictator for life and Rust does not. How is this working and how are decisions made especially when they're contagious or when it could help for someone to just make a decision?
+
+[00:36:07] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 26.4s, 3/9 segments under 1.5s]
+Honestly, if the team doesn't sign off on it, it doesn't happen. I mean, if something is really contentious or really big, it will probably end up being discussed at a conference. For example, there's a conference called Rust Week where they have an event called the Rust All Hands where they're basically taking all of the Rust developers and putting them in one place. So if there was a problem like that, they would probably discuss it there.
+
+[00:36:34] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 18.9s, 2/6 segments under 1.5s]
+And how are these teams structured? So like you said, there's a compiler, language, library, and dev tools at the very least. How do they define the boundaries? Is it just a team kind of roughly defining them and then you just kind of agree? Because as I'm thinking at a corporate level, like... The Pragmatic Engineer
+
+[00:37:08] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 16.2s, 3/7 segments under 1.5s]
+Yeah, really when it comes to the design of the language, the teams are really, that's really it. Teams have been pretty good as far as I've seen at delegating. So I've seen them sometimes say, we think this is a Lips API decision and we will go with whatever Lips API decides.
+
+[00:37:25] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.5s]
+One thing that is interesting to talk about is the RFC process. So there's requests for process.
+
+[00:37:30] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 30.2s, 2/9 segments under 1.5s]
+RFC, request for comment, is the way the Rust project makes big decisions. But, you know, big ones is important to say. Basically, the way it works is, let's say you have a language feature that's kind of big. For example, I had one called Drive Smart Pointer, which... basically makes some types in the standard library less special. So, I mean, sometimes people begin implementation already, but the idea is that you write the RFC first.
+
+[00:38:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 7.8s, 3/5 segments under 1.5s]
+By the way, that's no different inside of, like, at Uber we had an RFC process and the same thing. Usually you follow it, but sometimes you kind of start to build it and then just...
+
+[00:38:09] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 2.4s]
+The idea is you write the RFC first.
+
+[00:38:11] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.2s, 2/3 segments under 1.5s]
+Yeah, I know. It's just funny how it happens everywhere where there's engineers, I think. It's the ish to build.
+
+[00:38:18] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 39.8s, 2/12 segments under 1.5s]
+You write this doc and it has a template and I think it's actually a pretty good template. The idea is the first section is, I think, motivation. Well, the first one is summary, but the first important one is motivation to explain why this feature. And then I think they have two really interesting sections. They have the guide level explanation and the reference level explanation. And what this is, is that in the guide level explanation, you explain your feature and as if you were writing a guide, as if the feature already existed. And in the reference level explanation, you explain your feature again as if it already existed, but as if it would be in the language reference
+
+[00:38:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 28.4s, 18/22 segments under 1.5s]
+instead of a tutorial. This is really interesting. You know, Amazon does, just related to this, when they ask people to build a feature, they have a press release. Like, imagine if you announce this. I just love how, like, both this and what you're saying, it forces you to just think from a very different perspective, right? From how people will use this feature. Exactly. And then other sections, there's, I think you mentioned, rationale, alternatives, prior art, future possibilities.
+
+[00:39:27] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 23.0s]
+So rational and alternatives I think is a pretty important section because you get to answer all of the questions before they get asked and you get to explain why did you pick this design and some other design and I think that's usually a pretty big part of an RFC and then of course it's good to look at what did C++ do and what can
+
+[00:39:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.9s, 1/2 segments under 1.5s]
+we do in the future as well And once you have the RFC you send it out what happens then?
+
+[00:39:55] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 62.2s, 3/14 segments under 1.5s]
+well somehow people get people to look at it there is an IFC's repository and you can open a pull request there with your markdown document with the RFC and people can discuss it You might also write up your dog somewhere else and we call it a pre-RFC if it's not in the RFC directory but it's kind of the same thing. Let's say that the language team like it's a language team RFC and they're happy with it. So I said the RFC was how the language makes big decisions but then they actually use a process that comes up for all decisions essentially called the final comment period. And so the idea is they tell the bot to please start the approval process and then it will create a comment on GitHub with a checkbox for every team member and then team members check their own checkbox and once everybody from the team except for at most two have checked their checkbox then the final comment period will begin
+
+[00:40:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.9s, 2/5 segments under 1.5s]
+which is two weeks. Oh, so when it's only two checkboxes left, then two weeks start. What's the rationale for this? This is very interesting. Is it a historic fact more like?
+
+[00:41:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.4s, 2/5 segments under 1.5s]
+I mean, you know, let's say that everybody checks that box immediately and then the two other people didn't get a chance to look yet. So it's to make sure that everybody has a chance to see it.
+
+[00:41:22] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.6s, 1/2 segments under 1.5s]
+Yes, I understand. And also to keep things moving at a sensible pace.
+
+[00:41:26] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.1s, 1/9 segments under 1.5s]
+So there's another part of the process which is concerns. Team members can file a concern which basically pauses the process until it's resolved. And then once the two weeks pass, it's accepted. So that's essentially how the team makes decisions. And this is not just RFCs. If you have, I don't know, a pull request changing something in the reference, then the language team might say oh we need to make sure that everybody is on board with this change they'll tell the bot to start an FCP on this random PR or some random issue or wherever it might be the same process applies
+
+[00:42:01] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.2s, 4/7 segments under 1.5s]
+And then once, let's say it's a language feature, the RFC is accepted, we know what we're going to build, then the feature is just built, you just start to open your pull requests and get into a language? Pretty much.
+
+[00:42:14] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 31.0s, 6/13 segments under 1.5s]
+But you put the feature behind a feature flag. In Rust, we have this thing called nightly features, which basically means that you can't use it normally. But if you use the nightly build of the compiler, you can. Once you have your feature, I mean, you might begin. But, you know, once you have your accepted IFC, you start submitting pull requests, you implement your feature, it gets merged, and people start using it experimentally.
+
+[00:42:46] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.7s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+On the nightly build?
+
+[00:42:47] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 39.2s, 3/11 segments under 1.5s]
+Yeah. And then at some point, You might say, okay, I think this feature is ready. And this is kind of a recent invention, but we have come up with this idea of a stabilization report. In the pull request that removes the feature flag, we write up a little report saying... for example how it's been used and explaining like oh here are the dangerous edge cases here are the tests for each of the dangerous edge so that kind of stuff and then they use the FCP process again to agree to stabilize it and then it's merged and so now you have a feature without a feature flag yep in the main branch.
+
+[00:43:27] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.2s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Yes.
+
+[00:43:27] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 13.3s, 2/5 segments under 1.5s]
+Between zero days and six weeks from that, there will be a beta release of the compiler, and it will be in it. Yeah, it will be in it. And then six weeks later, the beta release becomes the next stable release.
+
+[00:43:41] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.5s, 1/3 segments under 1.5s]
+Okay, so like Rust has a strict six-week release cycle, unlike with Linux. Well, Linux also has a rough demo, but here you just take the stable branch. You're not doing any special...
+
+[00:43:53] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 5.2s]
+Yeah, and so we don't really have a concept of beta features that are only available on beta.
+
+[00:43:59] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.8s, 3/4 segments under 1.5s]
+You have the nightly, pretty much nightly, or people can get onto the latest branch, which is not yet cut.
+
+[00:44:05] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 11.0s, 1/5 segments under 1.5s]
+Yeah, the main purpose of beta is to test, like you get six weeks to test the stable release, so hopefully if there's any problems, we can fix them before it goes out into a stable release.
+
+[00:44:16] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 11.8s]
+And you mentioned that RFCs are only for large decisions that need to be made and you haven't written that many either just because they're large. What about smaller decisions that you also want to get consensus on?
+
+[00:44:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 40.7s, 4/14 segments under 1.5s]
+So here, there are a few different ways to do it. So let's say you want to add a new function in the standard library or a new type. Then the library team actually has this thing called an ACP, an API Change Proposal, which is basically just an issue on GitHub. So you open your issue, you describe your API, describe what the interface is, and explain why you should have it. And it's much smaller than an IFC would be. And then the library team can say, this is okay with us. and then you can implement it on unstable or nightly. And then later you can then stabilize it. And similarly, the compiler team has, it's kind of a major change proposals.
+
+[00:45:09] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 1.7s]
+You need to say how it's called.
+
+[00:45:11] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: short, sandwiched; 0.6s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+MCPs.
+
+[00:45:13] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 5.6s]
+What is going to confuse a lot of people outside of, we're not inside of Rust. Yeah, it is what it is.
+
+[00:45:19] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 13.6s, 2/5 segments under 1.5s]
+Which are for the smaller features. Yeah. Even though it's called major, right? It's big enough that they need you to put up an issue, but not big enough to need an IFC. And for the compiler team, the classic example would be a new compiler flag.
+
+[00:45:33] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 12.7s, 1/4 segments under 1.5s]
+Now, Rust has new builds every six weeks, right? But it also has additions. There's one in 2015, 2018, 2021, 2024. What are additions?
+
+[00:45:46] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 66.2s, 4/17 segments under 1.5s]
+So the thing about additions that is different from versions is is that if you're using version 1.90 of the compiler, everything is using that version. But different crates can use different editions. And so I might have a crate using the 2025 edition of the language. And I can keep using that forever because Rust has a really, really high backwards compatibility guarantee. So you write all of your code, and the guarantee is that it's gonna keep working forever. That's the idea anyway. Editions are basically the way that Rust makes breaking changes without breaking evil because they might change the syntax of the language. For example, async await was added to an addition. And so code using the old addition can't use async await. There you could have a variable called async if you want. Let async equal five. And then in the new edition you can't. But you can still mix and match code written in different editions so they work together.
+
+[00:46:53] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.8s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+Oh, interesting.
+
+[00:46:54] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 10.5s, 1/3 segments under 1.5s]
+So I might have a library written in the 2021 edition and you can write your library in 2024 edition or your binary project and then you can still use my library.
+
+[00:47:05] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 27.1s]
+Why do you think Russ decided on additions which feels a bit more confusing to me as a developer as opposed to versions like when I look at Java's versions or PHP's versions or even Ruby on Rails versions there's always a major number and I might be wrong but it sounds to me that an addition is almost an equivalent of a major version at other languages. Is that putting it correctly or am I missing some details here?
+
+[00:47:33] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 18.3s, 4/8 segments under 1.5s]
+Really the big idea is to say, we want the old code to continue working, but we still want to change the language. And so the difference from other kinds of versions of languages, I mean, Python 2, version Python 3 comes to mind, is that you can totally mix and match in any way you want.
+
+[00:47:51] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.2s]
+You are a language team advisor, or you recently became one. What is a language team advisor, and what do you do as part of this role?
+
+[00:48:00] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 48.8s, 5/13 segments under 1.5s]
+We have, of course, the language team, which they have meetings every week and they do a lot of stuff and so on and so forth. The language team advisor role is a way to be part of the language team light in some sense. So you're someone that they've said, okay, we trust this person's opinions. but you don't necessarily go to every single meeting like there's no checkbox for you on an FCP so you can still file a concern so yeah it's really a way to participate in or help the language team without full membership and full membership might entail a lot of things right for example for me it would entail going to meetings every Wednesday evening instead of like when I would normally have dinner
+
+[00:48:49] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 36.4s, 2/10 segments under 1.5s]
+From your observation, what is the corporate influence like on Rust? In the sense that when I talk with Greg KH, he was telling me that in practice about 80% of the frequent Linux contributors are typically by a company which sees value in adding their features or maintaining their features in Linux, which turns out to be a nice kind of symbiosis in some ways. For Rust, the people working on it, I would say here that the Linux kernel is truly unique in this particular aspect in that they have thousands of contributors
+
+[00:49:46] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.9s, 1/9 segments under 1.5s]
+doing it on work time. I actually think that the Rust project is doing pretty well at having people do it and get paid for it by their employer, but it's nowhere near to the same extent as the Linux kernel. The Rust project also has a few other interesting things. So the Rust Foundation have some grants that allow I mean for example if you're a student and you want to work on something you might be able to get a grant some money from the Rust Foundation I think that's a super cool thing that the foundation is doing
+
+[00:50:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 18.4s, 1/5 segments under 1.5s]
+especially I think getting people and most students involved or you know the people who would find it harder or more daunting to get involved in a project like this. Speaking of which for a software engineer who would be interested to contribute to the Rust ecosystem what would your suggestion be in terms of both resources or ways to get started?
+
+[00:50:42] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 83.5s, 7/23 segments under 1.5s]
+I mean, obviously you can go to the issue tracker and look for issues that interest you. I think that often it's, I mean, the best way to contribute something is if you have something you want to change about it. I think that's often a pretty good starting point. So if you wanted to contribute to the Rust language itself, Rust does a lot of its stuff on something called Zulip, which is a chat server where people talk and you could go there and talk to people. So the Rust for Linux project has a pretty nice contributing page. So rustforlinux.com. and there's a contributing page there. For one, there are a few different drivers you might be able to contribute to and they have links to the issue tracker there. Another thing that's really cool is you can contribute to the Linux kernel without contributing to the Linux kernel, right? Because you might take a Rust language feature we need and implement it. And now you've contributed to the Linux kernel indirectly. or maybe you want to work on the Rust in GCC project and help move that forward. And so I think there are a lot of different projects other than the Linux kernel that would help Rust in the Linux kernel a lot to contribute there.
+
+[00:52:06] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 19.9s, 1/5 segments under 1.5s]
+Can we talk a little bit about Rust in the Linux kernel on how that has evolved, how you got involved in writing Rust in the Linux kernel, and have you seen the approach of especially Linux kernel devs change or soften towards Rust? Because I know it was a very heated topic earlier on.
+
+[00:52:27] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 57.3s, 5/18 segments under 1.5s]
+Linux has this conference called Linux Plumbers, which, you know, as part of my work on Rust for the Linux kernel, I've been going to for the past few years. And one thing I think has been really obvious is every time I've gone, you can say things have totally changed since last year. I've experienced this like four times in a row. That's kind of pretty cool. Yeah, I think there's really a lot of stuff that's happening. I mean one year I might go and people think oh that's some nice little thing you have there right and then the next year Now they have Rust code in their subsystem. It kind of keeps going. The most recent Linux plumbers from December 2025 was there the big news were that at the Linux kernel maintainer summit we agreed that Rust is no longer experimental in the kernel. That was really big for us compared to the previous year.
+
+[00:53:25] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.7s, 1/4 segments under 1.5s]
+So now that means that it's official, like Rust has the same status as C, which is the language that the kernel is written in, right?
+
+[00:53:35] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 1.7s, 2/2 segments under 1.5s]
+I guess. Wow.
+
+[00:53:37] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 39.4s, 2/11 segments under 1.5s]
+Not to say the same status, but not being experimental, it clearly marks that it's more stable. Experimental sounds like it's not as stable. Basically, we've proved this is going to work. I mean, based on what you've laid out just with memory safety, and of course being able to use unsafe when you need to that already like shows a lot of I guess promise plus there's there's some regulation as well right there's I think the US Department of Defense And this would practically mean that Rust and other memory safe languages could be used, but C, C++ or maybe one day systems that are built in this one might see larger scrutiny.
+
+[00:54:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 21.5s, 1/6 segments under 1.5s]
+Yeah, there have been different stuff like that from multiple different governments, right? These governments are saying, you guys are using C or C++ in this project, and it's causing an unacceptable amount of memory safety vulnerabilities that simply don't happen if you just don't. So what if you didn't do that?
+
+[00:54:50] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 24.5s, 4/9 segments under 1.5s]
+In this conversation, we managed to go for a very long time without even mentioning AI once, which given where the world right now is and how these tools are spreading, that's pretty impressive. I was interested, do you use any of the AI tools for your day-to-day work, building Tokyo, contributing to Rust projects? Have you found a need for them at all?
+
+[00:55:15] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.9s, 1/3 segments under 1.5s]
+So I have been trying to use them honestly I'm still learning how to use these tools but I have used them I quite like the Gemini command line interface I think it's pretty neat
+
+[00:55:31] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 37.4s, 3/10 segments under 1.5s]
+These tools are pretty proficient at outputting code or giving a prompt and putting out code. But in your day-to-day work, how much code do you actually type as opposed to reviewing code, thinking about what to do, making a plan because it sounds like as we're talking about the RFC for example the RFC process my sense was most of that was thinking about what to build getting a consensus making sure it's right and it almost sounded like the actual code itself would be the I don't know lesser of course you know there's a lot of work involved but you see what I mean the actual time spent will probably be less than everything else around it
+
+[00:56:09] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 31.0s, 1/9 segments under 1.5s]
+I think it's still an important part of the process. I mean, a lot of people talk about that when you use AI, it's really important to write tests and that kind of thing, because then the AI is actually able to tell if it did it right. I explained this story from before about how I was refactoring something. I just did what the compiler told me. I think the same kind of principle applies with agents. in that they can talk to the compiler, it will tell them what to fix.
+
+[00:56:41] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 13.9s, 3/5 segments under 1.5s]
+I guess this could be a case, we'll see, but Rust could be a pretty promising candidate to use for agents because they can get more feedback and it's harder to ship certain type of bugs or maybe impossible to have certain type of bugs.
+
+[00:56:55] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 1.9s]
+Yeah, I think there is an aspect of that.
+
+[00:56:58] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 40.2s, 3/13 segments under 1.5s]
+For places like the Linux kernel, where correctness is extremely important, reliability is very important, there's already multiple layers of human review which is in place. Do you see potential for AI-generated code to prove helpful, actually truly helpful. Again, assuming that these things can generate as per specification or as per what you need. Or could this be a place where it might be one of the places where we might not need that much? Because it already feels occurring. To me, it feels like a place where there's a lot of people coming in, contributing, and there's a reason that change can propagate slower.
+
+[00:57:39] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 37.6s, 6/15 segments under 1.5s]
+When I was at the Linux Kernel Maintainer Summit, one of the topics that came up was using AI for code review. And there were some people there who had, for example, set up bots that would say, when you send an email to the mailing list, it would feed it into an AI agent, which would leave a review. That kind of stuff. And for example, Linus and others were talking about how these reviews were actually really impressive. for kernel code. At least what's being discussed in the kernel community, that kind of use case seems like something people are excited about.
+
+[00:58:17] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 10.6s, 3/6 segments under 1.5s]
+And it sounds like this would not be a replacement, obviously, but just one more way to get feedback, maybe doing it quicker and just an additional safety net, if you will, right?
+
+[00:58:28] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 24.7s, 4/9 segments under 1.5s]
+I mean, that's the thing with memory safety, right? You make some sort of trivial mistake. It's not some complex thing. It's just you make some trivial mistake and there's a bajillion places you could make it. So even if you're a really good programmer and only make it 0.1% of the time or whatever, it's still going to happen, right? And so if the AI can catch a lot of those, then, you know, that's pretty good.
+
+[00:58:54] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 43.6s, 4/16 segments under 1.5s]
+Well, I guess some creative use cases could be, for example, their tests are a big thing, but AI might be able to help figure out if there's edge cases missing again, if the language itself does not support it. But there could be what I understand. And there's there could be a lot of potential to add more safety nets that do not exist today. I think that's right. I like this approach. So this is this is one of the first conversations I'm having where we're talking about AI where we're talking about how to increase quality with AI because in again in startups or whoever is building there's a lot of talk about how it can make it faster faster iteration and there's usually a quality trade-off that we usually do not talk about but I love that we're actually talking about the things that can increase quality or at least keep it at the same level.
+
+[00:59:38] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 45.3s, 5/14 segments under 1.5s]
+I mean, I have actually written a few patches with AI myself. It worked okay. I mean, it definitely required my review before sending it out to the list. It really did sometimes. But, you know, another place I remember using it was I had this commit that made binder faster in some way. And one of the review comments I had received was, hey, can you run a benchmark? I said oh my god now I have to write a benchmark but then I got the AI to benchmark it for me and what it did it actually went and found an existing benchmark and modified it a little bit in a quite clever way and then it ran it for me and then it wrote a Python script to analyze the text file with the numbers and presented it in a nice table
+
+[01:00:23] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 8.7s]
+So it sounds like this was toy work that you could have done but you might have not done as good of a work because you might have not found that until you might not
+
+[01:00:32] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 4.1s, 1/2 segments under 1.5s]
+figure it out to do that I mean at least in that instance it saved me time if nothing else
+
+[01:00:37] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 18.3s, 3/8 segments under 1.5s]
+For a senior engineer who would like to learn Rust or just build with it, what would your suggestion be to get started? Of course, for example, AI might be one of the things which makes it a lot easier just to get started. But if you would like to learn, what do you recommend for people who actually want to become a professional at the language?
+
+[01:00:55] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 15.9s, 5/9 segments under 1.5s]
+So for one, I would say that the Rust book, which is, so it's on the official Rust website, it's actually really good, right? You don't have to, it's freely available online. Rust has this idea of calling tutorials for books, even though they're online,
+
+[01:01:11] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: short, sandwiched; 0.8s, 1/1 segments under 1.5s  ** READ, do not trust the label]
+which is kind of funny.
+
+[01:01:12] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 14.9s, 1/4 segments under 1.5s]
+But anyways, I think the Rust book is really good. Other than that, I think, honestly, the way you learn a language is you have a project. You implement some sort of project with it, I mean... Maybe some sort of web server or something.
+
+[01:01:28] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 23.3s, 3/9 segments under 1.5s]
+And one more thing on AI. So it's easy to get started with languages these days because you can just prompt the AI to like write this or that. In the case of Rust, do you think that could create a false sense of understanding, especially we talked about the importance of understanding structures, of understanding compiler issues, which are there for a reason? You know, tools could just like generate through this and create code that that runs.
+
+[01:01:52] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 35.3s, 1/9 segments under 1.5s]
+Yeah, it's totally a danger. I recently tried using it for something where I guess I was not writing Rust code, I was writing makefiles. I wanted to add some support in the Linux kernel build system for some feature and it went into the makefile and added the Rust flags necessary to do it. But then I looked at the code and it had added the necessary build flags But to the C side it was passing a few more flags which were not required per se but they were there for a reason and it had just ignored them. Any human looking at this would be like why did you add Rust versions of all the flags?
+
+[01:02:28] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 3.0s]
+What is your favorite Rust feature if there is one?
+
+[01:02:31] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 23.9s, 2/6 segments under 1.5s]
+I'm currently working on a new feature which I think is really exciting. It's something that we ran into in the Linux kernel where we needed in-place initialization, the ability to construct values while knowing where they're being constructed so they don't get moved afterwards. I'm pretty excited about our work to put that into the language but it's very much ongoing.
+
+[01:02:55] SPEAKER_00:  (prev SPEAKER_01 / next SPEAKER_01)  [CHURN: sandwiched; 6.7s, 1/2 segments under 1.5s]
+I think that's pretty cool stuff and as as closing what are what are books you would recommend
+
+[01:03:03] SPEAKER_01:  (prev SPEAKER_00 / next SPEAKER_00)  [CHURN: sandwiched; 39.3s]
+that you've enjoyed and and why i already mentioned the the official rust book i also think that so john gingsted has another book that i think is really good and this book is kind of aimed at the intermediate rust developer the the rust developer who has gotten some rust experience but wants to go further I think that's also a pretty good book for that audience some other resources which are not books but which I think are also really good is there's this thing called Rustlings and the idea is that they give you some unfinished Rust code and your task is to finish it oh nice and I think that's a pretty cool way to
+
+[01:03:42] SPEAKER_00:  (prev SPEAKER_01 / next --)
+learn the language as well awesome Alice thank you so much for this this was really interesting and I've learned a bunch thank you for having me on I hope you enjoyed getting into the details about Rust as much as I did. One thing I appreciated talking about is how deliberately Rust seems to have been designed around the question, what mistakes do programmers actually keep making and how do we eliminate those mistakes? A few examples include memory safety, not having a null, and the errors being values that you cannot ignore. The documentation example is also an interesting one. documentation tests or doc tests are automatically run as tests. If your example breaks, then your build breaks. This is the first time I've heard this clever idea implemented in a way that's easy to use in a language. Finally, the question on why Rust is becoming so popular might be because because it's in a category that did not exist before, a language that's reliable and also performant at the same time. This makes it usable for high performance computing cases like kernel work while also being a good alternative for higher level backend languages. Do check out the show notes for related, the Pragmatic Engineer deep dives that go even deeper into backend topics and stories of building languages like Kotlin and Swift. If you've enjoyed this podcast, please do subscribe on your favorite podcast platform and on YouTube. A special thank you if you also leave a rating on the show. Thanks and see you in the next one.

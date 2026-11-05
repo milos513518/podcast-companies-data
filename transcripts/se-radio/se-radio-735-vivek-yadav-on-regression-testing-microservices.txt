@@ -1,0 +1,603 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 735: Vivek Yadav on Regression Testing Microservices
+DATE: 2026-08-26
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/08/se-radio-735-vivek-yadav-on-regression-testing-microservices/
+AUDIO: https://traffic.libsyn.com/secure/seradio/735-vivek-yadav-regression-testing-microservices.mp3?dest-id=23379
+DURATION_SECONDS: 3538
+TRANSCRIBED_AT: 2026-11-04T02:50:08Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Adi
+Narayan, and I'm here today with Vivek Yadav. And we're talking about building regression test
+harnesses for microservices at scale. Vivek is an engineering manager at the payments company
+Stripe, where he spent nearly a decade building payment cost estimation, billing and pricing
+infrastructure. In short, systems that estimate what it costs to move money on the internet. Vivek,
+welcome to Software Engineering Radio. Thanks for having me. Is there anything about your background
+that I missed to mention that you'd like to add? Just one more thing to add there that yes, before
+Stripe, I was working on a bunch of startups. And the last startup I worked on was also payments
+related, and it still is doing pretty good. Wonderful. I'm really looking forward to this
+conversation. There's a lot of interesting stuff that I'm looking forward to cover. So let's get
+started with just the basics. What are the different kinds of tests that engineers often write for
+microservices? Yeah, so they come in a full suite of tests. So like first one would be basically
+your unit tests, which are really just trying to test your basic functionality, a function level
+functionality, essentially. Then comes the functional tests, which go a bit broader and just are
+trying to test some functionality at a class level or a couple of classes level and so on. And from
+there on, you have integration tests, which try to test across more complicated boundaries, across
+different modules or across different services and so on. And beyond that, it is much less
+formalized, but different companies or different teams might come up with unique novel testing
+strategies that suit their unique need. And we will talk about one of those here today. So in the
+context of microservices, you run an engineering team. When a team writes or migrates a
+microservice, what does their testing strategy look like? Like talk me through the process of
+figuring out what they should test for and how they should sort of think about the problem. Yeah, so
+especially in the context of migration, usually there's a goal of a migration, right? So you are
+generally trying to move from one system to another system. Most of the times you want to preserve
+the behavior and want to extend the capabilities so that you can do new stuff with the same code
+while making sure that the old stuff continues working as it was working. So most of the migrations
+in the beginning are like for like migrations that unlock a future capability. And in a like for
+like migration, you need to make sure that your past behavior is not changed. You are able to
+support that kind of traffic and capabilities exactly as it was before. It is very important to make
+sure that your service behavior is preserved. Got it. So when you mentioned like for like testing
+and migrations, this is essentially, let's say if you're migrating Python, for instance, or if
+you're going from one database to another, you want the behavior of the microservice to be exactly
+the same, the same inputs, same outputs, nothing. And you want to test it for all possible
+scenarios. Is that accurate? Exactly. Someone basically living outside the system may not even
+notice that a change happened. That would be gold standard. So just to take an example, let's say
+you have an old payment stack. Hypothetically speaking, let's say you have some stuff written in
+mainframes and you can write that in Rust today. Your system has been running for 40 years. It is
+doing critical payments. And you want to make sure that all the historical stuff keeps working as it
+was working before while you change things under the hood. That would be a like for like migration.
+And when you're thinking about building these test suites, does it happen in sequence? Do you sort
+of, you know, first do the unit test, then the integration test and then eventually get to the
+regression test? Or do they all sort of happen in parallel? I think the code writing does happen
+sequentially, but the planning should happen thinking the end goal up front. Because some of these
+test scenarios, which is unit tests, functional tests or integration tests, it is easy to do them
+layer by layer. And that works naturally. But if you want to have some more esoteric testing, as we
+had in our case, we had to think about that testing up front while designing the code base and the
+layout of the code base. Because we have to structure the code to enable that testing up front. And
+so it depends on the scenarios. Code writing can happen sequentially, but planning should think
+through all things up front. Got it. Got it. So I think most engineers can relate to this. You
+migrate a service. It could be a like for like situation. You write through a test suite, everything
+passes. And then something breaks in production that no one predicted. From your experience, what do
+people often miss? From my experience, the things people miss are really tail end scenarios, which
+happen very infrequently. Like team does not have collective memory of them. Those are not really
+recorded in your existing test suite. It depends on like how many different scenarios your service
+have to work through. But in many practical production scenarios, these test cases are in millions.
+And so you cannot really enumerate them one by one in your test files, whether unit tests or
+functional tests. In those scenarios, we uncover some corner cases, which no one could keep in
+memory, essentially. Understood. Understood. Now, when somebody's, you know, like when a new
+developer is learning to code, they, of course, learn about tests and they start writing tests.
+There's test-driven development, but you're building a service, you're building a function, and
+you're writing tests around it. I think what you're talking about is orders of magnitude more
+complex. And you've written two blog posts on Stripe's website, which walk us through these
+scenarios. To lay the context for people, can you give us an idea of what the system looks like?
+What are these sort of big systems that you're working on where testing, especially regression
+testing, plays a huge role? Let's lay out the context as to what this example looks like.
+Absolutely. I'm going to take maybe two, three minutes to just set it up maybe a little longer, but
+it will really help us along the way. So as an example, let's take an example of payment costs. So
+payment costs, think of them as costs of moving money on the internet. So to give you an example,
+let's say that you are buying some shoes on Amazon and you are paying $150 for those shoes. Amazon
+is going to get about $145, $146 out of that $150. And the $2, $3 difference is essentially going to
+different parties in the payment stack. So a most relatable example is you have these different
+credit cards and these credit cards will say, if you use this credit card, we will have 3% cash back
+or some other rewards and so on. All these rewards are funded by something known as interchange. So
+essentially when you are doing this $150 transaction on the internet, about $2, $3 of that is going
+as an interchange fee to the card issuer, the bank who issued you the card. So that's one party in
+the payment stack. Then there is card networks, Visa, MasterCard or other card networks worldwide.
+And these card networks have their own fees in different forms. Those fees are known as scheme fees.
+And so each transaction would have more than one scheme fee. And these are fractional fees.
+Sometimes they are fraction of a cent as well. And so on. So there could be many parties in the
+payment stack which are enabling that payment to happen. And they are taking their fee. So now if
+you, from one transaction, if you scale to the internet economy, so let's say in the case of Stripe,
+Stripe last year processed about $2 trillion. And assuming let's say on an average worldwide there
+is 2% network cost, that comes out to be about $40 billion of network costs. So we built systems at
+Stripe which are estimating these network costs and trying to sort of make sure that we are
+correctly sending right data to the network so that we are not overpaying and so on. And these
+network costs depend on a lot of parameters. So to give you an example, just in US Visa, there are
+more than 60 parameters that impact a single transaction's cost. And now you can scale that to
+different networks. So let's say there will be MasterCard, there will be Amex and others. And you
+can now scale it to different countries as well. Canada will have slightly different things. Europe
+will have slightly different things. APEC has different things. So a card transaction's cost is
+impacted by more than 100 parameters worldwide. And that forms a very fat tail of scenarios which
+are very hard to enumerate in normal unit test or functional test scenarios. The best thing we have
+for these scenarios is we have our historical data. So networks do report some of these costs at a
+transaction level back at some delay. And so based on that historical data, we are able to sort of
+have a good sense of what does correct cost look like. And based on that, we can then form a test
+harness that can test the changes on our historical data. So let's say if I change some code or
+configuration, we can run that on the historical data to see what would have been the impact of
+this. We might have some expectation that it should not have any impact. And we can detect if there
+are any changes. And we go in the other direction as well that we expect some changes and we just
+want to figure out the magnitude of changes. Got it. I think there's a lot to unpack there. So let
+me sort of summarize this for our listeners and tell me if I've got this right. When you go to a
+website or go to Amazon or any other place and buy something, I pay a certain amount. But then
+there's a lot of middlemen, middle parties that are involved in this transaction. And everyone takes
+their cut. Naively, I used to think that it would just be a 1% transaction cost or something like
+that. But it turns out that for, I think, Visa alone, there's 60 plus parameters that are involved
+in estimating all these middle parties' little cuts. And it's very important to keep those
+synchronized, keep them updated so that as a payments company, you're able to estimate all of these
+costs instantly and make sure that the right entity is getting the right amount. Is that correct? So
+there are not that many entities. The number of entities is fairly limited. But there are different
+fees. And a single entity might have different fees. So the 60 parameters you talked about, they
+impact which fee will apply and to what degree they will apply. But the number of fees is relatively
+smaller per transaction. Got it. Can you give us an example of what these 60 or so parameters, can
+you take a few examples? What are these parameters like? What is one of those parameters? Yeah. So
+let me categorize that into three buckets. So one bucket will be just the characteristics of the
+transaction itself. So where is the transaction happening? Is this a card present transaction or
+it's an online transaction? Are you doing tap to pay or are you entering your manual card number?
+Right. Did you provide your zip code or not with the card transaction? So those are the sort of
+transaction related properties. Then there are some properties which are merchant related. Where is
+merchant located? What type of merchant is this? Is this a fuel transaction or is this a telecom
+transaction? Is this a retail transaction? Factors like that, which are merchant dependent. Then
+come some other factors which are about what's the level of data you are providing to the network.
+So there are things called level two and level three data, which is like level two data would be
+like, are you telling the network how much of is this tax versus not in the total amount? Is the tip
+involved or not? Level three data will be full itemized receipt of this thing. And so all of these
+parameters impact network cost. Another big thing is, is this a cross-border transaction? Is there
+an FX happening during this transaction? So there are many, many of these things. I just named
+probably 10 of these. Got it. That's, yeah. Again, I used to think that, you know, it's a 0.5%
+service charge, but clearly there's a lot more going on behind the scenes. Thank you for that
+example. Is it given that, you know, there are all of these things going on, as I understand it,
+some of these parameters could be yes, no types. Is it a card present, card not present, but, or it
+could also be a whole bunch of metadata linked to that transaction itself. So it's sort of, is it
+right to think of these parameters as metadata linked to a transaction? Effectively, yes. All of
+these will be metadata to a transaction. And yes, some of them are yes, no. Ultimately, all of them
+boil down to some sort of an enum and an enum have a variety of values. Understood. Yeah, that's
+useful to, that example is sort of useful to think about this. And these parameters can keep
+changing, right? I'm guessing that, like, say, if I were, if I had a Chase Sapphire card versus a
+Chase Sapphire Reserve card, information like that would also be relevant from the context of these
+interchange prices? Yes, very relevant. So that particular thing is known as card type. What type of
+card do you have? And whether it is debit or credit or prepaid and within credit, there is many
+other levels. And yes, all of that is very relevant. Got it. Okay. So from an engineering side,
+you've given an example of what this looks like in the real world in terms of the different fees and
+different entities. From the engineering side, what does this look like? What do all of these
+parameters, these billing types, these card types, what does it look like from under the hood? Yeah,
+so I can try to distill that to a very relatively simple form. See, ultimately, all this boils down
+to there is some information that is going to the network during a authorization or a settlement
+call. And networks are estimate actually are calculating the real network costs based on this data
+and based on certain rules. Now, as long as for a given transaction, all the rules are known and the
+data that is being sent known, then it is possible to actually estimate the cost of the transaction
+effectively by reverse engineering the behavior. Does that answer your question? So let's try to
+sort of think about this in a different way. When a transaction comes in, when a person buys
+something on the internet, there is the amount that they paid. And then there's all of this metadata
+or chain of information linked to this. Now, when it comes to a payment provider like Stripe, what
+happens under the hood? On a transaction, so again, taking an example of let's say you're buying
+shoes on the internet. When the first time transaction is happening, there's an authorization call
+that is going to the network. So network could be, network will be your cardholder. So if it is a
+Visa card, the call will go to Visa. If it is a MasterCard, the call will go to that. But the first
+call is an authorization call only. And that is the only real-time call. There is no money movement
+happening in that call. So we'll call Visa. Visa will call the issuer bank. Issuer bank will check
+if this is, does the user even have the funds or not to spend on this transaction? And they'll say
+yes or no. So ultimately, in the response of authorization call, all you get is a promise that the
+bank will pay the money, whoever brings the promise to the bank. That's step one. Now, Amazon is a
+good example here. The second step of this transaction will be a settlement or a capture. That
+happens when Amazon actually ships you the shoe. So you bought it today. Maybe shipping happens two
+days later. That's when Amazon will say, hey, bank, give me the money now. I have sent the
+merchandise to the user. And that step is known as settlement. There are two separate calls. The
+first call is real-time. The second call is actually not real-time. It happens as a batch file. A
+lot of transactions get batched together and sent to the network together. As a response to that
+batch file, the banks and the networks will essentially move the money. Just one more thing. During
+that moment of money, they will take their fee out of that. So you ask for $150,000. They'll say,
+here's $146,000. We have taken our fee out of it. As a payment provider, does Stripe figure out what
+these interchange fees are at the first stage or at the second stage? We do at both the stages. The
+first stage also costs some money, much little compared to the second stage. We figure out all these
+costs all along. So we don't wait on the network. Now, it may happen that our estimate might differ
+from the network. And that's the accuracy metric we care about. Understood. Okay. So this is great.
+Thank you for explaining how these things work and sort of letting us peer under the hood. Now, from
+a testing point of view, you have all of those parameters and there's some sort of a decision-
+making, rules-based engine that is working on these parameters. What do unit tests cover? What do
+integration tests cover? And what gets missed? Yes. So unit tests will cover for basic
+functionalities. So as an example, just to really dump it down, a transaction or a specific fee
+might have a fixed component and a variable component. So when I say fixed component, it's like this
+fee means one cent every time this fee is charged. A variable component will be it charges 0.1%
+every time this fee is charged. And we will have some logic written to calculate these things based
+on certain amount on the transaction, right? Is that logic working correctly? So that kind of small,
+small logic that overall combined together, chained together to form the total experience, that's
+where sort of the unit tests come in. Another example would be just translating the Stripe API
+request to sort of, let's say, network language. And that translation has a bunch of logic. Is that
+logic correct or not? So every small, small pieces of logic is where unit tests come in, but they
+cannot really cover for all the potential varieties in which different logic pieces can be combined
+to actually have a full transaction end to end. Understood. So let me unpack that. So for unit
+tests, it could be things like card present versus card not present, what the parameters look like
+across MX, Visa, whatever, different kinds of entities. And you can do this for different kinds of
+parameters for each parameter and all its possible permutations. But when it comes to all of these
+60 parameters and all the possible ways in which these things could be different and interact with
+each other, that's not something that any unit test is going to cover. You need something far vaster
+than that. Is that correct? Yes, exactly. Far vaster than that. And also, it is about getting
+confidence on changes. Like a stable system is good. It will always have changes. Can you be
+confident that the changes are correct and as expected? And it is very hard in this domain to get
+that confidence just out of unit tests or functional tests for that matter. Great. And thank you for
+that setup. So now tell us, how does one become confident about these kinds of changes? So the
+regression testing problem comes from a desire to be very confident about the changes being made on
+a service. So in our case, we are responsible for estimating network cost for Stripe. It's a very
+sensitive area and the cost of error is pretty high. So any changes we make, especially the bigger
+changes, we want to make sure that those changes have exactly the right impact that we want. Again,
+at the Stripe scale, previous year, our network cost as an estimate would have been about $40
+billion. If you really drive that sort of, let's say, to a normal number just to think about on a
+day-to-day basis, if our costs are wrong by even 0.1%, that can add up to $5 million in error on a
+daily basis. So this is where we have to be sort of extremely careful about these systems and sort
+of measuring our changes correctly. So sometimes, let's say, we are doing a code refactoring and we
+want to make sure that it has no impact on the outcomes. Because the number of permutations on
+transaction cost is so high, we are not confident that a unit test framework will give us the right
+level of confidence. And so what we built is a test harness that can run on historical data, whether
+one month data or one year worth of data, leveraging Spark to run this historical data through the
+core logic. So we can run through the older logic versus newer logic, produce two different outputs
+and compare the outputs. And in a code refactoring, we expect the output to be the same. And if
+output is not the same, we will get a very granular transaction level as to where it is differing.
+That difference helps us figure out the bug in our logic. And if there's no difference, then we get
+the confidence that the change is safe and we can roll it out without worrying about losing money.
+That is great. Yeah. Thank you for explaining it that way. For someone who's not worked with Apache
+Spark, what does it look like and what does it do? And what does it, when you say build this logic
+on Spark or run this in a Spark harness, what are you talking about? In our case, we have a
+microservice, which generally does normal microservice stuff, receives a request, does some logic,
+sends some response, does some DB writes. We also have a need to test the same logic on historical
+data as I was talking about. So we have arranged our service in a way that IO layers are completely
+separate from the core logic. So our core logic behaves just like a library that receives a function
+call effectively and gives a response. And this is built on top of Java. So we are able to wrap that
+same core library with a Spark wrapper as well. Now, Spark wrapper, when I say that, let me just set
+up Spark for a second. Spark is a offline processing, data processing engine effectively. Spark
+scales linearly. It can read from cold storage. So think sort of S3 and disks and so on. And it is
+massively parallel. So the way it works is it does bulk reads and bulk writes and the compute
+happens on different nodes. So data travels to these nodes and travels back. But all this reads and
+writes are happening on normal files. They're not happening in a DB setup. So they are much, much
+faster. And it is way easier to spin up and scale down a Spark cluster compared to spinning up a
+sort of a Mongo or a MySQL cluster. Now, in our case, we have historical records of our request
+responses available in S3. And that enables us to run sort of a Spark job on them, read them, invoke
+the cost estimation on this library I was talking about and record the response. And once we have
+that, we can then do further analysis. That's great. So am I right in thinking about this as you
+have historical data, so effectively cold storage of transactions, all of those 60 parameters for
+each transaction and the outcome of the transaction, which is what the cost was for the interchange
+cost was going back, say, 2020 and even earlier. And all of that is stored in some way in some S3
+dataset. And Spark is able to, for each transaction, each time you change something, it could be a
+change in the code for some small microservice part. It could pull up those five years of data, run
+the same transactions again and see if the output is the same or not and do this really fast. Is
+that accurate? Absolutely. Yes. So we use the word cold storage, and I think not everyone may have
+the same idea of what that means. In the context of a payment company, what is cold storage? And I
+take it that's a pretty big project by itself. So what does your cold storage look like? I would say
+companies of Stripe scale and even bigger companies, they do have a bunch of data analysis needs.
+And data analysis needs are kind of different from your real-time transaction processing needs. So
+most of the companies I know about do have a bunch of their sort of request response logs or some
+other data available in cold storage. It's just a normal hygiene stuff you do as you scale up. There
+are very standard like ETL shaped. So ETL is export, transform, and load, I think, type-shaped work
+that happens, which for any sort of key historical data, sometimes, you know, because of regulation
+as well that these companies store. I do want to call out one thing there. Stripe and companies in
+similar domain are extremely careful about what is stored in these cold storages. So none of the
+sort of personally identifiable information and things of that shape are never stored. In these
+cases, we are just storing transactional data, transactional properties. They don't identify a
+person. They just identify type of a transaction effectively. Got it. So if I go back to the example
+of buying something on Amazon, it won't include the fact that who I was, what my age was, or even
+what the shoe was. But it's more of this is what the transaction looked like. This is where it was
+made. And the card parameters, perhaps, and then the outcome. Correct? Yes. Yes. Got it. You said a
+few other things a little while ago. I think we should think and unpack. First, you run this whole
+suite of tests, suite of regression tests on a Spark cluster. And then it runs the whole thing and
+it tells you, hey, look, it's either the same or it's different. What scale are we talking about?
+Like, is it tens of tests? Is it hundreds of tests? What does this kind of, to go back to the idea
+of, I feel confident that this change is okay. How many tests should be done? In this scenario, what
+we are really doing is we are not running a test. We are essentially running a bunch of historical
+data through the new set of things. So, let's say you had old code and you have new code, right? So,
+you're trying to run old transactions through new code. So, to give you a sense of scale,
+hypothetically speaking, let's say Stripe has 100 million transactions a day. Each of these
+transactions will have correspondingly about 500 million different cost items on a daily basis. And
+so, if I say one year worth of data, we are talking about, I don't know, north of 30 billion
+transaction input and about 5x of that on the output side. If you talk about a week, it will be much
+smaller. So, we are running all these transactions through the Spark system, essentially, and
+getting a response back and then comparing the output with the historical data. So, it's less about
+number of tests. It's more about number of transactions we run through. And how do you decide that?
+Like, is it, this is a small change I should run it on? One day's worth of transactions? Or this is
+a big change I should run it on a week's worth of transactions? This is, I would say, just the SOPs
+of the system, depending on the sensitivity and depending on the use case. So, change is one type of
+use case. The other type of use case is actually we should talk about where it is useful. But it
+really depends on the need. So, most of the scenarios, we essentially run a week worth of
+transactions. And if there's no change, great. If there's some change, run for a longer time, get
+more data, and then help in debugging. Understood. Okay. Let's dig into what the design of a
+regression test system looks like. Let's try this out. Like, if you were to draw this as a diagram,
+what would be the different components for a system of this type? So, you have the cold storage,
+which has all of the information, all of the transaction records going back X number of years. You
+have the microservices living in some place. And then each time a change is made, this job takes
+over, and it runs it through a week's worth of transactions. When that is finished, do you get a
+report? Do you get just the delta of the things that failed? And who gets the report? Is it the
+person who built the test? Is it someone else? Is it sort of a team that gets it? What do you do
+with that sort of a result? So, let me set that up, and then I'll talk about a bunch of scenarios
+around that. So, first of all, by definition, this is about regression testing. So, we have to have
+some historical data against which regression is being done, essentially. So, the first requirement
+for this thing to work is like, hey, yes, your request responses, historical request responses are
+available to read and compare. That's one. The second thing is your overall code base should be
+arranged in a way that it is working in sort of real-time service environment, as well as it is
+wrapped in a Spark wrapper. And the wrapper is ready all the time. So, essentially, if you're making
+core code change that changes the core logic, the logic essentially gets wrapped as a library, and
+the library is a dependency of essentially a Spark wrapper. So, they essentially change together by
+definition. That's just part of your build system. So, that's one part. Now, let's say that I make a
+code change right now, and I raise a PR. When I raise a PR, I can comment on that PR with a specific
+tag. And by doing that specific tag, I am essentially telling a system that we have pre-setup to
+invoke specific Spark job with the input of one week worth of data. So, that one week worth of data
+is pre-identified. It gets refreshed every week. But that's identified on a location. And so, with
+that input, we invoke the Spark job. The Spark job runs through Airflow in a cluster. And when it is
+done, there's a second Spark job that will run, which compares, again, the corresponding one week
+output with the new output. And it has a predefined format. So, it basically prepares a report. The
+report, anyone can read that report who has access to it. But it attaches that to the PR. And so,
+with that, the PR reviewer and the writer both have the access to the output. So, that's one way to
+invoke it when I'm making code changes. There is another way, which is these networks keep time to
+time changing the rules of how these fees are to be calculated. So, that kind of thing happens every
+quarter. And every six months, there are relatively bigger changes and so on. So, in this whole
+system, either code could change or the configuration could change. The rules are the configuration.
+And so, we could run, so when configurations change, especially when networks change, we'll try to
+run about a year worth of transactions to estimate the impact of those changes. And in that case,
+there's a separate sort of the same Spark job is basically prepackaged to run on a year worth of
+data with sort of a new input, which are the new rules. And it will run that and produce a report.
+In that report, changes are expected. And we are trying to understand the changes and the impact of
+those changes. Got a lot of stuff there. Let me try to summarize a couple of things. One thing that
+you mentioned was, I think, something around the code is working on a real-time level and as a
+Spark-wrappable object. What I took that to mean is, you write something, you build a tool, which
+should work right now for whatever transaction processing, but it should also be wrappable within
+the Spark job in order to do this historical analysis. And in order to do that, it needs to conform
+to certain standard design patterns. Correct? Yes. And those design patterns that you mentioned
+earlier, where classic ones separate the core logic from the side effects. Like, if you're doing a
+calculation, just do the calculation, don't mix it with writing to a database and so forth. Is that
+what you were thinking about? That's most of it, really. Got it. When you run these huge jobs, and I
+think the distinction that you made was very good, which was, you know, you could either change the
+code that Stripe has to process it, or you could change the characteristics of the parameters,
+configurations. Each of those things could change. Sometimes both could change. But you want to be
+able to isolate one thing and test, do the regression test for that, and then isolate the other
+thing. Is that a good way to think about it? Yes, correct. Got it. I get the part where you're
+changing the code. So you say I'm migrating, and I'm doing a standard. There is some particular
+database that the company uses. We're switching to something else. We are migrating all of those
+things. My internal code changes. So then I run this whole flow of transactions again with the new
+code. When it comes to configurations, what am I running again? Is it because the transaction is no
+longer the same, right? The configuration itself means transaction is different. Do you see what I'm
+trying to say? Like, what gets tested again? What gets run again? Yeah. Yeah. So configuration
+changes are essentially the rules that determine the network cost. So effectively, what's happening
+is a transaction has its properties. So those are not the changes I'm talking about. I'm talking
+about the network rules. So for example, networks will say, if you pass AVV on a transaction, then
+we will not charge you like a specific fee. It's known as AVS fee. But if you don't pass it, then I
+will charge you AVS fees. Am I right? Like if I sort of simplify this, this could be
+oversimplifying. Like there is the metadata for a transaction and there is the interpretation of the
+metadata. The metadata might mean something. It might not mean something. And those things are what
+can change. Like certain things which before didn't cost anything, suddenly could cost something.
+Exactly. Exactly. So the rules of the game might change. The transaction properties are the same.
+But the rules might change. And if the rules change, what are you comparing it to though? Because
+say I bought the same shoe in 2024. The interchange fee was something, some minor thing was 0.01%.
+Right now it's become 0.05. The output is going to be different, right? So what are you comparing?
+Exactly. Yes. That's a very good question. So let's look at the second side of this equation now. So
+Stripe is a platform. A lot of merchants are processing on this platform. And Stripe does have a
+product which is interchange plus billing. That basically means that all the big companies are
+saying, hey Stripe, why don't you pass the cost of processing directly to me and charge some markup
+on top of that? That is the predominant way of billing payments essentially. Think of it as the cost
+plus way of billing. So when networks change the rules, Stripe gets impacted, yes, but also our
+users get impacted. So again, let's say that you are Amazon and Amazon is processing on Stripe.
+Amazon wants to figure out, so networks will say, you know, starting on April 1st, the rules that
+determine network costs are changing. And now Amazon needs to figure out what will be my impact of
+this. Now Stripe could run Amazon's transaction. Stripe could encode the new rules in our system and
+run historical Amazon transactions through the new rules. And then produce the output and compare
+that with the old fact and produce a diff and can give a guidance to Amazon then. Hey Amazon, based
+on our understanding, the new rules are likely going to decrease your cost in these areas and
+increase your cost in these areas. And so Stripe will produce a guidance for our platforms. And that
+guidance then helps them determine how to sort of figure out their unit economics. That is so
+interesting. That is very interesting because it's almost like, you know, when you think about, you
+know, any software company, any engineering organization, you're thinking about testing and unit
+testing and all of that to make your code better, catch bugs, things like that. It's sort of an
+internal use case. What you're saying is the regression test, yes, it's an internal use case. We
+don't want to make mistakes and lose money. But the same regression test is also quite a strong
+benefit. It provides value to a customer as well. For a big customer like Amazon, they can use that
+regression test output, I guess, packaged in a certain way to say, hey, this new card that Visa has
+launched will be, you know, X percent cheaper or more X percent more under certain circumstances. So
+that and that kind of data is useful. It's a useful business input that they can use for decision
+making. Exactly. Yes. That's fascinating. I never thought about that. I was like, it's a great way
+to think about it in terms of what value regression testing can offer from, you know, this whole
+system that you have right now. There are many parts to it. There's the cold storage. There's the
+ability to spark that's able to spin up, take the code that you have, microservices, wrap it and run
+it, you know, for a week's worth of data and even more. What was the hardest part to build it? The
+hardest part was to start the overall code base with this mindset that we are going to adhere to
+these principles and arrange the whole code in a way that it is amenable to the same code is
+amenable to both real-time path as well as a Spark batch path. That took us, we tried a bunch of
+other things. That was not the first obvious decision. We wanted the regression testing, but we were
+not sure Spark would be the right thing or not. But ultimately, once we landed on that, it took a
+few months to organize the initial code base. But after that, it has been fairly easy. Why was that
+difficult? Because at some level, it seems logical, right? Separate the core logic from side effects
+and things like that. The design patterns seem fairly standard. What was the hard part there? I
+don't think anyone had done a Spark-based regression thing. So I'm simplifying it a little bit, but
+ultimately, any service, when it starts, it needs to load some context. And the usual pattern on
+services is that load the context from DB. And so even small things, let's say FX rates, which is
+relatively small configuration effectively, are like, yeah, you read from DB when you need them. But
+you have to still arrange your sort of, for a single request, arrange for the processing in a way
+that all the reads that will be needed later in the pipeline gets done up front. And if context is
+prepared for that transaction, and then that context is given to the library to execute. Just
+reorienting the whole thing from that perspective was a bit of a mindset change. So don't load the
+dependencies for each transaction, but load them en masse at the beginning for a bunch of
+transactions? No. So that one is needed for Spark. But like, even for a transaction, you may load
+things incrementally. Oh, now I need FX rates. Let me load this. Okay, now I need that set of rules.
+Let me load them. And now I need that. So you could might do sort of the whole thing in piecemeal
+basis. Another way to do this thing will be load all the things up front, prepare a context packet,
+and then give it to the library. To execute. Got it. Got it. Okay. That kind of takes back. And as
+someone who's worked on migrations, and I think a lot of our listeners would have worked on some
+migration to the other, they're already very stressful. There's a lot of, you know, timelines that
+engineers are trying to protect and get the migration done. How did you make the case for building a
+harness during a migration rather than sort of treating it as a separate project after the fact?
+Yes. In fact, because we were doing a migration, this was the easy part. As I said, it's a very
+sensitive area. We are directly dealing with money. So migration had to be really, really confident
+that the new changes or the new set of code is the right thing. And how do we prove that? The only
+way to prove that, like to ourselves as well, was to make sure that we run the historical data on
+it. And if it comes out to be the same, it's great. Now, one way people do this is they will run a
+new system and the old system in parallel for, I don't know, depending on the use case, sometimes
+many months. And that way they generate the confidence and slowly roll out. And running, we wanted
+to shorten that timeline, basically. Rather than doing a month's worth of rollout, we wanted to have
+confidence up front. And also, we didn't want to do this incrementally because if you are doing the
+shadow rollout situation, you're just dependent on new transactions coming and so on. So you don't
+get too many iterations on it. But with a Spark-based wrapper, we could run sort of a month's worth
+of transaction, a year's worth of transactions multiple times a week. Like every developer could
+have their own Spark job running separately while they're testing different phases of it. So it was
+actually a speed bump for us in terms of once the initial setup is done in terms of testing. And so
+once we lay out that story, it becomes very easy to buy in for everyone. You mean a speed boost,
+right? Not a speed bump. Yeah, speed boost. Sorry. Got it. Got it. So essentially, I think one of
+the things also you mentioned was you might say that the feature is being developed at a slow time
+in the markets. I think towards the end of the year after Christmas. But if you want to really test
+it, you want to test it during a busy shopping season, for instance. And you can do that. You can
+sort of pick. You can, by using a representative week, you can get a lot of data which you may not
+get if you would just sort of let it be. Let it sort of run in parallel or something. Absolutely.
+Got it. A couple of sort of quick questions. You're running a week's worth of data to Spark. That
+sounds like a lot of compute. And that can cost a lot. And given that you mentioned developers can
+use it. Like if I was having a PR and I submit a PR and I put appropriate comment, it will go and
+trigger a week's worth of Spark testing. Do those costs add up? Is Spark, I mean, compute on Spark,
+are we talking about very large amounts to do these kinds of tests? So I think we should think about
+two types of costs here. So one is, yes, the compute cost. Another cost is the storage cost. And
+then the time cost. So once we establish that this kind of testing is needed for our needs, then the
+only two options are either you do it with a DB or you do it with Spark. Now with Spark, the storage
+is actually that cheap compared to DB. And the time cost is also way lower. So the only cost that
+increases the compute cost, which is not that high, especially if you're doing one week, one month
+worth of thing at a time. Spark costs increase a lot if you're doing same amount of compute every
+day. So let's say if you're doing multi-year worth of compute every day, that's actually pretty
+costly, but otherwise not. So if you're testing a whole year's worth of data every day, then it's a
+lot. But if you're only doing like a small amount, like say a week or something, each time you
+release a new feature or make a bug fix, then it's not much. Correct? Yes, exactly. Got it. Got it.
+Let's dig into a few things that you mentioned that I found interesting. You know, real-time
+microservices, you're querying live data, right? Like you're hitting up databases, you're looking at
+feature flags, you're looking at configuration tables and all of that in order to make a decision.
+How do you handle, take all of these dependencies and store it in your cold storage? Because these
+are real-time dependencies that you're pulling from somewhere. Like is it all rows in a table? How
+does that look like? Like how do you take all those and put them in some place that can then be
+pulled out in the right sort of format for running the hardest, while running the hardest? Yeah. So
+that's a real consideration. And that's why this whole thing I'm describing may not fit for a
+different use case. In our use case, the biggest thing is the transactional data. That's the highest
+sort of, let's say, number of records. But other things, which is, let's say, what determines cost
+of a transaction, like that kind of configuration, is a few thousand rules effectively worldwide. So
+that's not that much. And similarly, the other things like FX cost or some flags context, all of
+those things are way lower in sort of different number of rules. So the way we do this is think of
+converting every lookup you do during a real-time call into a join in Spark. And so we do all those
+joins up front. And so let's say we'll read transactions on the Spark side. And, OK, this
+transaction contains Australian currency and USD. OK, let's just load FX rates and pick the FX rates
+corresponding to that. So join on that. So that's just one example. But there could be other joins
+based on that context. But we load all of that up front to do the joins up front. And then we have a
+context prepared. And then we send it to the library. So it comes at an additive cost. Every time
+sort of we have to add a new dependency in this chain, we have to update the Spark join path as
+well. But those things happen relatively infrequently. Correct me if I'm wrong. When you take the
+example of, you know, if a transaction required, like you said, the Australian FX, would the cold
+storage capture the exchange rate at the time of transaction and then save it somewhere? Or is it a
+case of, you know, I have the timestamp and I can go look up the Australian exchange time series and
+then pull that number and connect it at the time of running the job? Yeah, we will have it pre-
+stored. So a snapshot at the time or everything that's relevant to the transaction at the time is
+stored into the cold storage. Yes, yes. And since the cold storage is just a standard S3 bucket, it
+will be several, maybe hundreds of thousands of terabytes, but it's still cheap. It's just an S3
+bucket. Very cheap. Yes. Understood. Okay. So I think a lot of what you spoke about is relevant for
+migrations. Outside of migrations, where else has this regression test system proved its value?
+Yeah. So I say migrations is where it pays off immediately and it's where we, that's the best place
+to build this system. But after migrations, like a few things. One is code changes continuously keep
+happening. And so migration help the system put in place. But once the system is in place, you can
+keep using the system for any code change to detect if the code change is having the relevant impact
+or not. Sometimes you expect no impact. Sometimes you expect some impact. And so you can detect
+that. So that's one example. The another example, as I gave was, sometimes networks will change the
+rules. So let me try to actually give a more fashionable example. So let's say that you are working
+with one of these AI companies and you have some token costs and you want to figure out. And let's
+assume that you had your historical request responses stored and you want to figure out what would
+be my cost if I changed my model from A to B. And if you could replay your data, not exact data, not
+exact sort of inference, but like, you know, whatever matters for billing, you could just figure out
+if I changed from model A to model B, my cost will reduce by 10x. It's the same thing. So you can
+use these systems to basically figure out if the rules of the system changed. In my case, if the
+network cost rules changed, what would be the impact of those changes on my bottom line, on my
+customer's bottom line? So that's two. The third example is sometimes incidents will happen.
+Sometimes you will write a wrong code or wrong configuration and estimate wrong things, maybe send
+wrong costs to your customers as well. And then later when you detect the incident, you need to
+figure out what was the impact of that mistake. The way to do that is you correct the mistake and
+you compare the new data with the old wrong data and you get a difference. And you can attribute the
+difference to every transaction. And based on that, figure out, you know, impact on every customer.
+These are just few cases. The couple more that we can go into if you're interested. Got it. So one
+of the examples that you mentioned, like, you know, like the token example, which leads into another
+question that I had, which is outside of payments, outside of a company like Stripe, who else would
+benefit from a system like this? Because it is a lot of investment to build it. So I think this
+system really works if your area or your service is not dependent on too many dependencies. That's a
+requirement. If you have too many dependencies, I don't think it makes sense. Then if you don't have
+that many dependencies, I think anyone who is doing a migration should just set this up. It requires
+little upfront investment and pays up within the migration timeframe and then keeps giving
+dividends, especially in sort of current age where sort of cost of making changes to the code is
+reducing. The cost of knowing whether the change is safe or not has not reduced. Everyone will need
+some scalable systems that can actually very reliably tell you if your change is safe or not and
+help you. The output actually helps you debug as well. You mentioned like they should set it up and
+it's not that much work to set up. What would it entail? So first, I'm guessing you need to have a
+cold storage. So which means everything that's coming in and going out, put it somewhere. Even if
+you can't model it too well, just keep it somewhere. Second is creating, designing your
+microservices in a way that they can be wrapped with in a Spark wrapper. For folks who've never done
+it, how hard is it to sort of shift into that role, into doing that? It's a learning curve. It's
+equivalent of saying, let's say someone has not done unit tests before. How hard is it to set up for
+unit tests? It's equivalent amount of effort. Does that help? It's sort of a mindset shift
+effectively. It's a big mindset shift, yes. And but it pays, it forces a discipline on you that
+really pays up. Understood. Understood. Okay. In real world systems, what you're saying makes a lot
+of sense when you have everything stored. And in order to run an old transaction, you pull up that
+transaction, you get all the parameters linked to it. And then you run it and boom, you see the
+output. What if some dependencies are missing? What if the cold storage has gaps that you didn't
+know they exist, but then like, does the test just fail and sort of skip it? Skip it. Is that
+transaction ignored? What happens in situations like that? Yeah, it depends on how critical was the
+dependency. So if the dependency was absolutely critical for the functionality to happen. So let's
+say in cases of foreign exchange situations, in our case, actually, that things will fail and we'll
+get an error output. And so that's a thing to look at. But if the dependency was not super critical,
+then it might fail in a way that you don't notice up front. And it might show up as a difference. If
+there's a gap in the cold storage, what happens? If it's important, then if it fails, then make
+noise. If not, let it go. This was my understanding. Yeah. So I think the upfront advice I will have
+is you should set up in a way that there's no gap in the cold storage. You should treat the cold
+storage as a first class citizen to make this successful. But if you have not done that work, then
+either your sort of work will fail or it will produce some difference. So let's say your real-time
+service had some data, but your cold storage did not have the data. The impact of that will be
+visible in your test situation versus your past golden data set. There will be a difference and you
+will debug that difference and you'll realize it is coming because there was a gap in the cold
+storage. Got it. And if you're in a big company, like in most big companies, you're getting data
+from some other part of the company. And in order to make these decisions with the microservice,
+you're pulling from different sources. What I'm hearing you say is when if you are building a
+regression harness for your neck of the woods, whatever data you pull from other sources, even if
+they're internal sources, you capture a snapshot and you keep it with you. So you don't go and query
+those other sources at testing time. Yes, correct. So that is the cardinal rule of doing Spark jobs,
+basically, that you don't want to query when the Spark job is running. You want to load all the data
+up front and then use joins. Load the data up front and use joins. Got it. Okay. Understood. Let's
+look at, oh, we have to get to the AI part, which is on everybody's mind. Given that code is so much
+cheaper to produce, features are faster to ship. Does that mean that having such a regression
+harness increases the confidence that each new feature that's implemented could be wipe coded even?
+Like even if it's wipe coded, the level of testing and sign off required before it's shipped is
+still high? Yes, exactly. So think of this as your own local eval on your service. And your AI
+agents could be making all the code changes. As long as they pass this eval, the changes are safe.
+You get the confidence immediately. Got it. So regardless of whether it's a small change or a big
+change, you're able to run it through a week's worth of heavy transaction data. And if there are no
+diffs or if the diffs are all minor ones, you know that it's mostly safe. Exactly. Yes. You get that
+confidence with this. Yes. Got it. Got it. Understood. One other thing that I had as someone who has
+run regression tests and, you know, I would see I would run and it would say, hey, something's
+failed. It can be quite a frustrating experience because something failed. You've got an error log.
+You don't know if the mistake was in your code or if it is some sort of a dependency in a library
+that got missed or if it's something upstream that happened. Does the testing harness make that
+triage process less painful? Because from what you said, it's running so many times. How do you make
+that less painful for developers? Yeah. So this whole thing really helps in that because most of the
+times output is not a error message. The output is a difference log. So it will say for transaction
+X, I expected output to be $2, but it was $2.1. So you essentially get a transaction comma fee level
+difference or in our case, it was transaction comma fee level. But in any case, the way this whole
+thing works is you get a difference at a very, very granular level. And that really helps you
+pinpoint, OK, what is common about this set of granular transactions? Oh, all of these are UK to US
+transactions. So there must be something off in that area of the code or the rules. So you get a lot
+of debug hints up front with this. So effectively, you're able to replay that particular scenario
+again, or you will know what those scenarios, what the parameters impacting that scenario are. So
+you can pretty much quickly go to the issue. OK, understood. Yes. Does AI help with summarizing and
+making that clearer to interpret? I have not tried that, but that's a very good suggestion. And I'll
+pass that on to the team. I'm guessing people must already be using it. Because when you see these
+logs, when we see logs coming in, you're like, you know what, tell me what the error is. Especially
+the standard ones, it's easy to use it for that. OK. Yeah, once you say it, I feel like, yeah, why
+haven't I have thought of this before? Enough. Cool. I think we've covered quite a lot of ground.
+Anything that you'd like to add that I may have missed out or you want to rephrase something? Yeah,
+just one sort of high level thing I want to call out is like the cold storage part feels fairly sort
+of, let's say, risky. And there, like, we take absolute care of making sure that no privacy-related
+or PII-related data gets stored to the cold storage. So that work is sort of taken care of at a
+very, very fundamental infra level at Stripe. So PII meaning personally identifiable information,
+correct? Absolutely, yes. Got it. So none of that is, and I take it the sort of standard processes
+around how do you scrub the data before you put it into a cold storage? Yes, exactly. That covers
+most of what we spoke about. If people want to know more about what you do or learn about the
+systems you built at Stripe, where should they go look for it? Stripe blog is one place where I have
+published about this one. But other than that, my email is vivekvai at stripe.com. So they can reach
+out to me. Understood. Good. This was a really interesting conversation as, you know, I think a lot
+of us could benefit from regression testing harnesses. Getting the management and engineering
+management to approve it, to build these kind of systems, it requires a lot of foresight and to
+think about all the possible ways in which they will pay off. And the example that you pointed out
+about using a regression test harness to even explain to a customer like Amazon how a card change
+transaction would impact their bottom line is really clutch. I mean, it's sort of something that I
+didn't think about, but it shows the value of having such a system, not just for internal use cases,
+but also for external use cases. So, yeah, thank you for taking the time. And thank you for
+explaining all of these concepts in a pretty easy and lucid manner. For Software Engineering Radio,
+I'm Adi Narayan. For related episodes and a link to Vivek's blog, please do check out the show notes
+on se-radio.net and do check out our other episodes with similar topics. Thank you very much. And
+thank you, Vivek, for taking the time with us. Thank you, Adi. Thanks for listening to SE Radio, an
+educational program brought to you by IEEE Software Magazine. For more about the podcast, including
+other episodes, visit our website at se-radio.net. To provide feedback, you can comment on each
+episode on the website or reach us on LinkedIn, Facebook, Twitter, or through our Slack channel at
+seradio.slack.com. You can also email us at team at se-radio.net. This and all other episodes of SE
+Radio is licensed under Creative Commons License 2.5. Thanks for listening.

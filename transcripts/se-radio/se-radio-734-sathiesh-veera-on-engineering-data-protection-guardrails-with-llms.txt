@@ -1,0 +1,420 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 734: Sathiesh Veera on Engineering Data-Protection Guardrails with LLMs
+DATE: 2026-08-19
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/08/se-radio-734-sathiesh-veera-on-engineering-data-protection-guardrails-with-llms/
+AUDIO: https://traffic.libsyn.com/secure/seradio/734-sathiesh-veera-engineering-data-protection-guardrails.mp3?dest-id=23379
+DURATION_SECONDS: 2541
+TRANSCRIBED_AT: 2026-11-04T10:13:15Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. Welcome to Software Engineering Radio. I'm your host, Prejesh
+Amanat, and today my guest is Satish Veera. Satish is a Gen AI Solutions Architect at AT&T. Prior to
+this, he was a Principal Software Engineer at Build.com. Satish has over 17 years of industry
+experience working on global application development, platform solutions, and designing scalable
+architectures. Satish specializes in leading software engineering and architecture teams, AI ML
+solutions, cloud architecture, building data platforms, micro SaaS, and prototyping. Satish, welcome
+to the show. Hello, Prejesh. Thank you. Today, we'll be talking about how to engineer data
+production guardrails when using LLMs on enterprise data. Not just about policies, but also actual
+architectural layers. Satish, most companies now use LLMs, but the LLM itself often sits outside
+their own cloud tenant. What is the core security problem here that contracts alone don't solve?
+Sure, Prejesh. What you mentioned is accurate. Most of the times that the LLMs is provided by an LLM
+provider or a third-party company, and it sits outside of the company's network. And for any of the
+AI workloads that the companies build, using corporate data or customer data is essential so that we
+are able to provide value to the customers. And every time when we use these LLMs that are sitting
+outside of the environment, for every invocation, the data leaves the company's network. The
+contracts generally say that the corporate data will not be used by the LLM providers for training,
+auditing, or even log in their systems. This is most of the times a contractual agreement that the
+event is signed. However, once the data leaves the company's network and it reaches the LLM, there
+is always a chance for an attack. So the attack surface is open. Any kind of prompt injection or any
+kind of bad actors can trick the LLM to expose the company's data. And that cannot be solved by the
+contracts or the contractual agreements that we have with the vendors. Right. So if I got that
+right, what you're saying is that while contracts are in place, it's still not safe because once
+your data leaves your premises, you are still exposing it to a large attack surface. That is true.
+And most of the times the attacks happen to start with a prompt injection. That is still the primary
+source for any of the LLM based attacks. But there are different ways that the data can be
+exfiltrated from this whole process. And once a bad prompt is into your network or into the flow,
+then the attack surface, as you mentioned, is huge. And lots of companies' data can be easily
+exposed by AI. Can you briefly explain the different ways enterprise data gets shared with an LLM?
+Sure. So the enterprise data is made available to AI and LLM in different formats. We have
+unstructured information or documents, which are generally created as a rag corpus or an vector
+store, which is used for semantic search and the data is provided to LLM. There are also
+integrations with respect to tools. We use MCP protocol or other formats in which the tools can be
+invoked. And these tools could be like AI executed code. They could be API invocations or a text to
+SQL that runs on any of the analytical tables that we have on our data platforms. So there are
+different ways the AI or the LLM instructs the agent to get data from the corporate network or the
+corporate data that we have exposed. And it collects the data, sends it back to the LLM so that it
+could generate a more contextual response that is related to the task at hand. Okay, so it could be
+vector data that's fed directly into the LLMs. It could be through tools like the MCP tools. And I
+also believe tools like code generation tools that developers use. Can you expand on the vector
+data? What do you mean by that? And what is the use case for that? Sure. So what you said is right.
+The very simple way to look at this is LLMs are stateless. So when we ask a question, it can
+generate a response for that question or the prompt that we send as an input to the LLM. And that's
+completely stateless. That's all the contextual information the LLM has. Now, for example, if we ask
+what is the weather today, it might give you some generic information, but not specific to your
+location, not specific to your city, etc. So these kinds of contextual information are required for
+the LLM to provide more customized or more accurate answers that are relevant to the question. This
+context is what we provide to the LLM through all these different data sources, be it vector store,
+be it text to SQL, or be it any other format. So in simple terms, when we request a prompt, and in
+most cases, we do have agents that operate as our interface to the LLMs. So when we request a
+prompt, the agent sees the prompt, sends that to the LLM, and the LLM says, I need more context, I
+need more information. And then that is passed back to the agent, and the agent performs these
+operations to get this additional contextual information. Now, the additional data is passed back to
+the LLM, LLM has more information, and then it gives you more accurate response. Focusing
+specifically on vector search. So vector searches are a semantic search corpus. So most companies
+have large volumes of documents or data that is generally unstructured. Your wiki pages, confluence
+documents, any kind of requirement documents or design documents. So these documents are something
+that we process and store in a corpus, which gets embedded into vector embeddings. So that is more
+like creating a meaningful relation between the contents in that document. So when we send a
+question, say, for example, I have a document related to AWS cloud architecture. And my question is,
+what is the right resource I need to use for a small microservice that I want to deploy? So based on
+these words, the semantic search is performed on that vector store, and it retrieves some chunks of
+information. For example, oh yeah, AWS Lambda could be used for this. EC2 is another service. All
+these chunks of information would be sent back to the LLM, and LLM would be able to give us a clear
+summary of the options that I can use to deploy this microservice. So that's how the vector search
+plays a role in our regular day-to-day LLM interactions. Right. So when a user is giving a prompt to
+the LLM, in addition to the prompt, there's also vector data that's being sent to the LLM. So it's
+called the context, and the response can be much more contextual. Correct. Okay. So to summarize,
+the data goes out through multiple paths, right? It can go through RAG, it can go through the
+database queries, can go through tool calls, through vector searches, through MCP. And there's no
+single contract or policy which can stop a leak at every stage. That is true. So what you mentioned
+is the different ways that the agent can access the company's data. And once it collects the data,
+all this data is sent to LLM. Generally through that same rails of connection, which is invoking an
+OpenAI API or an Anthropic API, where we send this is the system prompt, this is the user prompt,
+this is the additional contextual information that the agent has fetched from it. So generally, we
+do have a single point, which is the gateway. That is the final exit point of the company's network.
+We could imagine it to be the main door of our house through which everything goes out. So we do
+employ all the companies focus on this gateway. We do have light LLM, prompt guardrails, and some
+kinds of tools that would actually filter any of the harmful content. So if we take AWS Bedrock, for
+example, AWS Bedrock provides guardrails that we can implement at this layer. And most of the time,
+these are generic. They are like avoiding any exploiting contents, any harmful contents, anything
+that is threat. So these generic harmful information are filtered through these guardrails, but they
+are not almost not specific to the company's corporate information and to protect that data. Got it.
+We'll move to the next section where I guess we'll get more details about guardrails and we'll talk
+about the layered architecture. So in your paper, you propose a layered architecture to solve for
+the data accidentally leaving the firm. And there are three main layers of defense. Can you walk us
+through those three layers at a very high level, what each layer protects and how they work
+together? And we'll deep dive into each of them. Post that. Of course, Prajesh. So yes, the white
+paper that I have proposes this reference architecture where we have these three different layers of
+filters. And again, this is a reference. It could be more. It could be less. The basic idea is that
+we control and we limit any kind of sensitive information that we send to LLens. So in this three
+layer architecture, the first layer is it's at the data ingestion. So what this means is that any
+kind of corporate data that we have in its own raw format, for example, the emails, wiki pages that
+we have or the data warehouse tables that we have, these are our company's data that are in their
+raw data sources. The idea is to have AI not interact with these sources, but create a separate AI
+data access layer and ingest these data into the AI layer. So the first layer would be a filtering
+that happens during this ingestion to make sure any sensitive information is removed, masked,
+redacted, etc. The second layer is about inference. So now that the data is in a place which is
+already cleaned up, we do not have any secure information on this. Now, when AI is trying to access
+this data, we make sure that AI accesses only the information that it needs for the purpose and it
+has access to retrieve from. Now, the third stage is once this data is retrieved and once it is all
+augmented with the actual prompt, when it is going to the LLM, we have a third layer of filter to
+make sure that there are no other leaks, no other harmful messages, no other system information or
+company's data goes into it. And when the response comes back from the LLM, we filter and make sure
+that the response is also indicating or directing the agent to perform only the actions that are
+allowed. So that would be the third layer or the last layer of filtering, which is sitting at the
+exit point of this whole workflow. Okay. So to summarize, three layers are the first layer is around
+filtering. The second layer is around inference. And the third layer is to ensure there's no
+unrelated information being passed out and also the response is a valid response and is not
+mischievous. That is correct. Okay. Let's double click into each of those. So how does filtering
+work? Does it work differently based on the data source? So if it's structured, unstructured or
+semi-structured, does each of that need a different guardrail? Yes, that's a good question. So the
+data ingestion layer, this filter is mainly focused on redacting any kind of sensitive PII
+information. If there is anything that we need for linking back to other forms of data, say, for
+example, a foreign key relation kind of a situation. And if that key is a secure information like a
+credit card, for example, I want to see how many transactions the user made on different types of
+credit cards. So in situations like that, we prefer to hash them, encrypt them or use some kind of
+mechanics to actually mask the original data and still have an anchor point. So the filtering itself
+is different based on the use case and based on the nature of the data. Now, when we look at data
+types, when we talk about unstructured data, this is generally filtered using any of the existing
+libraries, something very similar like a regex pattern matching that makes sure that there are no
+PII information, sensitive information. And if it is found, it is either redacted, masked or hashed.
+When it goes to structured data like a SQL database, if we have a table that has transaction
+information, like a credit card transaction information, and if we see that the credit card number
+need not be available for AI and there is no use case for us to have this information in the data
+layer, we can create a view and completely remove that column. The same is the case with APIs as
+well. So generally, APIs return large payloads and it is okay for system-to-system interaction. But
+when we have APIs that could potentially be invoked by AI agents, it is suggested to create scoped
+APIs, which will limit the number of response fields and it would return only the data that is
+required for AI usage. So this leads to the most important fundamental principle that the RAC data
+source or the AI data sources that we create in all these different data formats. The idea is to
+create purpose-built AI data sources. And by purpose-built, I do not mean the technical boundaries.
+It is not like for unstructured data, we have one vector store and ingest all the data in there. No,
+that's not how we should think about it. The purpose-built should be based on business use cases. So
+the data that we have might include multiple types of information, multiple classes of information.
+So what business use case we are solving is what the purpose-built data source should contain. For
+example, as we talked about, if we are doing some analysis on the customer's spend usage, the data
+related to that should be available in those data sources. If we have a different business use case,
+something like a customer servicing agent, and they need different sets of data from the same
+primary data sources, we will create two different AI data sources. And each of that will have the
+data that is necessary for those workloads. And it will not be a common platform, which has all the
+data available for all the agents to come and pick and choose to what they have to use. Interesting.
+So a separate data source for each user case, and that's generated on-prem before it's even sent to
+the LLM. That is correct. And there is also a hidden benefit to this, which is a common engineering
+practice that we have been following all these years. If one of the agent is not behaving well, or
+if one of the data sources corrupted, we can take that down, clean it up while keep the business
+running on other data sources. So having these purpose-built data sources also helps us in terms of
+isolating these use cases, let them operate independently, give us more control on the access that
+we want to provide. So this is a common software practice that we can employ here, and make sure
+that we limit what data is given to AI based on the use cases that they are solving. Okay. And I've
+not come across purpose-built AI data sources prior to this. So are there specific formats that are
+used for building these data sources? Is there an industry standard around this particular purpose-
+built AI data sources? Yeah, Brajish. This is more conceptual than a technical framework or a
+technical library that we use here. So for example, when we use vector stores, today most of the
+times we use cloud providers. So if you're on Azure, you use Azure AI Search, or in AWS, we use AWS
+OpenSearch. We create different search indexes, and each of the search index would have the
+information or the documents that are ingested related to that use case. So these indexes are like
+different searchable repositories. They all sit in the same cloud environment under the same
+account, but they can still be controlled with respect to access. They can be queried separately.
+And so that's how we create separate knowledge corpuses for unstructured data. For structured data,
+for APIs, it's like creating different views. It's creating different versions of the APIs. And the
+payloads of these APIs would be tailored towards that use case, what AI agent or that business
+purpose is solving. Let's take a real example. Say you have a support ticket system where user
+enters data directly, and it's unstructured, versus a customer financial database, which is very
+structured. Can you walk me through the process of filtering data for each of these two use cases
+before it reaches the LLM? Sure. So let's take the use case of a customer support system. So let's
+take an example where the customer has reached out to the company's website or the chatbot, and he's
+asking some information or trying to solve a problem. So most often, the information that the
+customer is looking for is generic, or it is some sort of information that is either present in
+FAQs, or support documents, or help articles. And these are unstructured. And again, if these are
+public available information that do not have any sensitive information, then it is very simple. We
+have a knowledge corpus. We have this data available for a semantic search, so we can quickly return
+that information to the customer. In the whole flow, when the request reaches to the system or the
+agent, the agent takes that query, sends it to the LLM, and then asks for what other additional
+information the LLM needs. So the very first request would be like, this is the user prompt, and
+these are all the available resources that I have. Now tell me what you want. So this is what a
+payload to LLM would look like. And when I mean by these are the additional information I have, that
+would probably be the schema of the tools, the APIs, the knowledge corpuses that the agent has
+access to. Now the LLM looks at the prompt, the LLM looks at all the available sources, and it might
+send a response back saying that, for me to give a complete response, I need you to perform a vector
+search and give me context related to this particular prompt. So that comes back to the agent, and
+the agent performs this vector search, and this data is chunk is retrieved from that knowledge
+corpus. And this should again pass through the filter layers. If it is not a sensitive information,
+then we can skip one or two of those inference layer filters. This information goes back to the LLM,
+and LLM generates the complete response. Now, if the same customer is trying to ask a financial
+question in a separate agent, I would be very careful. I would not even say this is a support agent.
+We have an agent which has more access controls, and this is a secure agent which can give you
+details about your bill payments, about your transactions. So this agent, when it is operating on
+behalf of the company, and it is dealing with the customer's data, especially his financial data,
+this agent would have additional security layers in terms of access controls, what the agent can
+access, what it can see, what it cannot see. Now, when this agent gets the prompt, it might again
+ask the LLM saying that this is the system prompt, and this is the user prompt. The user is asking
+to see when was the last payment he made, and what was the amount that he has made the payment for.
+The LLM might instruct saying that, oh, you have access to this table, go and query this table. Now
+here, if you remember, we talked about the third layer, where we also review the responses from the
+LLM. Yes. If the LLM says, oh, you have a table that has the customer's payments, do a select star
+on that table and give me everything. Now here, we can have a validation layer that would say, do
+you really need a select star, or do you need something else? Do you need specific column
+information for this kind of a prompt? Is a select star even allowed on this kind of a table, and is
+this table okay to send all the column information to LLM? So those are the checks that we would
+have on our end in that third layer. For example, let us assume that this is allowed, and it comes
+inside. Now the agent needs to have access to call this particular view or table on our data
+platform, say for example, Databricks. So that's the second layer, making sure that AI agent has
+access to it. Then the query runs, and then it returns the response back. The response is again
+going through the second layer of filter to say, the returned SQL response, the table or the SQL
+rows that it got out from the data table, does not contain any kind of PCI or secure information.
+That filtering happens. So in all these three different layers, we make sure that the AI is allowed
+to perform an operation that it is allowed. It is not overreaching and doing something that it is
+not expected to do. And whatever the operation it does, the data that returned from this layer is
+also filtered, and it does not contain any secure information. Now this information again gets
+passed to the LLM, and LLM generates a response that we send back to the customer. Right. So
+multiple layers of filtering and multiple access checks. Correct. Tool calls can also send database
+results or API responses to the LLM, as you mentioned. So do you have any concrete example of a tool
+call that leaked data, and what filter mechanism would you apply over there? Sure. So what you said
+is accurate, Rajesh. So every interaction that the agent is trying to do with all these different
+data sources that we talked about generally happens through a tool call. Right. So when it has to
+execute a SQL, or when it is calling an API, or even if it has to run some code and generate a
+response or invoke some kind of system files, all these are generally through tool interactions. And
+one of the real incident that happened was with Asana MCP. So last year, Asana team launched MCP
+servers for their customers. This was to allow the customers to use third-party tools with Asana
+through their MCP server. One of the problem was that it missed a very strict access control, which
+completely violated the tenant policy. So what eventually happened is a customer using this new
+Asana's AI connector was able to retrieve information about some other companies, which were all in
+the same Asana's tenant. So this was a complete boundary violation. And this was found within a
+month the tool was launched. It affected around like 1000 customers. Asana took down the tool, they
+fixed it, and then they put it back to the customers. So a couple of learnings from this is that
+even though the tool was launched, it was not even a month for people to identify this as a problem.
+That is because the AI agents and the speed of the LLM. So this is very fast and it can actually
+reach out to all the tools that it has, reach out to all the information that it has to try and get
+to solve the problem that we give to AI and LLM tools. So within a month, the problem was
+identified. That was equally dangerous. And the tools did not have enough restrictions and enough
+controls to make sure that it strictly followed the tenant rules, tenant isolation policies, which
+led to this issue where customers were able to see other customers' information. This is a clear
+violation and a clear example where tools can be configured without sufficient protocols and it can
+lead to data leak from one company to another. The remediation was to make sure that the company did
+not give complete details about the exact patch they made, but it is about restricting that the
+tools are allowed access only for the data which belongs to that company which has configured that
+MCP. Right. So similar to the personalized AI data sources that you mentioned, the tool should be
+only accessing that personalized data source for that particular client than having access to all of
+the data. That is true. And again, we have several examples of this tool failure happening, not
+specifically to data leak, but we do know about the replete example, which is a very famous issue,
+right? Company founder was using these tools and the tool accidentally deleted the entire production
+database and it fabricated customers' data. So when the tools do not have restrictions and when it
+has permission to do anything and everything, it could really be dangerous. It's very interesting
+that replete one. Looking for a way to stand out in a competitive job market? Whether you're trying
+to land your first contributor role or prove you can deliver, take the next step in your career with
+the new software professional certification from the IEEE Computer Society. Sign up today at
+computer.org slash certification. So if you're using a tool, so in the replete case, you said the
+founder was using a tool and the tool actually had access to production data. Yes, that's correct.
+So the founder was using a co-pilot kind of code editor tool and the agent was given access to the
+databases and he was directly, you know, giving access to the production database for that agent.
+And the agent always tries to get things done in all the ways possible. And it found the way to do
+that is to clear the data, which it was not able to solve in that particular case. And when the
+agent was confronted, it went and fabricated and created dummy customer data to try to solve the
+problem or mitigate the problem, which again made it worse. Right. Very interesting. What's the
+typical latency overhead of adding real-time data filtering and classification at the inference
+time? Is it in milliseconds? Or seconds? It is generally in milliseconds. So this whole workflow,
+when we deal with AI, we know that AI responses take a few seconds. The moment we enter a prompt in
+any kind of chat interface, we can see the responses always most of the time streaming. And we do
+see something that keeps us engaging. Some kind of messages on the screen that says the AI is
+thinking, it is trying to formulate a response, etc. So the general latency or the turnaround time
+for an AI response is generally in seconds. Adding these filters additionally add a few milliseconds
+to a top a second, but not more than that. And again, the data ingestion filter that we talked about
+is an one-time activity that happens when we prepare the data that gets into the knowledge corpus.
+And this is the layer where lots of data needs to be filtered or lots of data needs to be scanned
+for filtering. What I mean by that is if you have a large 50-page document, and if that document
+needs to be ingested into the AI vector store, running a simple rejects pattern merge on that
+50-page document is probably going to take a few seconds. But once that is ingested and embedded,
+when the AI is trying to filter information or trying to extract information from that document, it
+generally gets like 15 chunks of information and each of chunk is like a few thousand characters.
+These are smaller chunks. So scanning them is pretty fast, not as bad as when you compare to the
+scanning of the entire documents. And most of the times these filters are also deterministic filters
+that happens in layer two and layer three, right? What I mean by that is this is like a code that is
+running on a textual information and filtering this data. When we have the third layer, which is the
+guardrails, sometimes these are LLMSH, which means we have a different model that makes sure that
+the request and response are all bound to the company policies, the copyright policies, etc. So they
+generally add a little bit of latency, but again, they are anyways included in the whole workflow.
+So what we additionally focus on in this whole architecture is the areas that generally we overlook
+or miss and they do not add much of latency in the whole process. You reference the OWASP top 10 for
+LLMS. Which of those risks are, does your layered architecture directly address and what remains
+unsolved? So with the OWASP top 10, most of the issues can be addressed by following a strict
+architecture like this. So the primary focus for us when we come up with this kind of an
+architecture is about sensitive information disclosure, which is LLM02. And that is the primary goal
+for me when I started with this architecture. But if we look at the other violations or other
+security vulnerabilities, by having this third layer guard along with the existing prompt
+guardrails, we also address LLM05, which is improper output handling. We address excessive agency by
+having fine-grained access controls. We did not talk much about the access controls, but one of the
+key goals there is to treat AI agents like human identities. So they should have, I mean, each AI
+agent should have its own identity and its own RBAC mechanism. So if we have three different AI
+agents in the company that one is doing customer support, one is doing finance, and one is doing
+something else, they need to be three different identities with three different levels of access. So
+that also addresses LLM06, which is excessive agency. LLM07 is a system prompt leakage, which is
+also controlled by having this multi-layer filters. Because the layer one and layer two we talked
+about is more filtering the data that we inference and get out of our corporate data source. But
+system prompts generally sit above all this. And once this data is extracted, it is augmented with
+the system prompt and sent to LLM06. And this can be filtered by the third layer of filter that we
+have in our architecture. So system prompt leakage can also be addressed. Vector and embedding
+weakness is LLM08. So that is also partially addressed. So I would say like six to seven of this
+whole OWASP top 10 can be addressed by following this architecture. And we can make improvements to
+cover the other vulnerabilities as well. You mentioned RBAC mechanism. Can you just explain to our
+listeners what that is? Sure, Prajesh. So one of the practice that I have seen in the teams in the
+initial days when we started implementing AI workflows is to use something very similar to a service
+account, which we use for our deployments, right? Say, for example, if I'm using a GitHub pipeline
+to deploy some code into AWS, we generally use service accounts, which has wide level of access. The
+team started implementing AI workflows with similar idea, giving the service accounts to AI agents
+and using that to access the information. This is risky because the service accounts generally do
+not expire. They have long standing privileges and they have wider privileges. So with AI
+identities, what we started implementing is that each agent. So for example, the customer support
+agent, if we take example, that agent will have its own identity and we provide levels of access
+control, the RBAC access control, like assigning roles to it, very similar to how we would do it for
+the employees in the company. So this agent would have a read access on the support documents. It
+would have very minimal information on getting information about the customer himself, and it
+probably will not have any access to any other data other than these two data sources. So these RBAC
+mechanisms that is specific to AI identities limits and controls what data AI can even have access
+within the company's environment. So even if I miss any of my filtering layers and if I have a rack
+data source that has lots of secure information, I can restrict my AI agent to say, you have access
+to only this index, which has the help articles and you do not have any access to any other indexes.
+And that AI agent would never be able to invoke that because this basic RBAC mechanism would be a
+very big level of access that would control what agents can do and cannot do. Okay. So multiple
+levels of guardrails, you know, data classification, RBAC mechanism, context-aware access, we also
+have personalized AI data sources separate for each use case. If a team has no guardrails today,
+which one should they implement first? What gives the biggest bang for the buck? Sure, Prajish. So
+level one and level three are mandatory in my opinion. So what I mean by that is when we create this
+data sources and when we say AI needs to access any of the corporate data, whether we build purpose-
+built data sources or not, companies today are creating new data sources for AI, be it an Azure AI
+search or be it the AWS open search that I talked about. And the reason is companies do not have
+vector data stores as a regular technical implementation in our systems anywhere, right? So for the
+purpose of AI search, we are technically bound to create this new vector semantic data search. We
+need to create hybrid searches. We need to implement multiple layers of search and re-ranking so
+that AI can be accurate in the information that it is fetching. So companies are building AI data
+sources and when you are doing it, it is better to make sure that the data that is ingested into it
+is filtered for sensitive information. And that is a simple effort that we could do and it would be
+a very big primary filter that makes sure that no sensitive information is even available for AI in
+case any of the other layers of security fails. So that would be the very first primary thing that I
+would suggest. And layer three is also very, very crucial because that is the one that prevents us
+from any kinds of prompt injections or any kind of regular attacks that can happen in an AI LLM
+workload. So companies, again, already do that. We use LLM gateways. We use some kind of third party
+libraries as well. We use guardrails that are provided by the vendors. So adding an additional layer
+of filtering and validation is not much of an effort. We are not building something new, but we are
+just adding something to what we are already building anyways. So these two would be the first
+primary things that I would say companies can focus on. And again, level two is also crucial because
+it has more controlled access and it can benefit us by creating isolations, which is very important
+for companies. So one of the key things that I advise my teams is that if we find some problem in
+any of the AI workloads, and if we have to take that down for a few days, it should not impact any
+of the other AI workloads. So building that isolation and building that access controls is crucial
+to keep the business running and to make sure that one small mistake, do not take the entire system
+down. Okay. Just a refresher on the layers in case, you know, listeners get confused. So layer one
+was around data ingestion. Layer two was around access mechanism and filtering of based on access.
+And layer three was prompt level guardrails and pre-execution validations. And what you're saying is
+the mandatory layers are layer one and layer three, but layer two is equally important. So you can't
+really say that it's not mandatory, but yeah, something which can come as a third implementation
+step. That is correct, Prajish. And the reason why I prioritize layer one and three is they are
+oftentimes simple to introduce and they are more generic irrespective of different types of data
+that we would have. The layer two with respect to access controls and data inference filtering is
+more an ongoing activity for every different workload that we create, every new use case that we try
+to solve. So that would be an ongoing activity. And if a company or if a team has not been well
+versed with that, it is something that then eventually start doing. But as you mentioned, layer one
+and three are something that we need to have even before deploying our very first version, our very
+first AI agent into production. Got it. We'll move to the next section, which is where we'll discuss
+about adoption, trade-offs, stumbling blocks. When is a layered guardrail approach an overkill? So
+for a small internal LLM tool used by say a five people team, would you still recommend all three
+layers? So the layered architecture or the security architecture, what we think about is not with
+respect to the team size or with not respect to how much of data is going to the LLM from the
+corporate network. It is about the type of the information and it is about how sensitive that is. So
+one of the points that we did not talk in detail is that the governance. So governance is something
+that runs as a pillar across all these layers. And one of the main thing is data classification,
+right? So when we classify the data and we see that the information is secure, for example, if we
+are talking about companies financial and that is something that could give a competitive advantage
+to other vendors in the market or other competitors in the market. This information is critical and
+it is sensitive for the company. So if we want to use an LLM or AI workload on a data of this
+nature, then having security protocols and secure layers is necessary. And it could be either
+masking or it could be creating any kind of hashing so that we are still able to provide LLM with
+the details that it requires to create overall summary without leaking the numbers outside. Where it
+could be an overkill is something similar to the example we talked about, a customer support. What
+we want LLM to operate on as a public knowledge or as an information that can be found on the
+company's website, like help articles, FAQs. Sure, we do not have to worry about having more secure
+layers built on those workloads. So it is more of the nature of the data and how much risk and
+damage it could cost to a company if the data is compromised. I think that is the key point to think
+about where this layered architecture of security is required versus it can be skipped. Got it. So
+the type of information and sensitivity of data drives decision rather than the size of the company.
+That is right. You've worked in fintech. Are you aware if financial regulators are asking about data
+leaving the premises to LLM vendors and if they have any concerns around the use of LLM with
+enterprise data? So with respect to data that is leaving the company, it is true, Bridgesh, that
+fintech regulators as well as, you know, this is common for fintech as well as health industry with
+HIPAA regulations. So there are restrictions about what data can be sent to the customers, I mean,
+sent to the LLM that are related to customers' financial information. We have use case wise reviews
+on these situations. So when we try to implement any kind of business workflow that actually tries
+to support the customer by employing AI on their financial information, this goes through a
+governance process where all these clauses are verified. And we do involve our legal team to make
+sure that the data that we pass in is allowed as per the fintech regulation clauses. And it is okay
+to implement an AI workload in such a situation. Okay. We've covered a lot of ground here. Was there
+anything you expected me to ask about engineering data production guardrails that I have in and that
+our listeners should be aware of? Not specifically, Bridgesh. I think we covered most of the layers
+here. And the one key point that I wanted to mention about is the mentality shift of how we think
+about implementing AI workloads with corporate data. So rather than taking this as a complete
+guidelines to follow and assuming that following these guardrails would make sure everything is
+secure. The basic mind shift that we expect our teams to have is that when we deal with any kind of
+data and AI start thinking about every step as a step that could be compromised and we need to make
+sure that it is secure. So the data protection and privacy becomes a default requirement in every
+workflow implementation. And the mind shift and we call it AI literacy is what is required to make
+sure that every team member, irrespective of their role, is aware of the damages that an AI attack
+could cause if the company's data is sent to LLM in unprotected way in any of these business
+situations. Perfect. We will link to your white paper in the show notes. Thank you, Satish. This is
+Bridgesh Amanat for Software Engineering Radio. Thank you for listening. Thank you.   Thank you.
+Thanks for listening to SE Radio, an educational program brought to you by IEEE Software Magazine.
+For more about the podcast, including other episodes, visit our website at se-radio.net. To provide
+feedback, you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter,
+or through our Slack channel at seradio.slack.com. You can also email us at team at se-radio.net.
+This and all other episodes of SE Radio is licensed under Creative Commons License 2.5. Thanks for
+listening. Thank you.

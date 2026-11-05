@@ -1,0 +1,617 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Safely Changing Software to Avoid Incidents: A Conversation with Justin Sheehy
+DATE: 2025-09-08
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/safely-changing-software-to-avoid-incidents-a-conversation-with-justin-sheehy
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2134526889-infoq-channel-safely-changing-software-to-avoid-incidents-a-conversation-with-justin-sheehy.mp3
+DURATION_SECONDS: 3588
+TRANSCRIBED_AT: 2026-08-05T12:21:08Z
+----------------------------------------------------------------------
+If your team's trying to move faster with AI or scale more efficiently without reinventing the
+wheel, InfoQ Dev Summit Munich 2025 this October 15th and 16th might help. It's a practical event,
+talks from people in the trenches, sharing what they've actually shipped, fixed, or learned. No big
+launches or buzzwords, just useful ideas you can take back to your team the next day. Learn more at
+devsummit.infoq.com. Welcome to the Architects Podcast. Will we discuss what it means to be an
+architect and how architects actually do their job? Today's guest is Justin Sheehy. He has spent
+most of his career thinking about how to make systems, composed of both computers and humans, safer
+and more resilient. He is currently Chief Architect for Infrastructure Engineering Operations at
+Akamai. Previously, he's played roles including Chief Technologist for Cloud Native Storage at
+VMware, CTO at Basho, Principal Scientist at MITRE, Distinguished Systems Engineer in multiple
+places, Senior Architect, and more. He's equally happy writing code, doing research, or leading
+people. It's great to have you here on the podcast. And I'd like to start out by asking you, were
+you trained as an architect? How did you become an architect? It's not something you decided one
+morning, you woke up and said, today I'm going to be an architect. Thank you for the kind
+introduction, Michael. So I certainly wasn't trained as an architect. I think that title as we use
+it in the software industry is not one with much of a training apparatus in most places. And it also
+was a much less common title in software-related fields. Of course, I'm not talking about building
+architecture here. When I first ended up with it, which was a little over 25 years ago. So I think
+the story there is in the year 2000, in early that year, I was in my first time around at Akamai. So
+I'm back there now. I've done some things in between. But at that point, my career until then had
+been mostly in distributed systems engineering in the way that it existed in the 90s. And then the
+type and scale of systems that we were trying to build in and around 2000 at Akamai were kind of
+unknown in that even though some parts of it may have been solved by a couple of other companies
+already, those weren't yet things with a lot of practical literature, broad understanding. They were
+new, even if you weren't really the first one trying to solve some of those things. And we knew
+working on this, that if we succeeded at what we were trying to build, we were going to have to live
+with those systems coming under much heavier load and much greater scale than we could test or
+simulate, right? You don't get to have a second internet in that way. There's no production and test
+internet. Exactly. There's a lot you can do, but there's some that you can't. So we knew that a lot
+of our ability to keep succeeding came down to the architecture of those systems, meaning that they
+could either handle that load, even though they hadn't experienced it before. Or I think just as
+importantly to that architecture, they could be improved in place in ways that wouldn't be too
+disruptive. I think that's an important architectural element too. And so those of us there that
+ended up responsible, not just for shipping code, but also actively managing those kinds of
+constraints and communicating with our peers ended up being called architects. So that's how I first
+ended up with that kind of a title. And as you said in the intro, I've had things adjacent to that
+title off and on for the 25 years since then. But I also don't think it's what I am, right? To me,
+it's a job. It's a good job. It's what I'm doing now. It's what I've done before. Or it's one I
+might do again, but I don't treat it as an identity so much as I treat it as a role of the moment.
+That's very interesting. I've talked to you before and listened to several of your talks, and you've
+talked about building defense in depth, how to make safe changes, how the effects of undetected bugs
+can be minimized. Can you explain a little more about this? And how does this relate to being a
+responsible developer or architect? Sure. So one of the things you might be referring to there when
+you talk about making changes is an article that my colleague and friend and I, John Reed, wrote for
+ACMQ. And part of what prompted that was that we were seeing that both for our own current work, but
+also for many enterprises that our friends, customers, partners, whatever worked at, that pushing
+out a change was the triggering event that led to many outages and incidents. Now, I want to be
+really, really clear before we go farther down this, that most systems need frequent changes. And
+it's not very visible how many outages and incidents are prevented or stopped by pushing a change.
+So this isn't at all about blaming people or tech change for incidents. And it's not about making
+less changes or making them more slowly. But what we were trying to do is recognize that if, and we
+believe this is true, a high proportion of incidents are at least in part triggered by changes.
+You'll hear me use words like triggered or things like that because we could do a whole other
+podcast on the fact that the phrase root cause is both never useful and, in fact, slightly
+destructive. They're not root causes. Nothing is to any interesting incident. But they might be part
+of the triggering chain of events. The proximate cause, if you wish. Yes, absolutely. That's a fair
+term. A proximate cause, but that's very different from them being the cause. But if those moments,
+and if you go and read the incident reports that are published by companies that publish them, which
+most don't most of the time, but some do, I think you'll see that certainly not all major incidents,
+but many of them are, in fact, you know, having, pushing out a change as a proximate cause. So if we
+recognize that that's true, what we decided, and this is where architecture starts to come into it,
+that it's worth taking a principled approach to thinking about how we can make that connection
+happen less often or less severely, right? So that we can make changes with less worry. So I see
+that's where sort of the architecture comes in, because you're trying to look to the future to see
+if you can make things resilient to failure rather than fragile by default. Yeah. In fact, our whole
+approach was to, in fact, assume that things are going to go wrong when you make changes just like
+any other time. It's like life. Yeah, exactly. And so when I said we took a principled approach a
+few minutes ago, what I mean there is not only were we not trying to make systems that can't have
+failure. That's not a very effective goal to have. We also weren't inventing any new concepts or new
+techniques. In fact, I think many people, when they read the article that we wrote about this, will
+look at it and think that a lot of it is either boring or well-known or obvious. And I think that's
+great. I'm happy about that. The more people feel that way, the better state we're in. But I also
+would say to those people that the parts of it that you think are well-known or reliably followed
+locally are not likely to actually be the exact same ones in another environment. So they're not the
+same in terms of being uniformly understood and applied. So what we were hoping to do was to provide
+a very simple, lightweight framework and some principles so that people could figure out where in
+that space they have room for improvement when it comes to change safety so that they could have a
+shared method for thinking about how they would focus their efforts if they want to make those
+things better or safer. Several things come to mind when you say that. But first of all, in my
+consulting career, one of the things I've learned is what's obvious to one person is not obvious to
+others. And if you think something's important, you should say it because you're surprised how many
+people just, you know, just don't realize it. And the other thing, what I hear you saying, and tell
+me if you think I'm incorrect about this, one of the things you're trying to do is also to come up
+with a common language. So people, when they talk about these things, when someone says something,
+they know exactly what you're saying. That's exactly right. In fact, there's a funny moment within
+the past year when there was a very major public outage that had nothing to do with my employer. And
+two of my previous colleagues who had seen the work that John and I wrote about long before we wrote
+an article about it, messaged me in that language and said, oh, if only they'd done more of this
+principle and this principle, they might have actually had a better time and they might not have
+been in the news. And it's being able to have that shared language where we were able to have a 30
+second conversation where we both knew what we were talking about. And I think that's important for
+when architects talk to DevOps or SRE talks to DevOps or SRE feeds back to the architect how things
+could be made better. If you speak the same language, it's much more effective. Yeah. In fact, I
+love that you brought up those different elements of organizational application and culture because
+that was part of how we built this was over the past, I guess, six or seven years at least, I and a
+couple of my colleagues spent time working with our other colleagues in all of those roles,
+especially when investigating things after incidents, but not only them, trying to figure out how
+people talked about what they did and boiling that down into, wait, are there ways that we can take
+what these SREs over here said and, you know, take what this person who's an engineer but not an SRE
+and this other person who's an incident responder, perhaps, and create a way that they'll all agree
+that when I say this one phrase, it's referring to what they do. And that's one of these, like, not
+very visible about how much work it is, but it really pays off in the end. So, in fact, I would say
+that the heart of what we did is something that looks very, very simple when we're done. And that's
+the goal of it was, you know, if you go and look at that article, we wrote six very simple, we
+called them change safety principles, right? And it's this list of just six things. And again, like
+I said before, most people reading them would be like, yeah, of course you do that. Right? These
+aren't interesting. But it was about having those phrases to identify that category of work for
+different communities. And one of the things that struck me about it is this distinction between
+observability and malleability. It's not enough to be able to know that you're sinking. The Titanic
+knew it was sinking. The Titanic, to use your words, was not malleable enough to really do anything
+about it. Yeah, that's absolutely true, right? And so, you know, part of this is figuring out which
+of those pieces you have to a point that you're happy and comfortable with so that you can look at
+the others and focus on them, right? You can imagine, you know, to take the metaphor you just used
+and wildly mangle it, right? If the Titanic in that model was, in fact, extremely malleable and with
+some sort of ship that we don't have today but that could change itself in the midst of an accident
+but was missing the observability to know that that was happening, it still would have been a
+problem, right? So it's not that one of these things or any of these things are more important or
+supersede the other. It's an attempt to say, like, look, you need to get at the right level. And I
+want to talk about right level in a second because there's not a generic answer to that. For all of
+these, for your systems. So I would like to get into that issue at the right level in a moment but I
+think what you're saying is important because there's been a lot of emphasis in the past about
+observability, telemetrics. How do we figure out what's happening or what happened? But if you have
+not done the right things or you're not malleable enough or you don't know when's the best time to
+make a change, what constitutes a large change, what's a small change? You mentioned before the
+distinction between gradual and slow. All these things have to be understood by the organization.
+They have to be understood. And what I was really pointing at by making that note about right level
+is that how much of each of those elements of making your system safer when you make changes is
+necessary is not the same from system to system. Right. You know, so there are some things for which
+outages have different consequences, for instance, or some things where, you know, if outages have a
+little consequence but your ability to get back to a good state is enormously good. You may be able
+to do less of some of the other things just out of comfort that, okay, we're so malleable, to use
+the earlier phrasing, that as long as we're good enough at some of these other things, we don't have
+to invest too hard. And so that balancing act is still required with this framework. What you're
+saying, if I hear you correctly, is that the refrain that comes up over and over again is software
+is not independent of the business. You have to understand your business. I mean, I remember when
+cloud computing first became popular, I took my electric bill and I did some investigation and did a
+calculation that the electricity coming into my house was not 100% reliable. It was like 99.97%
+reliable. And that was good enough, especially if I had backup systems. Exactly. Exactly. And for a
+great number of systems, you know, trying to shoot for, and this isn't really, I don't want to focus
+too hard on sort of availability and numbers of nines and things like that. That's its own topic
+that you can go into a long haul on. But it is worth noticing that, as you said, like for some
+things, 99% is probably great, right? For many things it is. Now, for a international bank, it might
+not be because you may have transactions flowing continuously 24 hours a day and actually have a
+financial loss for every second of outage. So you may actually find it worth investing even beyond
+that point of diminishing returns that some other system might need. Right. I mean, you, I think,
+hit the nail on the head when you said that if you spend money on getting nines that you don't need,
+that's less money in giving customers what they want or making your systems more reliable. No one
+has infinite money. And I did some consulting with manufacturer of ATMs. And even ATMs are not
+perfect. And again, now we're getting a little specific, but sometimes it's better for the ATM to
+give you your money, even though they can't get back to the main system. This is a business trade-
+off. Absolutely. And those ATMs that did that, you know, were often programmed with the particular
+amount of money that they were willing to do that with until they could get back online. So that
+business had clearly made a choice. Like this is the maximum risk we're willing to overtly take in
+this situation. And that's great. I love that you keep bringing that up because all the years, one
+of the things that's often frustrated me the most is when someone in a relatively technical role,
+whether that's engineering, operation, something like that, uses a phrase like, well, that's a
+business decision to frame it as something that's just a law of nature out of their hands. And I
+would maintain it's not only that that's not true. It's that you can turn that all the way around.
+And every single engineering and operations decision is a business decision, right? An engineer
+writing software for their employer makes hundreds of business decisions every day. They're not
+actually a separate thing. When you write an if statement and say this branch, this branch, or this
+branch, that's a business decision. Absolutely. And it gets even more obvious when you start
+talking. What you said is true, but it makes it even more obvious, folks, when you add, say, for
+instance, how long some piece of your code is going to wait before it times out doing something,
+right? That is very much a decision that is relevant to the rest of the business. And so, you know,
+I don't believe those things are separable. And that's what I mean when I talk about most of our
+systems being composed of our software, our people, and everything else. They're not really
+independent of each other. Which says that it's also the responsibility, and usually the architect
+is the best one to do this, is to also make that clear to the business people. They can't dump it.
+Just like, as you said, an example, you know, someone says everything's a business decision. The
+business people can't say, oh, that's just technology, and they can fix that. Yeah, absolutely. And
+I think, you know, that's often helped by having some of the people, at least, in any given
+environment, making what people think of as business decisions be ones that are at least connected
+enough to the technology implementation going on that they can say, like, wait, you know, let's make
+sure that we're making these decisions in harmony with each other. So this raises an interesting
+question, and I think this is maybe a little bit of a curveball, but we're seeing increasingly AI
+being put into the business world. And especially when you start having autonomous agents, and
+autonomous agents where the state may not be known because it's learning. Do you have any thoughts
+about how this affects the malleability, the observability, or your ability to measure the change
+that you make? Oh, geez. So there's like three or four interesting questions in there. So one thing
+that immediately comes to mind there, though I'm going to temper it afterwards, is there's an old
+quote that I'm probably going to misquote and fail to attribute, but that you just reminded me of,
+which is that a computer can never be held accountable. Therefore, it is never acceptable to allow a
+computer to make a business decision. So that's a framing that matters here, right? When you were
+talking a minute ago with the developer, whether they're writing an if statement or a timeout or
+something, making those decisions. The reason that's an interesting sentence is that means we can
+talk to that person about why that choice was made and inform why they make the next choice. Which
+is not actually a conversation that you can have in a grounded, fact-based way with an AI tool. At
+least not any of the ones that exist today. Now, I think a lot of the AI systems people are starting
+to use are very valuable when used to augment certain human capabilities, right? Much like
+calculators and things like that, but for different classes of tools. But we have to be careful when
+doing those kinds of things, not to move the decision-making into a place where there not only is no
+accountability, but that means there's no correctability. There's no ability to understand why
+something is the way it is and therefore change the why and change the next decision. I think we
+could talk for hours about just that topic because there's an old phrase from, and again, you're
+giving me these curveballs before I thought about them, so I don't have the citation at hand, but
+there's from the larger field of cybernetics that every augmentation is an amputation. And so
+something we have to be careful of is that we only amputate, as it were, the things we're willing to
+not have full human thoughtful control over. So I think that there's some very powerful augmentation
+possible with some of these tools, but taking decision-making capability and moving it into a place
+where there's no real shared understanding is something that we're able to. So when you say
+amputation, it's an interesting phrase because are you saying that we should put around the agents?
+Because it's really the agents that really strike me the most because with the LLMs using those
+tools to write code, we as developers or programmers can understand when this doesn't look right.
+I'm going to catch you off. Even there, I think it's tricky. I think we can, but will we is a
+different question because the primary design goal of the LLM-based tooling here. Now, I'm not
+talking about other things either in developer tooling or the larger AI field, but an LLM-based tool
+is, and this is what Google says, this is what OpenAI says, I'm not the one coming up with this, is
+to create plausible text, which means if it looks right to you, the AI is successful. So there's a
+little bit of a almost frenemies or accidental arms going on where your ability to see that
+something looks right, it's actually making you think it looks right. That is the goal of the tools.
+So that's difficult. Where it sort of feeds back your own biases to you and you really don't get
+independent thought. There's a mirroring going on. Exactly. Now, when you asked about amplification,
+right, the metaphor is obvious, right? You know, if I were to get an artificial hand, I have to lose
+a hand to do that. But, you know, for instance, if we take all of our work of a given kind with
+code, all of it, and we start offloading that to something, and here, I don't care what kind of tool
+it is, doesn't matter if it's AI or something else, then we are, due to lack of practice, going to
+atrophy that skill over time. And someone who starts out their career offloading a whole category of
+work onto any kind of tooling is never going to fully build the skills that are hidden in that
+tooling. Just a simple example is compilers. How many people understand machine code? Right. I mean,
+I've written a few compilers. I might be the wrong sample set for you there. But, you know, what I
+see there now, I'm not saying that to say, let's not automate things. Let's not use tools. I'm one
+of the biggest fans of automation you'll find. It's about taking care of which things we really
+think are going to be done so much better, so much more reliably forever by a given tool set that
+we're willing to have humans not have to be too skilled at it anymore. Right. Which part of that
+means the tooling has to have certain qualities, right? For instance, now it's not that interesting
+for people to memorize giant multiplication tables anymore because everyone's got a calculator all
+the time. And we know that our pocket calculators, or, you know, now our phone that has a calculator
+app, is going to multiply as well or better than we are. So that's a skill that it's worth people
+learning a little bit about how it works, but it's okay if people don't build that skill to a huge
+degree because they are having tooling that stands in for it. Provided they understand that when
+they make a data entry, you know, when I played with slide rules, you had to know where that decimal
+point was. Absolutely. I remember when compilers, you know, people still worried about compilers
+making, I remember one time early in my career, there was a problem because a compiler put a machine
+instruction crossing a page boundary. We're going to things that maybe people don't remember or
+don't know, but the point is, to your point, we've gotten to the point with the technology, with
+compilers, with debuggers, the link, even file systems. I'm old enough to play with JCL where you
+manipulated things on disk. There was no file system. So to your point, we have gotten tools where
+people are good enough not to have to worry about what's going on underneath. Right. In computing, a
+file system is a great example there, right? Even though they will get some things wrong some of the
+time, right? People that have done things like written databases and storage engines and all that
+don't necessarily trust file systems very much, but we still probably trust them better than we
+trust even a really good programmer to handle durable storage without a file system. Right. And you
+tend to know what kind of mistakes to expect from the file system. You want dirty reads and
+synchronous... I mean, there's a whole class of things that you know about. The thing is, with AI
+agents, we don't know these things yet. Right. The systems people are using now that are LLM-based
+and therefore, you know, probabilistic word generators and things like that, it's really hard to
+know the things. It doesn't make those things not useful. What it means, you have to think about
+which categories of work you're comfortable offloading to them in what ways. And perhaps what that
+means, and again, I'm thinking of AI agent style, is perhaps there are boundaries that say, under
+every circumstances, you can't do X. Right. Well, so actually, you also bring up, to me, one of the
+big shifts that we've seen due to LLMs. And we're way off track from change safety, but that's okay.
+This is fun. Which is, people are using them now for human language translation, right? And here I
+mean, you know, languages like Japanese or Irish, not languages like C++ or Rust or something. And a
+lot of their shared sort of history and heritage from a software point of view is in common and
+comes from work on language translation. But they're not the same systems. To me, one of the really
+fascinating differences between most translation software that we were using, say, three years ago,
+and most of the things people are using when they ask an LLM to translate a body of text. The LLM is
+probably, in many cases, faster, has access to more data, can translate some things that the old
+translation software couldn't for some reason. But there was this really interesting feature that
+was fundamental to translation software before that these don't have, which is that if it got to a
+piece of text that it couldn't translate, the output would be clearly marked as untranslatable in
+some way by the software. How it was marked depends on your system. But you would often have little
+bits of like, I don't know how to translate this. And LLM can never say that. So you'll always get
+something. Sometimes it'll be right. And so which of those situations you'd rather be in is one that
+I wonder if people even think about when deciding what to use, right? Would you rather have
+something that is pretty good looking output in the language you're translating to, that's probably
+mostly right? Or you'd rather have something that might not be quite as slick, that might have a
+couple of pieces in it that aren't successfully translated, but that doesn't have anything in it
+with any sort of probabilistic nature. And well, in the sense of it's either able to translate it
+based on known structure and grammar and vocabulary, or it's not. You know, the flip answer to that
+question is it depends. But the reason why I brought this up is because to bring it back to change
+management is that when you introduce these kinds of systems in not necessarily tooling, but actual
+production software, how do you manage the changes with something that's intrinsically
+unpredictable? Yeah. So I would say that's a great question. And so putting that in that context,
+one thing that a few people have pointed out to us that I'm glad they noticed, but I don't take it
+as the criticism it's sometimes phrased as those six principles that we put in the article, two of
+them. So fully a third of the framework can basically be read as write down what you're doing. That
+is that simple, right? It's documenting and defining how you change things and each plan that you
+have so that your planning and reasoning and understanding is shared with your colleagues. And so
+one of the things that's important there is that what you're documenting isn't just sort of
+repeatable processes. It embeds in it those decisions made by people. And so you can know which
+things someone meant to do and when, and hopefully why. And that helps when you're trying to figure
+out, did something even go wrong? Why did it go wrong? Did someone just make some change that's
+affecting what I'm looking at? Why is it so difficult for organizations to do? Oh, geez. It is. I
+have asked that question a thousand times and it's really strange to me because I consider it so
+fundamental. First off, from a reader, from a user of those things, having the details of how things
+work, why someone did something, you know, what's happening when, that's just so valuable all the
+time. It doesn't matter whether you're trying to modify some code someone else wrote, whether you're
+trying to, again, diagnose an incident, something else like that. But I would go farther than that.
+I think it is basic professionalism. You know, I think of communication, written, thoughtful, prose
+communication as a core necessary component of both architecture and engineering, however you define
+it. Like if you are not writing down what you do and how and why in a way that's findable and
+readable and useful to your colleagues and the people that come after you, in my opinion, you
+shouldn't be calling yourself either an engineer or an architect. Like it is one of the core
+fundamentals. Now that said, to come to the question you actually asked, which is why is it so hard
+for organizations to do this? I think one of the tricky things is that all of that work, not just to
+create, but to curate and manage all of that human language, all of that writing down what we do,
+the payoff to the organization is both indirect and not immediate. So when someone's thinking in
+terms of short-term investment, where do I spend my dollars, right? Let's say I'm a vice president
+at some other company deciding which people to fund to do what. It's a lot easier to draw a
+straight, clear line from have someone write and ship more code, no matter what, to some value on
+the revenue generating element of the business or the cost saving side, right? It's less immediate
+and less direct when you put that into investments, into knowledge curation and creation and all
+those things. And I've seen even people that absolutely do value those things have a harder time,
+especially in an executive role, justifying those being the priorities that I think they weren't
+being in most organizations. And here, I'm not even talking about any particular company. I've seen
+this over and over again, my whole career. And it's something I struggle with because the times I've
+seen an organization invest in this for real, I've seen it pay off enormously. And when I say
+invest, I don't even mean like big software companies. I've seen a 40, 50 person startup decide that
+this was a priority. And then all of a sudden, the next person hired was productive in a week
+instead of a month. And all of a sudden, someone switching projects and joining someone else's
+effort was able to dive right in and not treat everything as mysterious legacy, but as something
+that they have people working with them, even if those people don't work there anymore, because they
+have their thoughtful words to base themselves on. And that's why we put literally a third of our
+change safety principles are, hey, write it down. So, you know, this is interesting from two
+perspectives, because one, when I got started many, many years ago in the software business, it was
+made clear to me, not so much by my employees, but my reading, is that software is read more than
+it's written. And the generalization of that is people use what you do or look at what you do more
+than your writing of it. So they should be the audience, not your ease of use or in those days, the
+fancy C statements you could write. I agree with that, that, you know, our primary audience of our
+software is not actually the compiler or interpreter. It's the next person that comes along. But I
+would go even farther than that. And again, you're sending me off in directions that I don't have
+the citations for handy. I want to clarify that this next bit is not my idea, but I can't remember
+whose it is off the top of my head, but that the primary responsibility and purpose of a team that
+owns a given piece of software, and here, it doesn't matter what form that is, whether it's
+operating as a service or whatever, when we can be including SREs in this or not, depending on the
+kind of organization, but the primary purpose of a team involved heavily in software is the creation
+and constant maintenance of a shared model of that system and how it works and how it's supposed to
+work and why. Notice that I did not say creating the actual software. That is important. Doing that
+well is something you do at the same time as creating that shared model between your colleagues. But
+the thing that makes you really successful as a software team over time, and by the way, this is
+true even when that team is one person, doesn't matter one person or 50, because I've come back to
+things I've written a long time ago, and the ones where I've valued that in the creation have been
+things I could come back to. And the ones where I haven't, maybe I can't. I've had the situation
+where I've come back to code that I wrote, and I was not clear about it, and I think I made a
+mistake and start making changes, and then I realized I was right the first time. It's just that I
+didn't explain why I did what I did. Yes. You didn't explain it to yourself. And then it's not
+right. So the question arises now, is it necessary for an organization to have a disaster to learn
+this? Because that's the only way the C-suite will realize that this is worth the investment. So in
+my experience, it's not always necessary. I have seen organizations make these choices in good ways.
+Without that, I would flip it on its head. I would say that it's not necessary to have a disaster to
+make some of these good investment decisions. I've seen some of them made, both at my current
+employer and some past ones without that. But I think one should never waste a disaster. And in
+fact, one of the best framings of incidents that I've seen and then reused is as unplanned
+investments. And unplanned investments in that you didn't choose to have them. What you do get to
+choose is how you structure what you're going to get back out of them. Right? There's a cost. You
+paid it. You didn't get to choose when you didn't get to choose how much. I mean, your choices ahead
+of time affected that, but you don't get to choose it at the time. What you do get to choose is what
+growth as an organization, what learning as an organization, what improvement you get out of that
+unplanned investment. So I would say, no, a disaster isn't necessary. It may be in some cases, but
+it isn't generically. But it's absolutely true that if you're in an environment that isn't investing
+in this way, and you're trying to support those investments, and a disaster connected to those
+things happens to occur, that might be an easier time to get your colleagues on board with the value
+of such an investment. And I think it's important to go back to something that you said before about
+proximate versus root causes, is an organization in this situation has a choice. It can learn or can
+look for people or things to blame. Because those are very contradictory things. Because if you do
+one, if you look for people to blame, they will not tell the truth, and you'll never find actually
+what happened. So you have to make that choice. Well, there's multiple layers there, right? If
+you're in an environment that looks for people to blame, frankly, you're probably in trouble. All
+the reasons you said, and people don't do good work when they're scared. And people are going to
+look quite sensibly to protect themselves. So I think that element of blamelessness, I'm not saying
+it's universal, but it's well understood. But there's another layer of it, which is that I also
+think a lot of people move past that and switch to which piece of our system do we blame? What bit
+of our software had a bug? Or what deployment did a step get missed in? And finding the blame in
+that sense. And I think that still has a lot of those problems, not all the same ones. And here, I'm
+not just saying that, in the sense of the fact that people attach their identity to those things,
+and you're still sort of blaming the people. I don't mean that. That might be true, too. But what I
+mean is if you do that, you get tunnel vision. And as soon as you find that thing, you come up with
+a plan to fix that thing. But you didn't keep your eyes open to the broader picture and learning,
+right? So most of the most terrifying, both incidents and outages and near incidents that I've seen,
+are ones where it didn't work that way. And you might be able to pretend it did, right? You can
+certainly point at something somewhere that had a bug. But a lot of the most terrifying situations
+when it comes to that kind of environment are where many of the elements of a larger system are each
+individually operating basically as intended. But the emergent properties of them, and then some
+moments in the environment combined to put you in a situation you didn't want to be, right? To have
+some loss. Let me give you an example. Let's say you're an airline pilot, and you make the wrong
+decision, and the plane crashes, or there's some incident. So the question you also have to ask is
+the person and the software were in a system together. And you have to ask the question, why did the
+pilot make the decision that he or she made at that time? That's not blaming the pilot. That's not
+blaming the software. So you may have to change both. The pilot may have been misled. The software
+may have had a bug that led the pilot to make a different decision. So you can't say blame the
+pilot, and you can't blame the software. Right. And it's a great direction you pointed out for the
+example, because a lot of getting these things right has actually come from the aviation industry.
+And so aviation accident investigation is actually a pretty mature field that has gotten really far
+in that area. And one place I've seen that where we've applied that when doing post-incident
+analysis, for instance, is making the really important point that saying we're being blameless, and
+meaning it and doing all those things right, does not at all mean that we're not going to talk about
+mistakes people made. Just like we're not going to avert our eyes from a bug in our software. It's
+that we don't stop there. We don't get to that and say, oh, well, they messed up. So we need to make
+sure that we don't have someone mess up again. What we instead need to do is, well, why did that
+person who presumably did not come to work planning to cause an outage or something worse, why did
+they think they were making the right decision? What context were they in that did or didn't give
+them information that led to that? And also, even if we can't prevent them from making that decision
+differently in the future, which we might try to do also, why did that one moment, that one mistake
+of decision or action, why was that able to cause such harm? Why aren't there other controlling
+systems that were able to impact this? So I think talking about human error, first off, there's also
+been multiple books written on that topic, in this kind of context is really valuable as long as
+what you do is you use it as a way to open up more areas of investigation instead of as a way to,
+hey, now we know what went wrong and stop the conversation. Right. And shoot the person who did it
+and satisfy everybody that they found somebody. to blame. And I don't mean literally shoot them,
+obviously. No, no, no, I know. But even places that think they've moved past that part or may have,
+right, where the people might not be afraid of that. And so they're a level beyond and better than
+what you're talking about. I think may still be at that point in some cases where you can almost
+overcorrect on that and be like, well, yes, I messed up. We're not looking at that. Like, no, no,
+no. Let's look at that. Let's assume that I was that person and I was fully skilled for that job.
+And trying to do it, what's missing? Was it in my operational context? Was it some poor information?
+Was it that the thing I tried to do, I thought it was going to do something else? We could talk
+about this for hours because this is fascinating to me because it's the interaction of humans with
+automation and increasingly with society and automation. And we could go on for this forever. But I
+do want to ask you one other thing because I think this is important is what questions should you
+ask about your organization in order to assess its ability to make changes? Oh, that's a good one.
+So I think probably one of the more important questions. That's a good one. I haven't thought about
+it in exactly that framework before, but one way to turn that around and come into it is why does
+your organization have whatever level of confidence it has when it makes a change? Ask that question
+as an exploratory question, right? And say, when we change our systems, and that can be whatever way
+you do it, right? That can be merging a PR in a system that has continuous deployment all the way to
+somewhere that has long QA cycles and has to burn things in on chips and do things, right? There's
+an enormous spectrum of what pushing a change can mean. But ask yourself at an organizational level,
+why do we believe it'll go well? Instead of focusing on the negative, right? Turning that all the
+way around. And this is where, you know, things like resilience engineering comes in. Or let's
+instead focus on what actually succeeds for our organization and figure out how to magnify and use
+that to the greatest advantage. Because guess what? A lot of places have organizational gaps and
+problems that will be, in fact, obstacles to this and that are not the same from place to place. And
+the answer can't just be fix those. It's often not that simple. But if you look at like, all right,
+how have we gotten well-founded confidence in things before? And use that as a way to open up, hey,
+what are we actually really strong at here? Can we, in fact, use that more? And use that, in fact,
+to help us where our gaps are? And I think when you as a team or an organization, and this can be
+anything from, again, from, you know, a two-person company running a little website to an enormous
+enterprise, if you get a really well-founded confidence, so what I mean by well-founded is it's not
+just, you know, arrogance, right? It's based on facts and analysis. In the safety of when you do
+things, you get to speed up. You get to go faster. And that's where one of the seeming
+contradictions in this comes apart, which is that when I talk to some people about doing all this
+work to make changes more safe, an immediate obvious objection by some is, well, that's going to
+slow us down. Doing all that stuff, writing those things down, oh my gosh, that's going to take me a
+long time to write what I do and all these other pieces, right? We can't wait for that. Well, that
+might be true at a given moment, but if that's always true and you never invest, you can't ever
+build that well-founded confidence that lets you go fast, right? That, you know, people like to talk
+about things like continuous deployment, right? Pushing out changes constantly, maybe hundreds a
+day. Well, I think that there are two ways that you can become okay with that. One of them is to be
+operating a system with almost no consequences, right? I can push out changes every minute to, you
+know, my personal website that nobody cares about if it's down, right? No consequences means I don't
+matter, right? But that's not the interesting case. The other case is where I'm prepared to justify
+to myself and others why that's actually the best cult. Why doing that all the time is both less
+likely to cause too much damage and that doing those changes constantly is actually making my system
+converge in a better, probably safer direction by doing so. But you don't just get that simply by
+moving fast. You have to do it by building reasons to believe that doing that will make your system
+safer instead of less safe. Planes, trains, and automobiles go faster than they used to because
+people spent the time to figure out how to make them safe. Exactly. And, you know, things in
+automobiles like crumple zones or even seatbelts and things like that turn into the ability to more
+safely drive faster. You know, I think a great example there would be even today, if we move past
+older technology, look at the difference between a street car and a Formula One car, right? You're
+wearing different safety gear if you're piloting a Formula One than you are if you're in a Toyota
+Corolla on the street. And it's not that one of those is making better choices, but the one that
+wants to go faster and not die has actually invested a bit in being able to do so. This discussion
+to me is very, very fascinating because I'm always interested in where humans and technology
+interact. But I'd like to sort of ask you now those questions that I ask all the people here on the
+podcast because I think it humanizes architects and architecture. And it's interesting to see how
+different people answer the questions differently. What is your favorite part of being an architect?
+Sure. So I want to first address like this whole category of these questions, because I think our
+industry at large doesn't really know what an architect is. I mean, we can talk about some things it
+has in common, like communication and design and all these things. But so all I can answer when I
+say this is the roles I've had where that's true, but I'd be careful about generalizing. But for me,
+I think one of my favorite parts is that I get to see so many different problems and come at them
+from so many different directions that it doesn't get boring, right? It stays interesting because,
+you know, the kinds of problems and the kinds of ways that you bring to think about them and the way
+that the rest of the industry helps us keep having new lenses to analyze our problems. It just stays
+interesting. What's your least favorite part of being an architect? So I want to be really clear
+that I don't think this next thing is exactly bad because it's part of how the world works now in a
+positive sense, but it can still be difficult, is that our work is never really done, you know, with
+some very, very rare exceptions. But most of the time, most of the systems that we work on and
+design the past couple decades, once they're operating, they're operating in contact with the real
+world, which is not static. And the demands on them are not static. Their situation, their
+constraints, those things change. And so even really good architecture work, even that which might
+last a while, often doesn't really get to be done. You have to revisit it. And so it's hard. I don't
+mean impossible because there's still moments of satisfaction and points of completion and launch
+and all that, but you never really get that same satisfaction that you can get in some other
+disciplines of the thing is completely done. Interesting. Is there anything creatively, spiritually,
+or emotionally about architecture or being an architect? Oh, those are some interesting words to
+apply to that kind of role. I'm not sure if I have off the top of my head, spiritual and emotional
+aspects that I would say about it. That's not where I get most of my spiritual or emotional reward
+in life. But the other word you use there is absolutely applies for me, which is that architecture
+is certainly a very compellingly creative endeavor. I think one of the ways that I look at most
+architecture work is as a matter of trying to solve essentially a problem with many different
+constraints. And like we talked about before, those constraints, you don't get to say, oh, just the
+technical ones, right? They're technical, operational. Some of them are from our customers. Some of
+them are cost-driven. And so you have these different constraints that can't even be expressed in
+apples to apples ways. And so finding good architectural solutions, I think, often includes finding
+a shared language. And that refers back to the topic we were talking about earlier, but also to
+other problems to help express and understand all of our constraints at the same time so that we can
+approach solutions. And I think that work is deeply creative and valuable. What turns you off about
+architecture or being an architect? Hmm. So I don't know so much about being an architect, but one
+thing that turns me off about the approach to thinking about architecture that I sometimes see is
+this notion that it's something you hand off, like that you do the architecture for a system or a
+problem or something, and then give it to someone to go deal with the implementation and operation
+and walk away. And this refers back to the difficulty of being done. And that's why I think that's
+not exactly a pure negative because it's necessary. I think that doing a good job at this kind of
+role is harmed when people don't have a continuous process of engagement with their real
+stakeholders, with their real running system. So I think it's when people have too many simplifying
+assumptions where they're just like, I designed something beautiful. What happens next is your
+problem. And they might have some unhelpful abstractions. That kind of architecture to me turns me
+off. I think these are important things because, as you say, it may be life as an architect or life
+in general, but we have to be honest with ourselves what we like and don't like because it helps us
+do those things that we have to do. Absolutely. Do you have any favorite technologies? Oh, all
+right. So there's two different ways I want to answer that question. And they almost have almost
+opposing answers because on one hand, I take a very pragmatic and not at all what people think of as
+a religious approach when it comes to making choices within the context of a given project. Right.
+So I very much think that the right programming language choice, database, web framework,
+communication system, you name it, those choices ought to be dictated by the actual practical
+constraints of the project at hand as a much more important thing than my preferences. And don't get
+me wrong. The preferences of a team working on something are among the things that should be valued,
+but shouldn't be the leading way you make choices. Now, that said, I'm very much a nerd about
+exactly some of those disciplines, right? Programming languages and databases, for instance, are
+both things that I care a great deal about and I appreciate. And of course, I have opinions about.
+So I think the way that I might identify the favorite technologies I have, and I'm not going to
+dodge your question, I'll name a few, but the way that I would categorize them is I tend to really
+like technologies that make promises and then show that they can keep them. Right. And that's just
+the kind of direction I go. You know, I've spent some time doing, you know, formal methods and
+programming language theory and things like that. And so, you know, in more recent things, for
+instance, I have a lot of appreciation for Rust's model of keeping certain kinds of promises about
+memory use or something a little more esoteric, but that's a little more popular now of CRDTs or
+conflict-free replicated data types and how those can make certain promises that even when you do
+things out of synchronization, you won't lose certain convergences in your data. And some of the
+things I've built or contributed to over the years, some of the ones I'm most proud of and most like
+have a similar philosophy in that they think hard in the sense of the developers, designers,
+architects, about what promises we're going to make to whoever cares about this software and how
+we're going to justify that promise, how we're going to be sure that we make them. Right. Now, some
+of those technologies, by the very nature of doing that, both the ones I've helped make and the ones
+I've liked to use over the years, some of them are relatively esoteric. So to come back to the first
+half of my answer, I don't recommend them very often, some of those things, but that doesn't mean I
+don't value them. I like them. They're favorites, sometimes only because of the way that they've
+nudged the industry forward a little better by showing what's possible. And so my favorites tend to
+be not the things I pick, but the things that have helped me either think about how to make promises
+or think about how to solve problems. Interesting. So what about architecture do you love? All
+right. So love, again, like some of the words here are interesting because I don't know that there's
+something about it I love. And that like, again, that's a big word for me, but I can say what I
+enjoy. So one of your earlier questions, I was talking about constraint problems as a way to think
+about what it is. And I think that those kinds of problems, the problems facing most architects,
+when you come up with that common language, and then you have to figure out how to solve the next
+step, right? Figuring how to solve for all these different complex organizational and technical
+constraints. Those can be really fun puzzles to solve. And so that I really enjoy. So maybe coming
+up against the corner of love there. But I think there's a danger in that enjoyment because I would
+frame it as a very junior architect mistake that one might make to love that too much. And so then
+to think about the puzzle you have too perfectly and to not take into account the very messy nature
+of the world it exists in. And so to me, it ends up being more rewarding not to have the sort of
+most on paper elegant solution that can be nice too, but to solve a puzzle in a way that accounts
+for that messiness and accounts for the real world. When you feel like you can justify doing that,
+that's a really enjoyable feeling. Well, it also says, I think you've almost answered the next
+question, which is what about architecture do you hate? Because it sounds like people who don't do
+that is sort of... So that would be a way to answer that. I would also say that, you know, for me,
+hate isn't maybe an even stronger word than love, right? I don't think I hate anything about
+architecture, right? The things I reserve hatred for are things like cruelty and greed. Things that
+are more deeply damaging to people. Not things about designing systems. But yes, doing this work in
+a way that is blind to people, I think would be something that I at least dislike. What profession
+other than being an architect would you like to attempt? I would go farther than attempt. So in my
+case, like in addition to all of my software related work, I am a practitioner and instructor of
+karate and some other martial arts. I do that multiple times a week. That's an extremely rewarding
+vocation. It doesn't pay the bills the same way that the software industry does. But I've been doing
+it actually longer than I've been doing software. So had I not ended up in our industry doing this
+kind of work, that would be most likely my profession as well as a vocation. Do you ever see
+yourself not being an architect anymore? Oh, sure. I don't mean as a goal. But at the very beginning
+of our conversation, when you asked me how I became an architect, I think I said something about how
+to me it's not an identity, right? It's a job. It's a really good job. It's a job I like doing. But
+it's not essential to who I am. I think much more about is the work I'm doing something I'm good at?
+Something that's rewarding in some ways. And those ways can come in different forms. And, you know,
+whatever the next role is from a professional point of view, if it's something that I can do well
+and that others find valuable and rewarding, whether that has architect in either the name or
+description, to me, that's not one of the more interesting parts. I just happen to have developed
+the skills that make me sometimes end up in architect jobs. But if the next one doesn't have that,
+I'd barely notice. So we did talk before about the difficulty of something being done. But certainly
+phases of projects are done. And when a project or phase of a project is done, what do you like to
+hear from the clients or your team? Yeah. So, right. We've already identified that done is a little
+weird in today's world for most systems, especially ones that are operating as a service people are
+interacting with all the time. But again, you still have launches and major revisions and moments of
+a kind of doneness. Moments of satisfaction, hopefully. Yes. Well, so actually, I think for me, and
+this is one of the reasons why I think having a longer or bigger career in this that's rewarding can
+be a challenge for some folks. I think it requires a sense of delayed gratification. Because to me,
+the most rewarding elements after some of those done points are ones that you can't get right away.
+For instance, that a given architecture has allowed a system to change later without having to have,
+you know, a long, expensive re-architecture process. To me, that's the kind of thing that I love to
+hear, right? You know, I've had the good fortune to have a few things. And to be really clear, it's
+a small minority of the things I've worked on that they can stay in use for 25 years or more in some
+cases. Doesn't mean they haven't changed. They have changed. And other people have had to change
+them and probably said nasty things about me at the time, sometimes. Sort of like having children.
+Right, exactly. But the fact that they were able to change those systems as opposed to having no
+choice but to bin them, to me, that's really rewarding. So something that can continue to exist in
+the world and change, having done that, that to me is just really rewarding to hear or see or find
+out about. If anything more so than those immediate satisfying moments of, hey, the thing's running,
+which is cool. Don't get me wrong. I like that. But I like even more hearing like, well, yeah, now
+we had to, you know, deal with this other kind of use case or this other kind of traffic or this
+whatever. And well, so we had to change it, but we could. Like that, like, oh, okay. That means we
+got something right when we thought about the approach to designing a system. That's what I meant
+when it's like having children. You watch them grow up and being capable of living on their own, not
+necessarily doing the exact same things they did when you taught them at 10 or whatever. Indeed. And
+what's rewarding is seeing not that they make decisions the same way you do, because I don't know
+about you, but that's not my experience. They're different people. Right, exactly. But that you've
+hopefully helped them. And I say helped here because one has to be careful not to get their ego in
+the wrong place. But hopefully played some part in them developing a framework for that decision-
+making that you can look at and say, all right, as their world changed, and they had to make
+decisions that I couldn't have prepared them for, they did it, right? They kept going, right? That
+alone is something to be celebrated. Yes. I found this conversation very fascinating. I always enjoy
+when we talk about people, technology, the ability to make changes because life is not static. As
+you said, the people are not static. The people inside are not static. The world outside is not
+static. The machines are not static. And the machines that interact with those other machines are
+not static. The world of anything has become more and more dynamic. And these issues are just more
+and more important. It was a pleasure having you and having this conversation. It was my pleasure,
+Michael. This was a really fun conversation. I always like talking about this stuff. And I like
+talking with you about them. So thanks for inviting me. Thank you very much.             Thank you.

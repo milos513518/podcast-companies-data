@@ -1,0 +1,292 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/06/SED1936-Cloudfare-Quantum-Readiness.txt
+EPISODE: Preparing for Q-Day
+DATE: 2026-06-16
+SED: 1936
+HOSTS: ?
+PAGE: https://softwareengineeringdaily.com/podcasts/preparing-for-q-day/
+----------------------------------------------------------------------
+
+EPISODE 1936
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Most of the cryptography securing the internet today rests on mathematical problems that classical computers cannot solve in any reasonable time frame. That assumption is now being tested. Recent advances in quantum computing have dramatically compressed timelines, and many in the industry have set a target of full post-quantum security by 2029, meaning a complete migration to algorithms designed to remain secure against quantum attacks. Bas Westerbaan is a cryptography engineer at CloudFlare, where he leads the company's efforts to migrate to post-quantum cryptography. In this episode, Bas joins Kevin Ball to discuss how quantum computers threaten public key cryptography, what post-quantum algorithms actually are and how they work, the timeline shifts that have made quantum readiness feel so urgent, and what software engineers need to do now to prepare their systems.
+
+Kevin Ball, or KBall is the Vice President of Engineering at Mento and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies, founded the San Diego JavaScript Meetup, and organizes the AI in Action discussion group through latent space. Check out the show notes to follow KBall on Twitter or LinkedIn, or visit his website, kball.llc.
+
+[INTERVIEW]
+
+[0:01:31] KB: Bas, welcome to the show.
+
+[0:01:32] BW: Hey, Kevin. Nice to be here.
+
+[0:01:34] KB: Yeah, I'm excited for this topic. This is one that has been suddenly raising my awareness, but I don't know enough about it, so I'm really eager to pick your brain. Let's start with a little bit about you. Can you give us a little bit of your background and how you got to where you are today?
+
+[0:01:50] BW: It's quite a whammy road. I always liked security and cryptography at high school. I decided to go study physics and mathematics, because I thought that would be more challenging. I didn't end up being very good at the physics, so I stuck with the mathematics at least. I mean, the physicists they know how to bend the rules, right? I don't know how to do that. I did mathematics, then I did a PhD. Going back to physics a little bit in the mathematical foundations of quantum computing and physics kept pulling me.
+
+Actually, I did that at the security group of my university. When I would be avoiding working on my actual thesis, I would be spending time with the cryptographers around there, so as the people doing post-quantum cryptography there and the science of symmetric cryptography. I learned by osmosis, just during the coffee breaks and stuff. After that, when I did went for a post-doc to London, London is expensive, so I thought maybe I can find an internship, or something. I've read some crypto engineering, so I via, via ended up with an internship at Cloudflare. I enjoyed that so much doing crypto engineering there that after COVID, I got invited to join full-time in the Netherlands back and I've been there ever since. That leading for the last few years our efforts in migrating to post-quantum cryptography.
+
+[0:03:12] KB: That's awesome. I actually also started in physics. I studied physics as an undergraduate and got away from it. Then in recent years, there's all these things that feel like, oh, that's suddenly relevant again. There's so much that is becoming interesting. Let's talk a little bit about quantum security, quantum cryptography, and all of this, because I feel like this is something that most of us as software engineers weren't worried about, hasn't been that big on the radar, maybe if you were in a niche area, and then suddenly, it's a big concern. Maybe start back with, what are the problems that quantum computers create for cryptography?
+
+[0:03:49] BW: Yes, so quantum computers, it's quite an old concept. Even earlier than the 90s, Richard Feynman, the famous physicist and some other folks proposed that you can use quantum computers to more efficiently simulate nature. The whole thing about quantum computers is that things are in superposition. If you want to compute things about them, you have to carry around actually an exponential number of probabilities, which they call amplitudes, which is inefficient, but then they realized if you use quantum mechanics itself, the full power of it to actually do computations, instead of just using zeros and ones, you can actually compute it more efficiently. That's all well and good.
+
+The physicist's story with hopefully amazing applications in material science and stuff. It was all positive until in '94, Peter Shor, mathematician, he figured out that if you have a quantum computer, then you can also efficiently solve factoring and discrete logarithms. That's a little bit inconvenient, because basically, all of our public key cryptography is - not all cryptography, but basically all cryptography that's important relies on that today. If a quantum computer is actually built, doesn't exist yet, but if it's actually built that's big and powerful enough, then most of the cryptography falls away.
+
+[0:05:09] KB: Yeah, that's really interesting. I think some of our listeners will be crypto experts, but let's maybe really quickly talk about asymmetric cryptography and how this works and why this ability to factor large numbers suddenly makes this fall away.
+
+[0:05:24] BW: Yes, there's two big groups of cryptography. Symmetric cryptography, which is AES shuttle. That's mostly about jumbling bits, right? Mix things up a bit so that they become unpredictable. That's in a way, it's a bit of a messy thing, but it's well understood that quantum computers don't touch that. That's still completely fine. Now the public key cryptography, that's the cryptography where I have a public and a private key, and that requires something mathematical, something magical to make it work. In the case of elliptic curves, that's discrete logarithms. In case of RSA, it's using the fact that multiplying numbers is easy, but factoring them is hard.
+
+Well, we think it's hard. It is hard, we think for normal computers. But for quantum computers, it's pretty easy. The problem is, if you can solve that problem, if you can do a factor or number easily, then you can also break the public key and from the public key to run a private key. Maybe we should go, what does this actually mean? What's the actual impact, right? Instead of the mathematical bits. The thing is, so we use cryptography for basically two things, mostly. I mean, for a lot of things, but the two big things are protecting data and protecting access and authenticity. If you make a connection and you do a TLS handshake, there's what is called a key agreement first. After the key agreement, both sides have a shared key, which they then use for bulk encryption using typically, AES.
+
+This key agreement today also relies on other elliptic curves of RSA. If that's broken, then people who recorded the encrypted conversation can retroactively decrypt it and see the data. That's the famous harvest now, decrypt letter. People can record encrypted sessions today. If they are not protecting using post-quantum cryptography, cryptography designed to be secure against the attack of quantum computers, then they can be decrypted in the future. That's one.
+
+[0:07:20] KB: Yeah. Just to even put it in broad terms, right? Every connection we have today, especially now, everything's using HTTPS. If you're on the web, you're going and logging into Google, to your bank, to what have you. All of those at the root are doing a TLS handshake, shared key, and encrypting it using AES, which if it's being recorded, which I mean, I live in the United States, I unfortunately assume everything is being recorded at this point. All of that could be replayed and cracked with a quantum computer.
+
+[0:07:50] BW: Well, luckily, we have made some good - I mean, we've known about this problem for quite a long time and we've made some good progress. By default, if you use a modern browser, Chrome, or Safari, or Firefox, then that already tries to make a connection using post-quantum cryptography that secures it against harvest now, decrypt letter.
+
+[0:08:09] KB: That is good to dig into. Actually, first, what does it mean to be post-quantum cryptography? What is that?
+
+[0:08:14] BW: Yeah. Post-quantum cryptography is cryptography that is designed, or we believe is secure against the attack of quantum computers. The funny thing is this cryptography is typically already quite old. Lattices, which is the front runner - I mean, there are many different types of post-quantum cryptography, hash-based cryptography, lattice-based cryptography, isogeny-based cryptography, and the variant-based cryptography. The one that are really taking are on the frontier that are being deployed now is lattice-based cryptography. We believe that they are secure against the attack of quantum computers. Believe, that sounds weak. I mean, also, with classical cryptography tomorrow, we can wake up as someone discovered a classical algorithm to factor numbers quickly. That is possible. Luckily, it hasn't happened.
+
+For the best of our knowledge, we have quite a good confidence in it that lattice-based cryptography is secure against the attack of quantum computers. If you use that lattice-based cryptography, then you're secure against this threat.
+
+[0:09:09] KB: Let's maybe really quickly talk about what that actually is, because I think it's - I enjoy geeking out on this, right? We've talked about the two examples, where you've got elliptic curves and computing things there. We're using logarithms. We talked about large number, multiplication being easy, but factoring being hard. Those are the two quantum crackable approaches that we have. What does it mean lattice-based cryptography? What's the underlying math happening there?
+
+[0:09:32] BW: Yeah. What is a lattice? A simple example of a lattice, it's a simplified example of it, a toy example of it is think of a plane. A plane with X, Y grid. You have two points on the plane. We start with just two points. Now what we do is we create a grid from those points, where each of the points, they make - think about a parallelogram and then it just repeats. It repeats. If you have such a grid at this point, it's very easy to say what is the smallest point in the grid, as closest to the origin. That's pretty easy if you give the grid as two points that are neatly orthogonal. That's what they call a good basis. You can also give the same grid by giving a point that's very far away, two points that are very far away and close together. Those two points can also generate the same grid. That's what's called a bad basis. It's a basis where it's not that clear to see where the actual smallest point in the grid is. A picture is worth here more than a thousand words, but maybe you can add a link to a picture about this.
+
+[0:10:36] KB: Yeah. I mean, I think conceptually, it makes a lot of sense, right, where if you're imagining this plane, if we're looking at a point that's very close to the origin, you can be very zoomed in. It's able to be very high level of fidelity, high detail. You have two points, okay, but you're still looking in very good fidelity. Whereas, if it's very far out, conceptually, you're having to zoom way out. It's hard to see any level of detail.
+
+[0:10:59] BW: Yeah, it's also when they're close together, it's really hard to see how well things cancel out if you start adding and subtracting them. Actually, on the plane, you can - I mean, it's a fun thing to run an algorithm for a little lively setup. It's actually pretty easy to clip it as out in the plane, right, because that's just two dimensions. That turns out that if you do this in a space that has a thousand dimensions, it's not just X or Y, but a thousand different directions, then this becomes computationally very, very hard. That's the basis of lattice-based cryptography.
+
+[0:11:28] KB: I'm going to use the example of the multiplication and factoring, because that one I understand personally more than I understand the elliptic curve one. In that example, the way that the public and private works is you say, okay, if we know the private, we can do the multiplication route. We just showed the end version. We both got to the same thing, but somebody just seeing that end version, they can't factor it. In the lattice, what is the equivalent here? What am I sharing with my counterparty? Or how do I get to some shared basis for encryption?
+
+[0:11:58] BW: Actually, do you know about Diffie-Hellman, the clock things?
+
+[0:12:01] KB: Only somewhat. Why don't you explain it? Then we can go with it.
+
+[0:12:04] BW: Diffie-Hellman is a classical one, which is based on discrete log, where each of us starts with a secret number, A and B. We do this using modular arithmetic. It's like time on a clock. I have a secret B, you have a secret K, right? For Karim and Boss. We both agree on a basis number. Let's say, two. I compute two to the B, and modular, I don't know, the big prime number we choose. You compute two to the K. You send two to the K to me, and I send two to the B to you. Going from two to the B, figuring out - I mean, if it's normal numbers, it's easy to take a logarithm if you see two to the B to then C what is B. But if you do this modular prime, this is actually hard. This is called the discrete logarithm problem. Well, hard for us now with our puny classical computers. With the quantum computer, it's easy.
+
+Okay, so that's the public key, two to the B. It might be two to the K is your public key. Now, you've got my public key, two to the B, and what you can do is you can exponentiate in your K. You can do two to the B to the K, and I can do two to the K, and I can exponent in B. Two to the K to the B. What we end up with is both of us end up with two to the B times K. We both got the same shared number, which we can use as a secret to then do a yes. This is called Diffie-Hellman. With lattices, you do the same, but then with adding a lot of noise. It's a noisy version of this.
+
+[0:13:39] KB: That makes a ton of sense, actually. That's really helpful. You're each starting with essentially, this small, easy to understand piece. Then you layer it and you end up with this, okay, this is way out in the world. This is hard to decrypt.
+
+[0:13:54] BW: My colleague, Chris Patton, he wrote together, to travel one of the designs for the scheme. He wrote a nice blog post with this analogy explaining this more. I really don't do it justice in five minutes. Maybe we can add a link to it.
+
+[0:14:05] KB: Yeah, we can go and check that out. If you're looking for it, Google will turn it up, I'm sure. Okay, cool. That, I think, helps us understand a little bit more about an example of post-quantum cryptography. You're saying, essentially, we're all, if we're using modern browsers for web traffic, we're pretty much all protected from.
+
+[0:14:23] BW: That's bad news almost.
+
+[0:14:24] KB: Okay.
+
+[0:14:25] BW: We're protected against harvest now, decrypt later.
+
+[0:14:28] KB: That's where I was going to go. Yeah, we're protected against harvest now, decrypt later. There was this recent announcement from Google that I think has shifted the threat model a little bit.
+
+[0:14:38] BW: Yeah. So, Q-Day. Q-Day is the day that we expect there will be a cryptographically relevant quantum computer. One that's powerful enough to actually crack real keys used in production. If you think that Q-Day is far away, then it's really about the harvest now, decrypt later, right? That's about, I'm still using, if we're honest, I'm still using passwords I've been using 10 years ago. I don't want to change those passwords. I want them to be secure today. If Q-Day is far away to harvest now, decrypt later, but we don't just need to fix the harvest now, decrypt later bit of it. We also need to fix the authentication, the certificates bit of it. Because just as we explained, we had the shared secret, this two to the B to the K, which we can then use for a yes. We did this exchange, but how do I know that I'm actually talking to you, right?
+
+[0:15:25] KB: Yeah, yeah. How do you know that you're sending your secret to actual Kevin and not someone else?
+
+[0:15:30] BW: Yeah, it might be someone in the middle who does this dance with me and with you separately and then re-encrypts everything, right? A classical man in the middle attack. The way that that is solved is that we use certificates to authenticate. After we do this thing, you would send me a certificate signed by a certificate authority, which says, "I'm Kevin." Then, what's your personal website. We then TLS it, it's the CA says, "You can trust this public key for doing connections with this particular domain." Key agreements ensures that you have a secure connection. You don't know with whom. The certificates make sure that you're talking to the right person.
+
+[0:16:10] KB: Yeah.
+
+[0:16:11] BW: Now, there's no deployment of post-quantum certificates today. It's all classical certificates up, which is fine -
+
+[0:16:17] KB: Until Q-Day.
+
+[0:16:18] BW: Yeah, until Q-Day, right? Because come Q-Day, it's not just about an active attack, right? Because come Q-Day, it has these root certificates of big certificate authorities. A quantum computer just has to crack one of them. I mean, each browser trusts a whole bunch of them. Not just dancer. It's hundreds of authorities that trusted. A quantum computer just has to crack one of them, and it then can create a certificate trusted by basically, any browser, or basically, everyone uses the same trust infrastructure as the browsers. That's a huge problem.
+
+[0:16:49] KB: And so, when you have that in place, now suddenly, the consequences of this is essentially, whoever owns this quantum computer can set up a man in the middle to anywhere.
+
+[0:16:58] BW: Well, not just men in the middle, because sure, they can do a man in the middle, but they don't need to be in the middle. They can just, if I crack a CA key, I can create my own certificate. I don't necessarily have to be in the middle. It depends on what it is, right? If I'm on your network, I don't even have to talk to the actual server. I can just respond as if I were the real server, right? It's just not in the middle. It's just, you talk to no one else, but me. It's even scarier with things like, for instance, if you have a phone, the way it trusts a software update is using a public tool.
+
+[0:17:32] KB: If you have a Tesla, or some other car that does over-the-wire updates, or other things.
+
+[0:17:37] BW: Yeah. Last year, I bought a new second-hand car, which is new enough that it has a remote unlock and all this jazz, but old enough that it probably won't get any post-quantum updates. I don't want to buy a new car. Let's hope, at least we can turn off the remote-control functionality. One of the best practices in software is to have auto update mechanisms, right? That you can quickly push in a software update for zero day. Every software update mechanism becomes a remote code execution for quantum attackers.
+
+[0:18:11] KB: What do we do? You mentioned for fighting against decryption for this by now, our harvest now, decrypt later, we have alternate approaches that we know work, that we've been deploying out through at least critical pieces of software, like browsers and things like that. Do we know the answer? What does post-quantum authentication look like?
+
+[0:18:33] BW: Yeah, so maybe also in the previous one to say, actually on our view, we can see how many of our clients already can do the post-quantum key agreement and that's now more than 65% already are protected. I mean, that's -
+
+[0:18:46] KB: That's pretty good.
+
+[0:18:47] BW: Of course, we want higher. We want 95%. 100% ideally. You never get to 100%. 95% would be nice. But it's pretty good. Yeah. We turn that on in 2022 and it took until now to get to 65%. But we know how to do post-quantum authentication. We have the algorithms. It's trickling down in software as we speak and people are starting to move faster.
+
+[0:19:13] KB: Amazing what threats will do, right?
+
+[0:19:16] BW: Yeah, yeah, yeah, yeah, yeah, yeah. Things move fast. I mean, people start only working when the deadline is near anyway, right? If we're completely honest. We have the algorithms. We're finishing up the final little standards how to do it in the protocols and it's just about deploying. I think there's good news and bad news here. I think, like a lot of software development, there's a 90-10 rule here, where in the vast majority of cases it will not be a very difficult upgrade. In a sense, it's just a different type of certificate. It's just, you have to keep your software up to date, you just install a different kind of certificate and you're secure.
+
+It's a 10% of cases that are really difficult. It's the cases where you critically depend on cryptography baked into hardware, where you can't replace the hardware. It's when you depend on the box that someone bought before you joined the company. Does the vendor still exist? What does it actually do? It's these hard cases for several reasons that you need to surface, which makes it hard and also why it's urgent to start looking to even know what the deal is. Luckily and probably, if you just use modern stuff, TLS, then it will probably be reasonably straightforward.
+
+[0:20:29] KB: Let's start with the straightforward ones and then we can dig our way down into the deeper ones. To deploy this out, it sounds like, first, you probably need the certificate authorities themselves to be updating, having another approach. Then it's for users, it's like a software upgrade. It's like, okay, next version of Chrome, next version of SSH and all these other different things, and they're going to use post-quantum authentication?
+
+[0:20:53] BW: Yeah. Chrome already announced their roadmap on when they will accept post-quantum certificate authorities and they will start accepting them in Q1 of 2027. Probably, you will see the first ones then. One thing that is new is that you will need two certificates. Because the thing is not everyone can upgrade at once. Maybe if you have an internal network, you can just replace everyone, have a flag, they flip the switch. But if you have some serious system, or maybe even just a few different teams in a big organization, you can't get it done all at once.
+
+You need to be able to deal with clients and servers that both are not upgraded yet. On the server side, that means that a server needs to be able to install both a traditional RSA, or an ECC certificate, but also a post-quantum certificate.
+
+[0:21:41] KB: Oh, that's right. It's not just the root certificate over the authority that needs - This actually needs to get deployed out to anyone with a web server, essentially.
+
+[0:21:49] BW: Yeah, yeah. Of course.
+
+[0:21:50] KB: It makes sense, but I hadn't made the connection somehow. Yeah, okay. Anyone running your own web server, you've got NGINX doing something or whatever, you're going to need to update. Next time you do a certificate update, you need to have two of them.
+
+[0:22:03] BW: Yeah. Hopefully, a lot of people do certificate automation, right? You don't do this certificate selling yourself, you get Acme, some kind of Acme client to do it for you. Hopefully, that's easy.
+
+[0:22:13] KB: That's maybe the 90% case at this point. That feels generous, actually. I don't know if we're up to 90% of people hosting servers are already using, like Acme. I don't know.
+
+[0:22:23] BW: I mean, it's something you can do today, right? Even though there are no post-quantum certificates today, you can at least do certificate automation today. Another thing you can do is check whether your application server can actually install two certificates. A lot of pieces of software, there's just the one certificate, not just one slot. Whereas, you really need at least two slots here. Although, if it turns out it's really hard to get application servers to move, we might need to define an ugly certificate format that we squeeze in two certificates into one. Let's hope we won't need that.
+
+[0:22:54] KB: How bad would that be? Because, once again, having been burned before, I suspect there will be a long tail of application servers that are not going to be updating.
+
+[0:23:04] BW: Oh, for sure. For sure. That's the reality, right? We can't have the slow movers hold back the fast movers, right? Also, one of the things is you need to, for instance, if you go to an office and you go to the parking on the turn style, does that thing talk to you? If we want to upgrade that, do we need to replace the whole thing? I mean, is it worth it? Do we really care if someone with a quantum computer can have free parking?
+
+[0:23:29] KB: It's fascinating. It reminds me of the whole Y2K scare, except we have orders and orders and orders of magnitude more deployed software and hardware at this point.
+
+[0:23:41] BW: Also, the cryptography, we've had 50 years to put cryptography basically, everywhere, and usually we hide it. Once cryptography is there, you don't want to touch it, right?
+
+[0:23:51] KB: Yeah, it's working.
+
+[0:23:52] BW: It's working. It's fine. Unless, it's really broken, people don't really touch software, right? Cryptography. Software, of course, with cryptography. Yeah.
+
+[0:24:00] KB: Okay, interesting. Let's dive a little bit more. Imagine you're in a world where you own some of this software, right? The 80%, 90%, I'm just deploying new software. I'm not building the software. It's somebody else's job to make this accept two certificates, whatever. I just need to roll out updates. Now, let's step back and say, okay, we're a bunch of software developers. Probably some of us have software where this is actually relevant. What do we need to do then? Is this just dropping in some new libraries, or are there bigger changes, other performance considerations? What does this look like?
+
+[0:24:32] BW: The big things are common best practices, right? I already mentioned, keep software libraries up to date, be able to install two certificates, two certificate automation, if you can do it. Those are generally good advice and you can do today. On internal PQIs, you can already use it. If your software library supports it, then you can only use and deploy post-quantum certificates. We can already do that today, for internal networks. For public CAs, you have to wait until 2027. Now, on the things that can go wrong, post-quantum signatures are larger. Yet, the curve signatures, they're only 64-bytes. Because they were so small and fast, we use them, basically, everywhere. We had a problem, we solved it with an extra signature.
+
+When you make a TLS connection, there's typically six signatures that the server sends to the client. Now they're not small anymore. An MLDSA44, which seems to be the most commonly used, post-quantum signatures. If I'm reading the tea leaves correctly, that is two and a half kilobytes.
+
+[0:25:30] KB: Sending it six times per connection. Wow. Yeah. Okay.
+
+[0:25:34] BW: We're looking at about 15 kilobytes from server to client on the handshake. If you go to YouTube, that doesn't really matter, right? If you go to YouTube. It does matter in some other cases. There are two reasons. Performance. If you look at all the connections that are made with Cloudflare over Quick, so that's mostly browsers, about half of them transfer less than 8 kilobytes. If you just do a drop-in there, then it means that we're adding -
+
+[0:26:01] KB: We've tripled the payload. Yeah.
+
+[0:26:03] BW: Yeah. It means that half of the connections transfer, three quarters of them would just be certificates, instead of data. The actual impact is also still and user impact is also a question, but it doesn't look good, right? Because we want to turn this stuff on by default. If there's potential for performance degradation, we don't want complaints. To be able to turn it on by default, we need to have the number of complaint about performance. We do have tricks here. What we're doing is we're redesigning the way certificates work. We're doing batch signing, which is called Merkle Tree Certificates.
+
+There's all cool stuff we can dive into, but for the end, it doesn't matter. It's still a kind of certificate that you need to install and you'll learn these updates. All in all, that's what software develop you need to do doesn't really change there. But then, there's performance, but then there's also the second thing, which is protocol authentication, which is that even though that TLS has been designed to be flexible, to allow multiple signatures, to allow small keys, large keys, in practice, when the flexibility in the protocol is not used, the joint ossifies, I would say.
+
+We saw this actually with the migration to post-content key agreement, which is already running now. That's also larger. It's one kilobyte, instead of 32 bytes. The first flight in the TLS connection, you always used to be just one packet and now it's two packets. 99% of the cases, that is completely fine. But we found that in 1% of the criticism, it just wouldn't work. It would break. The causes would vary. It's some middle boxes, some firewalls, like firewalls, also some load balancers couldn't do it. It's very bad.
+
+The path here was just slowly rolled out until somebody complains. Now with the gen, hold it, ramp it up some more. In the end, we got there. That's another problem, protocol ossification. The funny thing there is is that, I think, it was a while back where Chrome was at 10%. We, at CloudFlare, we enabled it to follow zones. Chrome was at 10%. Everything was looking good. Then they ramped up to 100%. 10% of all Chrome clients were already using PQQ all the time, then they ramped up to 100%.
+
+You would think that if you have an organization where 10% of the users with Chrome doesn't work for a reason, that they would report it. No. Ramping up at 10% to 100%, there were a bunch of new bug reports of organizations, where only until literally everybody's Chrome was not working, then only a complaint came in.
+
+[0:28:35] KB: I'm guessing, a lot of this is the, well, it works for me, right? Somebody might have experienced it, filed it to their IT, their IT is like, "Hey, it's working for me. It's fine."
+
+[0:28:44] BW: With this, I don't want people to take away that there could be problems, because these problems are actually rare. That's one. Another thing is you only figure out these problems by trying it.
+
+[0:28:54] KB: Absolutely. Yeah.
+
+[0:28:55] BW: It's really hard to predict. Really hard. Just try it and see.
+
+[0:28:59] KB: Before we move on from this, one quick question about on the performance side. We talked about the increased size of the keys, thinking particularly about places where we embed cryptography in small devices. What's the computational requirement look like? Is it substantially more overhead there?
+
+[0:29:14] BW: That's actually a funny thing. You think big key means slow. This is actually not the case. I mean, if the network is the bottleneck, then the key is a problem. Computationally, it's actually very light. The computations involved in lattice-based cryptography are actually typically faster than it occurs, which are already known for their speed.
+
+[0:29:33] KB: Interesting. Okay.
+
+[0:29:35] BW: Yeah. With embedded devices, though, there is the thing that gets them is not necessarily the computation, but it's the memory requirement. For elliptic curves, you only need something, not more than 200 bytes of RAM to compute with them. With ML-KEM, which is the post-quantum key agreement, you do need about 5 kilobytes of RAM, which is for some device is a problem, for some devices.
+
+[0:30:00] KB: Yeah, for sure. Not usually an issue over in our web world on laptops, but yeah, I've been playing with embedded recently. Suddenly, all these limitations are real again.
+
+[0:30:08] BW: Definitely. Yeah.
+
+[0:30:09] KB: Okay. Let's talk a little bit more about timelines and roadmaps. My impression is we'd all been operating under the assumption that Q-Day was far away, and we were mostly worried about the harvest now, decrypt later. What does the timelines look now? Google was the big one that caught my eye, but I think there have been a flurry of shifts in terms of projections of when Q-Day is going to happen. Yeah, what are we looking at? What is the roadmap to being ready?
+
+[0:30:42] BW: Ever since I started working in this field, I was felt far away. It was always like, yeah, probably somewhere after 2035. One thing to understand is that there's not one approach to quantum computing. There are multiple different approaches. You have the silicon-based, the transplant, ion trap-based, neutral atom-based, photonics, all kinds of different approaches. Each of these approaches, they have their own list of challenges. Ten years ago, the list of challenges was so far. The question was, is even one of them going to make it, right? Over the years, each of them, they - None of them fell away. They all kept hanging around, and most of them put also on the frontier. Still, everyone, they were like, 2035. Yeah, yeah. It became a magic number.
+
+Also, a lot of regulators started to standardize on with deadlines between 2030 and 2035, or typically, 2030 was for the more critical things in 2035. There's a mix between 2030 and 2035 on regulatory deadlines. For that fault, also reasonably comfortable, that is until just the last few months. What happened is that, to understand progress of quantum computing, it's actually three layers. It's three fronts where progress compounds. You have the hardware. How far along is the actual physical device that runs it? These physical devices, these are all analog. They are noisy. Each quantum bit, each Qbit, it's not perfect in an actual device. Some approaches have them inherently better than other approaches. Still, none of them are perfect.
+
+For any real computation, you need to do what is called quantum error correction. That's the second layer, second front on which progress can be made is which error correcting codes do you have, and can you use on your quantum computer? The third front of advances that can be made is on the algorithm itself. I mean, you know that if you do a first attempt at implementing some algorithm, might not be the fastest way to get to some. If you haven't directed at us something in assembly, it can be quite a bit faster, against so with quantum computers.
+
+What we've seen. When we originally started, we thought we would need about 200 million physical superconducting Qbits to break RSA 2040, 200 million. Then over the years,
+
+ it was whittled down to 20 million, now 1 million with just a superconducting Qbit. Then there came out a paper just recently of Google, which said, "Oh, actually, these elliptic curves, these can also be correct, very efficiently. They only require superconducting, only 200,000." That was one. There's a much more efficient way to attack elliptic curves, which makes it a lot smaller.
+
+Then another thing is that, so that was a Google's paper, where the salient thing is, is that they didn't publish the algorithm. The only thing that they did, this is starting to get dangerous. We're not publishing the algorithm, we're only publishing a what is called a zero-knowledge proof, that we actually know the algorithm.
+
+[0:34:02] KB: Fascinating. Yeah.
+
+[0:34:03] BW: I'm happy they told us they made the improvement with it.
+
+[0:34:07] KB: It's honestly reminiscent of what's going on in the AI space, too, where it's like, we're not going to make our newest models public, we're just going to crack all sorts of security issues and bring people in on that. Similarly, here, it's like, oh, yeah, we have the ability now. You better get ready. We're not going to make that available, because somebody will use it. But here you go.
+
+[0:34:26] BW: There's an algorithm set. There's also the -
+
+[0:34:29] KB: The middle there. Yeah.
+
+[0:34:31] BW: The top is already shrinking a lot. The middle is the error correcting codes, and there has been tremendous progress there as well. In particular of a startup called Oratomic, they show that if you have a particular kind of quantum computer, it doesn't work with everyone, it works with neutral atoms, it works with ion trap, what they call reconfigurable, it's where you can move Qbits around. With silicon, they're basically locked in place and can only do weird memory searches. Whereas, with the reconfigurable, with the neutral atoms, you can move them around. If you can move them around, you can do non-local error correcting codes. Then they showed that you only need 10,000 physical Qbits to make P256 elliptical.
+
+[0:35:11] KB: Whoa, whoa, whoa. If I'm hearing you correctly, they got a 20X improvement of mapping from physical Qbits to logical Qbits.
+
+[0:35:18] BW: Yeah.
+
+[0:35:19] KB: Wow.
+
+[0:35:19] BW: That's another improvement. Actually, the 10,000 number is a caveat. It needs to run for - to actually run it to build the key, it requires something like a month or so, or two. Probably, you would require something like 20,000 to do it in a more reasonable time.
+
+[0:35:35] KB: I mean, what's the projected classical time to break one of these keys, right?
+
+[0:35:40] BW: Practically infinite, right?
+
+[0:35:41] KB: A month is pretty good. Yeah.
+
+[0:35:46] BW: Then the hardware side, where if you look at each of these approaches, they are hammering away at their challenges, right? Each of them still has their big engineering challenge to solve. At the moment, you really have to believe now that every single one of them hits a wall, to not believe that it's coming. Especially the neutral atom one, which was a bit of a black sheep. It wasn't really on anyone's radar until recently. Because in the longest time, they didn't even, weren't able to trap a single neutral atom. Now they have grids of 6,000 neutral atoms. Not a computer yet. It's 6,000. I mean, 6,000, 10,000, 6,000, 10,000. It's a grid of 6,000 neutral atoms that they can trap. But it's not a functioning computer yet. It's not that you can do actually on the operations.
+
+They have shown how to do each of these engineering, how to solve each of these engineering challenges have been solved separately. Now it's about integration. As we know, I mean, the integration is hard work. There's a lot of work there.
+
+[0:36:48] KB: 2035 is looking a little overly optimistic, is what you're saying.
+
+[0:36:52] BW: We cannot exclude the possibility that we see one in 2030 already, or early. 2029, even, maybe 1% chance.
+
+[0:37:02] KB: Google put a date on it, right? They are like, "We think that you've got to be ready by 2029."
+
+[0:37:07] BW: Google says, we are going to be ready by 2029. That's our target as well. We are going to be fully post-quantum secure by 2029. Yeah, because it's starting to get incredibly uncomfortable.
+
+[0:37:20] KB: Let's talk then about what it takes to get to that full post-quantum security. We talked about the key exchange piece. You've already got that rolled out quite a bit. We talked about the need for the certificate authority and pieces on that. How are you breaking apart these different pieces and the rollout? Walk me through what it takes to get there by 2029.
+
+[0:37:41] KB: Yeah, so this is a big project, right? It's not a single push. I mean, that's easy in the hard cases, or easy, the straightforward case. Even the straightforward case is, first, you need to make sure that your internal Cas, or the actual CAs are there. You need to make sure then you need to provision the new root certificates on the clients. Then you need to provision, of course, you need to update the servers, the software and the software and the clients to understand these new certificates. Then you need to provision the new certificates next to the old certificates on all of the servers.
+
+Then you're not done yet, because installing post-quantum editing support for it is not enough. You also need to turn off support for quantum funnel on crypto. Otherwise, you have a dominant attack. After that's all said and done, you probably also want to rotate all your secrets. Even though this is well understood, the steps here, but it's not one push. It's like, maybe three, four pushes. It's a matter of years, not of months. That's one. But at least there, the things are reasonably well understood. Software support is coming.
+
+OpenSSL already has support for MLDSA. Software support and other libraries certainly coming. The thing that is important now as well is to bubble up the hard cases, right? Cases where you put a jot into your URL. If that jot is using a post-quantum signature of one and a half kilobyte, that will radio URL. That's never going to work. Headers, a lot of servers, even clients are not happy if your headers are chunky. Hardware dependencies, bespoke protocols, something like WireGuard. WireGuard really uses that thing fit into single packets. That's not an easy upgrade either. There are some suggestions there. One track is preparing just a straightforward case and another track is trying to bubble up quickly these hard cases. The things that needs actual tough decisions on how to proceed. Then there's a third track, which is dependencies with vendors, right? Because even though you can do anything, all right, if your vendor doesn't upgrade in time, well, what can you do?
+
+[0:39:44] KB: Because I've had to work with vendors before, that immediately puts me down the road of, well, we're not going to make it. What are the consequences? We get to 2029. Maybe you're most of the way there, but you've got a few vendors that have not updated, or something like that. What are the impacts? What are the cascades? What does this look like in the downside case? This is actually the exercise you can do tomorrow, right? Just assume we got it all wrong. It's already a quantum computer. What happens? What's the impacts? What do we need to focus on now? That you can do, right? Because actually, usually, it's because you can also - I love cryptography. I think we did a great job of the last decade to make encrypted, secure connections in the baseline. I really want to keep that.
+
+To reduce the panic of it, it's also important to start from, what is the actual business continuity impact if this happens? Are there any mitigating circumstances? Can we detect if this happens? How can we solve this in different ways? I can't prescribe, it will differ persistent system. Some of them you will discover, oh, I thought it wasn't bad, but it's actually really bad. Others, you discover, we can do some different things. We can fix things in different ways. It wasn't load-bearing. That can be one example. Maybe we can just put in a post-quantum VPN, or the like. Maybe we do design things. Maybe we replace it anyway, or we accept the risk, right? There's a whole bunch of options. But it's really important to understand this top-down, right? Because if you start bottom-up, where you just make an Excel sheet of where are the keys, well, that key exist doesn't tell you what the key does, right? You need to know the context of what is this product? What is it trying to achieve? You need to have a top-down understanding of the risk.
+
+[0:41:23] KB: What keeps you up at night looking at this?
+
+[0:41:25] BW: What doesn't? I like my car. I don't want to replace my car.
+
+[0:41:31] KB: I've long had a habit of calling smart devices, surveillance devices, because even in a classical cryptography world, so many of them are so hackable, but cars and software-controlled cars sound terrifying in a world where you could hack through them.
+
+[0:41:47] BW: Hopefully, they'll just get a software update, where they disable the software update, or something like this. I mean, they should. The thing is, in a way, let me end with a more positive note, right? Because data leaks are not new. Every once in a while, a huge amount of data is leaked. Also, adversaries gaining access to systems where they should run and roaming around and extortion. That's also an everyday occurrence. We know how security teams around the world know how to deal with this. They're trained to deal with this and how to work around it.
+
+The only thing is, that's really important, is that the difference is with quantum, it will come all at once, right? In a way, mythos is like a preview where the rate of exploits is going up. Luckily, with mythos, it can only find errors and bugs that were already in the software, right? It's not going to find something. Errors are done on there. With this quantum, it will come all at once. Don't panic with - I mean, at least get started early enough.
+
+[0:42:43] KB: Yeah, for sure. Awesome. Well, we're getting close to the end of our time. Is there anything we haven't talked about that you think would be good to leave our listeners with?
+
+[0:42:52] BW: Just get started with updating your li - I mean, probably the biggest part of the work will be just the usual things, updating the library that's been - you've been using this library from 2011. Just the basic things. Most cases, it will be relatively straightforward.
+
+[0:43:08] KB: If you're in a big bank that's still on mainframes using COBOL.
+
+[0:43:12] BW: Actually, banks, the financial sector is one of the branches that has been very much on top of PQ for a long time. At least the banks I see at conferences.
+
+[0:43:21] KB: Yeah.
+
+[0:43:22] BW: That's very bad. Also, there's this funny thing, where if your system is old, it's hard to upgrade, you're in trouble. But if it's old enough, it uses symmetric terra signal, it doesn't - 
+
+[0:43:34] KB: Right, right.
+
+[0:43:35] BW: This is a sweet spot.
+
+[0:43:37] KB: That's hilarious. Awesome. Well, thank you. Appreciate it. This is super educational for me, and it'll be an interesting couple of years.
+
+[0:43:46] BW: Sure, will be. Thank you. Great to be in, terevenir.
+
+[END]
+SED 1936		Transcript
+
+	(c) 2026 Software Engineering Daily	1
+

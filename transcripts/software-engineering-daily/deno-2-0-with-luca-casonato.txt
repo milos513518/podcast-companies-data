@@ -1,0 +1,287 @@
+EPISODE 1774
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Deno is a free and open-source JavaScript runtime built on Google's V8 engine, Rust, and Tokio. It's designed to offer a more secure and standardized alternative to Node.js with native TypeScript support. Deno 2.0 just released. And it's a significant update focused on improved compatibility with Node.js and addressing developer feedback. Some of the key features are backwards compatibility with Node.js and npm, native support for package.json and Node modules, and a stabilized standard library. 
+
+Luca Casonato is a software engineer for Deno. And he spoke about the project on Software Engineering Daily in 2023. We're excited to have Luca join the show again to talk about the many changes introduced in Deno 2.0. 
+
+Kevin Ball, or Kball, is the vice president of engineering at Mento and an independent coach for engineers and engineering leaders. He co-founded and served as CTO for two companies. Founded the San Diego JavaScript Meetup and organizes the AI in Action Discussion Group through Latent Space. Check out the show notes to follow KBall on Twitter or LinkedIn. Or visit his website, kball.llc.
+
+[INTERVIEW]
+
+[0:01:20] KB: Luca, welcome to the show.
+
+[0:01:22] LC: Hey, thanks for having me.
+
+[0:01:23] KB: Yeah. Absolutely. Excited to have this conversation. Let's maybe start. I know you've been on the show before. But maybe reintroduce yourself to our listeners. Who you are, your background, and what your role is with Deno?
+
+[0:01:35] LC: Yeah. I'm Luca Casonato. I work on Deno. I've been at the Deno company for four years working on all kinds of stuff there. Initially, the website documentation. Then I moved into working on the open-source runtime. I then spent a year and a half leading our Deno deploy team that builds our cloud product. And now recently have worked more on JSR and our new JavaScript registry. Well, yeah. Not really. Deno's project but something that we've initially worked on. And then, yeah, Deno 2 most recently. Getting that release shipped. 
+
+[0:02:08] KB: Let's talk about Deno 2. What's in it? What's in the box? What makes this a major release? 
+
+[0:02:13] LC: Yeah. Deno 2 is Deno's - we're ready for enterprise release. You can use Deno. Deno has existed for - I don't know. I think we did our 1.04 years ago. If I recall correctly, it was in 2020, May 19th. I don't remember. But it's been a while. And since then, we got a lot of feedback from people that Deno is a pleasure to use. And they're really enjoying it. And it has like a bunch of built-in tooling, which it does. But there was also a lot of feedback that was things along the lines of, "Oh, I can't use this at work because I have a giant Node project that I can't move to fuse Deno overnight." And that makes sense. 
+
+I mean, we spent the first four years trying to figure out where's the ideal. What do we want to go to? How should the ideal JavaScript world look like? And then over the past year and a half, two years, we've been trying to figure out how do we make this work in a way that existing users with existing projects, and existing frameworks, and existing libraries can adopt Deno sort of in an incremental way. And Deno 2 is the release that does that. You can create an Next.js app on your computer and run it in Deno and it works with no changes needed. It just works. But you still get access to all of Deno's built-in tooling, like the linter, and the formatter, and the test runner, and the coverage reporting, and all that kind of stuff, the language server. But, yeah. You can sort of do this on existing projects. You don't have to create a new greenfield app to get started with. That's really what Deno 2 is all about.
+
+[0:03:37] KB: Got it. I know a few of the things that were making it a challenge to adopt. Because I also looked at it back in 2020. And I said, "This looks really cool. And, also, I could never pull this in." But do you want to maybe spell out what were the pieces that weren't there if you were using it before? And that now, if you come to Deno 2, they'll just work? 
+
+[0:03:57] LC: Yeah. Absolutely. One of the biggest things that Deno 1 didn't really do is Node modules support. The Node modules folder and NMP packages. Deno has its own API surface that is modeled more after web APIs than after Node APIs. Because web APIs are generally more modern. They use Promises, and async-await, and iterators, these kinds of things. And not legacy Node streams. And a lot of those things unfortunately are new. And, thus, there's a lot of old code that can't use them because they're using Node API. 
+
+One of the things in Deno 2 is we added support for all the built-in Node modules. Think of like Node FS, Node Crypto, Node, I don't know, V8. Node VM. Node Inspector. All these things that you can require or import into your code, Deno just implements them out of the box now with exactly the same API surface as Node. Which means that if you have existing libraries that are written against those APIs, you can just use them now. That was the first big part. 
+
+And then the second big part was the ability to understand Node modules. Deno and Deno 1 has an ability to load external modules obviously. But it doesn't really use Node modules. Because we considered Node modules to be sort of clunky. You have to set up a package JSON. You have this folder in your repository that you need to deal with. You have a bunch of different lock files. You have like four different package managers you need to choose from. It gets very complicated very quickly. We had our own module solution that is based on web standards, based on HTTP Imports, and more recently on JSR. 
+
+But, yeah. In Deno 2, you can now also just import any npm package. We understand your local Node module folder. If you want to move over to this pure future where you don't have to deal with lock files and Node modules, folders on your disk, you can. But by default, we understand those out of the box now. 
+
+And then the third thing is Deno now has like a lot more package management built in. Previously, users may have used import maps, know which is a web standard to help manage dependencies. But now, Deno supports package JSON. And it can like create your Node modules folder from your package JSON. It has the npm install functionality baked in. We can read things from your private npm registries. Things like that. It's, yeah, really a lot of things that just make it easier to pick Deno up and stick it into your existing project and just have your existing project work.
+
+[0:06:16] KB: Yeah. It's kind of the plays nice with others release in some ways. 
+
+[0:06:19] LC: Yeah. Exactly. Yeah. 
+
+[0:06:21] KB: I'd love to dig into a few of those pieces. One, you mentioned sort of support for some of these built-in Node modules and Node APIs. And I'm curious, how do you see the evolution of server-side JavaScript runtimes? Is there a server-side standardization effort? Because browser APIs, they everybody's trying to agree on what those look like. Server-side, what is that story? 
+
+[0:06:44] LC: Yeah. That's a fantastic question. The answer to that is something called WinterCG, which is an effort that Cloudflare, and Deno, and some folks from Node.js as well, some of the run times joined up to create a community group within WHATWG a couple of - I guess it must have been two years ago at this point to try to figure out what is the common subset of APIs that all these server-side runtimes should have. 
+
+And currently, a lot of this common denominator is Node APIs. But really in the limit I don't think the world really wants to continue using Node FS APIs that were designed in 2008. Not a great time. We're trying to figure out there two things. What web APIS are there that should work in servers? And how should they work. Take Fetch or the Web Crypto API. And then the other thing is what features are there not web APIs for that should work in server-side runtimes interoperably using modern APIs? 
+
+Think for example of TCP sockets. Or things - how to read your environment variables or arguments past your script. Things like that. Those are other parts that WinterCG is trying to figure out what is a common API that we can use here. And we're an open community group in the W3C that anyone can join. And sort of, yeah, we have contributors from all over trying to figure this out.
+
+[0:08:04] KB: And what would you say the sort of state of maturity is there? Is this something that all the runtimes are already kind of in line with? Or are we still hashing out and trying to get to some sort of consensus at all? 
+
+[0:08:16] LC: Different parts are different levels of maturity. I think we've collectively agreed what the baseline set of APIs is that everyone implements. Everyone implements Fetch now. Everyone implements response, request, headers. Web Crypto broadly as well. Maybe more obscure APIS like A2B, B2A. Sort of things like that. We've collectively agreed on those. On the APIs that are novel APIs, that are not web APIs, I think there's more work to be done there. We don't have any released standards yet or has anybody implemented them. 
+
+I think the closest thing we have is the sockets implementation in Cloudfare workers, which is sort of going in the direction of sort of where we want the WinterCG socket API to go. But, yeah, this is still very much something that is going to take a year, maybe longer to develop into something that can be actually shipped across runtimes. 
+
+And a lot of this is not even just designing the API. But it's also writing tests to make sure that it works interoperably everywhere. And then, obviously, getting user feedback. Talking with all the database connection library authors. Think of your PSQL, like Node-postgres, or MySQL or - I don't know. Those kinds of things to then go and actually adopt them in their libraries. That's the step after that. Yeah, more work to be done. But, yeah. We're making progress slowly. It's standards after all.
+
+[0:09:37] KB: Absolutely. Well, and it's a measure of maturity that that working group exists at all. 
+
+[0:09:42] LC: Absolutely. 
+
+[0:09:43] KB: It means that we're more likely I think to see evolutions and more people trying to create these runtimes. Where do you see the sort of dimensions of competitiveness in runtimes? Why would someone choose a Deno, versus a Node, versus Bun, versus workerd, versus whatever? 
+
+[0:10:02] LC: Yeah. I think part of it is obviously like - workerd, for example. You can't use workerd unless you're running on Cloudflare. Makes it very easy. If you want to develop for Cloudflare, use workerd. Because that's your only option. And if you're not developing for Cloudflare, you don't use workerd. Because you can't use it. 
+
+But between these other ones, I think it's a lot more nuanced. Broadly, there's a lot of things that are very similar across them. I think one thing that's wildly different at this point is stability. Deno and Node have been out for a long time. The first commit to Deno was I think six years ago at this point. All the bugs that we get are things that we've done recently. It's like not old. All the old features, they work perfectly fine at this point. They're stable.
+
+Another one is tooling. Node has some tooling within. But it's much less than let's say Deno. Deno has a built-in formatter and a built-in linter. It has benchmarking tooling. It has a built-in language server. It has TypeScript support out of the box. I could go on about this. It has compiling to a single executable. We've had that for nearly four years at this point. I think it's a lot of that. 
+
+And then the other thing is are there things around it that would entice you to use one runtime over another? For example, are there libraries that you would like to use that favor a particular runtime? Or are there frameworks that favor a particular runtime? For example, if you want to use Fresh, which is a web framework that Deno has been working on, you probably want to use Deno. Because that's what it was built for. Yeah, conversely, I don't know, if you're using Elyasia. That maybe something you want to use Bun with because that was built for that. Yeah, really, I think - I don't know. I'm going to use Deno. But I'm also biased. Everybody, make up your own mind. Try out things. They're all so easy to use now.
+
+[0:11:40] KB: Totally. And one of the things that you alluded to there which is a kind of perpetual question in the JavaScript ecosystem is the extent to which you get everything together in one. Deno bundles a lot of pieces together for you. Versus are you doing mix and match? And are you making your own choices on all those different pieces? I'm kind of curious how Deno approaches this question of what should be bundled with the runtime versus what belongs in user space. 
+
+[0:12:08] LC: Yeah. The inspiration for why Deno has all these things built in is not the JavaScript ecosystem. Surprise. Surprise. It's the Go ecosystem. The Rust ecosystem. These are languages - Go was released I think the same year as Node.js. But unlike JavaScript, it has a bunch of built-in tooling in its tool chain when you install Go. It has a built-in formatter. It has a built-in linter. It has a built-in package manager. It has all these things that sort of come right out of the box. And it turns out that people really, really like this. 
+
+If you ask people what is great about using Rust, one of the top answers is going to be it just works out of the box. I can have a GitHub action script that installs Cargo and then that comes with a formatter, and a linter, and a testing framework, and a benchmarking framework, and a package manager. And it compiles my code and all that kind of stuff all at once. And that's really what we were going with having all these things in Deno natively. 
+
+I think the question of what do we actually decide to include is what do we think we can do well? Formatting? We think we can do very fast, very good formatting. That's something that we built in. We think we can do the same for linting, testing, benchmarking. In Deno 1, we had a bundle sub command that would take your JavaScript code or TypeScript code and bundle it into a single file. But we realized that this was not where we wanted it to be. Bundlers are incredibly complicated. And we did not think that we could at this time at least offer a competitive bundler built into Deno. Deno 2, we removed it because we don't want to ship something that's sort of half-baked and doesn't really work very well. We want to ship things that you can rely on them. You don't have to think about whether you should use them or not. You can just use them because they work. They're stable. And our bundler was not that. Yeah, we removed it. But other than that, I think, yeah, things that we think we can do well, those are the things that we'll include.
+
+[0:13:58] KB: Yeah. Things you can do well. And you mentioned a little bit the simplicity piece, which reminded me of - I was looking at I think it was a release YouTube video you all did where you're really going after Node around simplicity. I'm kind of curious, as you absorb more and more pieces to be able to be enterprise-ready or plug and play, how are you approaching sort of keeping the experience simple? 
+
+[0:14:25] LC: Yeah. I think the biggest part of that is having good defaults. Our default are - take for example TypeScript. When you set up a TypeScript project in Node, you don't just have to open a file and write some TypeScript code in it. You have to set up a TS config file and you have to make 18 decisions. You have to decide do I want strict mode on or off? What libs do I use? What version of types Node do I use? There's an endless amount of configuration that you have to do before you can write the first line of code, which makes things very not simple. Because that means, between two projects, even in the same company, you can have wildly different configurations. 
+
+And before you can start reading code, writing code, you first have to go look at all the config files to see how this project is set up. That is one of the things that Deno completely eliminates. We have a config file that you specify dependencies in if you want to. You don't have to. You can. And other than that, you don't have to have anything in there for a standard project. You don't have to set up your TypeScript config. There's a default TypeScript config that all Deno projects use that is like all the options you should use. Not the options you shouldn't use. We've made this decision for you. Don't worry about it. 
+
+The other part of it is if there's parts of Node that we sort of need to put into Deno for backwards compatibility, we try to shield you from them if they're bad in some way. We don't, for example, encourage you to write CJS code in your project. We encourage you to write TypeScript code with ESM. 
+
+And that doesn't mean you can't use CJS. You can. But we very actively steer you in the direction of using ESM to sort of adopt modern tooling, use libraries that are actively maintained and not outdated. We have a lot of documentation that tries to guide you to do things in modern ways. All of our documentation on - if you look up how to make an HTTP request from Deno, it's going to show you how to do it with Fetch. Not with Node HTTP. Because that's the future, right? Using Fetch. Not using Node HTTP. A lot of things like that just make things much simpler.
+
+[0:16:22] KB: Yeah. You sort of alluded to this when you talked about the TypeScript versus CJS. But I'm curious - a lot of very opinionated frameworks. We'll provide you an escape hatch where they say, "We're going to have these defaults for you. We highly recommend you go with it. But if you really have some strong reason to change it, here's how you do that." What does that look like in Deno? 
+
+[0:16:41] LC: Yeah. I mean, we, for many things, have that same option. As I said before, we really want you to write ESM and TypeScript. But you don't have to. You can write a .CJS file. And you can write a .JS file rather than a TS file if you want. And we'll let you do that. And if you really want to turn off like - I don't know. I'm trying to think of some obscure TypeScript option. No implicit any. I don't know. You can go into your Deno config file and find the place to turn that off. But you shouldn't. It's there for - you're migrating an existing project and you temporarily need this for a moment. But stop. Don't do it. Stick with the defaults.
+
+[0:17:16] KB: Yes. Don't do that. Bad. But that is really important for migrating legacy stuff. Because you never know what you're going to run into there. 
+
+[0:17:23] LC: Yeah. No. Absolutely. I mean, that's really why we've added a lot of these escape hatches in Deno 2. Deno 2, for example, has the ability to work both using a local Node modules folder that was created by Deno. Work with local Node modules folder that was created with npm, or pnpm, or Yarn. Or work with our global Node modules folder where you don't see the Node modules folder at all because it's like hidden in a cache directory somewhere. 
+
+And the default is to use the global one. Because that's nice and clean. And you don't have to deal with it. But sometimes, if you're in a existing project that has a complicated pnpm workspace or like a Yarn workspace with Yarn resolution plugins or - I don't know. Crazy things, right? Crazy, big project with weird configuration, Deno will just accept that. And it will work with your existing Node modules setup, Node modules folder that was not set up by Deno as an escape hatch. And at some point, if you decide, "Okay, I'm all in on Deno," you can start making that move. You could switch over from Yarn workspaces to Deno workspaces and then have Deno install your Node modules folder. And maybe eventually completely get rid of all your local Node modules folders and just have a global one. But it's not something we force you to do right away. You can sort of adopt it incrementally. And then, over time, move to this nice, pristine world of no Node modules folders. Can you tell I don't like Node modules folders? 
+
+[0:18:41] KB: I can. Well, and let's talk a little bit about modules, and registries, and things like that. Because another big thing that came out this year or at least that I saw an announcement about this year was JSR. What is that? Why is that? And how does that interact with Deno? 
+
+[0:18:56] LC: Yeah. I mean, the reason Deno was created initially was Ryan Dahl, the creator of Node, came back to Node after 10 years and thought, "Okay, this has gotten too complicated." I mean, the similar thing happened with npm. npm is obviously Node's package management system where you like publish your packages. And there's been a lot of innovation on the client side, the package manager side of this. We initially had only npm. We got Yarn. We got pnpm. Now there's a bunch of other tools that it will also let you install npm packages faster, better, more securely, whatever. 
+
+But we really didn't have anybody that was pushing npm to registry. If you look at npm to registry, they really haven't changed in 10 years. The last major change they did was added a little TS icon in the top left to packages that have type definitions. And that was what? Three years ago? And then they have a files tab that's been in beta for probably also three years. That when you click on a file, it doesn't put the file in the URL. You can't like link to it. 
+
+You can tell that there's not been a lot of active investment in npm. That's what JSR is about. JSR is a new package registry. The server-side part of the packaging story where you can publish your packages too. And JSR natively supports TypeScript. JSR packages can import from npm. They can be imported by npm packages. But, yeah. They natively support TypeScript. They have built-in documentation generation. They have a much more secure publishing flow that uses OIDC on GitHub Actions to sort of prevent people from accidentally leaking private access tokens, which is, yeah, supply chain security. I'm sure many people are worried about that in the JavaScript space. 
+
+It's really a head-on attempt to try to fix all the things that npm hasn't done in the past 10 years. But, yeah. Doing it in a sort of backwards compatible way where you can import JSR packages from npm and import npm packages from JSR, so that these things can work together and it's not like a stop the world and migrate sort of thing. 
+
+[0:20:56] KB: Reminds me a lot of Pika, which I don't know if that project ever went anywhere. But I remember talking with Fred K. Schott or listening to a podcast with him trying to do this, where, at least in that world, part of it was trying to push to being ES modules first. And it sounds like with JSR, similarly, pushing for TypeScript first.
+
+[0:21:16] KB: Yeah. JSR is very much TypeScript first. JavaScript supported but TypeScript first. And then ESM only. You cannot publish CJS to JSR, for example. We've made a hard cut off, stop CJS development instead. ESM only going forward. And that allows us to do incredible things that you could never do if you have to deal with CJS and ESM and not TypeScript. Documentation generation. The fact that for every package that is published to JSR, we can automatically generate documentation for every symbol, for every export in your package. It's huge. 
+
+Rust has had this for 10 years. Go has had this for 10 years. And in JavaScript, we've never had this because npm didn't implement it and it's not an open source project. Nobody can implement it for them. It's like a close-source private thing that GitHub is keeping alive. And JSR is different. It's an open-source project. It's hosted by the Deno company. But, really, it's a very open project where you can contribute things. And if you want to have a new tab on the package page that shows you some cool new information, submit a PR. It's not behind a locked door and you need to become a Microsoft employee first.
+
+[0:22:23] KB: Yeah. You mentioned that you can install npm packages with JSR. How do you deal with npm packages that were not TypeScript for example? Are they not installable via JSR? Or how does that work? 
+
+[0:22:36] LC: Yeah. npm packages, you don't install npm packages through JSR or JSR packages through npm. But rather, they're complimentary in the way that npm packages can rely on JSR packages. They can depend on JSR packages. And JSR packages can depend on npm packages. But ultimately, it'll be your package manager, like pnpm, or Yarn, or even npm itself that pulls the JSR packages from JSR and the npm packages from npm. 
+
+And this is just done through - you can think of JSR as like a private registry of sorts for npm if you're using npm. And that way, you can use all existing npm packages, whether they're TypeScript or not. But you only get the features, the documentation generation, for example, if you're actually publishing to JSR. If you're publishing your TypeScript source code to JSR. 
+
+[0:23:24] KB: That makes sense. You mentioned documentation generation. You mentioned some of the supply chain security. Are there other benefits of going to JSR over npm? 
+
+[0:23:34] LC: Yeah, it's a lot simpler. I mean, at least in my opinion. You can create a package by - the simplest package is a single TypeScript file and a JSR.json that has a name, a version and an exports field. And the export field is just the path of your TypeScript file. And that's it. There's no TS config to set up. Very importantly that you publish the TypeScript. You don't have to publish like the JavaScript plus d.ts files. No. You publish the TypeScript. 
+
+You can publish a new package in a couple minutes rather than having to go through and set up the configuration and make sure that it works across CJS, and ESM, and all these things. JSR just handles all that for you. I think a lot of it is, really, it makes your life a lot easier if you don't have to deal with all this configuration. Kind of a recurring topic.
+
+[0:24:23] KB: Recurring topic. Well, is that showing up anywhere else that we haven't talked about yet for this? 
+
+[0:24:28] LC: Yeah. Sure. Deploy, we can talk about that very briefly, is our cloud hosting product. Same sort of deal. You can write your JavaScript code, put it in a GitHub repository and just link it to Deploy. And it deploys. And you don't have to deal with configuration. 
+
+A lot of the things that we do are like this. Our linter is like this. You don't have to configure your linter. You don't have to configure your formatter. You don't have to configure your tests. You don't have to configure your editor. You don't have to configure your package manager. It just works out of the box. And you can tweak it if you want to. But don't. Just stick with the defaults. Because the defaults are pretty good.
+
+[0:25:03] KB: Speaking of Deno Deploy - and I think one of the interesting things that you all have is you have this dual identity as open-source projects. Multiple, JSR, Deno, all these different things. But also, for-profit company. And I think one of the challenges going back to npm that they faced is when they started running out of money and then Microsoft absorbed them. And then Stasis ensues. 
+
+[0:25:26] LC: Yeah. 
+
+[0:25:27] KB: How is Deno making itself sustainable here? 
+
+[0:25:31] LC: Yeah. I think the answer is different for different parts of Deno. I'll start with JSR. With JSR, we don't want JSR to be a Deno product. And really, JSR is not a Deno product. It just happens to be developed by a bunch of developers. But that's beside the point. Really, JSR is going to go into a foundation at some point. We don't have all that settled yet. But it will go into foundation at some point. It's going to be a community project that is owned by the JavaScript community as a whole that does not have a single point of failure. The Deno company fails, JSR is not going anywhere. Not that the Deno company is going to fail. We're going to do great. 
+
+[0:26:07] KB: It's always worth having that escape path, right? Because you'll never know what will happen.
+
+[0:26:11] LC: Yeah. Exactly. And I think it's also really helpful for a foundational part of the ecosystem, like a package registry to not be owned by a single entity. But instead be something that can be shared across many different foundation members. Something that can be governed in an open way. 
+
+But to go back to your original question, how is the Deno company itself remain sustainable? I think that's a great question. Because I think we've seen in many open source projects like almost Redis, for example, recently, that this can go wrong really quickly if you're not careful. And I think the way to avoid this is to sort of have a solid idea of how the company is making money versus how the open-source runtime is operated. 
+
+And for the Deno company, we do not make any money off the open-source run time. There's no pay-to-play features in Deno. There's no multi-cluster networking mode that you can only enable if you pass a Deno token flag with a secret key or something. No. This doesn't exist. The Deno runtime is completely open. 
+
+And then the Deno company makes money through hosting. We do consulting for enterprises. But, also, we do hosting. And the hosting is, for example, things Netlify's Edge Function product is, under the hood, all Deno systems. It's built on the Deno runtime. Hosted by us for Netlify. And there's other companies like deco.cx, which is one of the fastest growing e-commerce platforms in Brazil that are running their entire infrastructure on Deno. And these are the ways we're going to make money. And we are making money. 
+
+These are different from the open-source runtime. They are ways that we can monetize the use of the open-source runtime. But not monetize the open-source runtime itself. Deno is not going to be an open core thing where you have like an open-core and a paid sort of set of enterprise features around it. But, yeah. You have an open-source runtime that is free to use, MIT license. You can do whatever you want with it. And then we happen to offer hosting. And with that, we finance the continued development of the open-source runtime.
+
+[0:28:14] KB: Do you see a world in which Deno itself moves into a foundation? 
+
+[0:28:18] LC: I mean, everything's possible. I don't envision that happening right now. I think the way the model works right now is pretty good. I don't think there's any governance issues within Deno right now that would require that would be solved in any way by moving into foundation or anything like that. I think we work very well. We ship features on a very regular cadence. Bugs get fixed. I'm not worried about that. But, I mean, yeah. It's obviously always a possibility that things change in the future. Maybe. I don't know. But, also, Deno is open-source, MIT licensed. If you ever don't like something that we're doing, there's this big button in the top right of all GitHub repos called Fork. 
+
+[0:28:56] KB: Yeah. Absolutely. What does the future of Deno the open-source runtime look like? What types of features are you working on? What are you excited about? 
+
+[0:29:04] LC: Yeah. A bunch of stuff. I think, initially, the first couple of months, we're going to be preparing for our first long-term support release, which is another thing that we announced with 2.0, which is coming in about a month. And we're just going through all of the issues that are being reported after 2.0. Major release. And people have tried with the weirdest Node projects that you could possibly imagine. And there's edge cases that we need to fix. 
+
+We're going to spend a couple months working on that. But we're also going to be working on new features to Deno itself. I said that we removed the bundler from Deno 1 because we didn't think it was good enough. We're thinking about how we can add that back in a way that is actually competitive, right? Where it is not terrible, but it is great. And it's something you can actually use for your systems. 
+
+And other than that, obviously we're increasing or improving all of our other tooling all the time. We're looking into how to do plugins for the linter right now. We would love to work more on some performance work. Our HTTP server, for example, is already twice as fast as Node. But we still think there's room to grow. We're looking more into how we can make it easier to adopt Deno in enterprise environments where you may be using Kubernetes or something like that. How to integrate it with tracing and telemetry. These are things we thinking about. But, yeah. I mean, our issue tracker has like 1,800 open issues right now. Yeah, we're not going to run out of work anytime soon. 
+
+[0:30:30] KB: Speaking of that and the fact that it's open-source, how much of the development is done in-house versus how much of a sort of community development team is there? 
+
+[0:30:38] LC: Yeah. I think the majority of the work is done by Deno employees. We're a company of, I want to say, 25 at this point where maybe half of them work pretty much exclusively on the open-source runtime. But there's also a lot of people that have been contributing to the Deno standard library which just went 1.0 as part of the Deno 2.0 launch that have been contributing to the permission system in Deno that have been contributing to help output documentation. If you look at our release blog post, there's always a section at the bottom of the blog post that's thanking everyone that's contributed to the release. Yeah, they get longer every time we do a release. I'm very happy about that. 
+
+[0:31:20] KB: For folks who are interested in getting involved in that, what does the dev environment look like for working on Deno itself? 
+
+[0:31:28] LC: Deno is built in Rust. It's actually very easy. You just check out the repository and run cargo build. Also, have to install Rust first. I mean, other than that, it's pretty easy. There's a lot of Deno though that's not written in Rust. I know Rust can be a bit of a challenge for many people because it's a completely different language to JavaScript. But a lot of Deno is actually written in JavaScript. Aa lot of our web APIs are implemented in JavaScript. Essentially, anything that's not native IO is implemented in JavaScript. 
+
+And there's always things to do there on our Node compatibility. A lot of things are implemented in JavaScript as well. Our standard library, which sort of lives outside the Deno runtime but provides a bunch of utilities that any JavaScript project can use, including non-Deno ones, that's written entirely in TypeScript as a Deno project published to JSR. That's also something that's super easy to contribute to. But, obviously, our docs as well. Always love docs work. 
+
+We have an example site that - I can't remember what the URL is. I think it's docs.deno.com/examples. Where, currently, we have a thing where I think you get some free stickers for every example that you write. Or a shirt. I don't remember. I have to check our Twitter. I think it's announced there somewhere. Yeah. And then, also, we have a Discord. If you have questions about contributing, you can always hop on there and ask questions. And there's members of the team that are there to help you and help answer questions. 
+
+[0:32:52] KB: Actually, first clarification question. You said Rust. You have JavaScript. Not TypeScript for some other portions of it? And then TypeScript for the standard library? 
+
+[0:33:02] LC: Yeah. The standard library is all written in TypeScript. Do you know runtime is written partially in JavaScript, partially in TypeScript, and a lot in Rust? 
+
+[0:33:10] KB: What's the reason for not having it all in TypeScript? 
+
+[0:33:13] LC: Historical reasons mostly. When we started out, it was - one of the challenges here is that we don't really want to rely on a JavaScript runtime to build the JavaScript runtime. You don't want to have a circular dependency. Because that means you can't build on new platforms. But that also means that you cannot use TSC to compile your TypeScript. Because TSC is written in JavaScript. If you don't have a JavaScript runtime, you can't transpile your TypeScript with TSC. 
+
+And when we started out with Deno, there was not really any good way of transpiling TypeScript to JavaScript that was not TSC. Remember, this is like six years ago. Now that's no problem. Now we have TypeScript transpilation in Rust. And we can do that all natively, which is why we now have some parts of the code that are written in TypeScript and are being transpiled to JavaScript during the build using Rust. But a lot of the code that was originally written six years ago, four years ago, three years ago just didn't have the luxury of having a Rust TypeScript compiler yet that we could transpile with. Those had to be written in JavaScript because we just didn't have the ability to transpile as part of the build pipeline. Because, yeah, we can't have circular dependencies on the JavaScript runtime, unfortunately.
+
+[0:34:24] KB: That makes sense. And how do you all decide what's happening in Rustland versus what's happening in JS/TS? 
+
+[0:34:32] LC: It's mostly a question of like do you need Rust to do it as step one? Native.io talking to the kernel about sockets, or files, or - I don't know, file watching. All those kinds of things. You can't Implement a JavaScript runtime on top of a JavaScript runtime because something needs to expose the kernel syscalls for opening a file or something like that to JavaScript in the first place. And that's Rust. That's what Rust is for us. A lot of our module loading, our TypeScript transpilation, our linter and formatter, those are also written in Rust. 
+
+On the other hand, all of the sort of API surface that you touch. When you write Deno.read file, the thing that checks whether the first argument that you passed is a URL or a string, and then dispatches it accordingly to the kernel, that is done in JavaScript. And so, you can sort of think of anything that requires native access or requires very high performance in some way, that's written in Rust. And everything else that's sort of the glue between the user and the native syscall, that's written in JavaScript. 
+	
+Our fetch implementation, for example, is written pretty much entirely in JavaScript with the exception of the thing that actually sends the network request out. But all the handling around how streams work, and how headers work, and what a response body is, and what a request body is, and all those things, those are all implemented in JavaScript or TypeScript.
+
+[0:35:51] KB: That makes sense. When you cross that boundary, when you're going back and forth, do you have to copy all of your data over? Or are you able to expose data that's living in JavaScript lands directly to the kernel? How heavy is that boundary? 
+
+[0:36:06] LC: What's the cost? Yeah. It really depends, honestly. I can go into a lot of detail here. But I think, generally, it is faster to call between two JavaScript functions or to call between two Rest functions that it is to call from JavaScript to Rust as a blanket statement. The reason for this is strings, for example, are represented differently in JavaScript than in Rust. In JavaScript, they're WTF-16. In Rust, they're UTF-8. You need to convert between them when you call from one and to the other. 
+
+But then there's also certain things like APIs, for example, that only deal with numbers, or only deal with booleans, or deal only with certain types of strings. Those are essentially free. You can't see this if you're listening to the podcast. But I just like finger quoted me. Or I don't know what that's called. Whatever. 
+
+[0:36:55] KB: Air quotes? 
+
+[0:36:56] LC: Air quotes. That's right. Yeah. Numerical things are essentially free to cross between JavaScript and Rust. But, yeah. Strings, objects, those are more expensive. And then when you get into things like array buffers, it really depends on, for example, is it a synchronous call? Is it an asynchronous call? Those have different costs. There's a giant matrix of if you do this, it becomes very slow. If you do this, which is essentially the same thing but slightly different, it becomes much less slow. Do this thing instead. 
+
+This is one of the biggest things that our performance team has been working on for a long time is reducing the cost between JavaScript and Rust. Because we have 800 different call sites. I think it's 800. Yeah. Between JavaScript and Rust. And if you can make all of those 1% faster, then pretty much the entire runtime has gone 1% faster. And you've made a code change in one place, which is really cool. 
+
+We continuously make changes to, for example, how to transfer strings. How to transfer unit database, all these things. As an example, there's some work that we're currently doing that will make all transfers of strings from JavaScript to Rust essentially two times faster. Across the entire runtime, every single API that deals with strings will have its overhead reduced by some amount purely due to a single change in a single place. Yeah. 
+
+[0:38:08] KB: Two times is a lot. You're removing a copy somewhere or something like that? 
+
+[0:38:11] LC: Pretty much. Yeah. We did some work with Igalia, which is a open-source consultancy, on upstreaming some changes into V8 that make it - they change how V8 exposes strings to embedders. That let us use these strings in a way that is more ideal to us, right? 
+
+Previously, you always had to copy a string out of V8. Now there's a lot of cases where you don't have to copy the string. You can just use the string as is while V8 retains ownership of the memory. And this requires a long breath rate. This is work we started maybe in March, I want to say, or in February. And it's now showing fruit. But it's going to make everything faster. It's totally worth it.
+
+[0:38:50] KB: Talking about this boundary more, I know that Node has this whole Node API standard if you want to build native plugins or things like that. What does that look like in Rust if you want to connect to some sort of native written library? Or what does that look like in Deno, I guess? It doesn't have to be Rust.
+
+[0:39:07] LC: Yeah. Yeah. The first way of doing it is to just use an API. Because, actually, Deno also supports NAPI. Because, otherwise, a lot of the Node packages wouldn't work. Yeah. As I said like, Deno needs to work with existing libraries. And a lot of existing libraries use NAPI. Deno applies NAPI. That's step number one. 
+
+NAPI is not ideal though in many ways. There's ways to do faster foreign function interfaces between JavaScript and a native API. There's also Deno FFI, which is a way to do FFI with this like standard C FFI interface. And there's some libraries. For example, there's a Deno SQLite library that uses Deno FFI that is like twice as fast as the node library of SQLite that uses an API just because it's using a different boundary between the two. The JavaScript part and the Rust part. And the native part are the same. It's just the call between them that changes. And, yeah, that works pretty well. 
+
+And it also works really - our FFI stuff works really well with Rust. I think there's some tools that one of my co-workers has written which I think is called Deno Bindgen. That you write some Rust code. And then during the compilation, it'll generate file for you that you can import in Deno and a TypeScript header file that types your entire API essentially from JavaScript. And you don't even have to deal with the fact that you're calling it to Rust. It just makes it feel very native. 
+
+[0:40:28] KB: That is nice. Because I think, yeah, if you're doing a CFFI, you've got to make explicit what all those types are. But Rust has types. It should be able to take advantage of it. 
+
+[0:40:38] LC: Yeah.
+
+[0:40:39] KB: Awesome. What else would you like to talk about today? We've got a few minutes left. But I think I've hit all of my big questions.
+
+[0:40:47] LC: We could talk about Fresh, which is our web framework. 
+
+[0:40:51] KB: Let's do it.
+
+[0:40:51] LC: Yeah. Fresh is a web framework that we've been working on for maybe a year and a half that is sort of slowly been slumbering over the last six months or so while we were working on Deno. But it's coming out of slumber mode and fully into Fresh 2 release mode. 
+
+For those who don't know, Fresh is a web framework that uses Preact under the hood. It looks somewhat similar to maybe Remix or Next.js. If you're familiar with those. It has server-side side rendering as a native feature. But what sets it apart from Remis or Next.js is the fact that we don't ship all of your JavaScript to the client. 
+
+In Next.js, the way that Next.js works is you do a initial server-side render and then you send the entirety of all the JavaScript that was required to do that server-side render to the client. And you do the same render again on the client. I mean, that can be inefficient.
+
+[0:41:42] KB: Yes. The uncanny hydration valley, you run into it.
+
+[0:41:47] LC: Yes. Yes. Fresh doesn't do that. Fresh does server side rendering only essentially in the beginning. And then you can opt certain components. Components one by one into rendering on the client as well. And we call those islands. You can think of these as islands of interactivity and a sea of static content. That was sort of server-side generated. 
+
+And this works really well. Because it means you can have e-commerce sites that have an interactive cart, have an interactive add to cart button, have an interactive carousel. And everything else is static. You don't need to ship a markdown renderer to the client. There's a bunch of stuff you don't need to ship to the client. You get much faster first-load performance. You drain your user's battery life much less because they don't have to execute a bunch of JavaScript they didn't need to.
+
+Yeah, fresh is a very ergonomic way of doing this. You can create routes in a file system router. Like routes folder. Call a fileindex.tsx. And it gets rendered when you hit the index of the page. And to make something an island, you just put a component into the folder called islands. And now it's an island. It's all very simple. 
+
+[0:42:49] KB: It sounds a lot like Astro. 
+
+[0:42:51] LC: It has a lot of very similar principles to Astro. I think Astro and us sort of both did islands at roughly the same time. There's a couple of things that are different. Fresh would feel very familiar to people that have used Remix or Next in the past because it leans very much into JSX. And it doesn't have its own fall format. But that also means that you can't use like Vue components or Svelte components with Fresh. It's really Preact only. Yeah. I mean, all the web frameworks are the same nowadays anyway. Choose whatever you fancy. 
+
+[0:43:23] KB: Yeah. I mean, this idea of sending less JavaScript I think has gained a lot of momentum these last couple of years. And so, we have different takes on that. Islands being one of them. You said file-based routing similar to how Next at least used to roll. Now they have their app router and all of that. You've got islands architecture. Looks like it's kind of signals-based? Is that correct? 
+
+[0:43:45] LC: Yeah. We support Preact signals out of the box. You can do things like create a signal on the server. Pass them to two separate islands. And then when the islands rehydrate, the signals are still attached on the client. The two islands can communicate with each other, which is a very core part of how to make sort of interactive applications where you have islands across multiple parts of the page. Supports TypeScript out of the box with no configuration. Obviously, it's a Deno project. 
+
+[0:44:15] KB: There's a little bit of a trend here. 
+
+[0:44:16] LC: Yeah. It's weird how this no configuration thing keeps sliding in everywhere. But, yeah. It uses web APIs for its request and response objects. Integrates very seamlessly with Fetch. 
+
+[0:44:27] KB: Works with other runtime frameworks besides Deno? 
+
+[0:44:29] LC: Well, I don't know. Maybe. If somebody wants to try. I haven't tried.
+
+[0:44:36] KB: Fair enough. Nice. Yeah, that looks good. And then in terms of - any sort of React-based library that works with Preact should work with Fresh?
+
+[0:44:46] LC: Yeah. And you can use Preact compat if you have some library that actually relies on React. You just switch it out to use Preact compat instead. And then it'll continue to work with Preact.
+
+[0:44:58] KB: Nice. And last question. I assume, like so many of these other things, it's fully open-source?
+
+[0:45:03] LC: Absolutely. Yeah. Denoland/fresh on GitHub. Where we're about to do a 2.0 release. There's a road map. Please try it out and give us your feedback.
+
+[0:45:12] KB: Awesome. Well, Luca, this has been super fun. I feel like I have a few things to go and try out now, which is great. Anything you would like to leave people with before we say goodbye? 
+	
+[0:45:23] LC: If you want to try out Deno, we have a great new tutorial series on YouTube if you're interested in learning. Published by Eve. Does a bunch of cool tech things. Check it out. Youtube.com/denoland.
+
+[0:45:36] KB: Sounds good. I think, then, we will wrap with that. Everybody, try Deno. Because life is too short to be configuring things.
+
+[0:45:43] LC: Yep. 
+
+[0:45:45] KB: All right. Cheers.
+
+[END]
+SED 1774		Transcript
+
+	(c) 2024 Software Engineering Daily	1
+

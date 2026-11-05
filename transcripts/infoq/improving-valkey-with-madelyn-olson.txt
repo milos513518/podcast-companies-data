@@ -1,0 +1,408 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Improving Valkey with Madelyn Olson
+DATE: 2026-02-09
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/improving-valkey-with-madelyn-olson
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2258680859-infoq-channel-improving-valkey-with-madelyn-olson.mp3
+DURATION_SECONDS: 2300
+TRANSCRIBED_AT: 2026-11-04T09:51:36Z
+----------------------------------------------------------------------
+If you're the kind of senior engineer, architect, or technical leader who people look to for what's
+next, QCon London is probably on your radar. Join us in London from March 16th to the 19th, where we
+go deep on the topics that matter, like the architectures you've always wondered about, engineering
+productivity, and applying AI in the real world. This isn't about trends for their own sake. It's
+about getting practical insights from senior practitioners to help you make smarter calls on where
+to invest your time in tech. With software changing fast, QCon London is a conference that helps you
+lead the change. Learn more at QConLondon.com. Hello, and welcome to the InfoQ podcast. I'm Thomas
+Betts. Today, I'm speaking with Madeline Olson. Madeline is the maintainer of the Valky project and
+a principal software development engineer at Amazon ElastiCache and Amazon MemoryDB, focusing on
+building secure and highly reliable features for the Valky engine. She recently gave a deep dive
+technical presentation at QCon San Francisco about recent changes to the Valky hash table and the
+associated performance improvements. I found it fascinating. So, Madeline, welcome to the InfoQ
+podcast. Thanks so much for having me, and I'm glad you enjoyed the talk. The QCon conference was
+one of the best ones I've been to in a while. The audience is really great. They ask really
+informative questions. Yeah. QCon is definitely my favorite conference. So, I think we need to start
+off with the origin story of Valky. Maybe if you haven't heard the name before, where did Valky come
+from? And so, I'll start by giving a little bit of history before the actual creation of Valky. So,
+I actually was a maintainer of the open source Redis project since about 2020. So, me and some of
+the other major contributors of Redis had kind of built a pretty exciting development community. And
+so, when Redis decided to change their license, so back in 2024 in March, Redis moved from a open
+source permissive VSD license to a commercial license, SSBL and a barium called RSAL. That community
+sort of got together and said, hey, we want to continue building what we've been working on. So, me
+and another Redis maintainer, his name was Zhao, he works at Alibaba, went in. We got four other
+engineers from the Redis community. So, we got an engineer from Ericsson, Tencent, Huawei, and
+Google. And so, that group of folks, we got together, we went to the Linux Foundation, and we were
+able to create Valky. So, it was a very fast creation. From the time the license change happened,
+when Valky was created, it was only about eight days. And that's because we had a knit community
+together. So, we went, created the project. And so, that was about 18 months ago. So, since then,
+Valky has been doing a lot of stuff. We had a bunch of ongoing engineering work that we just sort of
+continued. So, we did launch a Valky that was just like a fork of Redis. So, that was version 7-2.
+The first release was 8.0. So, that was last year. And that was sort of like, you know, the same
+with like, hey, we can build stuff. And since then, we've had two more major releases. We had Valky
+8.1 earlier this year. Although not really related to the fact I just did a talk at QCon. We had
+another release that had Valky 9.0. So, that released in November. So, we've had a bunch of releases
+under our belt now. So, there's a lot of managed providers of Valky now. Folks like Amazon LastCash,
+the service I work on, now support Valky. Memory Store, one of GCP's offering, has a support for
+Valky. There's also a lot of other third-party providers like Ivan and Pekona that also have managed
+Valky offerings. So, we're seeing a lot of excitement kind of around the community. And it's going
+really well. Yeah, I think you segued into my next question, which is how does someone get started
+with this? Is it a, you know, Valky as a service offering? It sounds like that is. If you have Redis
+and you want to switch, is that something you can do? Is there anything developers need to know?
+There's a lot of like getting started but moving kind of questions tied into that from both the
+infrastructure and the engineering side. So, start wherever you want. We like to say Valky is a
+drop-in replacement to Redis Open Source 7.2. So, that was the last BSD version of Redis. So, if
+you're on that version, you can always safely upgrade to any Valky version. Valky is fully backwards
+compatible in that sense. There's some newer versions of Redis. I mentioned Redis went to a
+proprietary license. They've actually since moved back to AGPL. So, if you're on either of the
+proprietary or AGPL versions of Redis, there might be some incompatibility you have to look for. We
+see that most users on old versions of Redis are able to move kind of safely to Valky. And so, what
+does that look like? Valky and Redis are typically used as a cache. So, typically, you can just, you
+know, delete the cache, move it to Valky, and it should work just fine. But one of the reasons
+people really like Valky is that it has high availability options. So, what you can do is basically
+attach replicas to your existing cluster and sync all the data, and then you can do failovers. So,
+this is what we call like an online upgrade process. If you're using a managed service like
+ElastiCache or Memorystore or Ivan, they'll make that all seamless for you. You usually just click a
+button. I can speak a little bit for ElastiCache. Since I work on the service, it really is just
+like you click a button on the console and say, hey, I want to move to Valky, and it does it all.
+It's all online. You don't really have any outage, and it's quite seamless. So, the upgrade process
+is pretty straightforward. From a tooling and client-side application perspective, most clients that
+work with Redis will also work for Valky. The big ones are like ResPy, the Spring Data Redis
+Provider. All that type of stuff works just as well with Valky as it does with Redis. What we've
+heard from a lot of users, one thing I think I mentioned in the talk as well is a lot of people move
+to Valky, and it's so seamless and easy. They don't like, we've been trying to get people to write
+blog posts being like, hey, this is what we migrated, and this is what we learned. And they're like,
+we migrated, and we learned nothing. We just clicked a button. So, you know, we're still working on
+getting user stories. Yeah, you're a victim of your own performance. You made it too easy. Right,
+too easy. And part of that was because the fundamentals were really good, right? There was already
+an online upgrade story, and we are a fork. So, it's not like we're trying to build compatibility.
+We start with compatibility for free, and we just have to maintain it. So, yeah, compatibility
+story's been pretty good. I do want to get into what was the focus of your QCon presentation. My
+naive understanding is Valky is just a cache. It's a key value store. I stick stuff in, I pull stuff
+out. And that's kind of exciting. You're like, it's a hash map over TCP. Can you say a little bit
+more about that? And, like, what is it underneath the covers? What's the magic of Valky? Yeah. And I
+think you synthesize the simple version. The version that most people know about Valky is that it's
+just a hash map, right? It's a key value store. And people know that the values can be not strings,
+right? So, a traditional key value store is something like memcached. You put the key as a string
+and the value as a string. But the real power of Valky is that it has complex data types or values.
+So, some use cases we like to talk about, you know, you can sort of like a set and be like, oh, is
+this user logged in recently? Should we show an advertisement to this user? You can store all that
+in the set objects and then do very quick checks on that data type. So, I think that's the first
+thing that really differentiates Valky from just a simple hash map. And then the other thing is,
+like, to build, like, the hash map is straightforward. It's all the stuff around it that's really
+complicated. The stuff like horizontal clustering, stuff like replication, stuff like durability,
+stuff like observability and statistics. Like, that's where most of the work goes into Valky, right?
+The actual core hash map and the data type is actually straightforward. But it's all this other
+stuff around it that we have to maintain and build. That is where we spend most of our engineering
+time. That's what makes it, you know, a product and not just, like I said, not just a hash map. Not
+that I can implement a hash map myself. There's no reason for me to do that. But, like, the reason
+of having it as a service on some, you know, scalable appliance or scalable infrastructure is, like,
+all you said. And once you go to having all those things, that adds layers of complexity. And if I
+recall, your presentation was talking about basically changing everything under the covers, but
+keeping all of the horizontal clustering, the durability, everything else you mentioned, all that
+had to stay working while you tweaked around inside, right? Right. And, like, that was really sort
+of the gist of the talk. The talk was in, like, a modern performance track at KubeCon. And so we had
+recently rebuilt this hash table. And, you know, that's exciting in itself. But what's really
+impressive is we didn't have any performance regressions. And so, you know, I guess I can just kind
+of start doing the story now. So, like, you know, back in 2022, we were thinking about, this is
+actually back in the Redis days. This is pre-Fork. Me and some of the other contributors were like,
+hey, we built a hash table in 2009. And although some of the stuff was, like, known in 2009, like,
+people were still kind of big in simplicity. They didn't want to over-engineer. And so we built a
+hash table that was pretty good at the time. And kind of just looking back, I was like, hey, we can
+make stuff a lot better. And the big things we realized were we were doing a lot of independent
+memory allocations, right? So when we want to basically take an object and put it inside Valky, we
+were building container objects. We were using linked lists to basically keep track of when objects
+hash to the same bucket inside the hash table. And we had relatively high load factor. So load
+factor is basically the ratio of how many places we can put stuff in a hash table versus how filled
+they actually are. And that's because we were using kind of older techniques. And we weren't taking
+great advantage of modern hardware. So one of the big things that's happened in the last 10 or so
+years is hardware hasn't gone that much faster, but it's gotten more... It's gotten better and able
+to operate on multiple pieces of data at the same time. So the hash table we built really wasn't
+that aware of that functionality. So the things we were trying to do by bonerizing this habitable,
+and it took us over... Let's see, I think we started working on this hash table modernization in
+2023. And it took us until basically the end of last year to sort of like finish it all, to make
+sure it all worked. And there's like a lot of problems we had to solve. And there's even problems I
+didn't talk about in the talk, because the talk was a little bit... It had to be simplified to talk
+about one specific area. And for example, like one of the problems we had to solve was in the
+clustering mode. So Valky, when Valky is horizontally distributed, you have multiple different
+servers. Like each key is hashed to a specific slot. That's deterministic. So a key foo will always
+be like slot 12,000. And so how these slots are distributed across the nodes is dynamic. So that's
+how you scale out, is you move slots to different nodes, and you'll move those keys along with it.
+So one of the things we have to do, we have to basically know which keys are in which slot on a
+node. So we need like an O of 1-ish way to basically... We need a way to iterate over the keys in a
+given slot when we want to migrate them. In the original version, like when we forked Valky off, the
+data structure we're using basically looked like it was a giant linked list of all the keys. So we
+basically maintain this linked list, which has 16-byte pointers, right? Basically a pointer to the
+next pointer and like the previous one, right? Link list. And so that was really expensive, right?
+16 bytes doesn't sound like a lot, but when your average data set size is only like 100 bytes,
+that's a lot of overhead. And one of the things we did is we basically, instead of having these
+linked lists, is we decompose these giant hash tables, which comprise all the data, into basically a
+dictionary per slot. And now that sounds conceptually straightforward. We just, you know, you just,
+instead of you first compute the slot the key is in, and then you go look for it in the specific per
+slot dictionary. But there's certain things that Valky does that operate the whole data set, stuff
+like expiration and eviction. And the way those are working is they were sampling items from every
+dictionary to sort of determine which one to kick out. And all of a sudden we needed to do this
+across, you know, upwards of thousands of these per slot dictionaries. And so we actually, you know,
+had to spend a bunch of time and research. We prototyped a bunch and we consolidated on this data
+structure called a binary index tree, which basically lets us sample randomly across all of these
+per slot dictionaries proportional to how much data is in them, right? So a binary index tree is
+basically a, I mean, it's a binary tree and it's cumulative to the number of items in like the leaf
+nodes. So like we're able to basically pick a random number and that will tell us which slot
+dictionary we should be sampling to get the specific item out. That's a problem we had to solve and
+we solved it for Valky 8. And, you know, that was like sort of our first big jump. And then the next
+big jump was we basically started to, instead of having dedicated allocations for the key and the
+Valky objects themselves, we started kind of compacting all this memory stuff together. In my talk,
+I talked about it's moving from static structs, right? So a bunch of small fixed size structures to
+basically dynamically allocating bigger blocks in memory, which is more aligned with how high
+performance cache is kind of our builds nowadays. Right? We took a lot of inspiration from stuff
+like Cache, which is based on top of Pelican, which is a caching framework. So I know I just talked
+about a lot, about a lot of different low-level details. And like, so this is all the stuff that
+makes me really excited about kind of everything that's going on in Valky. Well, I just love talking
+to someone who's, you know, this passion about like the specific thing they do. And like, you
+couldn't do this if you weren't that excited about it. So the first jump was that binary index tree,
+and then you started to make other changes. And I think if I go back like a couple minutes in the
+recording, it said there were no performance regressions. How are you measuring performance as
+you're making these changes? What does performance mean? You know, it's funny. When I was talking at
+some folks at QCon, this is like one of the soapboxes I like to get on top of, which is a lot of
+people when they think about performance, they usually think about latency. Like how long does it
+take to get a response back for when you send a request? But the problem with Valky is Valky is so
+fast that the actual time to get a response back is almost entirely dominated by network. So most
+simple commands of Valky take about one microsecond. So if you're doing any network hops, which is
+the intended mode of Valky, you're going to see at least hundreds of microseconds if you're doing
+like an inner AZ hop. And like up to like a millisecond, and we're doing like cross AZs. When we
+talk about performance, we're always talking actually about throughput. Because once you start to
+hit the limits of throughput, you start seeing these huge latency spikes because of contention
+within the engine itself. So when I talk about performance, I'm always talking about throughput. So
+to your actual question, how do we measure throughput? So throughput's pretty easy to measure,
+right? You just send a lot of traffic to the engine and see how much it can actually process at a
+given time. Which is quite, it's, I mean, it's not trivial, but it's fairly straightforward. We have
+built-in tooling inside Valky to do basically load testing, sending lots of traffic. The tool called
+Valky Benchmark. We're currently evaluating some other approaches. So that's like our end goal.
+We're like, hey, this is the end thing we have to compare against. But we also do a lot of what we
+call microbenchmarking, which is basically, oh, it's nice. When you have a bunch of C code, you can
+just basically go put it on a machine and run it 10,000 times and see how long it takes. So when we
+were rebuilding this hash table in a bunch of different ways, like every step along the way, we were
+doing this microbenchmarking to see how long did it take before? How long does it take now? And that
+was kind of the best way to sort of guide our performance journey to make sure we weren't regressing
+in weird cases. And then the other thing that we don't do a lot, but we should do a lot more is in
+our world, a lot of the performance like that, a lot of, we spend a lot of time basically waiting
+for main memory access. Right. So in the same way, like if you have to fetch something from disk, it
+takes a long time. In our world, fetching something from main memory takes a long time. So we spend
+a lot of time looking at like CPU counters, which basically tell us how much time are we waiting on?
+Like in the terminology, it's like back installs. Right. How long are we waiting for memory to be
+available to be processed? So we also spend a lot of time looking at those counters to see, hey, are
+we actually doing a good job prefetching memory? So that's another big thing we care a lot about is
+before we actually want to execute a command, we want to make sure all that memory is pulled in from
+main memory into the CPU caches. So that can be executed very quickly. So we also compare like how
+much time are we spending on those different areas, like executing commands versus stalling for
+memory. And then also like perf and flame graphs and stuff. So perf is a way to basically sample.
+It's a program that runs periodically and basically generates stack traces of like where the program
+was at a given point in time. And then you're able to compact all together and build these graphs,
+which say, hey, where is the program spending most of its time? So that's a good way to get sort of
+like intuitive understanding of like, hey, what's what's taking a long time? And then you can sort
+of help you zoom in on specifically what you should be targeting. So I know the details always
+matter. And you mentioned earlier the, you know, 100K or 100 bytes average size. Was that the size
+of the key is 100 bytes or the data is 100 bytes? And what if you'll stick bigger stuff in there?
+You said it can store anything. Does that play into your calculations and your designs for how to
+change things around? Yeah, that's an excellent question. So when I was talking about 100 bytes, so
+inside ElastiCache, we did some analysis a while ago. And we came up with these numbers. And they're
+not words of representative of everything, right? Like everyone has their own workloads. But we
+found the P50 for like key plus value size is about 100 bytes. Keys are actually usually very small.
+They're usually between like 60 and like 32 bytes. And then the values are a bit big, right? For
+strings, they're bigger, like 70, 80, 100 bytes. But as you correctly point out, one of the things
+about, one of the things about Valky that makes it kind of special is a lot of other caching
+projects are like, hey, you have to decide up front how big your keys are, how much, how big the
+values are. How many total items are you going to have? Because that like allows you to make a lot
+of optimizations. And Valky is like, we'll just take whatever you give us. Give us just any key size
+will accept any value. Like the default value size is 512 megabytes. You should not put 512 megabyte
+objects in Valky. But you can. Like it will not explode. So as you said, like we have to care about
+those cases as well. So typically, we are kind of testing a range of stuff. We're usually testing
+values like in, you know, 50, 60 byte, 80 byte ranges. We're testing in like 512 byte ranges. And
+then we're also testing in like, you know, tens or hundreds of kilobyte ranges. And those are like
+probably most, the most representative. And so we want to make sure that those perform well. One of
+the things that comes up a lot when we're talking about performance is, you know, what if we regress
+on something weird? Right. In my talk at QCon, we actually had a slight performance regression in an
+area that we just had no performance tests for. Right. Functionally, it didn't break. But
+performance wise, we were basically not prefetching memory correctly. We're prefetching like the
+wrong memory. And that was really hard to detect. Right. Like it was only we only figured it out
+because someone like said, this code looks wrong. And we're like, yeah, it is wrong. It's not
+crashing, but it is wrong. So we should fix it. And they submitted a fix, which is why open source
+is great. Once people are reviewing all the code and, you know, able to make good suggestions. I
+know we can't show your diagrams here. Maybe I know the link will eventually be up on QCon or on
+InfoQ. Jill can watch the presentation. Can you like do the hand wavy thing? Describe what you
+changed. Like you were just starting to get to. I know. I remember seeing the presentation. Like
+here is this thing that was wrong. And I'm like, OK, I think I can see how it's wrong. But like
+you're talking about changing a hash table and what you're sticking in there. And there's a
+dictionary look up. Like walk us through like the big pieces of like the memory you're talking about
+and how it matters. Because part of me is like that shouldn't matter. But I guess it does. It's
+funny. As I was as I was mentally walking through while I was discussing earlier, I'm like, how am I
+going to explain that diagram? And so I just didn't. So I would definitely encourage you to go watch
+the talk after this. But I will do my best to explain the design here. So in the traditional hash
+table that we had before. So we talked a little bit about buckets, right? So within the hash table,
+you hash a key. So we'll take food bar as an example just as an illustration. So you hash the key
+foo. Let's say you get like bucket Z, like bucket 10. So you'll go and check that bucket. And it
+will point to a container object. So inside ValQ, we call it these dictionary entries. So we've paid
+eight bytes so far. So on 64 byte systems, 64 bit systems, there's eight bytes. That's how much
+memory needs to contain a point, right? So we point to a dictionary entry. That's eight bytes. And
+inside that dictionary entry, we have three pointers. The first one is the pointer to the actual
+key. And so when we're doing the lookup, we have our original key foo. So we have to do a memory
+compare against those two. So we need to have that key somewhere. And the original implementation
+was always a separate pointer. So in doc8, this was the first thing we actually also embedded into
+the structure itself. And the reason this is difficult is like, so before we just had three
+pointers. So we always had a fixed 24 byte allocation. And all of a sudden, when there's a key
+there, like foo, in this case, foo is a little bit simple because three bytes is less than eight.
+You could just put it there. But, you know, as we said, the key could be 40 bytes. Sure. So we need
+to have all the code in place to basically say, hey, like, this is where the key is inside this
+memory block. So we have to write some custom code to basically say, hey, go read this address
+inside the block. Then go jump based on that memory read address. And then you can then start
+reading the key. So this is a bunch of complexity. And, you know, it's a little bit less efficient,
+per se, to run. But one of the advantages of modern hardware is like, it's really good at this. It's
+very good at, like, doing construction branch prediction to, like, guess where the code path is
+going to go and start running instructions. So this got, you know, we kind of expect to see maybe a
+small performance degradation, but we didn't see any. The first thing was the key. So the next
+pointer that we had inside this container dictionary structure was the pointer to the actual value.
+So in this case, there's actually two hops here. The first is to this object container. So as we
+said earlier, Valkyrie can have a lot of different data types, sets, hashes. So we need some
+metadata to say what type of object this is. So that's some of those information. And we also have
+information about ref counting. So we are a, we're not garbage collected language. So we have to
+keep track of how many different pointers exist to this object. So obviously some, like, this
+dictionary has one. But there's other ones. It's used in a couple other places. Like, we do this
+thing called reply offloading now. So when we actually, when someone requests the data, we need, we
+can give it to a client to be like, you go write this client, go write this data out to the network.
+And so the client holds the reference for it until it's able to fully write out the object. So we
+have some metadata there. And so we basically are spending eight bytes to point to this container.
+And we should just be able to embed the container. So that's also one of the things we can need that
+one is we embedded that container. So we've now saved two pointers so far. And then the third thing
+was the next pointer. So I mentioned briefly, when we do this hashing of the key, multiple keys can
+have the same hash value. So we need to find a way to figure out which actual key value pair the end
+user was looking for. We did that by having a linked list. So we have a pointer to basically the
+next object. It's like a singly linked list, not doubly, because the length will actually be quite
+short. And that's actually a pretty hard pointer to get rid of because we need to do this
+resolution. And so what we ended up doing was we took inspiration from some other hash tables that
+have been built recently. So the more modern way to handle these collisions is to do probing. So
+instead of putting it in like a linked list, you put it in a different bucket. And you have some way
+to figure out which bucket it is in. Like the most common way to do this is what's called linear
+probing. So if a name should be in bucket 10, you'll put it in bucket 11, right? And it's just so if
+you check bucket 10 and it's not there, you go check bucket 11. So we prototyped this a little bit.
+There are some problems with this, which is that if you have very long chains, like you might need
+to check dozens of buckets. That's bad for Valky because it is latency sensitive. I mean, I said
+commands are really fast, but if they're all slow, that's still bad. We care a lot about throughput.
+So instead what we did is we tried to adopt a strategy called an implementation called a Swiss
+table. And so what Swiss table does is it takes advantage of the fact that within CPUs, memory is
+fetched in what's called a cache line. So if you try to access a piece of memory, it pulls in 64
+bytes around that. So we basically tried to pack as many pointers to objects in that 64 byte block
+as possible. And it turns out we can store about seven. So we have seven eight byte pointers. And
+then we also have about eight bytes of extra metadata. So we're able to basically use like SIMD
+instructions to check all seven of those pointers at once to see if any of those are matches. So
+that sort of allows us instead of pay eight bytes for the next pointer, we're really only paying
+like one and a half because it's these whole buckets get chained as opposed to individual entries.
+So we're able to better amortize out the cost of that next pointer. So what I just talked about is
+about 23 bytes of savings. It's actually a little bit less, but, you know, in practice, in practice,
+it's also a little bit different because our memory allocator rounds to what are called arena sizes.
+So like there's an arena of eight bytes and 16 bytes and 24 bytes, which are about eight bytes
+apart. And the larger, you know, like if you request like 92 bytes, it's going to get you and give
+you a 96 byte allocation. So something overhead lost there as well. Within the talk, I mentioned a
+little bit some of the actual results we saw. We had a customer who had a little bit of an unusual
+workload. They had lots of very small keys and values. So the keys were about eight bytes. The
+values were about eight bytes. And they saw almost a 40% memory reduction, which is really cool.
+Obviously, most real world examples are going to save less than that. But since most caching
+workloads are actually bound by the amount of memory you can cast in a data set, translated to a lot
+of customers quite happy. Like even if you see like an 8% reduction in memory, like that makes users
+very happy because they're, you know, that probably delays how often they have to scale out or scale
+up. Yeah. Or how, yeah, how often you need to expire things. You can have them live longer if that
+works for your case. Yeah. Yeah. So, yeah, I kind of wanted to back us up out of the rabbit hole.
+Thanks for diving down into there. But that's where I wanted to get to. So you obviously saving
+memory has scaling factors that you can take advantage of. And you said you didn't want to have any
+performance regressions. Were you seeing performance improvements because you have less memory? It
+seems like things should, through all this, should be faster. Were you getting the throughput that
+you were hoping for? Sure. So our goal was at the time we wanted to save memory. We didn't want to
+degrade performance. If performance was flat, we were okay with that reality. And what we found was
+the, so this hash table we have, this like central data type, does power the key value data store.
+But it also powers a bunch of other stuff in ValpKey as well. It's the backing structure for the
+sets, the hash map, the sorted sets. It's also used kind of all over the place, like which keys are
+currently blocked and stuff. So the main key value workload performance was basically flat. And
+that's because we so aggressively prefetch memory for command execution that it's basically all L1
+cache the whole way. L1 L2 cache. So theoretically, like without that memory prefetching, it was
+faster. But for the main key value workload, it's pretty flat. For some of these other workloads
+which don't do as much prefetching, they saw quite a bit. They saw like 20, 30% faster, higher
+throughputs. So you're just able to do more. So that translates to the other parts of your system
+that are relying on ValpKey are able to be a little better. I think that was a good summary. You
+said your goal is to save memory, don't degrade performance. Your goal was not to increase
+performance. What are the benchmarks? Like what's the threshold? I don't even know what the scale
+is. Millions of reads per timeframe? I don't know. So there's two important metrics. The first is
+basically throughput per core, which is like the cost play, right? Most people use caching to reduce
+costs or improve efficiency. So you can do about a quarter of a million requests per second, either
+reads or writes per core. And so that's sort of our benchmark. The other benchmark we have is like
+vertical scalability per key. Like how many requests per second can you serve on a specific key?
+Because caching tends to be lumpy. So we want to make sure we're also able to handle those lumps
+well. And so in that dimension, we do about like 1.2 million requests per second. We have some
+improvements that are oncoming that will get us up to about 1.4 million requests per second, which
+we're quite happy with. That seems like it should be good enough. Like I'm trying to think of what I
+would be doing that has a million reads every second. There are plenty of workloads where people are
+like, we need like 10 million requests per second on a single key. And we're like, have you
+considered having multiple copies of this key? Right, right. There might be a different thing you're
+running into. Yeah. I want to go back to you talked about the origin story of Valky. And I know open
+source projects have different challenges depending on there's a lot of open source projects, a lot
+of maintainers, there's a lot of different models. What's the current state of Valky's governance
+model? So as I mentioned, there was the six original creators of Valky from those six companies.
+They formed what's called the Technical Steering Committee or the TSC. All six of those people still
+comprise the current TSC. There is some directional goal to make the TSC bigger, but it's one of
+those things like we got to make it happen. So it's still quite vendor neutral. There's a bunch of
+other engineers who have gotten involved in the project that we're hoping will kind of become the
+TSC maintainers relatively soon. It's been well maintained, obviously, by you and others. I think
+so. I wish I had more time to write code. I sometimes joke that I'm a principal engineer at Amazon,
+which means I don't do anything. I just flirt around and give hot takes, which I wish I had worth
+that. I love working on the project. I love working on code. I'm hoping the rest of today we'll be
+writing code. That would be great. Well, before I let you get back to writing code, I was given one
+planted question. What's that? I don't know the answer to this. I'm curious. What's the most
+peculiar place that you've run Valky? That I personally have run Valky? Or maybe the most
+interesting place you've heard someone using it. I really love Ericsson's use case. Ericsson uses
+them in like telecommunication equipment, which I think is cool. I run Valky on my Steam Deck for
+like a demo for like a conference, which I thought was kind of fun. Like it's always going to be the
+embedded that have the coolest use cases. Like just running in the cloud, like running in your like
+business app is, you know, very boring. For the longest time, it's what powered all of my like home
+automation systems. I built like a like a polling system where everything went through Valky to like
+when you sent a request, it would go put in Valky and then things would pull from the queue. I don't
+know if that's all that interesting, though. I think it's one of those weird things to say, I have
+this. How can I use it? Rather than like, is it the most appropriate thing? Do I need it? But
+knowing that you could. And then you mentioned, I think this is all written in C. Is that correct?
+C, yeah. So Rust is the new C. Are you guys going to rewrite it in Rust? See, I knew I could save
+one hot take for you. It's not that hot. No, no, it's not that hot to say. I mean, like my opinion,
+I actually love Rust. Many years ago, I actually wrote an internal doc that for our team and our
+group inside Amazon is like, we should write all future code in Rust because I am such a believer in
+Rust. But one of the things that I also talk a lot about is rewriting code. Rust is very opinion.
+It's hard to take C code and port it to Rust without dramatically changing the structure. You don't
+get a lot of the benefits to the Rust ecosystem by just porting all the C code into Rust. And one of
+my concerns is we might do great performance, memory efficiency. There's all these big risks of
+things we might impact. And what's the benefit we're getting? We're going to be super dependency-
+less. Valkyrie has no external dependencies. We build everything in at static time. So we're not
+going to use cargo. Sure, maybe testing would be a little bit easier. Like, oh, there's some great
+tooling around performance profiling, but we have a lot of that expertise already. It's one of those
+things, like, it's true there's a lot of sunk costs in what we're doing in CD, but I think there's a
+lot of risks of moving to Rust, and I don't think there's a lot of benefits. That's actually a
+really clear distinction. I like people talking about that very clearly. Like, write all your new
+code this way, but don't port the old one. Yeah, and to be clear, we do write code in Rust. We have
+a Rust model. Like, so Valkyrie has this plugin extensibility system. There's an SDK written in
+Rust. LDAP authentication is written in Rust. It's really quite elegant. It's like 300 lines of
+code. Like, we didn't want to roll our own LDAP authentication integration in C. Like, that sounds
+terrible. But yeah, just importing it from cargo is nice. But it's also interesting, like, that
+module ecosystem, so we have this thing called Valkyrie bundle. So the core Valkyrie is just called
+Valkyrie, and then we have this Valkyrie plus extensions. The core Valkyrie is, like, 10 megabytes.
+The bundle is, like, 50, right? It's just, you know, and, like, on the grand scheme, like, it's 40
+megabytes, whatever. But some people care about that. Like, it's important to some users. So it
+takes so much longer to build. The Valkyrie core is, like, 20 minutes total build time. Building all
+these extensions and merging together is, like, 55. It's like, there are downsides. There are real
+drawbacks. So I stick with my opinion. Like, deep core infrastructure that's already built and well-
+tuned should probably stick around and see. But you should at least try building new things in Rust,
+for sure. I like that. I like that distinction. Well, your QCon presentation will eventually be
+available to view for everyone on InfoQ. I don't have a date, unfortunately. But I do recommend
+people go check it out. The computer science-y diagrams of hash maps and pointers. I geeked out on
+it. I think other people at the conference did, too. Until that's available, where can people find
+more information about changes of Valkyrie? Where are you publishing stuff? Yeah. So the main thing
+is, so Valkyrie.io slash blog. There is a higher-level explanation of the blog for that new hash
+table that's there on the blog. So go check that out. We publish primarily deep technical stuff on
+the blog. If you're interested in getting involved, there is a Slack community. You can get there at
+Valkyrie.io slash Slack, and it will redirect you to Jire Slack group. You're free to message me on
+there and be like, hey, I want to get involved, or what's cool, what's happening. There's some
+groups there that are very responsive. Well, Madeline, thank you again for joining me today. Yeah.
+Thanks so much for having me. And listeners, we hope you'll join us again soon for another episode
+of the InfoQ podcast. Thank you.

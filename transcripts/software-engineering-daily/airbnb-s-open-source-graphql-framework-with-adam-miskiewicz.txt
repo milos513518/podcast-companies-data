@@ -1,0 +1,273 @@
+SOURCE: publisher_sed
+URL: https://softwareengineeringdaily.com/wp-content/uploads/2026/02/SED1897-Airbnb.txt
+EPISODE: Airbnb’s Open-Source GraphQL Framework with Adam Miskiewicz
+DATE: 2026-02-05
+SED: 1897
+HOSTS: Gregor Vand
+PAGE: https://softwareengineeringdaily.com/podcasts/airbnbs-open-source-graphql-framework-with-adam-miskiewicz/
+----------------------------------------------------------------------
+
+EPISODE 1897
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Engineering teams often build microservices as their systems grow. But over time, this can lead to a fragmented ecosystem with scattered data access patterns, duplicated business logic, and an uneven developer experience. A unified data graph with a consistent execution layer helps address these challenges by centralizing schema, simplifying how teams compose functionality, and reducing operational overhead while preserving performance and reliability. 
+
+Viaduct is Airbnb's open-source data-oriented service mesh and GraphQL platform built around a single highly connected central schema. It has played a major role in scaling Airbnb's engineering organization. Adam Miskiewicz is a Principal Software Engineer at Airbnb, and he worked on Viaduct. He joins the podcast with Gregor Vand to talk about how Viaduct originated inside Airbnb, the architectural principles that shaped it, the challenges of scaling GraphQL to millions of queries per second, and why the team decided to open source the platform. They also discussed the future of back-end development in an AI-driven world and how unified data layers may influence the next generation of engineering systems. 
+
+Gregor Vand is a security-focused technologist, having previously been a CTO across cybersecurity, cyber insurance, and general software engineering companies. He is based in Singapore and can be found via his profile at vand.hk or on LinkedIn.
+
+[INTERVIEW]
+
+[0:01:45] GV: Hello, and welcome to Software Engineering Daily. My guest today is Miskiewicz. 
+
+[0:01:51] AM: Hey, how's it going? Nice to be here. 
+
+[0:01:53] GV: Yeah, great to have you here. Today, we're going to be talking about Viaduct, and that is a spin-out from Airbnb. So, we're going to be understanding what happened there. But yeah, Adam, I'd love you just to talk to us a bit about, first of all, just your journey maybe to Airbnb, and then where did Viaduct come from, and how did that come about? 
+
+[0:02:15] AM: Yeah, absolutely. Yeah. So, I have been a software engineer for - gosh, it's pushing 20 years or something professionally these days. And I actually took a little bit of a non-traditional path to kind of where I'm at Airbnb, kind of working in big tech. I have done a lot of work at a lot of small companies. I ran an agency, an interactive agency in Baltimore, Maryland, for a while, building web and mobile apps for folks and interactive installations. Worked at a company called Expo, some listeners might be familiar with, doing React Native tooling. And then eventually kind of ended up at Airbnb. 
+
+I kind of went from small company to big company instead of big company to small company, I think, like a lot of folks do. It's definitely been a learning experience working at big tech. And at this point, I've been at Airbnb close to 8 years. I've seen it kind of grow from a 500-person engineering organization to 3,000. And, also, the company around us has grown a lot as well. So, yeah, it's definitely been an interesting journey. 
+
+[0:03:23] GV: That's kind of interesting. It's actually quite similar to myself. Yeah, ran an agency for a long time, which was a, by most standards, small company. Yeah, I'm now in a bigger company, but that's only 150 people, but still feels big to me. 
+
+[0:03:36] AM: I think what's cool about working at an interactive agency is you kind of get exposed to a lot of different stuff, right? And it forces you to kind of be a generalist. I was actually hired at Airbnb originally as a front-end engineer and had done a lot of front-end development prior to Airbnb. And at this point, I haven't done front-end development for - I said I've been there about 8 years. I haven't done it for about 7 and a half. That kind of takes us into the GraphQL story, and Viaduct, and all of those types of things. Yeah, it's been cool to work at big tech and bring kind of the generalist experience into that. 
+
+[0:04:16] GV: Yeah, for sure. And I think as you call out, as we'll hear, that will lend itself really well to kind of I'm sure why Viaduct came about and what it is today. Because, yeah, the more problems you're exposed to, the more realization that you have to actually understand so many different business types, and requirements, and so on so forth. And inside big tech, you're effectively working on different businesses if you want to look at it that way. Yeah, how did Viaduct come about? What's the story there? 
+
+[0:04:47] AM: Sure. About the second day after I joined Airbnb, I was pulled into a working group. It was called the GraphQL working group. And a bunch of engineers at Airbnb had been thinking about using GraphQL. We were kind of in this interesting spot. We were starting to do microservices, kind of move out of our Ruby on Rails monolith. Especially the iOS, and Android, and web engineers, right? They really wanted strongly typed APIs. There were some experiments with GraphQL in the Ruby space, right? We had this thing that I think was open-sourced at some point called Grafast, which was like this very opinionated kind of framework. It actually wasn't GraphQL, although you could imagine GraphQL layered on top of that. That was kind of this opinionated framework in Ruby on Rails for building our endpoints, our API endpoints. 
+
+Yeah. I was kind of pulled into this working group, and there was a bunch of folks in there. I mean, it was probably 20 or so folks from back-end, from front-end, whatever it might be, thinking about how do we adopt GraphQL in this new kind of microservice world that we were moving into. And there was already an opinion that was relatively pervasive and then kind of became a bit more pervasive around how to structure our microservices at Airbnb. 
+
+You can imagine, we came from this big Ruby on Rails monolith, had millions lines of code in it, and we started to kind of carve out chunks like lots of folks do, right? We had a service for listings, kind of some of our search components were pulled out, that type of thing. But we were pretty early at that point in kind of building a bunch of services. But the way we were thinking about structuring the microservice architecture, SOA, as you'll probably hear me call it a bunch during this conversation, is kind of have presentation services, derived data services, and data services. 
+
+Data services at the bottom. Pretty straightforward. They wrap essentially databases. Provide kind of a Thrift - we use Thrift at Airbnb. Kind of provide a Thrift API over core data. You have the presentation services up top that are really - I'd say how they started is ports of controller logic from an MVC system inside of Ruby on Rails. And so they were very tightly scoped to like - they exposed just RESTful or RPC over JSON type of endpoints, right? And then you kind of have the middle tier, which is all the random derived data services that pull data from X, Y, and Z places and munch it together. 
+
+The GraphQL story was really focused at the beginning around this presentation service layer. And there was a lot of trepidation at first because we were trying to figure out, like, "Okay. Well, we've already started to build these presentation services," and we had a couple big ones at that point, right? And we needed to figure out how to let people continue to build these things because that's what we said we were going to do. But how do we put kind of GraphQL on top of them? 
+
+Our first general approach was very far from Viaduct, which was just kind of convert the thrift schema to GraphQL and stitch all of the presentation service schema together into one GraphQL schema and one GraphQL endpoint. And we definitely weren't the only people to take that approach. And mind you, this is essentially seven years ago, right? 
+
+[0:08:23] GV: I was just going to say, I mean, because you say this was like day two working group. 
+
+[0:08:27] AM: It really was. It was day two. Yeah. 
+
+[0:08:30] GV: I mean, this was around when quite a few companies, I guess, were starting to - well, probably some had maybe done it beforehand. But this was quite a big time for bigger companies to say, "Hey, we actually think GraphQL is where we should be going with our APIs." 
+
+[0:08:45] AM: Right. Yeah. Actually, let me set the stage a little bit. This is pre-Apollo Federation. It's pre all of that stuff, right? And remember, GraphQL actually just had its kind of 10-year anniversary back in September of open source. Yeah, this is a few years into GraphQL. There was no Apollo Federation. Apollo did exist, but it was kind of early. They were trying to figure out what their business model was going to be, how to bring it to enterprises, that type of thing. 
+
+The client space outside of Relay was still pretty nascent. GraphQL.js was matureish, but not used in a lot of spaces. And so, everyone was trying to think about how to bring big companies and enterprises into GraphQL. And, yeah, the schema stitching idea was pretty popular at that point, right? That was how you did it if you didn't want to have one kind of monolithic GraphQL server. That's kind of the space that we were working in, right? We were, like I said, maybe not the first, but kind of on the forefront of what folks were doing then. 
+
+And so we took these thrift APIs, we converted them to GraphQL, and we stitched them all together. And what the schema that kind of we ended up with was what I like to call service-oriented GraphQL. I mean, it was not an entity graph in the way that we did it, right? It was literally like service-fu as a top-level field and then the end-points for service-fu underneath, right? 
+
+And we always knew that we were going to transition away from that somehow. But what this gave us was the ability to get clients using GraphQL across iOS, Android, and web. Get that stack in there, figure out the codegen situation on the clients, all of those types of things, right? And we could pretty quickly - and you can imagine, since these endpoints were the same kind of shape as our rest endpoints, then writing code against them, client-side code, was relatively straightforward, right? And then you could easily kind of migrate from the old version to this new typed version. 
+
+[0:10:50] GV: Given this was largely all internal, as in internal APIs. 
+
+[0:10:55] AM: Yeah, it's all internal APIs. Yeah. 
+
+[0:10:57] GV: Yeah. I'm sort of sidebarring here, but how was that, I guess, communicated, especially back then? Like, "Hey, we're moving to GraphQL." That's quite a big shift for probably the number of services that we're talking about here. Were you the person having to deliver this news, so to speak? Or how was that done? 
+
+[0:11:16] AM: Yeah, it was me and a few other folks that were working on this. I kind of was the main sort of backend guy at this time. But to your point about going and telling people, the whole idea here was that the conversion from Thrift to GraphQL was automatic, right? So for the most part, the back-end folks didn't really need to know, right? It was kind of interesting. We were like protecting the back-end people back then. I don't know. It's very different now. I wouldn't say we do that. But back then, it was like client engineers want to do some crazy stuff, protect the back-end people, let them focus on their microservice migration, right? 
+
+And so that's what we did. We really made it as trivial as possible on the back-end side. And then on the client side, people were much more eager to adopt the new tools. And so it wasn't really a struggle to get folks to adopt the new tools, right? They wanted it, right? Especially on the iOS and Android side, but then web was kind of a fast follow there. And we had a couple champions in each kind of client platform that really wanted to see it succeed. 
+
+[0:12:23] GV: For sure. 
+
+[0:12:24] AM: That was kind of the origins of GraphQL at Airbnb and where how GraphQL itself really got its foothold. But then, around - let's see. Was it the summer of 2019, I believe? Yeah. Basically, this had been around for about a year. This new GraphQL stuff had been around in Airbnb for about a year. Summer of 2019, spring and summer, kind of hired a new CTO. He comes in, he is like, "What's going on with our data at Airbnb? How are we doing this?" Right? And we had kind of a fragmented data store situation. Offline data was crazy. We were having trouble with our data pipelines back then. And we were thinking about IPOing at that point, right? And so it's like, "Well, we got to get our core data to make some sense." Right? So that we can use it for financial reporting and all of the things that are required there. 
+
+And so we spun up this working group. You'll notice a trend of working groups. We spun up this working group called the data architecture working group, brought in an outside consultant named Raymie Stata, and really started to think about the whole stack end-to-end. Whether it was online side, APIs, whatever, whether it's the offline side. Really, nothing was off limits to think about changing. 
+
+We had eight people in this group, a bunch of different disciplines from all over the company. And we sat in a room for what seemed like months at a time trying to figure out what we were going to do. A bunch of things came out of that. A bunch of improvements to the offline world. It's much, much better now. And took a lot of years, but it got there. A bunch of changes in the online data store side. Born out of this data architecture working group was kind of a rethink of our kind of core online data system, which is called UDS. Stands for unified data store. And that's a big project. It's been going on for a while. And at this point, a lot of data has migrated to it.
+
+And then on the API side, really this idea of what became Viaduct, or what we call a data-oriented service mesh. But, really, a more simplified way to say it is just kind of a unified data access layer. Really emerged as kind of a key need to try to simplify how we build APIs, how we expose data to clients. We really shipped the very first version of Viaduct, which really wasn't anything super crazy. It was really just a GraphQL server that was separate from this service-oriented GraphQL. We figured out how to kind of stitch it in. 
+
+And we shipped this, the first version of Viaduct, I mean, really early. I mean, a couple of months into the project, we shipped it. And I think he was working on the trips product at the time. Basically, imagine you go to Airbnb in the upper right-hand corner on your home screen and view your current trip. And so that was like probably the first Viaduct-powered feature back then. That and maybe wish list. Yeah, that was kind of the original origins. 
+
+[0:15:44] GV: Very cool. Again, sidebar question. But since we're going to probably use the word a lot. I did grow up in a country that have a lot of viaducts. But maybe you could just explain what is a viaduct, and why did that kind of become the name, I guess? 
+
+[0:15:57] AM: Viaduct. Somebody will yell at me if I try to give some exact definition. But essentially it's a bridge. 
+
+[0:16:05] GV: A bridge where water like flows over it, basically. 
+
+[0:16:08] AM: No, that's an aqueduct. 
+
+[0:16:09] GV: Oh, there we. Wow. 
+
+[0:16:11] AM: Yes. A viaduct is a bridge over a span of - it could be overwater. But usually it carries trains, or cars, or something like that. 
+
+[0:16:23] GV: Then I've learned something today. I called everything a viaduct. Okay. 
+
+[0:16:26] AM: It does tend to have arches though, much like an aqueduct. I don't know. Hopefully, podcast listeners don't go crazy on me. And maybe there's some technical definition of a viaduct. But anyway, the general idea, right? The reason why we called it Viaduct, we're kind of traditionally pretty bad at naming things at Airbnb. We always put air in front of them. But with Viaduct, it's a connector. It's a bridge. It's trying to connect things together. And we had a lot of services. And that number of services grew tremendously over time. And yeah, that was the idea there. 
+
+[0:16:58] GV: Yeah. Okay. Let's kind of get into - I guess there was a sort of philosophy shift where - I mean, there's a great blog post, which we'll link to, that you wrote about all of this about 2 months ago. There are kind of three guiding principles sort of to that philosophy shift, which was a central schema, hosted business logic, and what's called the re-entrant API. And we'll obviously get into that. 
+
+But you said in that blog post, from the beginning, we've been encouraging teams to host their business logic directly in Viaduct. This runs counter to what many consider to be best practices in GraphQL. Was that from the kind of beginning beginning, or is that something that's kind of come through in time? 
+
+[0:17:40] AM: It's definitely from the beginning beginning. Like I said, we had built the original GraphQL system very much integrated with our microservice architecture. But at that moment in Airbnb's kind of engineering journey, there was a bit of microservice fatigue. And while we have a lot more tooling nowadays that helps with microservice development at Airbnb, in those early days, it was tough to have quick iteration to understand your dependencies. And also, we had this kind of really opinionated framework for how you actually write business logic in the microservice world. I think a lot of people found it really tough to be iterative. 
+
+And so when we built Viaduct, the idea was like, "Yeah, we'll figure out how to scale it." It's like do things that don't scale, right? We'll figure out how to scale it at some point. But for now, let's just write code in there. And we'll have some opinion on how to write the code so that it doesn't go completely insane. But at the end of the day, we wanted to build a platform that really was kind of - we had many early ideas of how it can just be Airbnb's, to use a buzz word that a lot of people hate, serverless platform, right? 
+
+And I'd say it's had its ups and downs of that decision. And I think we have a lot of interesting things in the pipeline with some of the work that we've done with Viaduct Modern, which is what we open sourced. But it definitely ended up being like a pretty core tenant from the beginning. 
+
+[0:19:15] GV: Yeah. I mean, just to kind of call out for anyone. Well, we've touched on Apollo already. But a global schema approach, that's actually unlike Apollo or like GraphQL modules. That's kind of the differentiator here, right? 
+
+[0:19:27] AM: That's right. I think there is some interesting similarities with Apollo and Apollo Federation. I mean, at the end of the day, Apollo talks a lot and has a lot of success with this concept of a super graph, right? And in their case, yes, it is a super graph made up of subgraphs that are kind of hosted in services. But Viaduct is not necessarily that much different when it comes to this general idea of having a unified graph and vending, kind of essentially one schema, to your clients. 
+
+And in our case, our subgraphs are not independent services, but they're what we call Viaduct tenants, right? Viaduct, even though you're writing business logic in Viaduct, it's not just a complete free-for-all, right? There is a rhyme or reason to how we organize the Viaduct kind of monolithic system at the moment, right? Which is we have these things called tenant modules. And tenant modules have schema, they have code. There's opinions on how you write your schema. There's opinions on how you write the code. And they can be essentially packaged up. There's a little bit of nuance there. But if you look in the codebase, they kind of look like little services, honestly. It's just that we host them in one larger platform. 
+
+[0:20:53] GV: Got it. And then this term re-entrancy, could you talk to us about that? I mean, in the blog post, you mentioned this is logic hosted on Viaduct, composes with other logic hosted on Viaduct by issuing GraphQL fragments and queries. 
+
+[0:21:08] AM: Yep. This is one of the things that I do think is relatively unique to Viaduct in that the whole idea is that, as you build out this unified graph and you get more and more data into this graph, well, the less that you need to go elsewhere to get some data and the more that you can use the data that you already have in the graph to build features. 
+
+The canonical example I always give, it's very trivial, but I think it illustrates the point, which is, let's say, you want to implement a field that returns the user's full name. Well, the full name is typically you store it, the first name and maybe their surname, last name, separately, right? And so you kind of have your first name, you have your last name, and then you have the full name. You got to combine those two things together. There's a bunch of ways you could do that. If you imagine that all this data, the user data is stored in some separate service, right? You could query for the user up front, and you could take the first name and last name, and then you could just have some logic that combines those things together. 
+
+But in Viaduct, what we encourage is that you are essentially declaring for that full name field. You're declaring data dependencies from within the graph. You're saying that for the full name field, I need the first name, I need the last name from the user entity. And Viaduct will know how to fetch those things, compute them if necessary, and give that data to the resolver. 
+
+And that general idea, which we've actually had since almost day one in Viaduct, the API has definitely shifted, but we had that idea from day one, it turns out it scales really well. Because as the graph grows - and our graph is really big. I think we have 25,000 types and hundreds of thousands of fields or something like that. It's huge. And we have the majority of Airbnb's kind of available online data exposed in this graph. You can often find what you need without going to some service, especially if you're operating higher up in the layers, right? Building presentational type of features. And so you can really write entire features and applications without ever making a direct service call and instead calling back into the graph using this re-entrancy approach. 
+
+[0:23:28] GV: Awesome. That's a really good example. I like that. Very simple but very effective, I think, to understand what we're talking about here. You mentioned, or you touched on the idea that there's a sort of modern version. We're going to get there. I think just before we do, maybe we could just still talk about just general technical architecture, which again you touched on in the blog post. And the kind of three bits to this, the tenant API, the execution engine, and hosted application code. Could we just walk through those three? Just sort of how do they come together to make Viaduct what it is? 
+
+[0:24:03] AM: At its core, Viaduct is really kind of an opinionated GraphQL server. It certainly grew from those origins. It was really just GraphQL Java from the very beginning, and then build stuff on top of it. But we've taken a much more principled approach as we've kind of started to rebuild pieces of it. The modern kind of way that Viaduct looks is those three layers, as you mentioned, an engine, this kind of tenant API and runtime, and then the code itself. 
+
+And the reason to structure it like that really comes down to we wanted an engine that was really lean as performant as possible might be implemented in some other language, or framework, or whatever one day, and can focus on the things that are kind of core to the Viaduct execution model, which is this high performance execution, executing selection sets, which is a GraphQL concept. Our concurrency model, how are we doing kind of parallel fetches batching, which is very much tied into that. Figuring out how to avoid the N plus 1 problem. Maybe caching in certain cases, at the very least. Intra-request caching and things like that. 
+
+And then the tenant API and runtime kind of sits on top of the engine, and it's what is kind of providing that strongly-typed interface, right? For those that haven't looked at the open source projects, Viaduct is built in Kotlin. We're a big JVM shop at Airbnb. We use a lot of Java but also use a lot of Kotlin. Everyone that writes code in Viaduct at Airbnb writes it in Kotlin. 
+
+And when you're actually writing code inside of Viaduct, you want that strong typing, right? But the engine doesn't care so much about the strong typing, right? It just is kind of schlepping data around. That boundary of where typed data lives and where the engine can deal with just kind of more raw data, so to speak, is actually ends up being quite important. Because if you're going to build this multi-tenant system, you want to avoid sending typed information back through the entire system. Because if you want to, say, deploy a tenant individually from another tenant, you need that kind of boundary. 
+
+And so we actually draw it a lot. It's not a perfect analogy, but we kind of have engine space, tenant space, kind of like kernel space, user space, right? And like I said, it's not a perfect analogy, but it keeps us kind of grounded in that we need to keep those things separate, and we need to create that very strict boundary between those two layers of the system. And then you have the hosted code, right? That kind of is actually what uses the tenant API and tenant runtime. 
+
+[0:26:52] GV: Let's talk about the modernization journey, if you like. There's, I guess, what's known now as classic Viaduct and modern Viaduct. Is that right? 
+
+[0:27:03] AM: Yeah. Yeah. It's at least known internally. Yeah. 
+
+[0:27:06] GV: Yeah. I think it was in the blog post as well, but - 
+
+[0:27:08] AM: Yeah. Yeah. Yeah. We've talked about it publicly. But I think to the outside world, classic Viaduct doesn't mean a whole lot because they've never seen it. 
+
+[0:27:16] GV: Gotcha. There we go. Yeah. Yeah. 
+
+[0:27:18] AM: Yeah. And actually, most of Airbnb, as of the recording of this podcast, is still running on classic Viaduct. We're rolling out modern Viaduct kind of as we speak. Going to continue rolling it out in earnest over the following year over in '26. But yeah, most of what Airbnb is running right now is still kind of the classic Viaduct, especially the classic. Again, this is why that engine tenant split is important because, actually, we're running the modern engine, but the classic API inside of Airbnb. And so there's this kind of shim layer that we're building and that we maintain with the eventual goal to push everyone to the modern API. 
+
+Anyway, why modernize, right? What are we kind of doing here? Viaduct, the way it started, like I said, kind of started out as working group. We had a small team. That thing lived as a working group for a long time. We didn't have a real team, but it found a lot of organic adoption inside of Airbnb. 
+
+[0:28:10] GV: Which means it's successful, basically. Because if it doesn't - 
+
+[0:28:13] AM: Exactly. It was successful, right? But I think it was also a victim of its own success. And if you look at how the codebase evolved, it's one feature on top of another feature on top of another feature that we added because some customer came to us and was like, "We need this." And we're like, "Okay, we'll help you." 
+
+And I think, in many ways, it's fine. It got us to kind of where we're at. But it definitely has some scaling problems, right? Whether it's runtime performance or whether it's build time and developer loop performance, there's - just to be completely honest, right? There have been a lot of struggles. And we've worked around a lot of them. But what we realized when we started to think about Viaduct modern a couple years ago was that there's certain problems that are just insurmountable in the old architecture. 
+
+And so the old architecture, just to kind of compare and contrast it with the architecture that we were just talking about with that clear engine tenant split, basically, the old architecture had none of that, right? And in fact, there was a lot of overlap. It was very unclear when the engine began and when the tenant API stopped, right? And we did that on purpose. I think it sounded like a good idea back then in that what you can imagine it looked like is that we codegened basically domain models, right? And then attached implementation to those codegen domain models, and it worked really well. 
+
+It actually had some pretty ergonomic properties when it comes to just like, "Oh, just go override this method in this class, and then you've implemented your thing." Right? But yeah, like I said, kind of scaling that and figuring out how we offer what we're really trying to offer with modern, which is more tenant isolation, more tenant autonomy, but still retaining kind of the leverage that we have working in this opinionated, centralized platform, we just kind of realized that we were not going to be able to get that with the classic system. And one other thing to mention that I think will sound very familiar to anybody who has evolved a very large software project, it also became hard for the platform team itself to work on it, and that slows down velocity, etc. 
+
+[0:30:26] GV: I mean, this is a maybe slightly nuanced example. But given you've worked in an agency, the last thing an agency ends updating is its own website, basically. 
+
+[0:30:34] AM: That's exactly right. Yep. Absolutely. 
+
+[0:30:38] GV: It's that kind of problem, where unless there is a team that has been put together dedicated to this tooling, which is, I guess, how you could maybe look at it in some ways. That tooling just kind of only gets updated. As you I think alluded to sometimes, it's a customer. I.e., there's sort of money on the table that says we need this thing. A lot of people go, "Oh, well, then now we can put time on this thing." Or sort of bandwidth is made available. But it sounds like, as with so many companies and projects, it was going to be challenging for that to happen. That's kind of leading into the modernization and skipping ahead a little bit here, the open sourcing as well. But, yeah, I'll let you go back to the story.
+
+[0:31:19] AM: Yeah. Sure. Sure. All very good points. Hindsight 2020. We could have done some of this stuff sooner. But I think what we ended up, like I said, kind of a victim of its own success. And with that victim of its own success, we spent a lot of time on reliability, right? Keeping it alive. Because at a certain point, it became a very, very critical dependency for Airbnb. 
+
+And at this point, something like 80% of all traffic runs through Viaduct. All of our API traffic runs through Viaduct. It can't get much more critical than that, right? And so the reliability aspect of Viaduct really took the front seat, while some of the developer experience pieces took a backseat. Much to the chagrin, I think, of a lot of developers at Airbnb who, I think, just as a shout-out to them. Hey, I see you. And I think it's been tricky. However, we've kept it alive, right? 
+
+And now, and I would say over the last couple years, we've been able to start to balance improving some things about developer experience while also keeping it alive, but building this API modern runtime engine to really set us up for a much, much better future. Because it it really ended up being in a situation where Viaduct, it's a little too big to fail at Airbnb. And at the end of the day, people have to use it. That's how it is at this moment. This is how a lot of, I think, big company tech evolves, right? Even if it's not the perfect solution, it is the solution that you have, right? 
+
+And so I see my job, I see our team's job, our organization's job as well. At this point, we just want to make it awesome. Because I think it can be really awesome. And I think that's what Viaduct Modern is pushing us. We're pushing in that direction. And I think that the benefits that Viaduct provides and has provided to Airbnb are real and ones that we want to continue to capitalize on. And not go back to like, "Oh, just create whatever service you want to create, and figure out how to string it all together." I firmly believe that there is a better world than that, and I think Viaduct is that world. 
+
+[0:33:34] GV: Awesome. Yeah. I mean, I believe the blog post does touch on real-world Airbnb performance uplifts. I do encourage anyone to go and take a read. And just looking at time, I want to make sure we do talk about what the modern Viaduct is. And then, also, I want to kind of hear just about the open-sourcing journey. Obviously, we've had a couple of other companies on in the last 6 months who have gone from closed source to open source. This isn't quite the same because it's, I guess, kind of a new framework over an updated framework. But looking just at the modern sort of architecture, I believe a lot of it's about sort of boundaries, strong abstraction boundaries between what we've touched on the engine, the tenant API, and the application code. Could you just speak to us a bit about that? And I believe it's going from also like a dynamic engine API to a statically-typed tenant API with Kotlin classes. That sounds pretty important. And, hopefully, kind of I'm imagining, cleans up a lot of the problems that have just ended up becoming problems with classic. 
+
+[0:34:44] AM: Yeah, we kind of touched on it earlier. I mean, those strict boundaries that I was talking about really end up becoming critical if you want to optimize the performance and also provide a kind of simpler mental model to people writing code inside of the system. And I would say, when I say people writing code, I mean both platform developers, but also tenant developers, right? At the end of the day, if you build a leaky abstraction, the non-platform team folks, they end up having to understand that abstraction far too deeply. And that creates a ton of confusion. 
+
+[0:35:20] GV: That's a great article, by the way, leaky abstractions. Yeah, it was funny. I was relisting to a very old Software Engineering Daily episode, and that article was brought up. So, I went back and reread it. We're talking like years and years ago. 
+
+[0:35:33] AM: thing I've learned in my career is how deeply important good abstractions are and how hard they are to come up with. And so, not to belabor the evolution point, but I think like sometimes you have to go through a bunch of different iterations of a thing, even a large thing, in order to figure out what that right abstraction is, right? So, you can think about some of these things from first principles. 
+
+Anyway, I think with modern, the main benefit we're trying to give to folks is that it's a much simpler mental model. Everything is a resolver. We have this flowchart that we've used internally or in some external presentations, where if you think about what it kind of looked like building stuff in the classic API, it's like this big flowchart of do you choose this thing, this thing, this thing, this thing, right? 
+
+Ultimately, what we wanted was everything to be a resolver. We build that re-entrancy capability into that resolver concept, and that's how you write your code. We can always provide other kind of smaller abstractions for, let's say, fetching data from service or something like that, right? We can always have utilities to make those types of things easier, simpler, less boilerplate. But the core concept of the system is very, very simple. Everything's a resolver. 
+
+The other thing that's pretty core to modern is there's this like pretty fundamental concept that we call like async memoization. And the insight is that when you're building a GraphQL server in particular, just the way that GraphQL execution works, which is kind of this depth-first parallel traversal type of way of traversing the query and executing the query. 
+
+And then when you layer re-entrance, this re-entrancy concept on top of it, you can end up doing a lot of duplicate work. And so take that first name, last name, full name concept I was mentioning before. Well, somewhere else in - if you imagine the user type, you got first name, last name, and full name. Full name depends on first name and last name. There might be some other field in that type that also depends on first name or also depends on last name, right? 
+
+Why would you want to execute that resolver again? If you're within the executing this like node in the graph, and you execute that same field with the same arguments again within the same request, you're not going to execute the actual resolver itself again. That's a pretty fundamental concept that most GraphQL servers. I've never really seen one do that. And it turns out, it has a lot of performance wins. 
+
+What we really notice, again scaling Viaduct, scaling GraphQL, we have a massive schema. I already said that before. We have massive queries. I mean, we have queries that query 100,000 fields or 300,000 fields in one single query, right? They're returning megabytes of information. Now, you could say, "Don't do that." Well, easier said than done, right? Sometimes, especially as the platform team, we kind of are looking at these edge cases, and how do we scale the platform to support those things, versus just simply going, telling people no. Because sometimes they do actually have very legitimate use cases. 
+
+A lot of our work around performance and things like that is looking at how do you really scale GraphQL execution to that size, to that level of complexity? And it ends up being a pretty non-trivial both graph problem. There's some computer sciency stuff in there, which is pretty interesting. Viaduct Modern aims to solve those things in a bunch of different ways. And like I said, it kind of makes it easier to optimize and gives us kind of that stable kernel of the engine while we can continue to evolve the API on top. 
+
+And then like you mentioned, the strong typing, we had strong typing before, but it was done in a different way, right? I kind of alluded to it, right? You kind of override the domain models themselves, right? In this case, you don't do that. You're just given value classes that contain the data that you need. We can generate a lot fewer of those than we were doing before. Helps us with the build time problem, that type of thing. 
+
+And again, a lot of these problems that I'm talking about, these are things that only happen when you scale to the size that we're talking about at Airbnb. And there's a few other companies that are similar size to Airbnb that have similar problems to us, I know from talking to them. But most APIs, or GraphQL servers, or really any API server, they just don't have these types of problems, right? And that's definitely been a learning, and one of the reasons why there's actually been a lot of work that goes into building the system. 
+
+[0:40:21] GV: Yeah. I mean, I think exactly just to sort of overemphasize, the massive scale that this is designed to handle is such a huge piece of it. The classic has been sort of battle-tested through Airbnb. And then, obviously, some learnings there, which are flowing through to modern. And that's kind of what people should be sort of - if they're thinking I have a massive GraphQL footprint brackets problem, maybe Viaduct is something they should be looking at. And that sort of leads quite nicely into just the open sourcing of this. Yeah. I mean, was that a given when you were thinking about modern? Or how did that sort of come about? 
+
+[0:41:00] AM: It was pretty early in the modern story. You know, our CTO, Ari, he's been really supportive of open sourcing stuff at Airbnb. And we have a lot of open source projects at Airbnb. Some definitely non-trivial ones. And I think he was always pretty passionate about kind of sharing our work with the world. And it's not just about kind of the typical corporate open source thing of it helps our tech brand and stuff like that. It also is like a - it's an accountability mechanism almost, right? It's like a way to share your work with the world, and then get validation on those ideas and be able to talk about them openly, right? And be able to kind of share deeply what we are doing and why we're doing it, and operating, and how we operate at the scale we operate at. That was his way that he kind of pitched it to me and others early on. 
+
+And so yeah, we were pretty much focused on open-sourcing it from the get-go. We kind of separated out the Viaduct modern stuff kind of in our monorepo to make sure that we were kind of not taking on internal dependencies and things of that nature. We did have a bit of like that flexibility that I think would have been maybe a bit trickier than if we were to have open source classic very directly. 
+
+That being said, it's definitely been non-trivial to break Viaduct out of the Airbnb bubble. And the real value I think Airbnb has gotten from it from a technical perspective is that that has strengthened the abstractions that we are talking about here because we can't be lazy. If we're gonna open source this thing, which of course we have at this point, we couldn't just kind of sit back and depend on other things or not think about how to support both potential open source users as well as Airbnb. 
+
+[0:42:54] GV: And how's, if I'm understanding correctly, sort of classic and modern? They are different. How internally is that working, shifting things across? Or is it just sort of as new services come online, they take modern versus classic? 
+
+[0:43:09] AM: Yeah. What we're starting to do is, for new use cases, we're having people start to use modern, the modern API. Like I mentioned, actually, we very clearly split that modern engine from the API. We are running inside of Airbnb, the modern engine, and kind of shimming, like I said, on top of that, the old API. But yeah, right now it's very much, as new use cases come online, use modern. 
+
+We'll never force our engineers to rewrite their code to modern. Instead, we will likely use AI tools and things like that. There's a whole diatribe I could go on about how we're doing AI-based migrations at Airbnb. And I won't go on that diatribe. But I think that is going to be a pretty critical way for actually getting rid of classic into codebase over the next couple years. 
+
+[0:44:03] GV: Got it. 
+
+[0:44:03] AM: And just to give listeners a little bit of more concreteness to the scale, I won't say exact numbers, but we're talking multi-million lines of code in the Viaduct codebase as tenant models. And we're talking around a bit over a million QPS of GraphQL operations per second served by the system. It's definitely a pretty hefty scale. 
+
+[0:44:27] GV: Yeah. Before we kind of just look at sort of future stuff, DevX getting started with Viaduct modern. Any things to call out there? Is it all pretty straightforward from the repo? 
+
+[0:44:38] AM: Yeah, it's all pretty straightforward. The thing to call out is that what you see in open source right now, it's not exactly the developer experience around it, and kind of the - if you imagine, kind of embedding it in some server, right? You're not just going to get Airbnb Viaduct scale for free. There is a lot of kind of infrastructure work that we have not yet open-sourced. We, hopefully, will open-source more of it over time, but that there's glue is kind of what I'm getting at that makes Viaduct kind of operate at Airbnb scale. That being said, what is there is truly the core of Viaduct and what we run internally. It's kind of what you see is what you get in that case. 
+
+[0:45:24] GV: Awesome. Well, yeah, that's just github.com/airbnb/viaduct. Obviously, anyone curious or wanting to just like give it a spin, you can head over there. I think just as we look ahead, we have managed to get pretty far in an episode without once saying AI. This is a change. But it would be good to hear you've got some sort of thoughts around GraphQL and AI, and sort of maybe it relates to Viaduct, or maybe it's sort of just around where's GraphQL kind of going from here? Yeah. What are your thoughts there? 
+
+[0:46:00] AM: Yeah, these are all kind of early thoughts, I suppose. But I'll kind of give some opinions. I think that with the way AI is going, it's very clear. And I'm an avid user of all the new fancy agentic tools every day to code, right? And I think it's pretty clear that software engineering is going to change a lot. It's not going to go away. It's already changed a lot, but it's going to change a lot a lot in the next, say, 3 to 5 years even. 
+
+And it's not going to go away. There's still going to be engineers. We're still going to code. We might not write a lot of code by hand, but we're still going to be responsible for code. And in that world, I think that having really strong patterns of how to build stuff is going to be really, really important, especially in enterprise-type of scenarios, right? Large companies, more than, say, 500 or a thousand engineers working on a thing. 
+
+I mean, anyone can go vibe code some back-end and spin something up and have it do something, right? And don't get me wrong, that can actually take you really, really far. I'm a big proponent of stay in the monolith, don't do anything crazy, just put everything on one server or whatever, and scale your startup that way, right? But once you get to a certain size - and again, it's not just around like QPS or something like that. It's really this concept of sort of programming in the large, right? You have to work with a lot of people, and you have to build a lot of things that all have to work together, right? That's really where a system like Viaduct or other systems that are like Viaduct, I suppose, really can play a major role. 
+
+I see a pretty clear future for both simplifying architectures in large companies. Services don't die, but maybe there's a considerable collapse of how many services there actually are. We figure out how to scale these things, scale the number of people working on a single service, a lot better than we've done in the past. And I guess not just scale people, but agents. 
+
+We teach AI how to help us with our operations, right? We kind of are doing some self-healing type of things. Making sure that AI understands our deployments, the observability systems, all those types of components, right? I think that's why this move toward building these really stable managed platforms is actually going to benefit a lot of folks in this AI world. Because our agents just want to write code. They don't want to set up all the infrastructure. Because that's the type of thing that is that's not going away. I forget who I was listening to on Software Engineering Daily. It might have been maybe the - I can't remember. Well, anyway, whoever it was, they made a great point. 
+
+[0:48:57] GV: You're a listener, which is always great. 
+
+[0:49:00] AM: Oh, it was the Ona folks that are building - it used to be Gitpod, right? That are building autonomous agents, right? And it's funny. Actually, one of my other lives at Airbnb when I kind of took a break from GraphQL for a little bit was building our internal remote development product. The stuff that Gitpod and now Ona has worked on is near and dear to my heart. But they made a great point, which is that you spin up agents and they write a bunch of code, right? 
+
+But at the end of the day, you still have to deploy the code. You still have to observe the code. You still have to do something with the code when the service dies and breaks, and you have an incident, right? And while AI can help with all of those things, managing that entire software development life cycle is not going to be something that a single AI agent is going to be able to do for a long time. I mean, I won't say never. But it's going to take a long time for us to get there. 
+
+And so having these managed platforms be critical pieces of infrastructure in large companies, and then I'd say if you're a small company, you'd be using the Vercels and whatnot, Fly.ios, whatever to build your back-ends on top of. You just need it, because I don't think you can do it without it, honestly. 
+
+[0:50:16] GV: I think that's a really good point. I think that we're probably still relying at the moment on a lot of - as we should be, but human in the loop. And we're, yeah, taking APIs as an example. Whichever model you're working with is able to grok - I'm not saying Groq has to be that service. I just mean literally grok it. Groks the API well, then fantastic. But there probably has to be a more systematic way around these models understanding how and where they should go to fetch data, and to fetch it safely, and so on so forth. 
+
+[0:50:48] AM: Exactly. Yes. And so that brings me to kind of the GraphQL point. I actually think there's been some folks that are like, "GraphQL is too complicated. Nobody needs it except for the absolute largest companies." Right? And I think there's some truth to a lot of what the critics say about GraphQL. 
+
+However, I actually think that, I mean, maybe you don't like the GraphQL protocol or whatever, but the general idea of having a strongly-typed data-oriented schema that represents all of your core business data, and then you expose that through a query language or protocol that both humans and machines know how to easily query, and it's flexible. The flexibility thing is really the important piece here. Because everyone could say, "Well, you just do that with RPC, or REST, or whatever." Right? But it's the flexibility that GraphQL gives you to kind of build these queries that represent exactly what you want when you want it. 
+
+Actually, I don't know. I'm biased, obviously. But I think there could be a bit of a resurgence in GraphQL. And I think as somebody who maintains a GraphQL-oriented platform, I think the easier we can make it to write scalable backends using that technology, I think it'll actually benefit folks in the AI world. 
+
+And I think to your point about accessing data, thinking about folks as back-end engineers, especially working at large companies in complicated systems. Yeah. Are you going to teach your AI about the nuances of every single service and every single API that every single service in your company vends and responds with? Or could you teach it about a kind of unified graph of all of your data, and all the relationships are already encoded there, and things like that? And that seems pretty powerful. 
+
+[0:52:40] GV: For sure. No, I think that's a really good point. I mean, it's not like we haven't seen technology resurgences of late. Postgres seems like the obvious one that sort of kept getting overlooked for a good decade, I would say. I happen to have worked with it for a long time. 
+
+[0:52:57] AM: Yeah. I'm a big Postgres fan as well. Yeah. 
+
+[0:53:00] GV: Yeah. But then MongoDB came along, NoSQL, etc. But I think that's a great place to leave it. I think sort of highlighting where all this kind of fits into the landscape today is great. I mean, as we sort of called out, if you want to check out Viaduct repo, that's GitHub/Airbnb/Viaduct. Otherwise, are you on like X, Twitter, or anything, where you talk to developers? Where to find you? 
+
+[0:53:27] AM: Yeah. I'm on X, @skevy. I'm pretty much everywhere on the internet as @skevy. If you see a Skevy, it's probably me. Yeah, please, if folks find even the idea of Viaduct interesting, even if maybe it's not directly, maybe you can't use it for whatever reason because it's a Java thing and you work in a TypeScript shop or whatever, I think if you want to come to - Viaduct also has a Discord now. I think it's in LinkedIn, our read me. But if you come to Discord or you come and start a GitHub issue or discussion, we'd love to talk to you about what scaling a big data-oriented service mesh at your company. 
+
+[0:54:08] GV: Awesome. Well, Adam, thank you so much for coming on. Learned a ton today. Maybe in a couple years we'll be talking again, and let's see how the AI side of this is all played out as well. 
+
+[0:54:20] AM: Yeah, absolutely. Hope so. It'll be a very interesting next couple of years. That's for sure. 
+
+[0:54:26] GV: For sure. All right. Thank you so much again. 
+
+[0:54:28] AM: Thanks a lot, Gregor.
+
+[END]
+

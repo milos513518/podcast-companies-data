@@ -1,0 +1,719 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Retrieval After RAG: Hybrid Search, Agents, and Database Design — Simon Hørup Eskildsen of Turbopuffer
+DATE: 2026-03-12
+SHOW: Latent Space
+LINK: https://lspace.beehiiv.com/podcast/s/latent_space_the_ai_engineer_podcast/retrieval_after_rag_hybrid_search_agents_and_database_design_simon_horup_eskildsen_of_turbopuffer
+AUDIO: https://podcasts.beehiiv.com/3967c1f2-cb97-4eb0-a5c0-21a1d2579408/01a15fdf-0e93-7e1a-880d-d73752a1f915/01a15fdf-ca17-7995-8361-33513b2f101f/01a15fdf-cbf9-73f6-8d4b-c050ac264de2.mp3
+DURATION_SECONDS: 3619
+TRANSCRIBED_AT: 2026-11-04T08:36:08Z
+----------------------------------------------------------------------
+I don't think I've said this publicly before, but I just called Lockie and was like, look Lockie,
+like, if this doesn't have PMF by the end of the year, like, we'll just like return all the money to
+you. But it's just like, I don't really, Justine and I don't want to work on this unless it's really
+working. So we want to give it the best shot this year. And like, we're really going to go for it.
+We're going to hire a bunch of people and we're just going to be honest with everyone. Like when I
+don't know how to play a game, I just play with open cards. Lockie was the only person that didn't,
+that didn't freak out. He was like, I've never heard anyone say that before. Hey everyone, welcome
+to the Light in Space podcast. This is Salasio, founder of Kernelats, and I'm joined by Swix, editor
+of Light in Space. Hello, hello. We're still recording in the Kernel studio for the first time. Very
+excited. And today we're joined by Simon Eskildsen of Turbo Farfur. Welcome. Thank you so much for
+having me. Turbo Farfur has like really gone on a huge tear. And I do have to mention that like
+you're one of, you're not my newest member of the Danish Akus Mafia, where like there's a lot of
+legendary programmers that have come out of it, like Bjorn Stolstrup, Rasmus Lerdof, Anders
+Halsberg, and the V8 team and Google Maps team. You're mostly Canadian now. But isn't that
+interesting? There's so much like strong Danish presence. Yeah, I was writing a post not that long
+ago about sort of the influences. So I grew up in Denmark, right? I left when I was 18 to go to
+Canada to work at Shopify. And so I would still say that I feel more Danish than Canadian. This is
+also the weird accent. I can't say TH because this is like, I don't, you know, my wife is also
+Canadian. And I think like one of the things in Denmark is just like there's just such a ruthless
+pragmatism. And there's also a big focus on just aesthetics. Like they're like very, people really
+care about like where, what things look like. And Canada has a lot of attributes. US has a lot of
+attributes. But I think there's been lots of great things to carry. I don't know what's in the water
+in Aarhus though. And I don't know that I could be considered part of the Aarhus Mafia quite yet.
+Compared to the phenomenal individuals we just mentioned. Baras Lerdof is also Danish Canadian.
+Yeah, I don't know where he lives now, but he's the PHP. Yeah, and obviously Toby, German will move
+to Canada as well. Like this is like import that is an interesting talent move. I think I would love
+to get from you the definition of Turbo Puffer. Because I think you could be a VectorDB, which is
+maybe a bad word now in some circles. You could be a search engine. It's like, let's just start
+there. And then we'll maybe run through the history of how you got to this point. For sure. Yeah, so
+Turbo Puffer is at this point in time a search engine, right? We do full text search and we do
+vector search. And that's really what we're specialized in. If you're trying to do much more than
+that, like then this might not be the right place yet. But Turbo Puffer is all about search. The
+other way that I think about it is that we can take all of the world's knowledge, all of the
+exabytes and exabytes of data that there is, and we can use those tokens to train a model. But we
+can't compress all of that into a few terabytes of weights, right? We can compress into a few
+terabytes of weights how to reason with the world, how to make sense of the knowledge. But we have
+to somehow connect it to something external that actually holds that, like in full fidelity and
+truth. And that's the thing that we intend to become, right? That's like a very holier-than-thou
+kind of phrasing, right? But being the search engine for unstructured data is the focus of Turbo
+Puffer at this point in time. And let's break down. So people might say, well, didn't Elasticsearch
+already do this? And then some other people might say, is this search on my data? Is this like
+closer to RAG than to like a XR, like a public search thing? Like how do you segment like the
+different types of search? The way that I generally think about this is like there's a lot of
+database companies. And I think if you want to build a really big database company, sort of you need
+a couple of ingredients to be in the air, which only happens roughly every 15 years. You need a new
+workload. You basically need the ambition that every single company on earth is going to have data
+in your database multiple times. You look at a company like Oracle, right? I don't think you can
+find a company on earth with a digital presence that it doesn't somehow have some data in an Oracle
+database, right? And I think at this point, that's also true for Snowflake and Databricks, right? 15
+years later, or even more than that, there's not a company on earth that doesn't indirectly or
+directly is consuming Snowflake or Databricks or any of the big analytics databases. And I think
+we're in that kind of moment now, right? I don't think you're going to find a company over the next
+few years that doesn't directly or indirectly have all their data available for search and connected
+to AI. So you need that new workload. You need something to be happening where there's a new
+workload that causes that to happen. And that new workload is connecting very large amounts of data
+to AI. The second thing you need, the second condition to build a big database company is that you
+need some new underlying change in the storage architecture that is not possible from the databases
+that have come before you. If you look at Snowflake and Databricks, right? Commoditize like a
+massive fleet of HDDs. Like that was not possible. And it just wasn't in the air in the 90s, right?
+We just didn't build these systems. S3 and so on was not around. And I think the architecture that
+is now possible, that wasn't possible 15 years ago, is to go all in on NVMe SSDs. It requires a
+particular type of architecture for the database that is difficult to retrofit onto the databases
+that are already there, including the ones you just mentioned. The second thing is to go all in on
+object storage, more so than we could have done 15 years ago. Like we don't have a consensus layer.
+We don't really have anything. In fact, you could turn off all the servers that TurboPuffer has and
+we would not lose any data because we are completely all in on object storage. And this means that
+our architecture is just so simple. So that's the second condition, right? First being a new
+workload. That means that every company on earth, either indirectly or directly, is using your
+database. Second being there's some new storage architecture. That means that the companies that
+have come before you can't do what you're doing. I think the third thing you need to do to build a
+big database company is that over time, you have to implement more or less every query plan on the
+data. What that means is that you can't just get stuck in like, this is the one thing that a
+database does. It has to be ever evolving because when someone has data in the database, they over
+time expect to be able to ask it more or less every question. So you have to do that to get the
+storage architecture to the limit of what it's capable of. Those are the three conditions. I just
+wanted to get a little bit of like the motivation, right? So you left Shopify, you were like
+principal engineer, infra guy. You also hit a kernel labs inside of Shopify, right? And then you
+consulted for Readwise. And that kind of gave you that idea. I just wanted you to tell that story.
+Maybe you've told it before, but just introduce the people to like the new workload, the sort of aha
+moment for Turbo Puffer. For sure. So yeah, I spent almost a decade at Shopify. I was on the
+infrastructure team from the fairly early days around 2013. At the time, it felt like it was growing
+so quickly and everything, all the metrics were, you know, doubling year on year. Compared to what
+companies are contending with today, it's very cute growth. I feel like some companies are seeing
+that month over month. Of course, Shopify has been compounding for a very long time now. But I spent
+a decade doing that. And the majority of that was just make sure the site is up today and make sure
+it's up a year from now. And a lot of that was really just the, you know, the Kardashians would
+drive very, very large amounts of data to Shopify as they were rotating through all the merch and
+building out their businesses. And we just needed to make sure we could handle that, right? And
+sometimes these were events with a million requests per second. And so, you know, we had our own
+data centers back in the day and we were moving to the cloud and there's so much sharding work and
+all of that that we were doing. So I spent a decade just scaling databases because that's
+fundamentally what's the most difficult thing to scale about these sites. The database that was the
+most difficult for me to scale during that time and that was the most aggravating to be on call for
+was Elasticsearch. It was very, very difficult to deal with. And I saw a lot of projects that were
+just being held back in their ambition by using it. And I mean, self-hosting. Self-hosting. Yeah.
+And this was like 2015, right? So it's like a very particular vintage, right? It's probably better
+at a lot of these things now. It was difficult to contend with. And I'm just like, I just think
+about it. It's an inverted index. It should be good at these kinds of queries and do all of this.
+And it was, we often couldn't get it to do exactly what we needed to do or basically get Lucene to
+do, like expose Lucene raw to what we needed to do. So that was like just something that we did on
+the side and just panic scaled when we needed to, but not a particular focus of mine. So I left. And
+when I left, I wasn't sure exactly what I wanted to do. I mean, I spent like a decade inside of the
+same company. I'd like grown up there. I started working there when I was 18. You only do Rails.
+Yeah. I mean, yeah. Rails and- He's a Rails guy. I love Rails. So good. We all wish we could still
+work in Rails. I know. I know. I know. But some- I tried learning Ruby. It's just too much, like too
+many options to do the same thing. That's my- I know there's a way to do it. I love it. I don't know
+that I would use it now, like given Cloud Code and Cursor and everything. But still, if I'm just
+sitting down and writing a T-Snow code, that's how I think. But anyway, I left and I wasn't- I
+talked to a couple of companies and I was like, I don't- I need to see a little bit more of the
+world here to know what I'm going to focus on next. And so what I decided is like, I was going to- I
+called it like angel engineering, where I just hopped around in my friend's companies in three
+months increments and just helped them out with something, right? And just vested a bit of equity
+and solved some interesting infrastructure problem. So I worked with a bunch of companies at the
+time. Readwise was one of them. Replicate was one of them. Causal. I don't know if you've tried
+this. It's like a- It's a spreadsheet engine. Yeah. Where you can do distribution. They sold
+recently. We used that in FP&A at Turbo Puffer. So a bunch of companies like this. And it was super
+fun. And so when the ChatGPT moment happened, I was with Readwise for a stint. We were preparing for
+the reader launch, right? Which is where you queue articles and read them later. And I was just
+getting their Postgres up to snuff, like, which basically boils down to tuning auto vacuum. So I was
+doing that. And then this happened. And we were like, oh, maybe we should build a little
+recommendation engine and some features to try to hook in the LLMs. They were not that good yet, but
+it was clear there was something there. And so I built a small recommendation engine. Just, okay,
+let's take the articles that you've recently read, right? Like, embed all the articles and then do
+recommendations. It was good enough that when I ran it on one of the co-founders of Readwise, like,
+I found out that I got articles about having a child. I'm like, oh my God, I didn't know that they
+were having a child. I wasn't sure what to do with that information. But the recommendation engine
+was good enough that it was suggesting articles about that. And so there was recommendations and it
+actually worked really well. But this was a company that was spending maybe five grand a month in
+total on all of their infrastructure. And when I did the napkin math on running the embeddings of
+all the articles, putting them into a vector index, putting it in prod, it's going to be like 30
+grand a month. That just wasn't tenable, right? Like, Readwise is a proudly bootstrapped company and
+it's paying 30 grand for infrastructure for one feature versus five. It just wasn't tenable. So it's
+sort of in the bucket of this is useful. It's pretty good. But let us, let's return to it when the
+costs come down. Did you say it grows by feature? So for five to 30 is by the number of, like,
+what's the, what's the scaling factor? It scales by the number of articles that you embed. It does.
+But what I meant by that is like five grand for like all of the other, like the Heroku Dinos,
+Postgres, like all the other. And this- Vinyl storage is 30. Yeah. And then like 30 grand for one
+feature, right? Which is like, what other articles are related to this one? So it was just too much,
+right? To power everything. Their budget would have been maybe a few thousand dollars, which still
+would have been a lot. And so we put it in the bucket of, okay, we're going to do that later. We'll
+wait for the cost to come down. And that haunted me. I couldn't stop thinking about it. I was like,
+okay, there's clearly some latent demand here. If the cost had been a 10th, we would have shipped
+it. And this was really the only data point that I had, right? I didn't, I didn't, I didn't go out
+and talk to anyone else. It was just, so I started reading, right? I couldn't, I couldn't help
+myself. Like I didn't know what like a vector index is. I generally barely do about how to generate
+the vectors. There was a lot of hype about, this is early 2023. There was a lot of hype about vector
+databases. They're raising a lot of money. I really didn't know anything about it. It's like, you
+know, trying these little models, fine tuning them. Like I was just trying to get sort of a lay of
+the land. So I just sat down. I have this GitHub repository called Napkin Math. And on Napkin Math,
+there's just rows of like, oh, this is how much bandwidth, like this is how many, you know, you can
+do 25 gigabytes per second on average to DRAM. You can do, you know, five gigabytes per second of
+writes to an SSD, blah, blah, blah. All of these numbers, right? And S3, how many you could do, how
+much bandwidth can you drive per connection? I was just sitting down. It's like, why hasn't anyone
+built a database where you just put everything on OPEX storage and then you puff it into NVMe when
+you use the data and you puff it into DRAM if you're querying it a lot. It's just like, this seems
+fairly obvious. And you, the only real downside to that is that if you go all in on OPEX storage,
+every write will take a couple hundred milliseconds of latency. But from there, it's really all
+upside, right? You do the first query, it takes half a second. And it sort of occurred to me, it's
+like, well, the architecture is really good for that. It's really good for OPEX storage. It's really
+good for NVMe SSD. It's, well, you just couldn't have done that 10 years ago, back to what we were
+talking about before. You really have to build a database where you have as few round trips as
+possible, right? This is how CPUs work today. It's how NVMe SSDs work. It's how S3 works that you
+want to have a very large amount of outstanding requests, right? Like basically go to S3, do like
+that thousand requests to ask for data in one round trip, wait for that, get that, like make a new
+decision, do it again, and try to do that maybe a maximum of three times. But no databases were
+designed that way. With NVMe SSDs, you can drive like within, you know, within a very low multiple
+of DRAM bandwidth if you use it that way. And same with S3, right? You can fully max out the network
+card, which generally is not maxed out. You get very, like very, very good bandwidth. But no one had
+built a database like that. So I was like, okay, well, can't you just, you know, take all the
+vectors, right? And plot them in the proverbial coordinate system, get the clusters, put a file on
+S3 called clusters.json, and then put another file for every cluster, you know, cluster1.json,
+cluster2.json. You know, that like it's two round trips, right? So you get the clusters, you find
+the closest clusters, and then you download the cluster files, like the closest end. And you can do
+this in two round trips. You run near his neighbors locally. Yes. Yes. And then, and you would build
+this file, right? Just like ultra simplistic. But it's not a far shot from what the first version of
+TurboPuffer was. Why hasn't anyone done that? In that moment, from a workload perspective, you're
+thinking, this is going to be like a read-heavy thing because they're doing recommended. Like, is
+the fact that like writes are so expensive now, oh, with AI, you're actually not writing that much?
+At that point, I hadn't really thought too much about, well, no, actually, it was always clear to me
+that there was going to be a lot of writes because at Shopify, the search clusters were doing, you
+know, I don't know, tens or hundreds of QPS, right? Because you usually have to have a human sit and
+type in. But we did, you know, I don't know how many updates there were per second. I'm sure it was
+in the millions, right? Into the cluster. So I always knew there was like a 10 to 100 ratio on the
+read-write. In the read-wise use case, it's, even in the read-wise use case, there'd probably be a
+lot fewer reads than writes, right? There's just a lot of churn on the amount of stuff that was
+going through versus the amount of queries. I wasn't thinking too much about that. I was mostly just
+thinking about what's the fundamentally cheapest way to build a database in the cloud today using
+the primitives that you have available. And this is it, right? You just, now you have one machine
+and, you know, let's say you have a terabyte of data in S3. You pay the $200 a month for that. And
+then maybe 5 to 10% of that data needs to be in NVMe SSDs and less than that in DRAM. Well, you're
+just, you're paying very, very little to inflate the data. By the way, when you say no one else has
+done that, would you consider Neon to be on a similar path in terms of being sort of S3 first and
+separating the compute and storage? Yeah, I think what I meant with that is just build a completely
+new database. I don't know if we were the first. Like it was very much, it was, I mean, I hadn't, I
+just looked at the napkin math and I was like, this seems really obvious. So I'm sure like a hundred
+people came up with it at the same time. Like the light bulb and every invention ever, right? It was
+just in the air. I think Neon was first too, and they're trying, they're retrofitted it onto
+Postgres, right? And then they built this whole architecture where you have, you have it in memory
+and then you sort of like, you know, mmap back to S3. And I think that was very novel at the time to
+do it for OLTP, but I hadn't seen a database that was truly all in, right? Not retrofitting it. The
+database built purely for this. No consensus layer, even using compare and swap on OPEX stories to
+do consensus. I hadn't seen anyone go that all in. And I mean, I'm sure there was someone that did
+that before us. I don't know. I was just looking at the napkin math. And when you say consensus
+layer, are you strongly relying on S3's strong consistency? You are. Okay. So that is your consensus
+layer? It is the consistency layer. And I think also, like, this is something that most people don't
+realize, but S3 only became consistent in December of 2020. I remember this coming out during COVID
+and like, people were like, oh, it was like, it was just like a free upgrade. Yeah. They just
+announced that we saw consistency, guys. And like, okay, cool. And I'm sure that they just, they
+probably had it in prod for a while. They're just like, it's done, right? And people are like, okay,
+cool. But that's a big moment, right? Like NVMe SSDs were also not in the cloud until around 2017,
+right? So you just sort of had like 2017 NVMe SSDs and people were like, okay, cool. There's like
+one SKU that does this, whatever, right? It takes a few years. And then the second thing is like S3
+becomes consistent in 2020. So now it means you don't have to have this like big foundation DB or
+like Zookeeper or whatever sitting there contending with the keys, which is how, you know, that's
+what Snowflake and others have to do. So legit for gone. Exactly. Just gone, right? And so just push
+to the, you know, whatever, how many hundreds of people they have working on S3, solved. And then
+compare and swap was not in S3 at this point in time. By the way, I don't know what that is. So
+maybe you want to explain that. Yes. So what compare and swap is, is basically you can imagine that
+if you have a database, it might be really nice to have a file called metadata.json. And
+metadata.json could say things like, hey, these keys are here. And this file means that, and there's
+lots of metadata that you have to operate in the database, right? But that's the simplest way to do
+it. So now you have my, you might have a lot of servers that want to change the metadata. They
+might've written a file and want the metadata to contain that file, but you have a hundred nodes
+that are trying to contend with this metadata.json. Well, what compare and swap allows you to do is
+basically just, you download the file, you make the modifications, and then you write it only if it
+hasn't changed while you did the modification. And if not, you retry, right? You just have this
+retry loops. Now you can imagine if you have a hundred nodes doing that, it's going to be really
+slow, but it will converge over time. That primitive was not available in S3. It wasn't available in
+S3 until late 2024, but it was available in GCP. The real story of this is certainly not that I sat
+down and like big brained it. I was like, okay, we're going to start on GCS. S3 is going to get it
+later. Like it was really not that. We started, we got really lucky. Like we started on GCP and we
+started on GCP because Shopify ran on GCP. And so that was the platform I was most available with.
+Right. And I knew the Canadian team there because I'd worked with them at Shopify. And so it was
+natural for us to start there. And so when we started building the database, we're like, oh yeah, we
+have to build a, we really thought we had to build a consensus layer, like have a zookeeper or
+something to do this. But then we discovered the compare and swap. It was like, oh, we can kick the
+can. Like we'll just do metadata on JSON and just, it's fine. It's probably fine. Um, and we just
+kept kicking the can until we had very, very strong conviction in the idea. Um, and then we kind of
+just hinged the company on the fact that S3 probably was going to get this. It started getting
+really painful in like mid 2024 because we were closing deals with, um, um, notion actually that was
+running AWS and we're like, trust us. You, you really want us to run this in GCP? And they were
+like, no, I don't know about that. Like we're running everything in AWS. And the latency across the
+clouds were so big. And we had so much conviction that we bought like, you know, dark fiber between
+the AWS regions in, in Oregon, like in the inter exchange. And GCP is like, we've never seen a
+startup like do like what's going on here. And we're just like, no, we don't want to do this. We
+were tuning like TCP windows, like everything to get the latency down. Cause we had so high
+conviction in not doing like a metadata layer on S3. So those were the three conditions, right?
+Compare and swap to do metadata, which wasn't in S3 until late 2020. S3 being consistent, which
+didn't happen until December 2020, uh, 2020. And then NVMe SSDs, which didn't land in the cloud
+until 2017. I mean, in some ways, like a very big, like cloud success story that like you were able
+to like, uh, put this all together, but also doing things like doing, uh, buying dark fiber. That
+actually is something I've never heard. I mean, it's very common when you're a big company, right?
+You're like connecting your own like data center or whatever, but it's like, it was uniquely just
+the pain with notion because the, um, the, or like most of the, like if you're buying an Ashburn,
+Virginia, right? Like us East, the Google, like the GCP and, and AWS data centers are like within a
+millisecond on each other on the public exchanges. But in Oregon, uniquely the GCP data center sits
+like a couple hundred kilometers, like East of Portland and the AWS region sits in Portland, but the
+network exchange they go through is through Seattle. So it's like a full, like 14 milliseconds or
+something like that. And so anyway, yeah, it's, it's, so we were like, okay, we can't, we have to go
+through an exchange in Portland. Yeah. And you'd rather do this than like run your zookeeper and
+like... Yes. Way ratter. It doesn't have state. I don't want state in two systems. Um, and I think
+I, all of that is just informed by Justine, my co-founder and I had just been on call for so long.
+And the worst outages are the ones where you have state in multiple places that's not syncing up. So
+it really came from, from a, like just a very pure source of pain of just imagining what we would be
+okay being woken up at 3am about and having something in zookeeper was not one of them. We were
+talking to like a notion or something. Do they care? Or do they just... They just cared about
+latency. Latency cost. That's it. They just cared about latency, right? And we just absorb the cost.
+We're just like, we have high conviction in this. At some point we can move them to AWS, right? And
+so we just, we'll buy the fiber. It doesn't matter. Right. Um, and it's like $5,000. And we, usually
+when you buy fiber, you buy like multiple lines and we're like, we can only afford one, but we will
+just test it that when it goes over the public internet, it's like super smooth. And so we did a
+lot. It's anyway, it's, yeah, it was... That's cool. Can I imagine talking to the GCP rep and it's
+like, no, we're going to buy because we know we're going to turn. We're going to turn from you guys
+and go to AWS in like six months. But in the meantime, we'll do this. I mean, like they, you know...
+This workload still runs on GCP for what it's worth, right? Because it's so, it was just, it was so
+reliable. So it was never about moving off GCP. It was just about, honestly, it was just about
+giving Notion the latency that they deserved, right? And we didn't want them to have to care about
+any of this. We also, they were like, oh, egress is going to be bad. It was like, okay, screw it.
+Like, we're just going to like VPC peer with you in AWS. We'll eat the cost. Yeah. Whatever needs to
+be done. And what were the actual workloads? Because I think when you think about AI, it's like 14
+milliseconds. It's like really, it doesn't really matter in the scheme of like a model generation.
+Yeah. We were told the latency, right? That we had to beat. Oh, right. So, so we're just looking at
+the traces, right? And then sort of like hand, like, you know, kind of like looking at the trace and
+then thinking, what are the other extensions of the trace, right? And there's a lot more to it
+because it's also, when you have, if you have 14 versus seven milliseconds, right, you can fit
+another round trip. So we had to tune TCP to try to send as much data in every round trip, pre-warm
+all the connections. And there was, there's a lot of things that compound from having these kinds of
+round trips. But in the grand scheme, it was just like, well, we have to beat the latency of
+whatever we're up against. Which is like, they, I mean, Notion is a database company. They could
+have done this themselves. They do lots of database engineering themselves. How do you even get in
+the door? Like, yeah, just like talk through that kind of. Last time I was in San Francisco, I was
+talking to one of the engineers actually, who was one of our champions at Notion. And they were,
+they were just trying to make sure that the, you know, per user cost matched the economics that they
+needed, you know. Like, it's like the way I think about it, it's like, I have to earn a return on
+whatever the clouds charge me. And then my customers have to earn a return on that. And it's like
+very simple, right? And so there has to be gross margin all the way up. And that's how you build the
+product. And so then our customers have to make the right set of trade-offs that Turbo Puffer makes.
+And if they're happy with that, that's great. Do you feel like you're competing with build
+internally versus buy or buy versus buy? Yeah. So, sorry, this was all to build up to your question.
+So one of the Notion engineers told me that they'd sat and probably on a napkin, like drawn out,
+like, why hasn't anyone built this? And then they saw Turbo Puffer and was like, well, literally
+that. So, and I think AI has also changed the buy versus build equation in terms of, it's not really
+about, can we build it? It's about, do we have time to build it? And I think they, like, I think
+they felt like, okay, if this is a team that can do that and they feel enough of like an extension
+of our team, well, then we can go a lot faster, which would be very, very good for them. And I mean,
+they put us through the test, right? Like we had some very, very long nights to do that POC. And
+they were really our biggest, our second big customer after Cursor, which also was a lot of late
+nights, right? Yeah. I mean, should we go into that story, the Cursor story? Like a lot, they credit
+you a lot for working very closely with them. So I just want to hear, I've heard this story from
+Swale's point of view, but like, I'm curious what it looks like from your side. I actually haven't
+heard it from Swale's point of view. So maybe you can now cross-reference it. The way that I
+remember it was that the day after we launched, which was just, you know, I'd worked the whole
+summer on the first version. Justine wasn't part of it yet. Cause I just, I didn't tell anyone that
+summer that I was working on this. I was just locked in on building it because it's very easy
+otherwise to confuse talking about something to actually doing it. And so it was just like, I'm not
+going to do that. I'm just going to do the thing. I launched it. And at this point, Turbo Puffer is
+like a Rust binary running on a single eight core machine in a Tmox instance. And me deploying it
+was like looking at the request log and then like command seeing it or like control seeing it to
+just like, okay, there's no request. Let's upgrade the binary. Like it was like literally the
+scrappiest thing you could imagine. It was on purpose because it's just like at Shopify, we did that
+all the time. Like we like move, like we ran things in Tmox all the time to begin with before
+something had like at least the inkling of PMF. So it's like, okay, is anyone going to hear about
+this? And one of the cursor co-founders, Arvid reached out and he just, you know, the, the cursor
+team are like all IY, IMO, like contenders, right? So they just speak in bullet points and facts. It
+was like this amazing email exchange just of this is how many QPS we have. This is what we're
+paying. This is where we're going, blah, blah, blah. And so we're just conversing in bullet points.
+And I tried to get a call with them a few times, but they were so, they were like really riding the
+PMF bull here. It's like late 2023. And one time Swally emails me at like five, no, what was it?
+Like 4am Pacific time saying like, Hey, are you open for a call now? And I'm on the East coast and
+I, it was like 7am. I was like, yeah, great. Sure. Whatever. And we just started talking and
+something then I didn't know anything about sales. It would, something just compelled me. I have to
+go see this team. Like there's something here. So I went to San Francisco and I went to their office
+and the way that I remember it is that Postgres was down when I showed up at the office. Did Swally
+tell you this? No. Okay. So Postgres was down. And so it's like, they were distracting with that.
+And I was trying my best to see if I could, if I could help in any way. Like I knew a little bit
+about databases back to tuning auto vacuum. It's like, I think you have to tune out a vacuum. So I,
+and so we, we talked about that. And then, um, that evening just talked about like, what would it
+look like? What would it look like to work with us? And I just said, look, like we're all in, like
+we will just do whatever, we'll do whatever, whatever you tell us. Right. They migrated everything
+over the next like week or two. And we reduced our cost by 95%, which I think like kind of fixed
+their per user economics. Um, and it solved a lot of other things. And we were just, Justine, this
+is also when I asked Justine to come on as my co-founder. She was the best engineer, um, that I ever
+worked with at Shopify. She lived two blocks away and we were just, okay, we're just going to get
+this done. Um, and we did. And so we helped them migrate and we just worked like hell over the next
+like month or two to make sure that we were never an issue. And that was, that was the cursor story.
+Yeah. And is code a different workload than normal text? I don't know. Is it just text? Is it the
+same thing? Yeah. So cursor's workload is basically, they, um, they will embed the entire code base,
+right? So they, they will like chunk it up in whatever they would, they do. They have their own
+embedding model, um, which they've been public about. Um, and they find that on, on, on their evals,
+it there's one of their evals where it's like a 25% improvement on a very particular workload. They
+have a bunch of blog posts about it. Um, I think it works best on larger code bases, but they've
+trained their own embedding model to do this. Um, and so you'll see it if you use the cursor agent,
+it will do searches. And they've also been public around, um, how they've, I think they post trained
+their model to be very good at semantic search as well. Um, and that's, that's how they use it. And
+so it's very good at like, can you find me on the code that's similar to this or code that does this
+and just in, in this queries, they also use grep to supplement it. Yeah. Um, of course it's been a
+big topic of discussion. Like is rag dead because grep, you know? And I mean, like I just, we, we
+see lots of demand from the coding companies, right? Every part. Yes. Uh, we, we, we see demand. And
+so, I mean, I'm, I like case studies. I don't like, like just doing like thought pieces on this is
+where it's going and like trying to be all macroeconomic about AI. That's as turned out to be a
+giant waste of time because no one can really predict any of this. So I just collect case studies
+and I mean, cursor has done a great job talking about what they're doing. And I hope some of the
+other coding labs that use Turbo Puffer will do the same. Um, but it does seem to make a difference
+for particular queries. Um, I mean, we can also do text. We can also do regex, but I should also say
+that cursors like security posture into Turbo Puffer is exceptional, right? They have their own
+embedding model, which makes it very difficult to reverse engineer. They obfuscate the file paths.
+They are like, you, it's very difficult to learn anything about a code base by looking at it. And
+the other thing they do too, is that for their customers, they encrypt it with their encryption keys
+in Turbo Puffer's bucket. Um, so it's, it's, it's really, really well designed. And so this is like
+extra stuff they did to work with you because you are not part of cursor. Exactly. Like, and this is
+just best practice when working in any database, not just you guys. Okay. Yeah. It makes sense.
+Yeah. I think for me, like the, the, the learning is kind of like, you're like all workloads are
+hybrid. Like, you know, uh, like you, you want the semantic, you want the text, you want the regex,
+you want SQL. I don't know. Um, but like, it's silly to like be all in on like one particularly
+query pattern. I think like, I really liked the way that, um, um, that Swale at cursor talks about
+it, which is, um, I'm going to butcher it here. Um, and you know, I'm a, I'm a database scalability
+person. I'm not a, I don't know anything about training models other than, um, what the internet
+tells me. And what the way he describes is that this is just like cash compute, right? It's like you
+have a point in time where you're looking at some particular context and focused on some chunk. And
+you say, this is the layer of the neural net at this point in time. That seems fundamentally really
+useful to do cash compute like that. And, um, how the value of that will change over time. I'm not
+sure, but there seems to be a lot of value in that. Maybe talk a bit about the evolution of the
+workload, because even like search, like maybe two years ago, it was like one search at the start of
+like an LLM query to build the context. Now you have a genetic search, however you want to call it,
+where like the model is both writing and changing the code and it's searching it again later. Yeah.
+What are maybe some of the new types of workloads or like changes you've had to make to your
+architecture for it? I think you're right. When I think of rag, I think of, Hey, there was an 8,000
+token context window and you better make it count. Um, and search was a way to do that. Now. Yeah.
+Everything is moving towards the aid, just let the agent do its thing. Right. And so back to the
+thing before, right. The LLM is very good at reasoning with the data. And so we're just the tool
+call. Right. And that's increasingly what we see our customers doing. Um, what we're seeing more
+demand from, from our customers now is to do a lot of concurrency, right? Like notion does a
+ridiculous amount of queries in every round trip just because they can't. And I'm also now when I
+use the cursor agent, I also see them doing more concurrency than I've ever seen before. So a bit
+similar to how we designed the database to drive as much concurrency in every round trip as
+possible. That's also what the agents are doing. So that's new. It means just an enormous amount of
+queries all at once to the dataset while it's warm in as few turns as possible. Can I clarify one
+thing on that? Yes. Are they batching multiple users or one user is driving multiple? One user
+driving multiple. One agent driving. Parallel searching a bunch of things. Exactly. Yeah. So the
+clinician also did this for the fast context thing, like eight parallel at once. Yes. And like an
+interesting problem is, well, how do you make sure you have enough diversity so you're not making
+the same request eight times? And I think like that's probably also where the hybrid comes in, where
+that's another way to diversify. It's a completely different way to do the search. That's a big
+change, right? So before it was really just like one call and then, you know, the LLM took however
+many seconds to return, but now we just see an enormous amount of queries. So we just see more
+queries. So we've like tried to reduce query. We've reduced query pricing. This is probably the
+first time actually I'm saying that, but the query pricing is being reduced like 5X and we'll
+probably try to reduce it even more to accommodate some of these workloads of just doing very large
+amounts of queries. That's one thing that's changed. I think the write ratio is still very high,
+right? Like there's still an enormous amount of writes per read, but we're starting probably to see
+that change if people really lean into this pattern. Can we talk a little bit about the pricing? I'm
+curious because traditionally a database would charge on storage, but now you have the token
+generation that is so expensive where like the actual value of like a good search query is like much
+higher because they're like saving inference time down the line. How do you structure that as like,
+what are people receptive to on the other side too? Yeah, the triple buffer pricing in the beginning
+was just very simple. The pricing for search engines before turbo puffer was very serverful, right?
+It was like, here's the VM, here's the per hour cost, right? Great. And I just sat down with like a
+piece of paper and said like, if turbo puffer is like really good, this is probably what it would
+cost with a little bit of margin. And that was the first pricing of turbo puffer. And I just like
+sat down and I was like, okay, like this is like probably the storage amp or whatever on a piece of
+paper. It was very by price and I got it wrong. Oh. Well, I didn't get it wrong, but like turbo
+puffer wasn't at the first principle pricing, right? So when cursor came on turbo puffer, it was
+like, like I didn't know any VCs. I didn't know, like, I just like, I don't know. I didn't know
+anything about raising money or anything like that. I just saw that my GCP bill was, was a lot
+higher than the cursor bill. So Justine and I was just like, well, we have to optimize it. And I
+mean, to the chagrin now of, of it, of, of the VCs, it now means that we're profitable because we've
+had so much pricing pressure in the beginning because it was running on my credit card. And Justine
+and I had spent like, like tens of thousands of dollars on like compute bills and like spinning off
+the company and like very like, like bad Canadian lawyers and like things like to like get all of
+this done because we just like, we didn't know. Right. If you're like steeped in San Francisco,
+you're just like, you just know, okay. Like you go out, raise a pre-seed round. I, I never heard the
+word pre-seed at this point in time. When you had cursor, you had notion you had no funding. With
+cursor, we had no funding. Yeah. By the time we had notion, Lockie was, Lockie was here. Yeah. So it
+was really just, we vibe priced it 100% from first principles, but it wasn't, it was not performing
+at first principles. So we just did everything we could to optimize it in the beginning for that. So
+that at least we could have like a 5% margin or something. So I wasn't freaking out because cursor's
+bill was also going like this as they were growing. And so my liability and my credit limit was like
+actively calling my bank. It was like, I need a bigger credit. Like it was, yeah. Anyway, that was
+the beginning. Yeah. But the pricing was, yeah, like storage, writes and query, right? And the
+pricing we have today is basically just that pricing with duct tape and spit to try to approach
+like, you know, like a margin on the physical underlying hardware. And we're doing this year, you're
+going to see more and more pricing changes from us. Yeah. And like, is how much does stuff like VPC
+peering matter because you're working in AWS land where egress is charged and all that, you know? We
+probably don't like, we have like an enterprise plan. That just has like a base fee because we
+haven't had time to figure out skew pricing for all of this. But I mean, yeah, you can run
+TurboPuffer either in SaaS, right? That's what cursor does. You can run it in a single tenant
+cluster. So it's just you. That's what Notion does. And then you can run it in BYOC where everything
+is inside the customer's VPC. That's what, for example, Anthropic does. What I'm hearing is that
+this is probably the best CRO job for somebody who can come in and help you with this. Like
+TurboPuffer hired, like, I don't know what number this was, but we had a full-time CFO as like the
+12th hire or something at TurboPuffer. I think I hear a lot of companies, I don't know how they do
+it. Like they have a hundred employees and not a CFO. It's like having a CFO is like a business,
+man. Like, you know, it's so good. Yeah. Like money, Mike, like he just, you know, it just handles
+the money and a lot of the business stuff. And so he came in and just helped with a lot of the
+operational side of the business. So like COO, CFO, like somewhere in between. Just a quick mention
+of Lockheed, just because I'm curious. I've met Lockheed and like, he's obviously a very good
+investor and now on physical intelligence. I call it a journalist super angel, right? He invests in
+everything. And I always wonder, like, you know, is there something appealing about focusing on
+developer tooling, focusing on databases, going like I've invested for 20 years in databases versus
+being like a Lockheed where he can maybe like connect you to all the customers that you need? This
+is an excellent question. No one's asked me this. Why Lockheed? Because there was a couple of people
+that we were talking to at the time. And when we were raising, we were almost a little, we were like
+a bit distressed because one of our, one of our peers had just launched something that was very
+similar to Turbo Puffer. And someone just gave me the advice at the time of just choose the person
+where you just feel like you can just pick up the phone and not prepare anything and just be
+completely honest. And I don't think I've said this publicly before, but I just called Lockheed and
+was like, Lockheed, like if this doesn't have PMF by the end of the year, like we'll just like
+return all the money to you. But it's just like, I don't really, Justine and I don't want to work on
+this unless it's really working. So we want to give it the best shot this year. And like, we're
+really going to go for it. We're going to hire a bunch of people. We're just going to be honest with
+everyone. Like when I don't know how to play a game, I just play with open cards. And Lockheed was
+the only person that didn't, that didn't freak out. He was like, I've never heard anyone say that
+before. As I said, I didn't even know what a seed or pre-seed round was like before, probably even
+at this time. So I was just like very honest with him. And I asked him like, Lockheed, have you
+ever, have you ever invested in database company? He was just like, no. And at the time I was like,
+am I dumb? Like, but I think there was something that just like really drew me to Lockheed. He is so
+authentic, so honest. Like, and there was something just like, I just felt like I could just play,
+like just say everything openly. And that was, that was, I think that was like a perfect match at
+the time. And, and, and honestly still is. He was just like, okay, that's great. This is like the
+most honest, ridiculous thing I've ever heard anyone say to me. But like that, like that, why is it
+ridiculous to say competitor launch? This may not work out. It was more just like, if this doesn't
+work out, I'm going to close up shop by the end of the month, the year. Right. Like it was, I don't
+know, maybe it's common. I, I don't know. He told me it was uncommon. I don't know. That's why we
+chose him. And he'd been phenomenal. The other people were talking at the time where database
+experts, like they, you know, knew a lot about databases and Lockheed didn't. This turned out to be
+a phenomenal asset. Right. I like, Justine and I know a lot about databases. The people that we hire
+know a lot about databases. What we needed was just someone who didn't know a lot about databases,
+didn't pretend to know a lot about databases and just wanted to help us with candidates and
+customers. And he did. And I have a list, right. Of the investors that I have a relationship with.
+And Lockheed has just performed excellent in the number of sub bullets of what we can attribute back
+to him. Just absolutely incredible. And when people talk about like no ego and just the best thing
+for the founder, I like, I don't think that anyone, like even my lawyer is like, yeah, Lockheed is
+like the most friendly person you will find. Okay. This is my most glowing recommendation I've ever
+heard. He deserves it. He's very special. Yeah. Yeah. Okay. Amazing. Since you mentioned candidates,
+maybe we're going to talk about team building, you know, like especially in SF, it feels like it's
+just easier to start a company than to join a company. I'm curious your experience, especially not
+being in SF full time and doing something that is maybe, you know, a very low level of detail and
+technical detail. Yeah. So joining versus starting. I never thought that I would be a founder. I
+would start with it. Like Turbo Puffer started as a blog post and then it became a project and then
+sort of almost accidentally became a company. And now it feels like it's, it's like becoming a
+bigger company. That was never the intention. The intentions were very pure. It's just like, why
+hasn't anyone done this? And it's like, I want to be the, like, I want to be the first person to do
+it. I think some founders have this, like, I could never work for anyone else. I really don't feel
+that way. Like, it's just like, I want to see this happen and I want to see it happen with some
+people that I really enjoy working with and I want to have fun doing it. And this, this, this has
+all felt very natural on that, on that sense. So it was never a like join versus, versus, versus
+found. It was just this found me at the right moment. Well, I think there's an argument for you
+should have joined Cursor, right? So I'm curious, like how you evaluate it. Okay. I should actually
+go raise money and make this a company versus like, this is like a company that is like growing like
+crazy. It's like an interesting technical problem. I should just build it within Cursor and then
+they don't have to encrypt all this stuff. They don't have to obfuscate things. Like, was that on
+your mind at all? Or before taking the, the small check from Lockie, I did have like a hard, like
+look at myself in the mirror of like, okay, do I really want to do this? And because if I take the
+money, I really have to do it. Right. Right. And so the way I almost think about it is like, you
+kind of need to have, like, you kind of need to be like fucked up enough to want to go all the way.
+And that was the conversation where I was like, okay, this is going to be part of my life journey to
+build this company and do it in the best way that I possibly can. Because if I ask people to join
+me, ask people to get on the cap table, then I have an ultimate responsibility to give it
+everything. And I don't, I think some people, it doesn't occur to me that everyone takes it that
+seriously. And maybe I take it too seriously. I don't know. But that was like a very intentional
+moment. And so then it was very clear, like, okay, I'm going to do this and I'm going to give it
+everything. A lot of people don't take it that seriously. Let's talk about, you have this concept of
+the P99 engineer. People are 10xing, everyone's saying, you know, maybe engineers are out of their
+job. I don't know. But you definitely see a P99 engineer and I just want you to talk about it. Yeah.
+So the P99 engineer was just a term that we started using internally to talk about candidates and
+talk about how we wanted to build the company. And, you know, like everyone else is like, we want a
+talent dense company. And I think that's almost become trite at this point. What I credit the cursor
+founders a lot with is that they just arrived there from first principles of like, we just need a
+talent dense, talent dense team. And I think I've seen some teams that weren't talent dense and like
+seen the counterfactual run, which if you've run and been in a large company, you will just see
+that. Like it's just logically will happen at a large company. And so that was super important to me
+and Justine. And it's very difficult to maintain. And so we just needed, we needed wording for it.
+And so I have a document called traits of the P99 engineer. And it's a bullet point list. And I look
+at that list after every single interview that I do. And in every single recap that we do and every
+recap we end with, I end with some version of I'm going to reject this candidate completely
+irregardless of what the discourse was, because I want to see people fight for this person. Because
+the default should not be, we're going to hire this person. The default should be, we're definitely
+not hiring this person. And, you know, if everyone was like, oh, maybe throw a punch, then this is
+not the right Do you operate like if there's one, there must have at least one champion who's like,
+yes, I will put my career on the line for this, you know? I see, career on the line. Yeah. You know,
+like, I would say someone needs to like have both fists up and be like, I'd fight. Right. And if one
+person said, then okay, let's do it. Right. Um, and it doesn't have to be absolutely everyone.
+Right. And like the interviews are always the sign that you're checking for different attributes.
+And if someone is like knocking it out of the park in every single attribute, that's, that's fairly
+rare. Um, but that's really important. And so the traits of the P99 engineer, there's lots of them.
+There's also the traits of the P like triple nine engineer and the quadruple nine engineer. This is
+like, it's a long list. Okay. Um, I'll give you some samples, right. Of what we, what we look for. I
+think that the P99 engineer has some history of having bent like their trajectory or something to
+their will. Right. Some moment where it was just, they just, you know, made the computer do what it
+needed to do. There's something like that. And it will, it will occur to them at some point in their
+career and hopefully multiple times. Right. Give me an example of one of your engineers that like.
+I'll give an, uh, so we, we, we launched this thing called ANN V3. Um, we could, we're also, we're
+working on V4 and V5 right now, but ANN V3 can search a hundred billion vectors with a P50 of around
+40 milliseconds and a P99 of 200 milliseconds. Um, maybe other people have done this. I'm sure
+Google and others have done this, but we haven't seen anyone, um, at least not in like a public
+consumable SAS that can do this. And that was an engineer, the chief architect of TurboPuffer,
+Nathan, um, who more or less just bent this. The software was not capable of this and he just made
+it capable for a very particular workload in like a, you know, six to eight week period with the
+help of a lot of the team, right? It's been, there's numerous of examples of that at TurboPuffer,
+but that's like really bending the software and x86 to your will. It was incredible to watch. Um,
+you want to see some moments like that. Isn't that triple nine? Um, I think Nathan, Nathan is, uh,
+Nathan is like, yeah, there's a lot of nines of that at P. So I think that's one trait. I think
+another trait is that, uh, the P99 spends a lot of time looking at maps. Generally it's their
+preferred UX. They just love looking at maps. You ever seen someone who just like sits on their
+phone and just like scrolls around in a map? Or did you not look at maps a lot? You guys don't look
+at maps? I guess I'm not appearing there. I don't know. But you just disqualify. What about trains?
+Do you like trains? Uh, I mean, they're not enough. Okay. This is just like weaponized autism is
+what I call it. Like, um, I love looking at maps. Like, it's like my preferred UX and just like, I,
+you know, I like lots of, like random places. So like, you know, yes. Okay. There we go. So instead
+of like random places, like how do you explore the maps? No, it's, it's just a joke. Autism. A
+laugh. It's like, you are just obsessed by something and you like studying a thing. The origin of
+this was that at some point I read an interview with some IOI gold medalist and it's like, what do
+you do in your spare time? It's just like, I like looking at maps. And I was like, I feel so seen.
+Like, I just like love like scrolling. I was like, Oh, Canada is so big. Where's Baffin Island? I
+don't know. I love it. Anyway, so those traits of P99, P99 is obsessive, right? Like there's just
+like, you'll, you'll find traits of that. We do an interview at, at, at, at Turbo Puffer are like
+multiple interviews that just try to screen for some of these things. So there's lots of others, but
+these are the kinds of traits that we look for. I'll tell you, some people listen for like some of
+my DevRel stuff. I do think about DevRel as maps. You draw a map for people. Maps show you the, what
+is commonly agreed to be the geographical features of what a boundary is. And it also shows you what
+is not doing. And I think a lot of like developer tools companies try to tell you they can do
+everything. But like, let's, let's be real. Like you, your three landmarks are here. Everyone comes
+here, then here, then here. And you draw a map and, and then you draw a journey through the map. And
+like that, to me, that's what developer relations looks like. So I do think about things that way. I
+think the P99 thinks in trade-offs, right? The P99 is very clear about, you know, hey, Turbo Puffer,
+you can't run a high transaction workload on Turbo Puffer, right? It's like the right latency is 100
+milliseconds. That's a clear trade-off. I think the P99 is very good at articulating the trade-offs
+in every decision, which is exactly what the map is in your case, right? Yeah. Yeah. My world. My
+world. How, how do you reconcile some of these things when you're saying you bend the will, the
+computer versus like the trade-offs? You know, I think sometimes it's like, well, these are the
+trade-offs, but the three nines is like, actually, it's not a real trade-off because we can make
+something that nobody has ever made before and actually make it work. Like the way I think about the
+bending trajectory to your will is, um, if you sit down and do the napkin math, right? Where you're
+just like, okay, like if I have a hundred machines, they have this many terabytes of disks, they
+have this bandwidth, whatever. Right. And you sit down and you just do the like high school napkin
+math on this is how many QPS we should be able to drive to it. Similar to how I did the Vibe
+pricing, right? If you can sit down and do that, and then you observe the real system and you see,
+oh, we're off by like 10 X bending trajectory to your will is like just making the software get
+closer and closer to that first principle line. The P99 might even be able to cross the line, right?
+By finding even more optimizations than, than, than from first principle. So bending the software to
+your will is about that, right? Like a hundred millisecond P99 to, um, to S3. I mean, now you're
+talking like someone really high agency that like goes to Seattle, finds the S3 team. It's like, how
+are we going to make this 10? You know, like it's, that's not quite what we talk about. Right. But
+yeah. What's the future Turbo Puffer? Turbo Puffer started out act one of Turbo Puffer was vector
+search. That was all we did to begin with. Act two of Turbo Puffer is, is, and was full text search.
+Turbo Puffer today has a fairly start of the state of the art full text search engine. Um, we beat
+Lucene on some queries in particular, very long queries that we've optimized for, because those are
+the text search queries we see today. They're generated by LLMs or augmented by LLMs. Um, and we see
+them on web scale data sets, right? Like someone searching for a very long text string on all of
+common crawl. We beat Lucene on some of those benchmarks and we expect to continue to beat Lucene.
+On more and more queries. Um, that's the performance and scale. Turbo Puffer does phenomenally now
+at full text search performance and scale. What we work on now is more and more features for full
+text search. People expect a lot of features with full text search and full text search is still
+very valuable. Right. If you go in and you press command K and you search for SI and embedding based
+search might be like, Oh, this is something agreeable. Cause that's C that's yes in Spanish. Right.
+But in full text search. That's the prefix of maybe a document of like, you know, these are all the
+reasons I hate Simon. Right. Like these, this is like, that's a completely different. So that
+augmentation to like how the human brain works and mapping like data to user is very important, but
+it's a lot of features. That feature grind is what we're firmly on. And you will see us just adding
+to the change log every month, just more and more full text search features. Um, so we're like fully
+compatible and we see, we're seeing people move from some of the traditional search engine onto
+Turbo Puffer, um, for that. That's a big focus of Turbo Puffer this year. The other, the other focus
+of, of Turbo Puffer this year is just on scale. We're seeing more and more companies that want to
+search basically common crawl level types of data sets, um, both internally accompanied and
+externally at a time, like Corey, like a hundred billion vectors or a hundred billion documents at
+once. This is tricky. And we want to make it cheaper and we want to make it faster. Um, that's a big
+focus for Turbo Puffer this year. That's, you know, we just released ANN v3, which we talked about
+before. We're working on ANN v4 and we're also a plan, but we're going to do it ANN v5, right? And
+then on full text search, we're working on a lot of these features will be like FTS v3, but it will
+all roll out incrementally. Um, those are some of the really big features. And then the other thing
+is, um, our dashboard. Have any of you ever logged into the Turbo Puffer dashboard? There's not very
+much there. It almost looks like if, um, a founder two years ago just sat down and wrote enough
+dashboard that there was at least something there. And then other people just sort of added stuff on
+for the next two, like the following two years. And then at some point SSO and other things to just
+catch up. And it may or may not be what happened, but adding like, I want PHP, my admin back. Like,
+do you guys remember? Like it was, it was so good. Right. And I think that that like software
+hardware integration between the, the, the dashboard of the console of the database and the database
+itself. Um, I'm, I'm really excited for that. There's lots of other things, um, that are going to
+come out in the next two, like we talked a bit about some, some pricing and things like that, but
+those would be some of the big hitters right now. You talk about eras of like Turbo Puffer. I just,
+I have to ask like, yes, that's the stuff that you're working on this year, but like, I'm sure in
+your mind, you already have the next phase that you're already thinking about. Act three. Yes. Act
+four. Yeah. Act five. What I was saying about that. None of the candidates, you don't have to
+decide. Yeah. But you know, I, I'll just say that if you want to build a big database company, the
+database over time has to implement more or less every query plan. Because when you have your data
+in a database, you expect it to over time, not just search, but also, Hey, I want to aggregate this
+column. I want to join this data, all of that. But when you're a startup, your only mode is really
+just focus. So you have to lay out the facts and you have to not get over eager. And I think we've
+seen some of our peers get very over eager and overextend themselves. And what I keep telling the
+team, I was just having breakfast this morning with our CTO and chief architect. And we were talking
+about like, what we're most likely to regret at the end of the year is having tried to do too much.
+And so act three candidates could be, you know, a bunch of simpler OLAP queries, right? It could be
+lending ourselves a little bit more into, we see some people who want to do traces and logging and
+things like that. Some very simple use cases could be that, right? It could be maybe some time
+series. Some people are trying to do that, right? Like there's lots of different things that you can
+do with Turbo Puffer. But for now, like if you're trying to do not search on Turbo Puffer is the
+primary use case, you probably shouldn't. But we see some customers that are like, oh, like at some
+point, Cursor moved like 20 terabytes of Postgres data into Turbo Puffer because it's like, it's
+there, it works. And these particular query plans we know work well. And so they just moved it all
+to defer sharding. Um, so we look for patterns like that in what future acts of Turbo Puffer are
+going to be before firmly doubling down on them. But we wouldn't, if today, if you're using Turbo
+Puffer, it should be because search is very important to you. And then we might do a lot of
+auxiliary queries to that, but that should not be the main reason to go to Turbo Puffer at this
+point in time. Yeah. You didn't mention, uh, one thing I was looking for was graph type queries,
+like graph database, graph queries. Can you basically trivially replicate this with what you already
+have? We see some people doing that because you have parallel queries and it's, it's the same thing.
+Exactly. So we see some people doing that, right? Like at the under, like Turbo Puffer is just a KV,
+right? And then we expose things on top of it. So we are seeing people do that. And I think, you
+know, our roadmap is very much just the database that connects AI to a very large amount of data is
+what the path is to do that in the right order, which is what a good startup is around. What is the
+order to do things in? Our customers are P99 and they will tell us what they care most about next.
+And so some of them are doing graphs now. And if they need more graph database features, they'll be
+banking our door and we'll prioritize accordingly. Tea. Okay. Give us the tea. This, you, you, uh,
+you kindly gifted us your favorite tea. This is Yabukita Kamarucha from the Green Tea Shop. That's
+right. Talk about your love of tea. Yeah. We were just talking beforehand about, um, um, caffeine, I
+think. Um, and, uh, especially when I'm on a trip like this to San Francisco, I consume a lot of
+caffeine. Um, but this is my preferred, uh, preferred caffeine. It's this green tea. I have an air
+table with 200 teas that I've tried over time over the past, like 15 years. And this one is my
+favorite. Now, when you drink a tea, um, there's different, there's like six different types of tea.
+I like green tea in particular. I generally prefer Chinese green tea and I don't really like
+Japanese green tea, but this little prefecture somewhere in Japan has specialized in like, they're
+like Japanese, but doing it the Chinese way. And it's just phenomenal. But then the interesting
+thing about the tea world is that all of the different, um, like you can find this particular tea.
+There's probably, you know, hundreds of places that sell it, but they all go to a different family,
+right? On whatever mountain that they have these like camellia sinensis bushes on. And this woman,
+Japanese woman in Toronto from the green tea shop, um, I don't know. She just like has found a
+really good family cause that's the best one. The best time of year to get this is in a few months
+when they do the spring harvest. Uh, now it's like kind of old. Um, it's just like, I love the
+spring for the fresh tea. So I hope you enjoy it, but it's not the right time of year. It's out of
+season. Yeah. I actually didn't even know tea has seasons. This is unsophisticated. Yeah. Yeah. But
+I think it like, it ties in with like, you know, loving maps and being obsessed and being keen on,
+you know, and everything that you do. Um, yeah, but that's great. Awesome. Well, that's what we were
+saying. We have instant hot water at Colonel. So, uh, I mean, tea lover can come by. I have a little
+tea kit where I bring a, uh, where I bring like a little thermometer to like a little thermoworks
+thermometer. Um, last Friday, when we do demos, I have this thing where if there's not enough demos,
+then I fill the remaining time talking about something completely ridiculous as an incentive for
+people to actually demo. And last time I spent 20 minutes walking through my air table and going
+through my entire tea travel kit, including the, the, the temperature monitor. Cause like, yeah, you
+will show up. There's only a boiler. You can't get it to the right. You know, you need this at 80
+degrees. But anyway, yeah. Sorry. We have a, we have an electric kettle with the heat and
+temperature thing at home. Yeah. I would watch this. You should start a company, YouTube, but it
+doesn't have anything about search. It just has tea and like other rants. I don't think I could
+talk, but something that I started doing, do you, um, do you two know Sam Lambert of PlanetScale? Of
+course. Um, very outspoken guy. I love the guy. And we just, um, we just last, like last week, we
+just went on X live and just sat and like shot the shit for like an hour. And I think we'll probably
+do that again. Yes. We'll probably come up there. Well, I don't know what we'll call it. Maybe P99
+live or the P99 pod or something like that. Um, P pod. P pod. Yeah. Uh, cool. Well, thank you so
+much for your time. I know you have to go, uh, but this is a blast and you're clearly very
+passionate and charismatic. So, uh, I bet you'll get some, uh, P99 engineers out of this podcast.
+Yeah. Yeah. Thank you so much for having me. It was a pleasure.

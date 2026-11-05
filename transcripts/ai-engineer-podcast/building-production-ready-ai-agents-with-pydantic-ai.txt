@@ -1,0 +1,604 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Building Production-Ready AI Agents with Pydantic AI
+DATE: 2025-10-07
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/pydantic-ai-type-safe-agent-framework-episode-63
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/6389539176469675747523f6f0-f044-4ab0-a75a-b2a6c3b03d06.mp3
+DURATION_SECONDS: 3053
+TRANSCRIBED_AT: 2026-09-17T03:33:37Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. When ML teams try to run complex workflows through traditional
+orchestration tools, they hit walls. Cash App discovered this with their fraud detection models.
+They needed flexible compute, isolated environments, and seamless data exchange between workflows,
+but their existing tools couldn't deliver. That's why Cash App relies on Prefect. Now their ML
+workflows run on whatever infrastructure each model needs across Google Cloud, AWS, and Databricks.
+Custom packages stay isolated. Model outputs flow seamlessly between workflows. Companies like WHOOP
+and 1Password also trust Prefect for their critical workflows, but Prefect didn't stop there. They
+just launched FastMCP, production ready infrastructure for AI tools. You get Prefect's orchestration
+plus instant OAuth, serverless scaling, and blazing fast Python execution. Deploy your AI tools
+once. Connect to Cloud, Cursor, or any MCP client. No more building auth flows or managing servers.
+Prefect orchestrates your ML pipeline. FastMCP handles your AI tool infrastructure. See what Prefect
+and FastMCP can do for your AI workflows at aiengineeringpodcast.com/prefect today. Your host is
+Tobias Macy, and today I'm interviewing Samuel Colvin about the Pydantic AI framework for building
+structured AI agents. So, Samuel, can you start by introducing yourself? Yeah. Hi. Thanks so much
+for having me. I'm Samuel. I'm originally the creator of the Pydantic validation library. Now I run
+Pydantic Inc, the company, and I was the original developer of Pydantic AI, the the agent framework,
+although there's actually a team now who maintain it along with me. So I'm not as active as I was.
+And do you remember how you first got started working in the ML and AI space? So it's actually so
+Paradantic AI is relatively relatively recent. It only came out end of last year, and it came about
+through we we started to build, AI functionality into into Podantic Logfile, our observability
+platform. And I was very proud that all of the other agent frameworks were using Podantic for
+validation, but I wasn't particularly impressed by the engineering quality within them. And so when
+I when I started trying to build with them, obviously, the the underlying SDKs are generally pretty
+good, but they're they're bare bones as you would expect. Tried to use the agent frameworks out
+there and wasn't very impressed. And so guess, we thought we could do better. Started off as most
+things as an experiment to see whether it was possible, and then that kind of worked, and and here
+we are. And so you gave a little bit of an overview about kind of how it got started and why. So I'm
+wondering if you can just give a bit of an overview about sort of the scope of Pydantic AI and what
+your overall goals are for it. We as a team come from from reasonably experienced Python engineers
+moving into AI. We're definitely more Python experts or engineers than we are AI experts. And so I
+suppose those are the people we're trying to appeal to. We're trying to build an agent framework
+that has roughly the same engineering quality, maybe hopefully a bit better. Some people might say a
+bit worse, but in the same order of magnitude, there's other prominent Python libraries rather than
+the other agent frameworks where the quality is generally much lower than that in in in my
+experience, and has to have the same taste. So try to be type safe, try to have proper unit test
+coverage, try to not have excessive levels of abstraction, try and give you do the things that you
+obviously don't wanna have to reimplement every time you you build something, but let you go and
+build the app you want rather than come along with our opinions about how you might build something.
+In terms of scope, I think we're like, Polanski, I just went v one. I suppose along with the, like,
+caring about quality, we want to care about not breaking your code, and so we will, from now on, try
+hard to avoid excessive breaking changes. But there are there are some things to add. Like, we don't
+have a support for embeddings yet, which is a, like, weird omission. We just haven't got around to
+building it. We wanted to do it right. I think, along with that, there are some open questions about
+to what extent we wanna have opinions about how you might do RAG and vector search or whether they
+are whether we just leave it completely up to you. I think we are yet to define decide decide
+exactly how we're gonna do all those things. But I suppose for the most part, the the primary thing
+we offer is, like, the the general agent interface that most of these frameworks have now centered
+around. So we have that agent type. I think there was a probably a point end of last year, maybe
+beginning of this, where people claimed or thought that the one of those agents was what you would
+need to build your agent application. So there are two things that people mean when they say agent.
+They mean effectively a microservice that goes off and does a particular task, and then they mean a
+very specific iteration loop with a particular LLM to solve a particular problem. I think there was
+a point at the beginning of the year where people thought you would have one code agent inside a
+microservice agent. I think now lots and lots of applications will have multiple, maybe even many of
+those agents to solve one particular task. But that agentic loop is still very useful. It's just a
+building block rather than the top level construct. You mentioned of that, of course, there are a
+number of other agent frameworks in the ecosystem. The overall the overall landscape of those
+frameworks has been in rapid evolution since the introduction of the first handful of them. I think
+link chain and LAMA index were maybe the first two that gained any sort of prominence, but it seems
+as though every week somebody introduces a new flavor or a new variation of an agent framework with
+various levels of scope and capabilities. And I'm wondering if you can give your summary of how you
+view the current state of the ecosystem and maybe some of the broad categories that you see those
+different frameworks falling into. So there's there's two agent frameworks from the model provider.
+So OpenAI agents and Google ABK are both released earlier this year, generally reasonably well
+regarded in terms of the level of abstraction that they provide. I think they are a step up on what
+putting finance AI to one side for a minute. What came before, there's still nowhere near as type
+safe or as I think production ready as finance AI. I think maybe even some of the people inside
+those organizations would agree on that. I don't know. And then there is there are all of the the
+other agent frameworks that that have been around for longer than than we have. I don't think I
+think there's only three that have really come to any prominence this year are us, Google, and
+OpenAI, and we're we're way ahead in in terms of downloads on those guys, I think, for fairly
+obvious reasons. The the probably the biggest differentiator is that there is a there is the they
+say this modern definition of an agent. I say modern as in this year, maybe very end of last year.
+So that we, Google ADK, are no, OpenAI agents all agree around. And then there is Langchain in
+particular who have chosen to disagree with that model of agent, and they have, Langchain itself,
+the, like, the low level library for unifying requests. And then they have a LangGraph, which is
+their attempt at building this, like, graph library for building more complex application. And so I
+I think, yes, there's people like and lumber index, but I think that that, you know, the really, the
+choices now come down to the the three choices of Landgraf, the frameworks from the the model
+providers, and us. And I would say that it was a reasonably it was getting towards being a no
+brainer to use us, but I think and we would we would expect to overtake LandGraph in terms of
+downloads later this year. I think graphs, we we have graph support in pylance.ai. We also have the
+low level support. Our graphs are are type safe. They don't allow parallel node execution because
+doing that is almost impossible in a type safe way. We think durable execution with something like
+temporal is a much better solution than parallel node execution in the graph unless you can unless
+you could do it right. I mean, it it comes down to whether or not you think you need to build a
+graph. And people have been saying they need to build a graph for a long time, and very few very
+little of the code in the world is actually a graph. Graphs are great when you want to reenter a
+graph in a particular point, but durable execution arguably solves that instead. I mean but but then
+again, lots of people think graphs are great, and they use it use PyDantic Graph and and do it that
+way. And another aspect of the current situation around the agentic SDKs is the overall patterns of
+how to actually build those agentic applications where you mentioned that at one point, it was
+thought that, oh, all you need is one agent object, and that's going to do everything. And now it's,
+oh, well, actually, you need maybe an orchestrator agent with lots of sub agents. Those sub agents
+need tools, etcetera. And I'm curious if you can talk to some of the ways that you're seeing the
+evolution and maybe even starting to see some level of consolidation as far as the patterns and
+integrations that Pydantic AI needs to support and just some of the ways that people are actually
+building with it to be able to orchestrate and iterate on these agentic patterns. Yeah. I think
+there were a lot of people particularly early on in the development of this stuff who assumed that
+we needed completely new paradigms for AI. And I think they often assumed that in spark because they
+just didn't know about the existing paradigms. They assume we needed something new because learning
+how engineers have done things until now seemed like a lot of work, and so saying there's a we need
+a new way of doing it was a was a nice shortcut. I think that there has been consolidation around
+the idea that existing engineering best practices actually solve most of these problems. Like, we
+have the concept of orchestration. It's one function that calls other functions. And in some sense,
+agents are no different. You can call an agent inside a tool, obviously, particularly if you have
+type safe dependencies, which which we do. You can call that an orchestrator agent if you want. I
+mean, then what was the what was the one a few weeks ago that was deep agents, which was basically
+one agent that calls other agents. I mean, that's like, get the agent to return structured data of a
+list of tasks and then run an agent for each of those tasks, sometimes in parallel, sometimes not.
+These are just like the the primitives all exist, and now there's just a lot of fluff about about
+what we're gonna call these high level concepts. I suspect most of them will go away, and it will
+come down to, like, there will be heard knowledge about how to go build these things. And in terms
+of the process of going from I have an idea to I actually have an agent developed, there's also the
+aspect of, one, determining, is this even the right use case for an agent, or would I be better off
+just writing some sort of script or, maybe using some robotic process automation framework versus an
+actual LLM driven loop? And I'm curious if you can just talk to some of the ways that you're seeing
+people go through that discovery and design process of, I have a problem. I think this is the right
+hammer for this nail, and then actually iterating on that to prove it out and get it into
+production. Partly when I answer to this question, partly in answer to your previous question, the
+the added complexity this is to this is that there is a lot of, like, there's a lot of blur in
+whether or not it works. It's not like building something with a protocol or something deterministic
+where you can build yeah. I can do this with HTTP. No. I can't do this with HTTP. With other lens,
+it's much more blurred. Does this is this possible? Is this not? Does it involve a bit of prompt
+tweaking? Is it fundamentally impossible? And that allows that ambiguity allows for an enormous
+blurred space of people coming up with grand names for things that are actually relatively simple
+concepts. In terms of working out whether or not you need an AI for it or whether you need an agent.
+Right? So so one useful data point, we have low level methods. We call them the direct interface to
+the LLM. So all what we're doing in that case is we're giving you a a level of abstraction over all
+of the different models. So you can you can change model with just one line of code, and we add
+observability if you want it. But, like, we're not doing anything else. We're not doing anything
+agentic on top of it. I as far as I know, very few people use that direct interface, and that is
+because you always always want some of the functionality from an agent. I mean, people talk a lot
+about this agentic loop, but anything as simple as I wanna get out structured data and if it's not
+right and I get a validation error, I wanna pass that back to the model and get it to try again,
+which you almost always want, you may as well have an agent. And there is the the overhead in terms
+of engineering work or the overhead in terms of cost or latency of using an agent where you are
+fundamentally making one that a lamb call is trivial to zero. So why not use an agent in those
+situations? And if I turn out I need the agentic bit, great. If not, I don't. I think people find it
+very useful to be able to look at the actual request made to the LLM. We support that so you can
+literally see the JSON sent in LogFire. That helps people a lot sort of understand what the
+framework is doing. In terms of working out where AI works and where it doesn't, I have quite a lot
+of opinions on that. I might be giving a talk on that in a in a couple of months, but I think that
+there's a lot of information about a bunch of tried and tested methods that definitely work or
+applications that definitely work for AI. There's much less information out there about what doesn't
+work because, predictably, people don't talk about their failures as much as they talk about their
+successes. So there's lots of evidence on this worked pretty well for us, very little evidence on we
+tried this. We spent six months banging our head against the wall, and then we failed. So there are
+a few very public failures. So, for example, you know, Karma said they were gonna replace all of
+their support with AI and then had to back off and rehire their support people. But, like, there are
+not that many of those examples because, understandably, companies don't wanna don't wanna talk
+about them publicly that much. Digging into the pedantic AI framework itself, I'm curious if you
+could talk to some of the design and architecture of the project and some of the ways that the scope
+and focus of it have evolved from when you first started building it. I mean, it's got bigger than I
+kind of expected because it has got bigger in terms of its adoption than I than I had kinda hoped
+for even when I when I started, but it's still the same fundamental thing. We have the agent type.
+MCP has obviously come along and given us this lovely protocol to to make in particular tool calls
+generically, and so we have great support for that. We obviously have extended it to do stuff like
+observability well. I think the fundamental differentiator we think is type safety. I think type
+safety is incredibly important and only getting more important, and that is in no small part because
+coding agents are writing more and more of our code, and coding agents absolutely love type safety
+because they get to basically check their homework as soon as they finished in a side effect free,
+very fast way. And so if you're an experienced developer and you're gonna write all your code,
+you're gonna want type safety. If you're not an experienced developer and you're gonna use Glored
+code or your coding agent of choice, you need type safety even more. And so I think that, like I
+mean, look in look in the TypeScript world. No one is writing JavaScript unless in a very edge
+cases. Right? Every everyone is using TypeScript. It's a no brainer now. And I think Python's whilst
+Python's type system is not as advanced as TypeScript, we're getting to a kind of comparable level
+of feeling of like, oh, I can see there's no squiggles in my code. It's gonna run, and I'm gonna get
+something interesting even if it's not perfect. The squiggles in my code, I probably need to fix
+those squiggles before there's any point in trying to run the run it. The same thing you get in
+TypeScript, that doesn't exist in other agent frameworks because they decided to go and invent their
+own exotic use of the language that doesn't support type safety. And I suppose our experience having
+built PyDantic and learned the hard way when to do things differently and when to just stick to
+what's known means we've we've tried to to do that right. Beyond that, I think a lot of it comes
+down to a much more much less clear cut, basically, engineering judgment or engineering taste of
+what level of abstraction to give, how when to add new functionality, when not to. If you look at
+some of our other agent frameworks, they have hundreds of integrations with different databases,
+which as far as I know are not really maintained. And so when people use them, they get broken the
+whole time. We won't do that. Someone came along and submitted the PR the other day to add, SQLite
+supports to our graph snapshotting, and I closed the PR and refused to accept it because the
+complexity overhead of starting to manage schema in within open source when you're fundamentally
+managing schema in other people's projects is very high. And we don't wanna do that until we're very
+sure it's the right idea and we're very deliberate about doing it right. I think in other
+frameworks, they'd be like, great. Someone's added SQLite support. That's a tweet. Let's go merge
+it. Digging into the type safety aspect and, in particular, the structured inputs and outputs when
+dealing with these large language models. I know that, especially, a year or so ago, getting one of
+the even the frontier models to reliably output any sort of structured data was like pulling teeth.
+And you mentioned how because of the fact that you have that type validation built into the
+framework, it provides that fast feedback to the LLM. And I'm wondering if you could just talk to
+some of the ways that you've engineered that aspect in particular for being able to do that
+validation and maybe some of the ways that the framework itself is incorporated into the context
+management for the LLM calls to be able to encourage those models to generate the appropriate
+structured responses? Yeah. I mean, I I think for the most part, the models the models are pretty
+good at this. The models understand JSON schema, and so, like, we don't do anything particularly
+clever in terms of how we prompt them by default. We use tool calling. So we basically register a
+tool. If you if you do a standard agent with structured output, we register a tool called final
+output, final results, I think. And it obviously has a JSON schema of whatever data type you've
+given it and that is then how the model returns structured data to you. If that fails, we return
+effectively JSON of the Pydantic validation error to the model. And I think we're probably quite
+lucky in that the models will have been trained on Pydantic validation errors, and so they are
+pretty good at understanding them. And I've been shocked about how good they are at either getting
+it right in one shot or learning a bit from from one error and and returning it right. Like,
+sometimes I get the schema completely wrong, and they'll misunderstand the structure. And one
+validation error, and bang, they go and get it right. I've been amazed by by how how effective they
+are. Two things I would say. One, we we also have support for the built in structured output
+mechanisms that are available in Gemini and OpenAI. If other models add it, we'll have we'll add
+that built in support. And we also support structured data output via what we call prompted. So we
+basically give the model in the system prompt the JSON schema, and we say, please return JSON that
+matches the schema. And that works can work well on the smaller models that can't do tool calling. I
+don't know. I think I spend most of my time working with Frontier models. I'm not so interested in
+making the Alarm experience great because that's not where most of our customers are especially
+interested. We also have I don't know if it's added yet, but we we've been speaking working with dot
+text to add support for outlines. So when you do have a local model where you can prompt it by
+controlling the mask of different tokens it can respond with, we should have support for that if
+it's not done yet fairly soon. Another interesting aspect of the ways that I've seen the agent space
+evolve is that there has been the frontier models in particular that have heavily invested in
+allowing the models themselves to understand tool calling. And then there's also I think it's the
+small agents framework from Hugging Face that is focused instead on rather than using natural
+language inputs and outputs, they actually will set up the model to do code generation for the tool
+calling and execution instead. And I'm wondering if you could talk to some of the ways that you're
+seeing the overall space incorporate some of those ideas beyond just the everything is natural
+language to maybe some things are code or I know there's also some research into the large action
+models, etcetera. Yeah. So I'm I'm really a big fan of Hugging Face as a company for years. I'm
+amazed that they're prepared to release something small agents the way it has because it it's
+basically running untrusted Python code on your machine. And they do a bunch of stuff to try as far
+as I understand it to kind of mock out obviously dangerous functions. But, like, any I mean, the
+history of sandboxing in Python is a history of people failing to sandbox Python in any sensible
+way. And so I'm sort of amazed that they're prepared to put their name next to something so
+obviously dangerous. On the code generation side, we have, MCP run Python, which is our equivalent,
+basically, way of running sandbox code. Instead of attempting to mock the mock the language and wait
+until we get get a remote code execution vulnerability reported, We use Pyrodite to run the Python
+code, and then we sandbox that within, Deno. So we have basically v eight level of isolation between
+the operating system and the and the code that you're running, and we think that is a that is a
+safer way of doing it. Or even although even that has its has its edge cases because although you
+can kill the process if it goes on for too long and you can't escape the sandbox, you can still use
+up a lot of memory and, you know, you could your your your process. So I think remote code execution
+is a very dangerous thing. It works incredibly well in the simple case of, like, use Python to
+calculate how many days between these two dates or use Python to calculate how fast someone was
+going if they got from, like, Ohio to Cincinnati in seven hours. But if you actually wanna go and
+use it in a production situation, this, like, let the AI write write whatever code I like, in turn
+prompted by a user, I think is is terrifying. I think tool calling works extremely well for for the
+vast majority of structured outputs. And so I I think that's that's the default way of doing it. I
+think we have I think Claude Code in particular, but others have probably demonstrated that there
+are better ways of doing complex workflows than writing code. So Claude Code obviously, you know,
+basically writes markdown in the form of bullet points of what it's gonna do, and then it goes off
+and executes those tasks. You can build that very easily with Panhard's AI. You basically have one
+agent, which where you say, analyze the user's input and return bullet points with each task that we
+should perform after that. Then you have a second agent, which is which say where the system
+instructions are, read the following markdown and turn this into structured data with particular
+steps for each of the tasks in bullet points. And now we have structured data of each task we need
+to go and run, and then we go and use whatever construct we need in Python to go and run all those
+tasks. Could be distributed over many nodes. It could be using standard it could be using asyncio,
+multiprocessing, whatever you want. And then you well, at the end, you you combine those results
+again, and you have a final agent that, like, generates the final user output. Now we have, there we
+have deep agents implemented in by Dantic AI. But we don't need any new special concepts or or app
+like, libraries. We just need to, like, think for a bit and use standard engineering practice. The
+other aspect of constant change that we've already touched on a little bit is the model capabilities
+and the set of models, the providers of models. I know that Pydantic AI has built in support for a
+number of the different model providers. I know that other frameworks have leaned on some things
+like l l m as a means of proxying to those different endpoints. I'm wondering if you can just talk
+to some of your thoughts on how you thought through how to manage the constant churn of model
+providers, available models, etcetera, in a way that reduces the cognitive overhead for the users of
+the framework while also not papering over the important differences between them. Yes. So so a lot
+of people, including, I assume, Light LLM, although I haven't spoken to them, so I'm guessing at
+this, have had a lot of problems with this this year because what everyone did, OpenRouter, Light
+LLM, others, was they they basically converted all requests from and to the OpenAI chat completions,
+schema. And that worked very well because now we had a, like, universal schema for whatever model
+you wanted to go and talk to, and most things can do OpenAI. And so you could you could connect
+anything both that. And then I I presume in no small part because of that, OpenAI went and released
+their new responses API, which is their new shiny API with where they're adding more more features
+in general. And so all of those proxies now are a problem. Are they gonna go and are they gonna
+stick to the old protocol that doesn't have things like tool built in tool calling or chain of
+thought, or are they gonna invent their own new schema, which nothing supports, or are they going to
+upgrade to to OpenAI responses? If you do that, not everything is supported in OpenAI responses. So
+for example, audio isn't supported by it. But, also, you're now just moving to another OpenAI schema
+where they could do the same rug pull down the line. And so we are I didn't know that was gonna
+happen when we created Pydance AI, but I think we were very lucky that we didn't center around
+someone else's schema. Internally, Pydance AI has its own model for recording messages and exchange
+between multiple steps calls to a model, and we we use that as our, like, unification layer. You can
+access that if you use the direct interface, but for the most part, you can ignore it completely.
+But that means we can add new types, chain of thought, whatever else we might want without having to
+rely on some third party to go and add to their schema. I also haven't found there wasn't a good
+unification layer that actually seemed to have the code quality that we were looking for, which is
+why one of the reasons we started off building our own. But I think in in the long term, that turned
+out to be a good decision. One of the overall goals of creating a framework in the first place is
+that it provides a smoother experience for people who are trying to operate within a given space
+where you have web frameworks such as Django, FastAPI, etcetera, that are very focused on
+accelerating the path to delivery for a particular style of web application. You have frameworks for
+working with data engineering workflows in an agentic AI framework. Obviously, the goal is to create
+an agent, which is, as we've discussed, a very broad space at the moment. And I'm wondering if you
+can talk to the ways that you think of both at the macro and at the detail level that Pydantic AI is
+engineered to guide and encourage best practices and some of the, in particular, nuanced details of
+the framework that maybe are not as directly obvious when somebody first adopts it, but that helps
+them as they get to that day two and three maintenance and ongoing support of an agentic
+application. Yeah. I mean, I think I built this because I wanted to have the same feeling I have
+from using fast API, but with LLMs. I I wanted the FastAPI of of LLMs, obviously, as support to
+Sebastian in maintaining FastAPI because Pydantic is obviously one of the main building blocks of of
+FastAPI. Starlet, the other primary building block is maintained by Marcello who works with me and
+works on Pydantic AI. So we between us had done and and, actually, David as well had had spent a
+long time working with Sebastian to support FastAPI. So we although we hadn't maintained the web
+framework, I think we knew about as much about that process as anyone who hadn't themselves
+maintained the framework. And I just wanted that same feeling of type safety but simplicity to to be
+possible. And I think that's I think we've done a pretty good job of building the fast API of LLMs,
+if I say so myself. In terms of long term, yeah, I have this theory that for to build really
+successful open source, it needs to understandable in thirty seconds, usable in three minutes, and
+not drive you around the bend after three hundred hours. And I think I've done that with Piranantik.
+I mean, Piranantik is obviously through its its wide footed option, clearly ticks all three of those
+boxes. I think Piranhas AI is doing a pretty good job of those three three things as well. I mean,
+we're I guess there'll be a minimum few people who have three hundred hours of using it, but there
+are definitely a lot of people using it in production who seem to be having a a good experience. We
+obviously broke a lot of stuff pre v one, and that frustrates people occasionally. We worked hard to
+do deprecation warnings that told them how to upgrade or how clawed to upgrade. But I I think it
+comes back to, like, general engineering taste, as in don't give excessive levels of abstraction. If
+you have these, like, very specific ideas of how long term memory and short term memory should work,
+then you're one, you have to maintain an awful lot of code to maintain these, like, very complex
+abstractions, but two, you're at risk of being left behind when when people's ideas of how memory
+work change a bit. Whereas if you build the right primitives and, like, we have tool calling, you
+can go and implement memory in one of these ways, you're not so much at risk of being replaced when
+the taste in how you build stuff with AI changes. That brings up another interesting aspect of
+framework development is you've already alluded to the ongoing cost of accepting feature requests
+where they are free as in puppy. And, also, as you've said, some of these frameworks have explicit
+integrations with certain subsystems or ancillary services, which helps with the initial adoption
+and helps people get up to speed quickly. But also by choosing not to have those capabilities
+integrated into Pydantic AI, it leaves that as an exercise to the developer. And I'm wondering if
+you can talk to some of the ways that you've thought about maybe smoothing that transition process
+of providing some of these sort of escape hatches or stub instances to be able to say, if you want
+to be able to call out to a memory system or a vector store, here is the sort of abstract interface,
+and then maybe here are some examples or some resources that you can use to pull in as extensions to
+the framework to give some of that out of the box experience and, a similar overall feel to
+interacting with those resources? I would say three points. First of all, again, I try and copy
+FastAPI because it's been so successful. FastAPI has never had a a default database. Right? Sure.
+Sebastian built SQL model, but there is not, like, you get SQL model built into FastAPI. It's there
+as an option. You can go and build it however you like. And while we build a lot of stuff on
+FastAPI, we don't use SQL model. And I it would be annoying if we had to try and escape hatch SQL
+model to do our own stuff inside the web framework. So that's you know, whilst Django is amazing, I
+started my career on Django. I I love it. Now I would be frustrated that it was that it was hard or
+impossible in places to go and escape into into writing raw SQL because I would prefer to write SQL
+than use an ORF. And so I don't think you need to go and have have database support in a framework
+necessarily. So we have examples in, Py landscape. I think one of the things we've done heavily is
+lead on examples. We have extensive example section that where we can go and have slightly more
+esoteric demonstrations of what we can do without, like, supporting that in the library and
+therefore guaranteeing it will be around long term. We've also been unwilling to go I mean, we've
+had umpteen, ten, twenty different people coming along and saying basically, please can you accept
+our PR to add documentation on how to use Pilancic AI with whatever it is we build commercially. So
+whether it is a observability platform or a security store or a database, and I have reasonably
+bluntly refused most of them. And that is because one, because the engineering quality and the even
+in the example wasn't there. Like, they all just went and turned off type checking at top of the
+example because they couldn't be bothered to work out how to get type types to pass. And I'm like,
+no. At that point, I'm not gonna accept the pull request if you just switch off all of our tests. Is
+that because you think our tests are unnecessary or were you because you think you're special? But,
+also, I I don't wanna go and have a, like, explicit agent security orchestration provider who we go
+and support because if they go and change how they do things, we're then tied into it. I mean, I
+think if you add something to a library as high profile as Pyelancer AI and you make it v one,
+you're kinda guaranteeing that in big enterprises, you're gonna support those most of those
+principles for years. I mean, maybe we'll release v two six months or a years in a year's time, but
+we'll then go on and support Panantic AI v one for for a sustained period of time. Right? And so I'm
+very careful about what we go and add, and I think one of our golden rules is that would we use it.
+And for example, that, like, SQLite sort of backing for Panantic Graphs, I was like, would I really
+wanna go and use that? Probably not in production. And if it's not in production, I don't need
+database support. So, like, the the rule of thumb is would we use it? Not not like are we going to
+use it immediately, but is that of a code quality? Is that of a approach that we would that we would
+use? And if I'm never gonna use it, then it's probably not gonna be as well maintained as something
+that I care about and use every day. Another approach pointing to what you referenced with the SQL
+model project is to have the core framework. I know that you're very familiar with this given your
+work of Pydantic going from v one to v two where you've separated out the core from the the other
+interface. And so I'm curious if you've put any thought into having some of the extension projects
+where you have Podantic AI core and then maybe you have Podantic AI memory, Podantic AI vector,
+etcetera. So we do that a bit already, and, actually, UV support for for workspaces and multi
+project repos is great for that. So so we already have we we do something quite novel in Pydantic
+AI. So we have Pydantic AI slim, which has absolutely minimal dependencies, basically, Pydantic and
+HTTPX. Maybe not even HTTPX, actually. But but in particular, none of the SDKs from the model
+providers are installed by default. And then if you and then we have Pyllantic AI, which is just a
+wrapper package, which installs Pyllantic AI Slim and loads of packages that you might want to use
+with it. Maybe too many now. We might actually wanna strip it back a little bit. But, that allows
+you to install. So if if you specifically wanna use palantir dot ai with OpenAI and have minimal
+other dependencies, You do Pydantic AI slim, optional group OpenAI, and now you have just the
+packages, just the libraries you need. Pydantic graph is a is a separate package, although,
+actually, Pydantic graph is used under the hood by our agent type. So it's a required dependency,
+but we have Pyelantic evals, which is a separate package, which is an optional optionally can be
+installed. We even release our package our our examples as Pyelantic AI examples. So you could even
+install them if you wanted to to to go and get the code. And I think there'll be some other projects
+that we will do similar things with. So, for example, actually, MCP run Python, although it is
+implemented in Deno, it has a Python wrapper. That is a separate package that you can go and install
+if you want. So we we will do exactly that. If we decide to go and do more memory stuff, that would
+be a separate package that you could opt into if you wanted. But we have the option to install it by
+default in the Pydantic AI meta package if we so wish. You've mentioned also that you have the
+Pydantic LogFire project and service, and agents, as we've discussed, are a novel and new way of
+building software. And I'm curious if you can talk to some of the new and exciting failure modes
+that they introduce and how people should be thinking about monitoring and, observing and
+maintaining the overall uptime and reliability of these systems? Yeah. I think I mean, obviously, we
+have great integration between Pilantic AI and Logfile. We'll just call out that unlike some of our
+competitors, instead of trying to build on proprietary protocols and lock people in, we try and
+encourage people to stay with us by building great software. And so everything we do is over open
+standards. So the data that Pyelantic AI emits is open telemetry following semantic conventions, and
+Log Fire can basically read that data and give you a lovely view of what's going on within your
+agent run. I think the first thing to say is not so much about dealing with errors explicitly, but
+rather at development time. Like, you know, an experienced engineer can can take can basically
+implement from scratch, let's say, a fast API endpoints to go and get some data from a database. And
+they can if they can check if the the column that they're querying on has a has an index, they can
+eyeball it and be like, that that query is gonna be sub a hundred milliseconds to call that
+endpoints at basically any scale. And they can go away and they can they can get that basically
+implement that from scratch. That just does not exist in AI. Even the most experienced people need
+to go and have a play and try different things and experiment. And so that comes back to my type
+safety point. Type safety is great because it lets you refactor quickly. But, also, at development
+time, you want that view of exactly what your agent is doing just to understand what the heck it's
+trying to do and work out how to how to make it perform better. Then once you're in production,
+yeah, LLMs are slow, expensive, and unreliable. The three things where you really need observability
+to understand how they're behaving. And the other added complexity of them is that you can't, like,
+strip out the user parameters and look at the behavior in isolation. So with with a SQL query, you
+can strip out the parameters or not send the parameters to the observability platform. You can go
+and look at the SQL and work out what went wrong, especially if you have a schema and you know where
+the indexes are or whatever else. That's just not possible with LLMs. You have to know the all of
+the content to understand what the LLM has done. So the sensitivity of the data that you end up
+selling to your sending to your observability platform is that much higher. That's one of the
+reasons we offer self hosting for LogFire and why lots of big enterprises self host it rather than
+using the cloud version because they're just often legally, regulatorily required to to have that
+data inside their own VPC. In terms of other other problems, I mean, I I think there's an enormous
+open space of security questions that often are not, like, well, don't have good solutions yet. I
+think we're still working out how to do security. I think the world is waiting for the first really
+big security vulnerability of an LLM application, and then people will start to take it more
+seriously. I think there were a bunch of things we have avoided doing because we know they might be
+insecure, but, I don't think we have any beyond that, we don't have any, like, particular special
+source on how to build build things securely other than follow best practices, and and try not to
+have too much surface area of our application so we can keep what we do safe at least. And in your
+experience of building Pydantic, obviously, you gained a lot of context and understanding of how to
+run a large and successful open source project, and Pydantic AI is following that same trajectory.
+I'm wondering if you can just talk to some of the key lessons that you gained from your work on
+Pydantic to then leverage it into Pydantic Pydantic AI to help sort of smooth that process and maybe
+some of the early mistakes that you learned that you were able to avoid in the development and
+promotion of Pydantic AI? Yeah. I think so so when people talk about open source, people love this
+idea of, like, it's as collaborative. Everyone comes along, scratches their own edge, solves their
+own problem. And, basically, once I build a good open source project, it can kind of run itself.
+That just does not exist. I mean, I guess Linux, which is the single most successful open source
+project ever, does have genuine collaboration from lots of different people. But still, Linux sits
+there and merges every PR and shouts at people when they do things wrong. I mean, they it does not
+manage itself. Python, again, another very successful project. So big that it does actually have
+collaboration from different organizations, but still takes enormous amount of management. After,
+like, Pydantic or Pydantic AI scale, which is, I guess, a step down from there, I have not been
+successful in in ever building this, like, utopia of where lots of different people contribute even
+amounts. And I don't see many other projects where that actually happens. I I don't I mean, go and
+find me the, like, top 100 Python package where you literally have 10 different people from
+different organizations collaborating equally. It doesn't exist. It ends up, like all things, with,
+like, one person who really two or three people at most who really care who end up driving these
+things forward. And one of the the big differences with Financic so one thing we we learned from
+Financic was we didn't try and go and say we're gonna be, like, all about collaboration and all
+about contribution. We optimized for the end library being good rather than for having as many
+people as possible contribute. Obviously, the other big difference is it's we're now a company. We
+have the resources to have a team working on it full time, whereas with Binance, it gives us in my
+spare time. I think the same same principle exists. It's just one or two or three people who drive
+it forward who own it. Obviously, the the big mistake we made in Pydantic was we released v one with
+with a bunch of broken APIs that we should have gone and fixed before we released v one. And in
+places, I I kinda over, was, like, over my skis in terms of adding more functionality than we
+needed. Nothing like as badly as other people have got that wrong historically. I mean, what Django
+used to have support for validating French telephone numbers. I mean and other libraries have made
+many bigger mistakes than that. But, like, I think that's why we're so cautious about when and where
+we add more, you know, more surface area to Pydantic AI, having having got that a little bit wrong
+in Pydantic in places. And in your experience of building this framework, putting it out into the
+public, building a company around it now, and working with people who are developing their own
+systems on top of that framework? What are some of the most interesting or innovative or unexpected
+ways that you've seen it used? It's funny. I I get I don't get that much contact with how people
+actually use it in in the code level of what they do, which is kind of frustrating. I I wish I got
+more was able to see more of exactly how people how people use it. There was I I sat next to someone
+at a dinner who was using Panantic AI to scrape or to process the data they scraped from forums to
+give to law firms who were looking for new class action lawsuits. So they were basically scraping
+the Internet to try and find any way for the class action lawsuit, which I thought was a, like,
+particularly weird and novel one. A lot of use in financial institutions as you could imagine. A lot
+of use in big medical companies, perhaps a bit less less obvious, but but, you know, I guess you can
+kind of understand that as well. In terms of the, like, actual novelty of the application code, I
+don't see a lot of it because a lot of that stuff is closed source. And another aspect of being a
+framework developer that just struck me is in the early to mid two thousands up until around 2010,
+there was the framework wars of the sort of Django versus Ruby on Rails versus Flask versus Sinatra,
+etcetera, where everybody was trying to promote their way as the best option, and there were there
+was a lot of tribalism that developed as a result. There are a number of different AI frameworks,
+although I don't think there is as much cohesion as there was in the web framework days. And I'm
+just wondering if you're seeing any similar sentiments of people who are developing that sort of
+tribal identity around their AI frameworks. I think there's a reasonable amount of it going on and
+what people like. And I think there's a bit of, like, what does that mean about who you are? Right?
+As in, you know, if you drew it to draw a, like, cliche, it would be that, like well, I mean, AI SDK
+is pretty is pretty well seated as the as the preeminent one in the in the JavaScript world. So if,
+you know, if you're a JavaScript developer, you're probably an AI SDK fan. In Python, I think it's
+it's pretty split between Landgraf and and Pytanti .ai and and but then, you know, there is a whole
+cohort of other libraries out there as well that and and who knows where we'll be in five years'
+time? I assume that it will be we'll have had a bunch of concentration around a small number of of
+libraries that that most people use. I don't who knows where where we'll be. I think that's another
+interesting point too is that maybe some of the more at least the ones that I'm most aware of in
+terms of the AI frameworks have been very biased towards Python because Python has become one of the
+major languages for working with ML and AI systems. But to your point, the AI SDK JavaScript has
+also gained a lot of ground largely because of the fact that most of the interaction with these
+models is done over an API, which is the whole reason for being for JavaScript, at least in its
+original form. And I'm wondering if you could talk to maybe some of the ways that you're seeing the,
+API orientation of these models influence the language selection or the the proliferation of
+frameworks across languages as a result. I'm sure I will offend someone by saying this, but
+hopefully they're not listening to your podcast. But my instinct is it's basically Python message
+JavaScript. I'm sure I suspect that, like, in terms of download numbers, they those two are way
+ahead of anything else. I kinda think why would you write any language other than Python,
+TypeScript, and Rust? I know that's also gonna offend people, but and given that Rust is is not a
+good choice of language to go and build an agent framework in, I think it's between Python and
+TypeScript. They both have their their advantages. I I agree that those are those are the two
+options. I think the other interesting thing that I don't love, although I'm obviously part of the
+problem, all of these libraries are maintained by startups who are you know, this is not, oh, as
+something we also do, we also maintain some open source. Like, to Vercel AI SDK is an important part
+of what they do. To us in Langchain, our agent frameworks are existential to our reputation. And so
+it is a different world, and I'm sure that we will meet a different failure mode to the failure mode
+of Django was not a was not a startup. Flask was not a startup. FastAPI, it now is a startup but was
+not for for a long time. So I think we need to be quite careful about which startups we trust with
+using their open source. Look. And I'm saying that because I think we're as trustworthy as anyone
+out there. We've maintained Pydantic now for, what, since 2017, eight years. I think Pydantic will
+all be around a lot longer than that, and I think Pydantic AI will too. And we have shown our taste
+in following best practices and building on on open standards rather than trying to lock people in.
+I mean, I know which one I would, want to risk my company on even if you ignore engineering quality,
+but, that's my text. I mean, I think Vercel also do a great job of I don't agree with everything
+they do, but they've done a great job of real building Next. Js and, like, building real open source
+and gently encouraging you to host it on their platform, but not forcing you to. I I have respect
+for them in that regard. And in your experience of building the Pydantic AI framework in particular,
+what are some of the most interesting or unexpected or challenging lessons that you learned
+personally? I think we have pushed the boundaries of what you can do in type safety or typing with
+Python. Hopefully, that doesn't for the most part, doesn't come over to the user. As for us
+internally. I mean, I was showing team Anthropic the other day the concatenates, type in in Python's
+typing system, and none of them had had seen it before. And I think we use that in the numerous
+places. I think once you get to type alias type and and doing stuff like that, like, we push the
+boundaries of what you could do with Python Python's type safety system. I think eval's a a as yet
+an unsolved problem. I think we have some interesting stuff there. We have a reasonable eval's
+library, but I think we're still to still as a as a industry, as a community, still yet to work out
+the best way of doing evals. So I think that is a, like, unsolved problem as of yet. And so for
+people who have decided that they want to build an AI agent, whether just for a hobby project or for
+production use case, what are the situations where you advise against using Pydantic AI? I mean, if
+you're gonna run stuff in the browser, you I wouldn't go and try and do any I mean, you can run
+PyTorch AI inside PyTorch, but I I wouldn't recommend doing that. I think beyond that, it's a it's a
+great choice. I mean, look, if you're more comfortable in TypeScript, you're probably not gonna pick
+up PyTorch AI. If you're really determined you wanna go and experiment with doing something in Rust,
+that's fun to do. Great. I as an awful lot of people are like, oh, don't use an agent framework. Oh,
+these are mistakes. I think those people have very short memories or little imagination. Like, zoom
+back to, let's say, 02/2002, in the early days of the web. I'm sure you would have found people
+building web applications and being like, I don't need one of these web frameworks. I'm gonna pass
+all the HTTP headers myself in c plus plus and that's gonna save me numerous clock cycles by not
+having to put into memory the headers I don't need to access. Why would I use one of these nasty web
+frameworks? I think the same basically applies with AI. Like, the levels of abstraction only grow.
+You don't wanna go and reimplement the stuff we've done from scratch. Of course. Go and experiment
+by doing it directly. Use the use the APIs. Learn what an LLM can do. If you wanna get on and build
+an application, you really don't wanna be faffing around using the the SDKs or or the the the raw
+API direct. And and if you wanna go and build a web framework from scratch because you think it's
+really interesting to understand HTTP two or how to the most effective way to to build a multidict,
+that is an interesting thing to do as an academic project. But that is a very different thing from
+what we're building for, which is to put things into production. And so as you continue to build and
+iterate on the Pydantic AI framework, what are some of the plans that you have for the near to
+medium term or any particular projects or problem areas you're excited to explore? So Vercel
+released Vercel AI elements very recently, which is basically an amazing toolkit of React components
+for building UIs. They have their own protocol where they basically for streaming messages to and
+from the the server, and we are about to add support for that to PyDanza k I. So you can go and
+build a front end with React with with those elements very easily, or we we may even give you a a
+prebuilt UI for for doing some of that just as a kind of demo and and for for quick iteration.
+Embeddings are a really important thing the way that's a no brainer that we need to go and add
+fairly soon, so we'll be doing that. I think there is some more work to carry on improving the
+documentation. I think we would love we have durable durable execution support with both temporal
+and DBOS. I think we would love that to extend that more into PyDantic Graph so you can build
+durable graph execution. Yeah. That's a that's a few of the the top level things where where we
+wanna get to soon. And are there any overall industry and ecosystem trends or predictions that
+you're paying particular attention to or have interesting predictions for? As I've said already on
+this podcast, I think type safety is only gonna get more important as as agents write more of our
+code. So I think that is a that is very important. I think MCP is enormously hyped but is really
+influential. We haven't talked about it on lots on on here, but I think MCP is really, really
+valuable. We have, I think, the best support for it in PyLabs AI, and I think we're gonna continue
+to to I'm I'm a somewhat absent co maintainer of the Python MCP library. Marcelo or my team is a bit
+more active. I think I I'm, like, bullish about what MCP can can do in the medium and long term.
+Yeah. I I think that we're gonna standards and best practice are gonna evolve and that those who are
+building in silos, isolating themselves from the rest of the ecosystem, at some point, again, they
+come a crop up. But so far, that seems to have worked quite well. Are there any other aspects of the
+Pydantic AI framework or the overall space of agentic applications and developing for them that we
+didn't discuss yet that you'd like to cover before we close out the show? No. I think we've done a I
+think we've gone over all all the main things that come to mind. Alright. Well, for anybody who
+wants to get in touch with you and follow along with the work that you and your team are doing, I'll
+have you add your preferred contact information to the show notes. And as the final question, I'd
+like to get your perspective on what you see as being the biggest gap in the tooling technology or
+human training that's available for AI systems today. I think that no one has a clue about how to do
+security. I was talking to a security governor yesterday who was saying, you know, the the current
+answer from the model providers themselves is let us take care of it. Don't worry, darling. We'll do
+it. And I think that's probably what in a very similar way to Microsoft at one point said, don't
+worry about security. Just use everything Microsoft, and and we'll take care of it. Even today, when
+Microsoft didn't get to rule the Internet as they wanted, they're still the single biggest source of
+zero days out there. So I think this, like, let them let the models take care of security is a it's
+a profoundly mistaken approach. And I think we're gonna it's a it's a big area that's yet to yet to
+be really explored. Like I say, at some point, there's gonna be a big incident or vulnerability
+discovered, and people are gonna set up and start taking it more seriously. Absolutely. Well, thank
+you very much for taking the time today to join me and share the work that you're doing on Pydantic
+AI. It's a really very interesting framework. I appreciate all of the effort you're putting into
+making the agentic development process, better and smoother and easier and including type safety.
+So, I appreciate all of the work that you're putting into that, and I hope you enjoy the rest of
+your day. Thank you so much. Thank you for listening. Don't forget to check out our other shows. The
+data engineering podcast covers the latest on modern data management, and podcast.net covers the
+Python language, its community, and the innovative ways it is being used. Visit the site to
+subscribe to the show, sign up for the mailing list, and read the show notes. And if you've learned
+something or tried out a project from the show, then tell us about it. Email
+hosts@aiengineeringpodcast.com with your story.

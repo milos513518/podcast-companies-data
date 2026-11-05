@@ -1,0 +1,510 @@
+SOURCE: whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: SE Radio 729: Garth Mollett on AI Supply Chain Security
+DATE: 2026-07-15
+SHOW: SE Radio
+LINK: https://se-radio.net/2026/07/se-radio-729-garth-mollett-on-ai-supply-chain-security/
+AUDIO: https://traffic.libsyn.com/secure/seradio/729-garth-mollet-ai-supply-chain-security.mp3?dest-id=23379
+DURATION_SECONDS: 2922
+TRANSCRIBED_AT: 2026-11-04T10:17:49Z
+----------------------------------------------------------------------
+This is Software Engineering Radio, the podcast for professional developers on the web at se-
+radio.net. SE Radio is brought to you by the IEEE Computer Society and by IEEE Software Magazine.
+Online at computer.org slash software. For Software Engineering Radio, this is Robert Blumen. Today
+I am joined by Garth Mollett. Garth is a Senior Principal's Product Security Engineer and Technical
+Advisor for Product Security at Red Hat. He's worked in security at Red Hat since 2013. His current
+focus is on the intersection of AI security, safety, and trust. Garth is the primary author of Red
+Hat's Security Guiding Principles. Garth, welcome to Software Engineering Radio. Thank you. It's
+good to be here. I'm a little bit nervous. It's the first time I've done something like this. Yes,
+we have many guests with no podcast experience and they all work out great. So I'm not worried at
+all. Garth, today you and I will be talking about AI supply chain security. Software supply chain
+security is a topic that we have covered many times on the podcast. Most recently, episode 712 on
+SigStore. But we have not covered AI supply chain security. Let's start out with some basic
+definitions. We're talking about AI in the supply chain. What are we talking about? Okay. So I think
+it's important to quickly note what we mean by the software supply chain to start with, which is the
+supply chain analogies referring to when we're building things, construction and stuff. And it's
+what each part of that contributes to the next part. And in software, we have a similar model,
+although in reality, it's more of a directional graph than it is a chain. But that's a whole other
+topic that I'm sure you've covered already. The key difference, I think, with the AI software supply
+chain is that we're no longer producing source code to binary deterministic artifacts. We're not
+shipping something that's a translation of instructions that when you run it, it does. Basically, it
+should do what you've written down. There's nuance and things that can creep in. But in AI, it
+becomes entirely non-deterministic. Like the relationship between the input and the output, it's not
+binary at all. It's a probabilistic model. It turns intent into content. And that content can be
+lots of different things. In generative AI, the most popular things that we see are LLMs, which is
+what, unless you've been living under a rock for the last two years, you've probably heard about it
+just about everywhere. Those are large language models, which they're designed to predict the next
+word or the next token, actually. But we'll just say word for simplicity in a string of text. So you
+give it one part of text and it tells you what the next word is most likely to be. And you keep
+going until you have entire large amounts of text. And we've got really good at turning that into
+things that are actually useful. There's other types of AI, obviously, as well. Machine learning,
+other types of generative AI. But this is what most people are talking about when they talk about AI
+now, talking about large language models. Somewhere a few years ago, I think between the GP2 to
+GPT-3 timeframe, we sort of became aware, not entirely on purpose, but it wasn't really accidental
+either. And it's hard to know exactly because some of these frontier labs are not entirely
+forthcoming with their research. But we realized that the content that we can create with large
+language models could actually quite well include software code. And from software code, we sort of
+went on to chain of reasoning and then tool use. And now we have agents. So it's not just now
+content that is a story or written prose or anything. It's content that actually ends up itself
+being executable. So we've gone all the way from intent now to actual execution of code. And we can
+chain these systems together to basically, at the point now, do almost anything that humans can do
+on a computer. So we've got full computer use now, varying levels of success, and massive amounts of
+supply chain complexity creeps in when you start thinking about this. Because in traditional
+security vulnerabilities, the sort of basis of them all, in many cases at least, is the ability to
+influence the control plane from the data plane. When that separation breaks down, that gives people
+who have access to the data plane, access to the control plane, and then they can change what a
+piece of software does to make it actually do things that are different from the intent. In this new
+model, we effectively merge the control plane and the data plane entirely, which means protecting
+the control plane from the data plane becomes much more complex, both in the supply chain and during
+execution. I may know what you mean, but could you explain what you do mean when you say merging the
+control plane with the data plane in this new model? Yeah, absolutely. So the control plane in
+software, it's what tells the software what to do. So it's the instructions that the CPU executes,
+or it's the interpreted language that the interpreter executes. It's the actual instructions. In AI,
+the control plane is the data plane. It's because the input to the model effectively controls what
+the output is going to be. So when that output is used in ways to actually control other things,
+when it's used to generate code, that input is both the data and the control, because it's saying,
+what's the next token should be? What should this look like? You're giving it intent rather than
+instructions. And when that's the weights inside the model that determine what that output is going
+to look like, have as much influence on that, or if not more even really, than the prompt that
+you're giving it. So the data you're feeding into it and the data that it's been trained on affect
+what comes out of there. And then when we start introducing things like tool calling and retrieval
+augmented generation, where data is actually added from external sources at runtime, these external
+sources then also effectively go into that merged control and data plane, where the content in them,
+if not handled extremely carefully, can influence what that output looks like. Let's talk a little
+bit about the topology of the supply chain. One type of supply chain is you have code in GitHub, you
+push it out, maybe compile, package it up and deploy it onto some servers on the cloud, or it's a
+hosted application. There's something like that for AI, but we're also running AIs on everybody's
+phone, their computers. What are the different types of supply chains and what are the stops along
+the way? So almost all of them start with pre-training, which is there's got to be a model created
+at some point for any of this. And so for a model to be created, there has to be data. So pre-
+training is when we're collecting data that can be used to actually train the model. So it's run
+through the training process and it's used to set the weights through that training process. It's
+incredibly complicated maths there that I cannot explain. And so at that stage, there's really,
+where does that data come from is the big question. So there's data that could be your own data that
+you collect yourself. It could be data from inside your company. And when you do that, you've really
+got to worry about like, first of all, formatting that data so it's usable, but also what's in that
+data. Like if you're using confidential data from inside your company, there's a high risk that that
+data could leak through a model because we don't really have complete deterministic control over
+what the model does. And so that needs to be sanitized or run through some privacy preserving
+process. The more common case though, and this is where the real supply chain in models that most of
+us are using day-to-day begins, is with these predetermined data sets made available by third
+parties. There's some proprietary ones. There's some very large public ones. There's things like
+common crawl, which is basically a collection of almost all the data from the internet, which is
+often the basis of other data sets where common crawl is taken and itself is sanitized and put into
+smaller data sets that are actually more useful for training. Hugging Face has a huge repository of
+data sets on there that can be used for training. They also have a library. I think it's a Python
+library might be available in other languages called data sets, which allows you to bring data sets
+in from Hugging Face. I think it lets you do that entirely automatically just by name. I don't
+believe there's any verification in there. So that's an interesting step there that you need to
+handle outside of that. So the next step after that is the training itself. And that is when the
+model is actually created. Now, after that, there's fine tuning and alignment, which is taking the
+trained model and trying to get it to behave in a certain way. So with alignment, we're really
+talking about alignment to like human values or like don't be awful. There might be some pretty
+terrible things in some of these training sets. You can make every effort to remove them beforehand,
+but the chance of bias creeping in unintentionally is extremely high. And so during that alignment
+process, you can make efforts to fine tune the model to show what good structured output looks like
+and not including certain topics and things like that. A lot of people will start with a base model
+and then will fine tune it themselves. So there's models that are distributed that are only very
+lightly fine tuned. And the expectation is that you then fine tune that model yourself. There's
+obviously models that are distributed that are entirely ready to use in chatbots. Or there's a bunch
+of training sets out there that let you do chain of reasoning and things like that, where the model
+comes already trained with that. And so you can use it. There's libraries and there's structured
+languages that match those training sets. And so the models already, for lack of a better word,
+talks in that format that you want. The next sort of stage after that, I guess, is the deployment of
+the model. So that's then taking those models. There's all kinds of public model registries out
+there. Hugging face again is probably the biggest one. There's commercial entities running their own
+model registries. There's companies running them inside the company. I believe Red Hat actually has
+a repository on hugging face of validated models. And then it's deploying those models onto your
+infrastructure. Some sort of inference server is usually the standard way. They could also be, like
+you mentioned, deployed on edge devices, depending on the size of the model and so on. I missed the
+entire step there. There's quantization and compression and preparing the model as well, actually,
+for deployment. So quantization is probably the most common thing that we see happening there.
+That's basically some of these models are huge. And so one way to get them smaller, in fact, they're
+all huge, the L in large language model, which literally standing the first L large. But one of the
+ways to get them smaller is to quantize them, which if you're familiar with quantization in any
+other domain, like in musical theory or something where notes are snapped to a grid, it's a similar
+concept with the models. So the weights are usually represented as like 32-bit floating point
+integers. And so that precision can be reduced. So there's mathematical methods to take that 32-bit
+number and make it say a 16-bit number or even a 4 or 8-bit number. And when you do that, obviously,
+you do lose some performance of the model. But we're getting better and better at actually measuring
+that performance and keeping that performance loss down to a minimum. But so that's a really
+effective way to get the model size smaller. And the smaller the model, then the less memory
+effectively that you need to run that model for inference. So if you've got a lot of processing
+power, a lot of RAM on GPUs, you can run much larger models. If you don't, if you're using it on a
+laptop or even a mobile phone, then you want a much simpler, smaller model. And then there's
+actually deploying the models as well. So that might be pre-deploying it in the case of like a
+handset device or something like that. That might be spinning models up at runtime in Kubernetes
+clusters and that kind of thing that goes through your traditional admission control and that kind
+of thing. Then it's running. We are familiar with the reasons that attackers go after the supply
+chain in existing or conventional software, maybe trying to gain access to a system, egress data,
+steal something. In the case of AI supply chain attacks, what's in it for the attacker? So that's a
+great question. And there's a few different motivations. So the most common motivation, the one that
+we've actually seen in the wild already multiple times is actually very similar to your traditional
+software supply chain attack. It's just trying to gain access to people's systems. Some of the
+training infrastructure is incredibly large and powerful. So getting access to people's training
+infrastructure gives you access to all of their GPUs. It can also get access to their private data
+and that kind of thing. The software itself used for model training has rapidly become a more
+important source of vulnerabilities over the last few years as attackers have realized this. So the
+first angle of attack, well, I'll call it the first, there's obviously, there's no real order. It's
+up to the attackers what they want to do. But that traditional attack looks to exploit
+vulnerabilities in that training software stack itself. And so if they're able to compromise those
+data training sets, or if you're getting data training sets from the internet with no verification
+or understanding of where they've come from or anything like that, they can be entirely malicious.
+Some of these data sets are actually executable code, like they actually come as like Python pickle
+objects or other formats that require serialization that while you expect it to be loading in memory
+objects for your training data, you can just embed Python methods or anything like that in there and
+they'll just execute. So that's very easy for attackers to put backdoors in that. Sometimes that's
+expected, it's highly documented that that can be the case and that you should never load untrusted
+data into some of these pieces of software. In other cases, they've actually made efforts to
+mitigate that. And then people have found bugs in that mitigation and those have been exploited as
+well. There was a really interesting paper, I think it was only late last year, which is about 200
+years in AI time, but just a few months in human time. From the CSIRO Australia, a bunch of
+researchers there actually started cataloging some of the security vulnerabilities that the internet
+had seen in some of the more popular machine learning frameworks and like how the rise of them had
+just exponentially gone up the amount of reported vulnerabilities and the types of vulnerabilities
+that people were seeing there, which was, I mean, again, it's what you would expect as software gets
+more popular and it hasn't traditionally been written to consider some of these adversarial attacks
+against it. You'll rapidly will see those attacks go up. And we've also seen that in the wild
+multiple times. There's been compromised data sets uploaded to Hugging Face where they've just
+basically been malware. They've embedded Python code that was just straight up malware. There was a
+really large public campaign. I think it was called Shadowray and then Shadowray 2.0. The original
+Shadowray campaign, I think, was quite small, but basically they're looking to exploit these kinds
+of vulnerabilities to install crypto miners, which you can imagine some of this training
+infrastructure is pretty attractive for running crypto miners on. You can get yourself some Bitcoin
+from that. And then the Shadowray 2.0 was essentially the same thing, but by then it was entirely
+commoditized. So now we've actually seen this in like the public exploit and bot kits and stuff out
+there so that anyone can pick these up and off the shelf, go and make your own version of it to try
+and steal people's GPU cycles. So, the more interesting one though, and the much harder to detect
+and understand because we're still in the era of emergent properties coming from AI models. They're
+surprising as there's active research into understanding them and explainability and there's new
+things being discovered about them that are not properties that we designed them to have, but it
+turns out they're there. And so, with that in mind, the more interesting attack is influencing the
+way that the model will actually work based on the data. So, it's largely known as data poisoning,
+but there's actually a lot more nuance to it than just simply putting in like bad data, which
+absolutely does happen. Like we've seen things like, I forget the name of it, but there's some
+researchers and they figured out how to like just make tiny changes to images, for instance, that
+when AI models either process them or if you trained on them, it did something completely different
+to what you'd think the image would actually do. So, like if it was labeled by a human to start
+with, if it's like labeled as a cat, but the model, if it's trained on it, now it'll start like
+saying all laptops are cats and that kind of thing. I think there were some people that actually
+used that attack in the wild against self-driving cars. I say in the wild, it wasn't actually used
+maliciously. It was just done to prove a point, but I think they were able to make self-driving cars
+like swerve off a road by putting a specific bumper sticker on another car or something like that.
+But I think that really paints the potential danger of these kind of attacks, especially with them
+being so difficult to detect when these AI systems are used in such safety critical ways and we
+really don't know exactly how they're going to behave. And the other one that's really interesting
+there that's also now old in AI years, but new in human years from, I think it was also just late
+last year, was attacking the quantization phase where people were able to have a base model. So, one
+of the ways of sort of detecting what the models do is known as evaluations. So, the safety and
+security evaluations, which is essentially running the model a lot of times with predetermined
+taxonomy of like inputs and observing what the outputs are, ranking them, looking, is it saying, did
+I ask it to write code? And it actually gave me like this essay on, I don't know, something horrible
+instead. It's not that simple. There's obviously more to it than that, but that kind of thing. They
+were able to produce a model that it passed all those safety evaluations and like it appeared in all
+intents and purposes to be quite functional and safe and everything. However, when quantized, it
+actually turns out that then the malicious payload that was in the training data could be triggered.
+And so, they could distribute this model and it was appeared to be fine. You could put all the
+safety evaluations on there, sign them and everything looks great. Someone else takes it, quantizes
+it to put it on their smaller device and runs it. And now it's vulnerable to the attack. And so,
+that wasn't even known that that was possible until recently. And I suspect there's lots of other
+fun surprises like that, that we still don't know about remaining to happen. There's probably going
+to be ways to do that both through the mathematical properties like that one and bugs in the
+software itself as well, where carefully curated and arranged training data with something
+incredibly subtle in it actually exploits a bug that causes the model to behave differently after
+it's trained in a way that's not entirely detectable yet today, which should get everyone a warm,
+fuzzy feeling given the amount of places that these models are being deployed where safety is
+critical and security is critical. So, I think we are entering an era now where we're going to see,
+or we've already seen it in the last few months, we're going to start seeing more and more attacks
+against the models themselves exploiting these kind of properties, which will be interesting to see
+how we actually deal with all of those. The IEEE Computer Society is now accepting candidates for
+the new software professional certification. Whether you're leveling up or ready to lead teams, this
+certification validates your expertise, backed by the industry's most trusted professional
+organization in computing. Visit computer.org slash certification to sign up today. Some of the
+attacks are easier for me to understand than others. If I could get a model to run my Bitcoin miner
+on somebody's GPU, I understand why someone would want to do that, or I can get my malicious payload
+to execute. It's less clear to me if I could get a model to say that a cat is a laptop, or to say
+something that's wrong, or to get a car to drive off the road. Do we have real world examples of why
+an attacker would be interested in doing that type of attack? Would that be industrial espionage, or
+do we know? That's a great question. It's difficult to assume the motives of attackers, but I think
+nation states, it's heavily going to be on espionage and influence campaigns, especially when models
+are used for decision-making, or for critical purposes, or in defense purposes. The ability for an
+adversary to be able to influence the behavior of a model that they know is being used in offense or
+defense in a military operation against them, that's incredibly valuable. So, while I have no proof
+that that is happening, I think common sense, we would have to think that it does. There's also an
+interesting one where we have seen in real life was with the DeepSeq models, which I think it was
+CrowdStrike did a bunch of testing on the DeepSeq models with code generation. And DeepSeq was
+surprisingly good at code generation. I think it was one of the first open weight models that was
+sort of capability level of the frontier models at the time. What they discovered, though, is that
+when it was given certain prompts that were, what's the nice way to say this, things that the CCP
+would not like. So, like you're writing software for, I should have grabbed their exact prompts, I
+can't remember what they were, but it was something like, this software is to do this thing, ABC, it
+writes good code. They say, this software is to do ABC for this group that supports Tibet. And then
+it suddenly writes code with like terrible software vulnerabilities and things in it. Now, they
+stopped short of putting this attribution down to anyone doing this on purpose or a reason for it.
+But you could connect the dots and say, if that's not there on purpose, if that's entirely emergent
+misalignment, which it can be. Like if a model is trained on a data set that's like very heavy
+politically this direction, and you talk politically that direction, it's actually been discovered
+that models will behave worse because it's aligned this way. So, all the things it's meant to do
+when you start pushing it the other way, it'll do all of them badly, which it's an interesting
+property of LLMs. But obviously, a more cynical person could look at that and say, well, if that's
+not on purpose, that's a great thing to do on purpose. Because if you've got a model that you know
+is going to be used for code generation and someone that you want to be vulnerable to attack from
+yourself, that's a really cheap way to suddenly get access to their infrastructure for all kinds of
+espionage purposes. And really brings into view some of the difficulties that we are going to see as
+we're using these models more and more for code generation and the need to really check that code
+that they generate for things like this, both in advance of deploying the model and as it's
+generating code. This is making me think of a question. I interact with LLMs often where I get a
+response, like, this makes no sense. If I was done with conventional software, I might conclude with
+a similar degree of misbehavior that it's a bug. But LLMs, as you have said, have all kinds of
+emergent properties and are probabilistic. If the weights are attacked, you have a supply chain
+attack on the model weight, can those be reliably detected? Or can you differentiate that from
+simply that's one of those weird things about LLMs? So, detecting the intent is really, really hard.
+If there is work there where that has been done, I'm not aware of it. I suspect there is active
+research there, but I've not seen anything that's made me, like, take notice and go, oh, that's
+really important. But certainly, there is ways to detect that it is happening, which is those
+evaluations, the evals that I was talking about before. But they, of course, do not show intent.
+They just show that when prompted this way, it produces this output. But they can be run at
+different stages. They can be run to simulate, you know, how you're actually going to use the model
+yourself. There's also big libraries like METR, Meta, I think that's how you say it, where they do
+very large scale evaluations and then publish all the results. And they do the same evaluations
+across a bunch of different models. Obviously, you know, there's an element of trust there where
+you've got to actually trust their results, which is not the same as doing it yourself. But doing it
+yourself can obviously be costly and it can be outside of the realms of capabilities of smaller
+organizations. As far as I'm aware, there's not a great way to detect it being done on purpose
+unless you're taking an existing data set and altering it. So this brings us into what some of the
+protections are here, I guess, right? Like so... That is a great point to transition to talking
+about AI supply chain security, which is our ostensible title. So I would like to set that up. And
+now, what are some of the main areas or main components of AI software supply chain security? Yep.
+So we've got to go through those steps again, I guess. So with the pre-training data, it's being
+able to verify the data. So it's knowing... Well, and as I mentioned, when it's your own data and
+sanitization of the data, so removing private or copyrighted material from it and being able to
+verify it, though, that's the important thing. Like ensuring that it comes from where it says it
+comes from, the pedigree and providence, just as we have in regular software, is all there and
+intact, and that it hasn't been tampered with on disk or in storage or where you're getting it from.
+And so that's where the traditional methods of signing and stuff come in there. Now, there's a bunch
+of nuance to those in here because you're signing very different things and there's different parts
+of the process to capture. But there's ongoing work there. So there's in OpenSSF and in SIG Store.
+And I think there's even a machine learning salsa adaptation attempt underway now at the moment. But
+they all sort of have the same thing in common and they overlap with each other and work together.
+But that is to cryptographic verification that that data set is not being tampered with and that it
+is from who it says it is. And you can actually verify that. So then after training, when you've
+actually produced a model, again, there's model signing. It's very similar to signing data sets. In
+fact, there's some complications to model signing. There's the OpenSSF model signing OMS standard,
+which uses Intoto, I believe, internally. It doesn't sign the model itself. It signs the Intoto
+attestations, which includes things like its training data and additional metadata. It can also
+include like definitions of the hardware and so on. But it's got a major drawback when it comes to
+this stuff. So while it does verify that none of that has been tampered with, you still can't
+actually show that that training data was what was used to train that model. Like you're still just
+trusting it that it hasn't been changed. It also provides no guarantee that that model will behave
+in any way whatsoever. It's certainly better than nothing. It's very important to do because it
+ensures it hasn't been tampered with, but it doesn't provide any real guarantees about the model's
+behavior or that that model is genuinely derived from that training set that you've signed there
+with it. Does that be in contrast to repeatable build where I could compile some source code and get
+the same executable as the CD system? Exactly right. And even if you don't have reproducible builds,
+you can reverse engineer a binary and you can make not mathematically provable that it is from that
+exact source code, but you can very much see that it's very close to functionally equivalent. You
+know, it's quite hard to hide a backdoor from a very skilled reverse engineer who can take your
+binary apart and compare it to the source code. Whereas in a model, that's actually almost trivial
+to hide. So, and again, there may be research there that I'm unaware of. This space moves incredibly
+fast and it's a very important topic to tackle. But I haven't seen anything, again, that makes me
+go, well, that's the solution. That's definitely going to work because it relies on being able to
+solve unsolved computer science problems. When our solutions get to a point where they're now
+relying on something that possibly can't be solved, that's I think everyone that's worked in
+software engineering for any amount of time realizes that's pretty much a dead end. All but, you
+know, the most prestigious academic researchers, like in general workplace, we just go, okay, well,
+I'm not going to just solve that on the weekend or just quickly solve the Turing-halting problem and
+then we'll be fine. That's not a thing that happens. There is some interesting ways around it with
+some of the open source models with entirely open training data as well. There's the Allen AI
+Institute AI. I should really remember the acronym, but they developed the OLMO model, O-L-M-O. And
+they've developed a system where they publish the training data along with the model, but they also
+build this big index of the training data that's searchable as well. And what they've done is
+published this thing where you give an input to the model, it gives you an output, and then you can
+take that output and look up the index and see where in the training data there's things that match
+what it said that it probably created them from. Now, it's not actually deterministic. It doesn't
+prove that that's what happened. But what they've then done is when the model has produced bad
+output is gone and removed where it looks like it came from, from the training data, retrained and
+seen that it no longer creates that. So, again, it's not complete proof. It's kind of a sidestep
+shortcut around it, but it's definitely an interesting technique. Of course, that only works for
+labs that are willing to publish those indexes of all their training data and all their training
+data and a tool to do that, which, again, as we've seen, I think they're the only ones who'd be
+willing to do that. A lot of even the models that score high on the Stanford Modelness open index, I
+forget what it's called, Stanford University publishes a list of models and how open they are. Even
+the models that score highly on that, that use mostly public training sets and document what they
+do, none of them are anywhere near that open. In that last discussion, you dropped the term
+attestation, which I have on my notes is something I wanted to ask you about. Yes. Yeah, that's
+right. So, what's done there is the process will attest to that. So, it will say, I have done this
+and then it'll sign it. So, you've got proof that they claimed that they did that and they know
+themselves that they did that and they've signed the real proof or anything, but you are still
+essentially trusting them. So, they're saying, yes, this is definitely done. You're verifying the
+signature. You can hold them accountable to that, but it depends entirely on who that party is. If
+that party is just some random person on the internet using a pseudonym, they could attest that
+they've done all kinds of things, sign that attestation and all the data going into it could be
+fake. That signature will still be valid, but it's just not worth anything. So, it's tying identity
+to that trust. So, that identity itself has to have some meaning for you to be able to trust that.
+If it's your own infrastructure and you're actually doing, what do you call it? Like when you do
+hardware and boot verification of the whole stack and you include all of that in your attestation,
+that's very trustable for you yourself. There's obviously still attacks that can happen there. There
+can be bugs in the software. Someone could have influenced something in memory and so on. But
+generally, that's a very strong trustable attestation. And if you then publish that and you're a
+very well-known public entity, such as a business with a lot of customers, there's probably even
+legal liability and things in there where if you're attesting to lies, you can be held legally
+responsible for that. Now, I'm not a lawyer. I don't know exactly how that works, but there's levels
+of trustworthiness there. But it does all come back to trust. Even without any legal constraints,
+the greater amount of reputation you have, the more impactful it would be if you were found to have
+said something that was not true. Exactly. And there's transparency matters here as well, right? The
+amount of transparency that you allow into your systems can help increase that trust as well. You
+can make it very hard for you to lie. You can't make it impossible, but you can make it hard, not
+just in terms of reputational damage that happens, but the ability to be found out can be highly
+increased. If you're using public training sets and you also publish them all and the hashes of them
+and you attest to using those and someone is able to duplicate your process and get very, very
+similar results, that's good. Like that makes you more trustworthy. If someone, if you give all that
+information out and someone duplicates your process and gets entirely different results, like it
+just makes no sense whatsoever how their results could be so different, you know, transparency then
+is going to make it harder for you to lie. Within this area of attestation, is there anything like
+either standards, documents, standards, bodies, general agreement on what type of things should be
+attested or any other consensus across the industry about what should be contained? Consensus would
+be a stretch, but there's beginning of consensus. So going all the way back to the pre-training data
+sets stage, there's actually a document format. There was a paper released on calling it data
+sheets, which is, it includes the origin, the composition, the collecting methodology, the labeling
+process and the known biases in a data set. There's a derived standard called data cards, which I
+think came from Google, which is basically the same thing, but it's an attempt to standardize the
+format a little bit as well, rather than just what it should cover. Not entirely standardized yet. I
+have a strong feeling that it needs to be standardized. I would love for a standard like that to go
+to an open source body and for people to agree on the exact machine readable format for that and,
+you know, a way for people to add more things that should be attested to in that format and so on
+and, you know, how standards bodies normally work. We also have model cards. Again, there's a paper
+from Google, I think, with the originators of the model card standard. Again, it's a loose standard.
+It's not an official standard. There is no set actual standard, but that covers things like the
+model architecture itself. So, model architecture is like the layer organization, the routing, how
+information travels between those layers, the actual mathematical mechanism that a neuron uses to
+determine an output. And then it's like whether it's a transformer or a diffusion model, other types
+of neural networks. And sometimes, well, that's always in the model card. Sometimes that
+architecture is in the model itself. Sometimes that's actually outsourced to the frameworks. So, the
+model can be loaded in a given architecture or the model can be run and there's executable code in
+the model that loads the entire architecture. So, there's obviously some very common architectures
+where like that it's agreed upon what they are, but there can be subtle differences between the
+different frameworks and the implementation, which again, another fun thing that can actually
+influence model behavior. So, there's also in the model card, there's the intended use case. So,
+it's this model can be used as a general chatbot. It should not be used for this thing. You should
+absolutely not use it for safety critical things or, you know, don't use it if you're a lawyer.
+There probably is some case law and things in here that it was trained on, but if you take it to
+court, you're probably going to get disbarred because it will just make things up. Some of them will
+put very specific out-of-scope uses in there as well, such as that example, I think probably to
+prevent legal liability on themselves, but also just to discourage terrible uses of the model. Model
+card will also then often reference those data cards. So, the data sets used in it, if they have
+data cards that exist, the model card can then point back to them, say, we use this data set here as
+its data card and so on. Then we have system cards, which is probably seeing a theme here with the
+card naming. System cards is sort of the next layer up and this is where you look at the entire AI
+system as deployed. So, that includes things like the guardrails, the actual software architecture.
+Something that Red Hat has actually been pushing is to include like a list of weaknesses in there
+that have been fixed in any of those layers as well. So, there's a way to track those and that can
+be used for actual verification of the whole system once it's running. So, make sure what you've got
+running in production actually matches the description of what you expect it to be for the whole
+system. So, not just the model, but the guardrails, the software architecture, all of the API points
+and so on. Make sure it's all there. Sort of coexisting with these and some overlap is the MLBOM
+AIBOM as well, which are very similar to the software bill of materials. That will generally include
+the model weights themselves, hashes of the actual model weights and frameworks that we use for
+training, usually a hash or something like that. And again, these all have the same problems in some
+cases. Those things in there, you're just trusting that that's the truth. You know, when you're
+doing it yourself and you're using it for monitoring your own deployments, that's great. When you're
+providing these for third parties, you can sign them. Essentially, you are attesting that these
+things are true, but it's very hard to prove in some cases. Some of them are easy. Some of those
+things are entirely deterministic. Others, not so much. I have in my notes model signing and
+provenance. We did discuss signing a couple of times. Is there anything particularly about model
+signing we haven't covered? I think we sort of covered it all already. I guess there's the stages of
+where you put the verification in your pipeline is important as well. And whether you re-sign models
+yourself if you modify them in any way. So if you're hosting an internal model registry, you want to
+be verifying. If you're bringing models in from outside, you definitely want to be verifying those
+before you put them in your registry. But if you're then deploying those models, which you probably
+are, if, well, so you're hosting an internal model registry, you've got the question of, do I re-
+sign them? Because do I want to just keep adding these other people's keys to what I trust and can
+be deployed? Do I want a key that's associated with my registry? And so on. There's also, are we
+doing fine tuning of these models? Like, do we put a base model here, sign the base model with a key
+that can't be deployed? And there's a validation fine tuning pipeline process where the input for
+that has to come from the registry. But then the output of that actually gets signed with your own
+key and so on. And that proves to you that you've done all those things that you said because it's
+gone through your pipeline. And those can then be deployed. I also have some notes about workload
+identity. Is that how to enable that you can be ensured you are talking to the model that you think
+you're talking to? Essentially, yes. So workload identity gets really complicated with AI. So
+there's the simple view. And that is when we're using some sort of workload identity tool, Spiffy
+and Spire being probably the standard at the moment, certainly in the cloud native world, is that we
+add that model at a station to that, which I should have just covered then when you asked, but I
+completely forgot. So as well as just verifying the software stack, you're verifying the model. And
+so part of that identity is that the model is the model that you've allowed, that you've authorized
+on your network. And then when that model does things like tool use or anything that it needs a
+token for to access other parts of your infrastructure, it's validated that that is the correct
+model. There's something that this doesn't take into account though. And this is the intent of the
+user and the potential for indirect prompt injection as well. So the intent of the user actually
+matters in this case. So if you're going to give models access to internal infrastructure or other
+services, those services usually contain something valuable or do something. A really simple example
+is say Jira. Software development companies, Jira, very commonly used for bug tracking, all kinds of
+information about how projects are meant to run and that kind of thing. You could see lots of use
+cases where a model needs to interact with Jira through a tool. Now, does that workload get access
+to update tickets if someone has only asked it for information from a ticket rather than to actually
+update a ticket? And how do you know which identity it gets, which token it gets, like the token
+with access to write to Jira or just the token that gives it read access to Jira? Now, the really
+easy solution is to just have a generic system identity that you give it. It has full access to
+Jira. But if a user has only asked it for information from a Jira and the Jira that it's looking at
+contains an indirect prompt injection that actually tells it now go and update this other one and
+copy all this data to it and leak information out to someone entirely different, that's probably not
+ideal. You do not want that to happen. So, you've got to have some way of mapping that intent to the
+identity as well. So, this is what I was alluding to at the start with the supply chain now becoming
+incredibly complex because both the data that it's reading and the user's prompt have now
+essentially entered into your control plane and formed part of your supply chain as to what that
+model is actually executing, what those tools are actually doing. And this is not entirely solved
+either. There's attempts to solve this and they're getting better and better. There's attempts to
+separate the control plane and the data plane. There's some technology where they use dual models.
+So, there's one model that's entirely isolated that determines deterministic output where it's like
+heavily templated and then the tool use is only in the template. And so, then the model that
+actually has access to the tools, you know, the prompt injection will happen at the wrong spot.
+There's also lots of isolation technology for the agents and tool use as well where there's fine-
+grained policy where you can actually, you can have some basic intent sort of mapped out and
+there's, you know, predetermined policies that you can apply. So, it actually gets an entirely
+different identity to if it's doing task A to task B, task C. So, you like have those short-lived
+tokens that with very limited scope on what they can do. Again, can it be defeated? Probably. It's a
+probabilistic process. It's very hard to get right. It is definitely better to do something than
+nothing. YOLO mode, I think they're calling it now with Agenic workflows where you just give it
+access to everything, which I have to admit on my personal laptop, it's great fun to do that. Just
+put it in a VM or even give it access to the whole laptop and just give it access to everything. Let
+it run as yourself. The utility there is amazing. But, you know, in the enterprise use case, the
+risk versus the utility there, you know, it starts tipping the other direction pretty quickly as
+well. So, I think that's a really hot area of security to watch how that problem actually gets dealt
+with at scale. Getting close to the end. And Garth, are there any findings, research or otherwise
+you're aware of for attacks that have been discovered but have not been seen in the wild that you
+find particularly not worthy? Yes. So, for stuff that's not seen in the wild, but I suspect is
+actually happening. Insecurity, I think there's actually a lot of this in general. It always makes
+me think of the survivor bias explanation that I think we've probably all seen with the airplane and
+the holes in it. And we put the armor where the holes were. And then someone says, well, you should
+put the armor where the holes aren't because those are the airplanes that are shot down. I think
+security in general, we suffer from this a little bit where we tend to obsess over the attacks that
+we caught and don't think enough about the attacks that we got through. But from an attacker's point
+of view, they want to be not caught. The most successful attacks is not one that we caught like 80%
+of the way through. It's done some damage. Now we've stopped it and we've identified the attacker.
+It's the one that goes completely undetected. So, I suspect there is research out there. Well,
+there's definitely research out there. It's getting published all the time on how to influence the
+models in the most subtle way possible. So, that data that when it's used for training, prompts that
+can be hidden very, very subtly, especially over like a large period of time or like across multiple
+systems where the influence that it has on the model is subtle for the individual, but then at
+scale, it happens over time. That really scares me a little bit to think that that is happening. But
+when I think about it, like how would I carry that attack out? I don't know that it would be
+detected yet if it was happening or whether we've really even seen the consequences of it. Like if
+you think of the amount of companies that are using AI for decision-making and in important
+processes, and instead of thinking of the influence on, you know, do A, B happens, but start
+thinking like, what if I can influence all of these companies at once in a very, very subtle way to
+get a slow action to occur six months down the track because they're all just doing small,
+unnoticeable things. That's a very attractive attack for nation states, huge organized crime
+networks and so on. If I worked for one of those, and I don't, obviously, I work for Red Hat, but
+very much on the other side of preventing this, not enabling it. But if I did, that's certainly an
+area that I would be very interested in what that looks like in practice, which leads me to believe
+it's probably happening and we just don't know yet. Garth, winding down, would you like to point
+listeners anywhere on the internet where they could find you? Redhat.com. I don't really have a lot
+going on outside of there. I am a member of the COSI, the Coalition for Secure AI. They've got some
+great resources there. Technically, I'm on Twitter and those kind of things, but be honest, I really
+don't use social media anymore since it's kind of turned into a little bit of a cesspool. Thank you
+so much for speaking to Software Engineering Radio. Arthur, it's been a pleasure. You too. Thank you
+for having me. For Software Engineering Radio, this has been Robert Blumen. Thank you for listening.
+Thanks for listening to SE Radio, an educational program brought to you by IEEE Software Magazine.
+For more about the podcast, including other episodes, visit our website at se-radio.net. To provide
+feedback, you can comment on each episode on the website or reach us on LinkedIn, Facebook, Twitter,
+or through our Slack channel at se-radio.slack.com. You can also email us at team at se-radio.net.
+This and all other episodes of SE Radio is licensed under Creative Commons License 2.5. Thanks for
+listening. Thank you.  Thank you. Thank you.                                Thank you.

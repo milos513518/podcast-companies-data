@@ -1,0 +1,385 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Story: Unproven Tech Case Study with Sean Allen
+DATE: 2020-06-10
+SHOW: CoRecursive
+LINK: https://chtbl.com/track/7D91G/traffic.libsyn.com/secure/corecursive/053-Unproven.mp3
+AUDIO: https://traffic.libsyn.com/secure/corecursive/053-Unproven.mp3?dest-id=628353
+DURATION_SECONDS: 2343
+TRANSCRIBED_AT: 2026-08-05T17:48:09Z
+----------------------------------------------------------------------
+So, why don't you state your name and what you do? So, yeah, I'm Sean Allen. Until a couple months
+ago, I was the VP of Engineering at Wallaroo Labs. There's a standing fan about seven feet away. I
+assume you're not hearing that. I don't hear a standing fan. It does sound echoey. I have no non-
+echoey rooms. It's basically a couple large open spaces here in Brooklyn, right by the bridge. Sean
+held his laptop up to the window and showed me what I assume is the Brooklyn Bridge. Oh, nice. Sean
+is also recovering from COVID. I had all of the symptoms except for the smell thing, but it was
+relatively mild. The highest my temperature ever got was 99.9. I felt like I had a bad case of the
+flu for the most part. Now I feel like I have a mild case of bronchitis. Hello and welcome to Co-
+Recursive. I'm Adam Gordon-Bell. Today, Sean shares a story of picking the right tool for a job. The
+tool he ends up picking will surprise you. What happened is Sean wrote a book about real-time data
+processing. The book is called Storm Applied, Strategies for Real-Time Event Processing. The details
+of Storm don't really matter here except to know it's an Apache big data project. It is written in
+Clojure and runs on the JVM. What happened is after he wrote the book, a company called Wallaroo
+Labs hired him to build a system like Storm, but much faster. So you started at Wallaroo Labs, and
+then what happened next? So we went through a couple iterations of stuff with them and then decided
+that in order to meet the needs, we were going to have to build something from scratch. And build a
+framework which was designed for these low latency type use cases, whereas part of it as well, you
+wanted to be as efficient as possible. His problem? Make a distributed stream processing framework.
+Something that can take a firehose of events and perform customer-specific calculations on them. But
+the latency needs to be less than a millisecond, and the calculations might be CPU-intensive. Who
+would need something like this? The initial use case was risk systems for Wall Street banks. A risk
+system could be one which runs alongside automated systems and analyzes the trading output coming
+out of the automated system to make sure it looks within some realm of reasonable and could then
+shut down trading, for example. There's a whole bunch of different type of risk things. Perhaps the
+most famous is, have you ever heard the Knight Capital story? No. So Knight Capital went out of
+business because an automated system started doing trades that it wasn't supposed to do due to a
+configuration push to production that went wrong. And in the space of 45 minutes, put them out of
+business. This stream processor needs to answer queries in a millisecond 99.99% of the time. Median
+response time in the microseconds. And it needs to be able to receive hundreds of thousands of
+requests per second. It needs to be fast enough to pull the plug on a high-frequency trading system
+that's gone off the rails. So what would you do? What language or framework would you think about
+using? Let's play along and see if you end up where Sean and his team did. We spend a good amount of
+time specking out. This is what we think this needs to be able to do. And, you know, looking at what
+is the language or libraries that we want to build this on top of. I mean, the number one way to do
+low latency is to cut down on network hops. That's like one of the first big things. So even though
+it's a distributed stream processor, you know, we wanted to be able to do as much processing as
+possible on each machine and cut down on the number of network hops you'd have to have. Network
+calls are just slow compared to direct memory access or interprocess communication. You can't scale
+out to speed up latency as you're just adding more network hops. The more you can do on one machine,
+the faster your distributed processing system is going to be. Maybe this is the reason that Storm
+isn't a fit here. So how come Storm can't handle this? Storm wasn't designed for these systems,
+which basically had to be very efficient and very low latency. Storm and a lot of the other Apache
+big data projects are designed, but particularly Storm, more as a parallelization engine than a low
+latency data processing system. So if you look at like the early things of Storm, you'd be like,
+here I have some algo, some compute transformation I need to do, and I need to be able to run it on
+like 50 machines because it won't run fast enough on my machine. And, you know, in some ways being a
+bit of a real time replacement for something like Hadoop, right? Which again is the same type of
+thing, which is, which is a, you'd build that very differently when you're mostly concerned about, I
+just want to paralyze this so I can get it done as compared to, hey, I need to get this done within
+like, you know, like a couple milliseconds, right? Like a lot of, a lot of the things we do for like
+bank clients that we're looking at, 99.99% of requests had to be processed in one millisecond or
+less, right? Oh, wow. Right. I mean, you're, so you're talking about systems like that, and that's
+just not something that like Storm was built to do. Storm was built to do stuff where you're talking
+about, you know, probably depending on your, depending on your thing, your, you know, your median
+latencies are going to be in tens of milliseconds, probably. If it's a small thing, it might be
+single digit milliseconds, but you're not really looking at, hey, we want to have, you know, like 15
+microseconds be our median latency for a lot of the stuff that we're doing. Right. So, I mean, it
+just wasn't designed for that kind of, that kind of thing. But, you know, I mean, if you were, if
+you were designing it for that type of low latency, you wouldn't use Clojure, for example. Right.
+You know, writing low latency stuff for the JVM in general is, is difficult. And if you write it
+like a normal Java program, which in a lot of ways, Storm was written like a normal Java program,
+you're going to have a lot of object allocations, which is going to involve a lot of memory
+pressure. You're going to involve a lot of garbage collection. Clojure for how it does stuff makes
+that worse. And those are going to be problems for building something like what we built with
+Waterroom. And a variety of reasons. They didn't set out with the goal of building a system like
+that. So they made choices which wouldn't result in a system like that. Yeah, I guess I don't know
+this area, but like a lot of these projects that are on the JVM, like they all end up kind of
+manually managing memory with some sort of off heap tricks. Tricks. I understand. If you're trying
+to go, if latency is a real concern, you're doing stuff like that. Yeah. I mean, like for like a
+great project, if people are interested in like high performance Java stuff and in a code base,
+which is pretty easy to follow. The Aaron project, which is a message broker, which does stuff over
+its own custom UDP that Martin Thompson is one of the big people behind. And that's a great project
+to look at for doing that type of stuff on the JVM. But it's definitely not normal JVM programming
+at that point. So I think like if I were, let me take the sample of like backend developers out
+there and I pull one out of the hat and I ask them to build this. I think like depending on the age,
+probably a lot of people would go with C++ to build something like this. We definitely considered
+C++. I've done a lot of C++ programming in my life. I don't think I'm good enough to do it with C++.
+I wrote, so when I was really learning and doing a lot of high performance C++ stuff in the 90s and
+high performance C++ stuff then is entirely different than what we were doing for that we needed
+high performance with C++. Then you could just write it in plain old Java fashion now and be
+completely fine. Like, you know, the definition of high performance has definitely changed over the
+course of time, you know. But doing this stuff in C++, it was all, you know, multi-threaded. And in
+order to go fast, you need to not copy memory, which is also where you get into trouble because you
+can have data races, et cetera, where you need to be careful about how you're sharing memory. And to
+make sure that you don't corrupt the memory, to make sure that thread one over here doesn't free
+memory that thread two is still using. It is a variety of ways you go about doing this, usually with
+locks, et cetera, these type things. And still, even with doing those, an awful lot of people, like,
+the number one way that you see bugs of this usually come about is seg faults is what happens. Boom,
+program crashes, segmentation fault. And so, like, a lot of people develop different rules for how
+you can share memory or what you can't. I had this whole set of rules that were in my head. But in
+the end, you can use tools like Valgrind, use fuzzers and everything to try and find where you've
+violated those rules. But in the end, it's on you to carefully follow those rules. And if you don't
+and you build an awful lot of code and you're not regularly testing it with stuff where it's going
+to find your one little mistake that you made at some point, you know, the further in the past that
+that mistake was, the harder and harder it's probably going to be defined. And we didn't think that
+we could hire enough good C++ people to be able to do that. And so while we still kept C++ around as
+an option, we really wanted to have something that had more memory safety, like, baked into it where
+the compiler itself would say, hey, that's problematic. Right. Like, yeah. And that's something, you
+know, that Rust, you know, is definitely in part, you know, one particular approach to trying to
+solve that. Yeah, that's what I was going to say. Like, I think when people start talking about data
+races, Rust, Rust people talk about this all the time, right? Yeah. This is a feature they bring to
+the table. And so did you did you consider Rust? We did. And Rust was a strong consideration. The
+issue there was that there was no high performance runtime to do what we would what we wanted to do.
+And we have to write that runtime. Our estimate was and again, this is an estimate where we spent we
+spent probably a week to two weeks trying to spec out, you know, roughly in not even T-shirt size,
+bigger than T-shirt size, how long we thought it would take. And we thought it would probably take
+anywhere from 12 to 18 months to have a really good, solid runtime. So what's a runtime like a
+scheduler? Every language has a runtime. They just don't necessarily know it. So, I mean, a runtime
+is a number of things. It's memory management. It's a scheduler. What your particular runtime
+provides might vary. But yes, definitely scheduling. Scheduling and memory management are probably
+the two biggest ones. If you're doing high performance stuff, then also you're probably going to be
+doing stuff asynchronously in some type of thing or some type of message passing type thing so you
+can hand stuff off. Maybe you'll be using channels like Go does or something like that. But then,
+okay, what's the communication mechanism between threads as well, right? And having something for
+that. Yeah, because it seems like you need a runtime for handling concurrency. The thing that people
+don't think about usually when they're first starting out with stuff until they've worked in an
+ecosystem for a language that doesn't have a set concurrency model that comes with it is what you
+end up having is you end up having different communities that develop where they have a concurrency
+model. And there are libraries that work with that concurrency model, right? So like Rust has Tokyo
+now, which is a specific concurrent. There's a concurrency model that's built into that. And
+libraries that might be written to use an entirely different concurrency model are not going to work
+with Tokyo probably and vice versa. You see this with NC++ where there's a whole bunch of different
+concurrency libraries and they don't work well together. And if they do, they're usually stepping on
+each other and that becomes a problem for high performance. Yeah, like I think of like I'm a Scala
+developer day to day mainly. And there's like ACCA people who do kind of actor stuff. And then
+there's other people who do other stuff. And there's a number of communities, I guess. So like the
+JVM is a runtime and it provides a memory model for how memory works. And it provides a basic
+concurrency model, which is, hey, you build on top of threads and then you use locking primitives in
+order to do this. And ACCA wants to, in the end, have a different model that they want to build on
+top of that. But I don't know. Have you done much ACCA programming? I haven't actually. Okay. So one
+of the things that comes up a lot is, ooh, beware of this when you're doing ACCA stuff is make sure
+that you don't inadvertently capture values or references to objects. And send them from one actor
+in ACCA to another. Because now you can have two actors that are both able to modify the same data.
+And you now can have data races, et cetera, and everything, which is a problem. And there's not a
+lot that ACCA can do about this. Because in the end, that is this single global memory space is
+something which the JVM allows, right? And you would need a special ACCA compiler in order to
+prevent programs that do that inadvertently from compiling, which, you know, if you're building a
+library, you don't really want to have, like, you know, have to have, hey, here's my compiler for
+it. And so this is a thing where they're trying to overlay a somewhat different idea of concurrency
+and a runtime idea on top of a different runtime and running into some issues there. In other words,
+ACCA runs on the JVM, which doesn't have first class support for actors. You can make it work, but
+the runtime is thread-based rather than actor-based. Rust, on the other hand, tries to have a very
+minimal runtime environment. But Sean feels that that means he needs to build these things himself,
+like a scheduler or air handling or maybe even garbage collection, which makes me want to ask about
+garbage collection itself. There's an awesome paper. I was thinking before this, I'm like, am I
+going to get through this without mentioning it? No, I can't get through anything that's on this
+topic without mentioning it. It's a paper. It's called Trash Day. I don't know if you're familiar
+with it, but folks who are listening might not be, which is really about how do you get maximum
+performance out of a Hadoop cluster. Why is it called Trash Day, the paper? Well, because it's about
+handling garbage. When you put out your garbage, that's trash. You know, like when you live in the
+suburbs and there's like three days a week when you have to put the garbage out, it's Trash Day.
+Then it gets taken away. In other words, in a distributed system on the JVM, a GC pause causes a
+slowdown. Work piles up or work slows down. The paper makes Hadoop faster by having everyone GC at
+the same time. That's your Trash Day. So you get more throughput, but you still have latency issues
+when that GC happens. The point for us is the JVM and its runtime won't work for this use case, even
+with a performant actor system like ACCA. All right, so, so far we've crossed C++ off the list, Rust
+off the list, and now it sounds like anything JVM off the list. Sean did bring up actors, though,
+which gives me a clue about the direction he's thinking. And then I assume your concurrency model is
+going to involve actors of some sort, I guess, right? The concurrency model that I really like is
+that you have something of you start with how many CPUs you have, and you have a single thread that
+does work per CPU. You lock it to those CPUs, and you don't let anything else use the CPU. And if
+you want to go really fast, you can use something like CSET to actually set those CPUs apart so that
+Linux won't schedule anything on those at all. They're purely for your program. It can start up, and
+it can have, like, 12 CPUs that are all for itself. And you have one thread per CPU, which will be
+responsible for running work. And you have something, and it could be actors, whatever your
+abstraction is over the top of it. But you give people some unit of parallelism of concurrency that
+they can program to. And that's the model because, you know, I'm particularly interested in making
+things go fast. But, yes, I happen to like actors. For me, it's a really good conceptual model,
+although I've seen that lots of people definitely struggle with trying to figure out how to model
+things for actors, which in a lot of ways I think is because actors are really all about doing
+things asynchronously. And the way most folks have been taught to do programming is in a very
+synchronous fashion. And thinking about, really thinking about concurrency where things are
+happening asynchronously can be really difficult for a lot of folks. All right. That comment makes
+my mind go straight to this runtime that was built from the ground up to use actors for concurrency.
+I guess if you're going to embrace actors, like, I mean, Erlang must have been a consideration. Yes.
+Erlang's consideration. We didn't think that we could get the performance that we needed out of
+Erlang. Erlang was designed more for consistent latencies rather than consistently low latencies
+with lots of throughput. Right. Which is slightly different. I mean, one of the great things about
+Erlang is if you graph like what your latencies normally are, they're just flat in a way that you
+don't get from like the JVM in general. Because of like garbage collection strategies that are
+commonly used on like the JVM. Whereas the garbage collection strategy on Erlang is very different
+with the message passing and everything. It results in very consistent performance all the time.
+It's just that Erlang was not designed to be a high performance language. The throughput isn't
+there. But yeah, Erlang was something we definitely considered. More than one person who was on the
+team had prior, in some cases, large amounts of Erlang experience. It just won't hit your like one
+millisecond. You can. You can. But it might not hit your thing where like we were doing one
+millisecond at the 99.9 percentile while processing 3 million messages a second in a virtualized
+environment in AWS. We probably wouldn't be doing that amount of throughput with that latency. Like
+that wasn't going to happen. Like the per core amount of computation that you could do with Erlang
+is in general going to be less than what you would do with C or C++. Because again, it had different
+goals when it was designed. So it seems like Erlang might not be a fit, but there is this company
+called Basho that makes a really fast distributed database all using Erlang. For us, when we were
+looking at doing stuff for Walu, we really liked actors. Like actors work well for us for how we
+think about things and modeling them. And so Erlang was a natural like thing that we were interested
+in. And so it was, let's go talk to the folks that we know at Basho and go, here's what we want to
+do. Do you think that you think we'll be able to easily get Erlang to do that? And the answer that
+came back was, we love Erlang, but no, no, we don't think we're going to be able to make Erlang do
+that easily. You know. All right. So not C++, not Erlang, not Rust, not Java, not Scala, not ACA. So
+I'm running out of guesses. Let's just cut to the chase. So very little of interest has ever
+happened to me on LinkedIn. But Sylvan, I've known Sylvan since he was 16 and I was 17 when we met.
+But we hadn't talked for a number of years because Sylvan's very bad at email. And I sent him an
+email and he never replied. So I assumed I'd done something to irritate him. And I didn't hear from
+him until he sent me a LinkedIn message that said, hey, look what I built. What he had built, what
+Sylvan Klepsch had built was Pony, the love child of Erlang and Rust. No data races, shared memory
+without copying, and all based around first class actors and something called reference
+capabilities. The first thing I think of is I've never heard of this language Pony. It cannot be a
+legit choice to bet a company on. But Sean sees it differently. I'm just, I'm imagining this, right?
+I'm imagining the story. And I just imagine you're like, you know, Erlang, it's used in production.
+Lots of people use it. The people who really know it say it doesn't fit. But you're like, actually,
+the guy I knew when I was 16 built something that I've never heard of. Let's use that. So if I
+hadn't known Sylvan, right, then I wouldn't have heard of Pony. And it wouldn't have been a
+consideration. But, I mean, like, one of the other serious considerations was that we use C++ or we
+use Rust. And so in a lot of ways, I mean, we were very nervous about picking. We sort of dipped our
+toes in. But, you know, it was that compared to, like, Rust and writing our own one from scratch is
+the big thing, the biggest consideration there. But Rust had a bigger community at the time. But
+Rust was still a very, very, very small community that, like, really small. It's picking up now. But
+even though it's got, like, a huge amount of mindshare on, like, you know, things like Hacker News
+or whatever, like, the actual community itself is really small when you compare it to a lot of
+languages. I'm pretty sure that I know way more scholar programmers than I do Hacker News
+programmers. I'm sorry, Rust programmers at this point. Hacker News programmer, that is for sure a
+Freudian slip. But anyways, Sean chose Pony, a language written by his high school friend. Some
+might say that is a huge risk, especially since the whole company was this product. I think we need
+to learn a little bit about Pony to understand this choice. And then we'll come back around to, did
+this work out for Sean and Wallaroo Labs? So what did you get out of Pony? So we got a compiler,
+which won't let you create data races. Will allow you to share memory and a concurrent system in a
+way that's safe so that you don't have to do copies, which will allow you to go faster. And we got a
+runtime, which met our general idea of how we would want to go about writing both a runtime in terms
+of scheduling and basics for memory allocation, so that we didn't have to spend that 12 to 18 months
+writing our own. So you mentioned fixing compiler bugs. Yes. I mean, that would frighten me from
+wanting to take on a language, I guess. I think that is a thing that should frighten you. It should
+certainly be. You should go into that with eyes wide open, right? And all of us who worked on
+Wallaroo in the early days have a bit of scar tissue where even though none of us had hit a compiler
+bug in forever, we were still like, is that a bug in my code or is that a bug in the compiler? That
+thought would cross your mind all the time because it had gotten in there. At least part of the way
+I look at it is, yes, Pony was definitely unproven technology. And for whatever your definition of
+unproven is, an awful lot of things are still unproven that a lot of people are comfortable with
+now. I think one of the things that people don't think about when deciding, oh, I don't want to use
+that thing because it's unproven is that if their alternative is build it yourself, your thing that
+you're building is also unproven. Right? Yeah. And it becomes a matter of certainly building it
+yourself, you're going to probably understand the thing much better if you build it yourself, which
+is why when we took on building in Pony, we considered that the language, the compiler, and the
+runtime were part of our project. This was code that we were starting from, and we were looking at
+it as, is this like, imagine that we're starting our thing right here. Are we comfortable with this
+being part of our code base? Right? And the fact that it was such and still is such a really nice,
+clean C code base for the core implementation of stuff was something that made us comfortable. There
+are an awful lot of things that I've worked in the code bases of over the years where I would not be
+able to make that statement, you know, where it's just like a jumbled mess. And it would be a bad
+idea to take that thing on as a core part of your thing. Right? Right. So, I mean, that's really
+dependent there. But it's like, hey, if like part of the choices is we're going to do this in Pony
+and we're going to potentially have compiler bugs versus we're going to build an entirely new
+runtime in Rust. And Lord knows how many bugs we're going to have in like our runtime. Like, the
+likelihood of compiler bugs, you know, no longer becomes as much of an issue when you look at it as
+a tradeoff between those things. Yeah. It's interesting that you, you know, you successfully
+embraced Pony because I have to assume that there's limited packaging support in Pony. Oh, yeah. I
+mean, it's right there on the website. It's like, hey, battery's not included. You know, you're
+writing almost everything. And if you're concerned with performance, you're probably going to write
+almost everything anyway. And at least anything that's going to be in a hot path. So that becomes
+much less of an issue. But, you know, if you just want to get your machine, if you just want your
+machine learning thing up and running, you know, it would be the wrong thing to use. One of the
+things Pony is famous for is this quote from Sylvan Klepsch, Sean's LinkedIn buddy. Let's paraphrase
+it. Basically, it's programming languages are tools. They're not, it's not about ergonomics. It's
+not about developer experience. It's not about all the things that we normally talk about. It's
+about getting the job done. Right. For whatever that means. It's a means to an end. Yeah. It's an
+interesting perspective, right? Nobody, nobody, nobody, when we're designing Pony or anything is
+like, oh, let's make it ugly for whatever we think ugly might be. But, ooh, whatever it is that
+gets, I almost, I almost made fun of, of like, you know, the, the, the developer, like experience UX
+people for a moment, which is, which is bad. I would just, I would just, would have fallen into
+making fun of it because I just don't understand it. I, I, there, there is something that happens
+for those people when they're using a language that they, that they love in this type of way, like
+Ruby, that I just don't understand. Right. In, in the same way that I have a friend who's really,
+who like, who like Ruby drives him up the wall and he just can't stand it. He finds it horrifying to
+work with for reasons I also don't understand. To me, it's just like, well, I wish it had more
+things to tell me up front that I was making an error, but, you know, yeah, it's a tool. I get it
+though. Like I, I do get the beauty perspective, right? Like there's like the, the Haskell like
+definition of, of like quick sort and it's really small and it just looks like a spec, you know,
+then they're like, well, this actually doesn't work at the performance level. So then there's like
+an optimized version where they have to like, you know, do a bunch of stuff and then it, it becomes
+much less possible as a human. Right. I suspect when people talk about beauty, they're talking about
+like, Hey, this very concisely reflects what I would like the machine to do. Perhaps. Yes. But I
+think then that, I mean, that's certainly in the eye of the beholder, right? Because one person is
+just like, I want it to sort a list. The other person is, is I want this to be sorted in and is an
+efficient means possible. Therefore, I know I, I have a pretty good idea that doing it like this,
+this, this, rather than letting a compiler decide will result in better stuff. And so, I mean, at
+that point that could be beauty, you know? I mean, it's, it's like, it's a matter of context and
+where you are on a, the ladder of abstraction or whatever it is for what you're really interested
+in. I think that there's even a bigger point of a wider than performance. If you have a really hard
+problem, you have to optimize for solving that hard problem. Does that make any sense? Um, I believe
+I understand what you're saying. Yes. I mean, your hard problem is, is your primary thing. You want
+to solve the hard problem. Uh, ergonomics is going to be somewhere down the line, right? Ergonomics
+is never the top thing for probably anyone. There, there are other things that are first. For me,
+beautiful is I've written you, you work. Hey, what about like, like who should use Pony? Like, so
+you're behind Pony now. I believe you're, are you like, you're invested in the language? Who, who
+should use it? I mean, Pony particularly is good at doing things which are operating over TCP, over
+a network. If you were in a bank and you needed to like tap into an Ethernet card in order to like
+monitor stuff that's flowing by to make sure that there's not something unusual happening on your
+network. Pony is great for that. If you're building like, uh, if you're building like network
+servers that need to be high performance, then, then Pony is excellent for that. Like the, the
+concurrency, concurrency model and the fact that once you get over the hump that a lot of people
+have of having to do everything asynchronously, the performance is usually much easier to get in
+Pony than in an awful lot of other languages that I've ever worked with. I do also think that from a
+non, um, from a not trying to get stuff done at work standpoint, that Pony is an excellent language
+for people who want to learn language, runtime stuff. Or just because anybody who comes in the Pony
+community right now and wants to contribute, we will happily accept them as long as they're not a
+dick. Hmm. We will help them and we will teach them and get them so that they're productive. I spend
+most of my time at this point, not working on new features and stuff for everything, but trying to
+figure out what can I do to make it easier for people to, to be able to contribute to Pony. Like,
+that's where I spend most of my Pony time these days is, is, is, look, if I can eventually over the
+course of a year make it so that five new people came in and they're contributing stuff, eventually
+that's going to be better than my spending all that time just being an individual contributor. In
+other words, Pony is great, literally, if you want Sean himself mentoring you. I jumped on the Pony
+chat. Sean is just there answering people's questions, helping them out, along with several others.
+That's the beauty of a small community. It's also great if you want to work on a real but
+understandable compiler or runtime. If you've built a toy language in the past or played around with
+runtimes and are looking to continue that learning, it seems like, honestly, a great fit. It is a,
+it is a really clean code base for implementing compiler features, for implementing runtime
+features. And we have a, we have an RFC system where people can like bring up ideas for changes that
+they would want and, and have them discussed. I don't expect, you know, that a lot of people would
+sit down and be like, Pony is the perfect thing for what I need to do for like my job. Because it's
+designed, it's designed to do things which the vast majority of programmers are not getting paid to
+do. They're not getting paid to write reasonably low down on the stack type stuff that needs to be
+handling a lot of stuff concurrently and do it safely, easily, and in an efficient fashion. That's
+just not what most people were paid to do. Like, even when people were writing back in system stuff,
+right? If that's what people were being paid to do, then Rails wouldn't have taken off. Yeah. But
+there's some fun problems down, down there low in the stack, I guess. There are. And a lot of people
+really enjoy working on it. But in the end, it is compared to the, compared to the broader, like
+some of what everybody's doing, it is a niche problem. There will never, ever, ever be a Pony
+community that's as big as, as JavaScript. It just won't happen. Yeah. That makes sense. Like, how
+do I, how do I know if something's, you know, something that seems unproven is worth the risk? A lot
+of, a lot of engineers that I know, I don't think that they follow a very good approach when they're
+picking tools in general. I don't think that they really stop and think about what their goals are
+and what they, what they really need in order to accomplish those goals. Right. It's, and this isn't
+just in picking tools, but it's like, I have a, I have a feature to implement. Right. Most people
+usually don't think through what really are the goals of this feature? What are we trying to
+accomplish? What are we willing to trade off? What is, what is important to this? What is not
+important to this? So we started with a problem, a problem of making something like an order of
+magnitude faster than the existing solution than Apache Storm. We chose our tech stack and it was
+built. There's one thing that we're missing to wrap up our case study. All right. Sorry. Back to
+Pony. Tangents. You like tangents? I like tangents. So like, did it work? So you guys took Pony,
+you, you built, or you, you were going to build a storm, something better than storm, right? Lower
+latencies. How'd it go? I don't like to use the word better because we had different goals, right?
+Right. I've been, I've also, for everything I've said earlier on about languages, no, I didn't say,
+oh, that's a bad language or anything. It's the goals were different, right? But for what we were
+trying to accomplish, it was a much better tool for those type of scenarios that we built it for
+than, than storm was. Going back to, to what I find beautiful, right? Yeah. About a year ago when we
+were at Waluoo Labs, we put a system into production for Pubmatic. They're an ad tech company. That
+was the first system to go into production that was going to be taking a ton of data in. Like, lots
+and lots and lots of data for the system we built. And we're all like, we all worried about like,
+what's our on-call thing going to be for this, et cetera, and everything. Right? Right. It's almost
+a year later. Not a single issue. Oh, wow. It was one issue, and that was when somebody went to
+upgrade something and didn't follow the upgrade instructions. But for the stuff that we built, that
+was processing, like, at peak, about 80 million calculations a second, handling hundreds of
+thousands of incoming HTTP JSON requests a second. Right? With packed full of data, which would blow
+up into like 80 million calculations a second. Running for a year, not one teeny tiny little issue.
+That, to me, that's beautiful. That's beauty to me. Right? Right. So Sean focused on the features of
+his hard problem. That led to a seemingly crazy solution using Pony. But it actually made sense, and
+it worked out. He had to minimize latency and maximize throughput. So he needed something very
+performant. He needed to minimize network hops and copying. And he had to do everything async. Maybe
+you have a use case for Pony. Maybe not. But I bet you have to make technology decisions where the
+right choice could save or sink a project. And that's what this story was all about. Choosing the
+right tool for the job. I hope you like this case study. If you have a case study about a project
+you worked on, let me know. Adam at corecursive.com. I think we need more of these case studies so
+that we can all learn from them. Until next time, thank you so much for listening. allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem allem
+allem allem allem allem allem allem allem allem allem allem

@@ -1,0 +1,222 @@
+EPISODE 1720
+
+[INTRO]
+
+[0:00:00] ANNOUNCER: Uber handles billions of trips and deliveries and tens of billions of financial transactions across earners, spenders, and merchants every quarter. LedgerStore is an immutable storage solution at Uber that provides verifiable data completeness and correctness guarantees to ensure data integrity for its transactions.
+
+Kaushik Devarajaiah is the tech lead for LedgerStore at Uber. He joins the show to talk about scaling Uber's data infrastructure. The episode of Software Engineering Daily is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him.
+
+[EPISODE]
+
+[00:00:44] SF: Kaushik, welcome to the show.
+
+[00:00:46] KD: Thank you, Sean. Good to be here.
+
+[00:00:47] SF: I'm really looking forward to this as we were talking pre-recording. I love these stories about scale. You've been at Uber for eight years. I'm sure you've seen massive scale during that time. I'd love to start there. Can you talk a little bit about your journey at Uber? What was it like when you joined in going through this sort of hyper growth stages to where you guys are today?
+
+[00:01:10] KD: It was about eight years back since I started working at Uber. At that time, Uber was one of really nice companies to look out to and I was very excited to be part of the journey to actually also like affect people in real life. I worked before in a company called Flipkart back in India So there, I was sort of playing around with the data warehousing. That's where I started my interest in data actually had started.
+
+So, when I joined Uber, I started with the data infrastructure. I was lucky enough to be part of, one of the early members of the data infrastructure where we were building out large scale, large data ingestion at Uber. The problems at Uber are slightly different in the sense that this data that's getting mutated, like trips are being taken, like on the fly, and we have to be able to adjust them for analytics at Uber. Because these are actually used for making real world decisions that affect the riders and drivers, et cetera.
+
+That was a pretty challenging problem, large scale data ingestion. So, we had to build something from scratch. I closely worked and also contributed a bit to the Apache Hudi as well. That was my journey in data infrastructure. After that, after a couple of years, I moved on to the storage infrastructure, where the challenges were completely different. So, in data, it was all about batch systems, throughput, and those were the parameters to actually sort of improvise. But here, it was about availability, online storage system with latency and all those guarantees. Very contrasted problems. But that was exciting, as long as it was challenging like in a computer science where it was pretty exciting to be here.
+
+[00:02:34] SF: Yeah, absolutely. When you were, initially, your first role there working more on the analytics, data warehousing side, what was that like tech stack at that time?
+
+[00:02:43] KD: At that time, we had multiple architectures. We went through a couple of architectures. Initially, we just had a basic architecture of having HBase as a source of truth analytics where we used to use that as a store for actually stitching up rows of the incoming rows that is coming from the OLTP systems and actually have a job to actually dump data from HBase to the HDFS.
+
+So, basically like a Java HBase and mostly these are for the stack. Then, we had like something called [inaudible 00:03:10], which is sort of probably built on top of [inaudible 00:03:13] for the job scheduling and also a bit of Scala at that time.
+
+[00:03:17] SF: Obviously, Uber has, there's lots of drivers, lots of customers, many, many rides. It's probably hard for many of us to even fathom the amount of data that Uber's processing. But before we get too far in the weeds, I also want to take a second and just help shape the problem space. What kind of data scale are we talking about across these different systems?
+
+[00:03:38] KD: I guess it depends. For example, if you're talking about the data infrastructure, the data infrastructure, this data scale is quite massive. You have hundreds of terabytes of mutable data being ingested and immutable data. I say they're different because certain data, you don't need to - they're not like events. Events, they don't get mutated by definition. So, their ingestion for them is you don't need to stitch them. That is what we call it as immutable data. The scale of that was like in petabytes scale or tens of petabytes scale at that time. The mutable data was like hundreds of terabytes scale. I'm sure now it's much more. But yes, that was a scale at that time, especially because we had like a hockey stick growth. So, we couldn't expect what was the size of data that's going to be, because it was just constantly growing at that time.
+
+[00:04:21] SF: What were we using for like events and streaming in terms of the technologies there? 
+
+[00:04:26] KD: So, events and streaming has always been like Kafka. So, Kafka has always been like the message queue that we've used, as a sort of like interface of sorts between the OLTP systems like a CDC flowing from the OLTP systems to our data infrastructure. Kafka has always worked pretty well for us with regard to that. That was mostly the streaming system at that time. 
+
+[00:04:47] SF: In terms of the application stack and application storage, what are some of the unique challenges that you ran into there, which led to decisions that you had to make in terms of building certain types of technology?
+
+[00:04:59] KD: So, some of the things, some of the challenges. For example, schema was something that was probably not enforced as much in the data. We had to actually fix a lot of the data to be schema compliant. This is a pretty challenging task in the sense that there's this data is continuously evolving, right? We can't stop the evolving of the data. We have to also have to reach out the use of the creators of the data, the other teams, and also have a conversation regarding have the data be schematized and also keep the to keep the ingestion flowing without any hiccups.
+
+So, there were some interesting problems that you have to solve. It's not always perfect with respect to data, but you still have to solve the problem for the company to have the business flowing. We had to do something for the schema and then use the most basic version of the schema, like use strings. Because strings is the most generic form. It can work with even for [inaudible 00:05:44] and floats in a way, and then have that sort of interpreted better when you read the data. So, these were some of the challenges that we had to know. That was one and apart from the scale. Scale is definitely one of the challenges because of the sheer, large amount of data that we had. All of the systems had to be scaled, for example, HBase, or for that matter, I've used Spark. I forgot to mention Spark as one of the technologies that we used for the data infrastructure.
+
+Even these jobs, the Spark jobs, which ran had to be scaled accordingly. There's a lot of levers that come into picture whether comes to a memory or like at this usage, et cetera, that needs to be optimized to have your jobs working seamlessly in the face of continuous growth of increasing data.
+
+[00:06:24] SF: In terms of the schema consistency was probably the challenge there is, people are maybe creating new table structures, or new structures of the data, depending on what problem they're trying to solve. Then, those decisions are being made at a team level and not coordinated across the entire organization or certain foreign key constraints if you use structured data are enforced. So, basically, the data gets dirty over time?
+
+[00:06:49] KD: Exactly. So, in a way. Then they started helping like formal sort of end-to-end processes to actually have this, I would say, like an interface between end-to-end sort from the moment the data lands, like a database lands into analytics, you need a way to have the conversation between the two systems, right? You need sort of like an interface definition. We formalized these through like Avro schemas and various kind of schemas within Uber, which become first-class citizen. That was a very fantastic part of the maturity of the systems that we had grow at that time.
+
+Today, I think schema is like a first-class citizen. Although, we use NoSQL databases, schema is always a first-class citizen.
+
+[00:07:25] SF: What is LedgerStore and what does Uber use that for?
+
+[00:07:28] KD: LedgerStore is like a specialized database of sorts we can call at Uber and it's been designed to actually store ledgers. Ledgers, for example, is basically can be thought of as an immutable sort of set of data. We say immutable, for example, events, like events in life that happen, for example, are sort of immutable. Because they are indisputable. What is the reason that we want to perhaps store data in such a fashion?
+
+One main reason that we can think of is the audit trail. There are certain set of use cases, for example, financial use cases where this is a standard practice across the industry. Any sort of events, for example, affect the balances of, let's say, a wallet, the additions or the subtractions, the credits, or the debits, et cetera. These are need to be maintained as a trail. The reason being that, there's a way to actually, by maintaining a trail, we have a way of actually going back and verifying what happened to the history of these balances. If you don't maintain a trail, what happens is if you just keep updating without having a trail. It's hard to identify any issues in the system. So, that's why ledger databases are used, which is - it's basically log. It can be thought about as a local log, where it's easy to go back and verify, "Hey, this is what happened to with these sequence of events."
+
+At Uber, coming back at Uber, some more context. We have like millions of riders, drivers, and other parties that are using Uber, and there's a lot of transactions that are happening. There's like billions of dollars of transactions happening every quarter.
+
+Due to this sheer scale, it's very important to be able to provide data guarantees on data correctness and completeness. That is where LedgerStore respond.
+
+[00:09:06] SF: In terms of ledger databases, is it a case that all entries in the ledger, they're always going to have some sort of time event essentially associated with it? So, you can think payment transactions, logs is another one that you mentioned. They're always going to be essentially, of like a moment in time, and that's why they can be an immutable object?
+
+[00:09:26] KD: Absolutely. Yes. So, ledgers, they generally have a time associated with them. There's a specific definition we call for that and that's also first-class citizen for ledgers. Because it doesn't make sense to write a ledger ahead in future, because time is not in future. That is an important aspect of our system, probably.
+
+[00:09:43] SF: Why use DocStore as the data storage medium for LedgerStore? What was involved, essentially, with some of the migrations that you did through each of these evolutions of LedgerStore?
+
+[00:09:56] KD: Yes, sure. So, DocStore is one of the matured systems at Uber, databases at Uber, serving a lot of various kinds of workloads for various like tier one use cases that we have.
+
+Historically, Uber has always had like a storage experience right from the beginning. We basically build something to scale at that point of time. So Docstore, specifically was something became generally available around 2020 or so. If I'm right, 2019, 2020. By that time, LedgerStore was already live. We had to make a choice of the database at that time. That's the reason we went with DynamoDB. When DocStore went generally available a couple years later, considering the fact that it is a distributed database and it provides the availability guarantees, high availability guarantees that we need. Good latency guarantees that we need and it provides local transactions, very rich query support, and all the requirements that we sort of wanted. It was a good choice for us to actually choose and to actually also have a team with an Uber, which is supporting DocStore. So, it was a good choice for us to actually,
+alternative for us to consider, and also consolidate the kind of databases that we use internally. That was primarily the reason.
+
+[00:11:03] SF: DocStore is like Uber's homegrown distributed database system that uses like a DocStorage medium like other sort of NoSQL types of databases. Is that right?
+
+[00:11:14] KD: Exactly. Yes. That is correct.
+
+[00:11:15] SF: In terms of like building one of these distributed database systems, I feel like this is a journey that a lot of companies at massive scale kind of reach at some point. I'm curious, is it the case where at some point when you reach just such scale that you really just have to essentially roll up your sleeves and build something, because the scale problems are so specific to your company, your use case, that maybe something off the shelf are built somewhere else, isn't going to be specialized enough to essentially address the types of scale problems that you're running into.
+
+[00:11:52] KD: Absolutely. If I remember correctly, there's a deck somewhere that I've gone through where it actually shows the kinds of challenges that we had earlier in Uber. Scale was just like a hockey stick, for example. Scale was so high. You had to think exponentially. I couldn't think incrementally anymore. That's actually the reason why the previous system, which is like a distributed database system was actually developed at that time. But we started thinking in a distributed fashion, back then itself. That was basically like a shot at MySQL. It uses Raft for consensus. So, we had a sort of a similar system ahead. Also, some more features than the previous system.
+
+But regardless, to answer your question. We started thinking, Uber, as a company started thinking about it long back to be able to scale to these needs continuously, because it's just a single instance would just not surface. There's only so much you can do with vertical scaling. So, to be able to give sufficient confidence to the business, we had to, in order to start scaling at that time. Like you said, yes, taking advantage of the specific nature of the business, we had to build something. It also had to be built internally.
+
+[00:12:55] SF: I mean, I think you raised an interesting point there where if you're growing exponentially, your data is growing exponentially, then doing something that maybe sounds on paper under normal circumstances, like efficiency gain, you're getting like, "Oh, we improved by 20% or 30%." Isn't really going to buy you that much runway if your data is scaling exponentially. You need exponential solutions essentially to address exponential growth problems.
+
+[00:13:20] KD: Absolutely.
+
+[00:13:21] SF: In terms of some of the effort to go around, that you had to go through in order to migrate these different data stores, how did you manage to migrate 250 billion records without any downtime or data inconsistency?
+
+[00:13:38] KD: Migrations are generally quite a bit of a challenging thing, especially considering the requirements. So, depending on the requirements. For us, specifically, since LedgerStore is one of the top tier services, which is a source of truth for Uber's money data. We can't afford to take a downtime. So, availability has to be high, and the performance also has to be high in terms of latencies and throughput.
+
+The reason being, there are other systems that are dependent on these systems. There could be a cascading effect if we regress in consistency. So, another thing about a LedgerStore is it's strongly consistent. That means you write something and you read back, your guaranteed to see the data. That's a guarantee that is a first-class citizen that's provided by the system. This is something that we need to uphold even during a migration.
+
+So, these three properties were the definition that we started with as sort of the requirements for the migration. We added some more properties such as, sort of reversibility. In case, during the migration, something bad happens, you need to be able to go back to the previous system and you can't afford to say, "Hey, sorry, this system has some kind of issues." Again, downtime is not allowed.
+
+These are some of the properties that we went with. To perform this, the migration was carefully designed. One thing about LedgerStore, like I said, it provides data completeness and correctness guarantees, which means data cannot be mutated or deleted, or - yes, mutated or deleted, essentially. So, this is a guarantee we wanted to uphold even during the migration itself.
+
+Now, if you think about the migration, there are basically two databases, like A and B, that we want to migrate to from A to B. During this time, essentially, it would be nice to have something like a transaction, right? So, where you either write to both, or you don't write to both. That's like a distributed transaction. By distributed transactions, they have their own challenges to do. That's something we didn't want to do. We want to do something simpler. We basically did, it's got like three parts. I'll give a quick overview and we can dive in if needed.
+
+The three parts are basically like the historical data, backfilling the historical data, and then orchestrating the online reads and writes between the two databases and ensuring they're in sync. Third part is a completeness verification. So, these were the high-level parts that were involved to actually migrate them successfully.
+
+[00:15:57] SF: Yes. I would love to get into the details on some of this stuff. In terms of protecting the ability to do rollbacks, if you're writing to both databases, and you want to make it transactional where the write happens to both databases or it doesn't happen, is part of that essentially, if you can guarantee that, then it also makes rollbacks easier because you now know that both databases should be the same? Is that the thought process there?
+
+[00:16:21] KD: Yes. But we didn't go ahead with that kind of solution because, to be sure the complexity of the solution. Distributive transaction generally needs the ability for you to be able to rollback something that's partially written. That's a guarantee we didn't want to lose. For example, LedgerStore, once you write something, or once you write a set of record, it's considered as permanent. Just because we're doing a migration, we didn't want to sacrifice that property. We didn't go ahead with the distributed transaction. We went with another approach, and I can talk about that more if you're interested.
+
+[00:16:52] SF: Well, in terms of the backfill, so you basically need your B database to catch up to the A database at some sort of epoch before you start writing to both. How did that work in terms of the backfill? How do you catch up to something that presumably is probably growing at a pretty high rate?
+
+[00:17:06] KD: Yes. That's a good question. So generally, that's like a never-ending game, right? What we do is we start the online writes on B. Let's say we're moving from A to B. We start the online writes on both of them, A and B, and start doing the backfill. The backfill, once it's done up to the point when you started the B, you're good enough, you're guaranteed. I mean, in theory, that you have all the data. So, it's essential to actually start the online writes and reads, online writes in particular, and honestly the reads on the secondary database.
+[00:17:35] SF: Okay. Then, in terms of the other, you basically mentioned three things, backfilling, then there's orchestration, and then there's essentially guaranteeing the completeness. So, what was involved in terms of orchestrating the writes across both databases?
+
+[00:17:49] KD: Yes, sure. This is what we call it as dual reads and writes. One thing that I said was another property that we didn't want to lose was basically the latency. One strategy we think about is, if you're adding the latencies of the two databases, it becomes additive to the end customer. We didn't want to expose them to this additive latency.
+
+So, what we did is we brought the concept of primary and secondary. The secondary writes were basically asynchronous. Asynchronous also means that it's not necessarily guaranteed to pass. Now, you need a way to fill in the holes. When secondary is missing the data, you need to fill in the holes. So, for that, we basically built a system called Spot Repair, which actually go and identify the holes and just the holes and then just go repair them.
+
+While it seems straightforward, there's a lot of things to think about in the sense that what happens if the secondary becomes primary. The other interesting other cases that we face during this.
+But essentially, important thing that we did was actually treat the two databases as nothing special. They're both databases and not giving special preference and that's a key, which makes it easier when somebody is getting promoted to the primary. But essentially, at a high level, yeah, that was the thing. 
+
+[00:18:56] SF: Then during this migration, did you actually end up having to roll back anything? Or was everything smooth sailing?
+
+[00:19:02] KD: Thankfully, we didn't have to, but we were prepared. If at all, we had to roll back, we were prepared. Like I said, not treating them special, treating them both as databases, just as primary and secondary, with the roles being interchangeable, that made it possible.
+
+So, I think having those definitions and remodeling them in that way made it very simple. But we were prepared, if at all, we had to roll it back. We just had to swap the order and then just keep doing the same things that we did with the migration.
+
+[00:19:31] SF: Got it. I mean, can you talk a little bit about the types of indices that LedgeStore supports and what they're used for?
+
+[00:19:37] KD: Sure. LedgerStore supports three kinds of indexes. One is a strongly constrained index, the other is eventually constrained index, and the last one is time range index. The strongly constrained index is used, for the use cases where it's essential that when - so indexes by definition are meta data. You can think about them as meta data. They're not data itself. When you write data, the index is up here to point at the data.
+
+So, this property is strongly consistent index is when you write the data, the index is going to be appearing instantaneously. There's not going to be any lag between the two. Eventually, considering index, they will be a lag. There's guaranteed to be a lag, because they are not built in the same online path. They are built in a background way. The time range indexes are basically used for doing time range queries.
+
+We spoke about earlier that ledgers have time as a first-class citizen. Time range queries are essential to be able to perform various ledger actions, like sealing the data, which we do on a time range, or off-running the data.
+
+[00:20:34] SF: Then, how does the commit work for, say, the strongly consistent indices?
+
+[00:20:40] KD: Yes. So, the strongly constant indices are built with the two-phase commit protocol. Here, what happens is that we have two phases. First, an index intent is written, and a sequentially a record is written. Then, the index is committed asynchronously.
+
+I say a sequence, it's important to do it sequentially and not parallelly, because that is what ensures the guarantee that the two are going to be present or the index is going to be present if the record is going to be present.
+
+The reason being that, let's say the third step, the commit fails. First of all, when I say an index intent, index intent still means it's an intent. It's not really an index. If I were to become a true index, the intent has to be false. It's just like a flag. The third step, we commit the index, but let's say if the committing fails, upon read time, we have an ability to go and resolve this. We look up if the record is present. If it's present, we commit it. If not, we roll it back.
+
+[00:21:35] SF: Okay. So, this is like a two-phase commit, essentially.
+
+[00:21:37] KD: Exactly.
+
+[00:21:39] SF: How do you determine, as a user of LedgerStore, which index to use given a use case? Let's say like, I don't know, credit card authorization flow, versus a payment history page. How are you making those kinds of decisions about which index to use?
+
+[00:21:54] KD: That's a great question, actually, and like you alluded, credit card flows is actually one of the flows that we use strongly constrained index. In fact, we recommend not using much of strongly constrained indexes unless it's really needed. The reason being, this is orchestrated in the online path. Unlike the eventually concerned indexes, which are constructed by tailing CDC, to change and capture of the database, and then that's how it's built. So, nothing happens in the online path for building the venture.
+
+How we decide which has to be strong. If it's intolerable for the application to actually tolerate this lag of the index appearing, then I think it's strongly constrained index is a way to go. One of the examples that we actually have is in the credit card flow, where the credit card authorization is done, and later when we want to charge the card, we actually look up this index. As this index is not found, the flow assumes that, the auth itself is not created. So, let me go and do a fresh charge, so it can lead to a double charge for the customer.
+
+Even if it happens like points, it is a one percentage. It's a really bad experience for the customer that we just cannot - it's not a matter of just the amount, it's just a matter of the fact it happens is not tolerable. That's why we choose a strongly constrained index.
+
+[00:23:01] SF: What is the typical lag time for that anyway?
+
+[00:23:03] KD: The lag is zero. Zero. It's absolutely zero. If the record is present, index is present.
+
+[00:23:09] SF: What happens if you need to add or drop an index?
+
+[00:23:12] KD: We have basically, as part of this indexing story in LedgerStore, just step back a bit more, right? Indexes are pretty important in LedgerStore because they look up the resource of truth ledgers. That's why it's important to have a robust indexing story.
+
+Then, we have to add a new index. We basically have an automated flows where indexes are going to be built by looking for historical data and indexes are going to get written, historically, and then we have jobs to monitor the progress. It's all automatic without requiring any human intervention. Once it catches up, we have the option of enabling the index or just waiting for the user to actually enable it. 
+
+That is for adding an index. And for dropping an index, again, dropping an index, we have to be a bit more careful if it's being used in the online path. So, we ensure that there's a new version of the index that's running. Index is a version every time let's say, they're modified. But let's say if it's not versioned and somebody wants to drop it, then it probably would have to be like a manual process because we just want to ensure that there's no traffic to it for a guarantee.
+
+[00:24:13] SF: Right. Yes. You want to drop the index and suddenly, things grind the hall essentially.
+
+[00:24:17] KD:  Exactly. Just because there's no traffic now, it doesn't mean there's no traffic forever as well. So yes, we just have to be double careful for that.
+
+[00:24:24] SF: How long do you keep ledger data in hot storage? 
+
+[00:24:29] KD: That is flexible. It totally depends on the business requirements. There's a need for flexibility because it depends on what is the recency of the data that's accessed most. That's mostly the concept. In hot, the latencies are very good. And in the cold storage, latencies are higher. We sort of try to do a balance, such that the P90 or P95 latencies are within a certain sort of range. We optimize based on that. But the point is that we have flexibility to control. Same.
+
+[00:24:55] SF: What's the advantage of moving some of it to cold storage, is it merely like a cost savings?
+
+[00:25:00] KD: Yes. So, ledgers by definition, they are immutable. They will keep getting upended on and on and on. Unlike, let's say a [inaudible 00:25:07], or any data that gets mutated. So, the continuous append will increases the storage forever. That's why there's a need for curtailing the cost of the storage. That's why we do a cold storage offloading for the historical data. If not, like you said, the cost is going to be very high, and also the maintenance is just going to be unnecessarily harder on the hot storage.
+
+[00:25:31] SF: Are you using anything existing technology or maybe develop something yourself for orchestration around the creation of indices and other parts of LedgerStore in order to be able to have certain guarantees on asynchronous jobs completing, or making sure that things are happening in the order that you need them to take place?
+
+[00:25:50] KD: Yes, absolutely. We have a jobs mechanism to actually create jobs and then orchestrate them. It all happens within the LedgerStore ecosystem itself. The nice thing is, this is one place where we can control everything. Even if you have to launch, let's say, a Spark job, the source through the brain is sort of the central nervous system, it's all in one place. Which is a nice thing for the design of the system as well. Yes, it's all within the LedgerStore ecosystem.
+
+[00:26:14] SF: And that's something that you developed in-house?
+
+[00:26:18] KD: Yes. It's all within the overdeveloped systems.
+
+[00:26:20] SF: Then what about in terms of the future of LedgerStore? How do you see this platform evolving from here?
+
+[00:26:29] KD: That's a good question. So, LedgerStore, in the future, we want to probably add like a materialized view for the Ledgers. Like I said, Ledgers keep growing in size. They're basically like an event history of sorts. We are trying to explore if we could add like a materialized view, like an aggregate snapshot at view. A hypothetical example, let's say I have balance history that is stored in my LedgerStore over time. Let's say $5, $6, $2, $3, et cetera. And let's say we want to give a snapshot at view, which is like the latest view of consolidating the latest view to actually have. There's a snapshot view. That's something that we are considering. We are also thinking about if we can improve the consistency, we are strongly consistent within the region. We're trying to see if we can provide even more stronger guarantees. These are some of the things that we're thinking of.
+
+[00:27:15] SF: How much are you paying attention to what's going on and other distributed databases? There's been a lot of investment and innovation in the space in the last 5 to 10 years, from a lot of these hyper-scale companies and some of these things are now available as services or open-source product. Is that something that you or other people at Uber like paying attention to and seeing, how can we take inspiration from here and evolve our own systems?
+
+[00:27:39] KD: Yes. Absolutely. When we developed LedgerStore, when we built LedgerStore at Uber, which I think, it was like late 2018 or so, there was not an equivalent system. That's the reason we sort of went ahead and built something. It was definitely much effective to build it inside. That was the reason.
+
+There's always - yes, we always do check, sort of calibrate and see if there's a better possibility to actually import other solutions. Nothing has turned out so far, especially, like I say, the effectiveness that we have internally by building it ourselves. It still holds. But yes, that is definitely something, an exercise that needs to be done for any company regardless.
+
+[00:28:18] SF: During this whole process of working on LedgerStore, what do you think was one of the hardest problems that you came across from an engineering perspective?
+
+[00:28:26] KD: Oh yes, that's a great question. A bunch of it. It's fortunate to be able to work in LedgerStore to have such problems. One of the thing is, the sealing component. Sealing is one of the components in ledger store, which ensures that the data is complete and correct. Essentially, what we do is, so we have a cryptographically verifiable way to say that your data is what it is, what you wrote, and it hasn't been deleted or updated by anybody.
+
+It's sort of like a blockchain, but blockchain is like a distributed ledger. It's different in that way, but LedgerStore is a centralized ledger. We have the ability to seal data in time range buckets, and then sealing also provides a [inaudible 00:29:02] hash associated with the data. But to do this, we want to be able to also have confidence that we have captured this data in the system. We've built a mechanism to actually provide, obtain a guarantee that this data is definitely committed to the database, whatever the underlying database is. It's possible, for example, let's say, that I write the data to underlying database, but the database does not have the durability and it loses it even before I seal it. Or let's say it was accidentally wiped out or something like that, right? We have a way of detecting it.
+
+This is a challenging engineering problem to solve, regardless of what of the database is. So, we basically compare the change streams and actually what we wrote and provide this guarantee. Not just that, we want to be able to do it in a more optimal way. Just providing this guarantee is fine, but if you want to do it in a regular cadence, that makes it technically challenging. That was definitely one of the challenging projects that I did in LedgerStore, apart from, of course, migration itself.
+
+[00:29:57] SF: Yes. How does that work? How does this sort of like, I don't know, check some process, validate that this has all been complete?
+
+[00:30:04] KD: Oh, yes. So, we basically tail the change stream. We do it exactly events processing on the CDC that's backed by the database. This exactly events processing is essential to actually count exactly the items that are there in the window. You don't want to over count or under count. You just want to count exactly this right number of items. So, this exactly events processing is what is done on one side and the other side, we wrote something. We have the time range index to be able to give the other view. If these two view matches, then you have a confidence that this is what it is. This is what is captured into the system. That's the main reason of providing this guarantee.
+
+[00:30:40] SF: As we start to wrap up, is there anything else you'd like to share?
+
+[00:30:43] KD: Yes. I just want to say that at Uber, we're working on various problems to actually make the magic happen. In this case, the magic happens to be the fact that the guarantee of the data correctness and completeness. The fact that this is the source of the data that's been actually looked upon, even by various end use cases. Because I think this is a pattern that's also becoming in the industry that the quality of the data is becoming very important.
+
+So, a single copy of the data is generally something, a trend that is emerging. LedgerStore is one way providing that service at Uber by also exposing indexes on the source of truth ledgers. So, it can be looked upon by various other upstream and downstream services to actually find out the source of truth. Yes, I guess that's it.
+
+[00:31:23] SF: What do you mean by that? So essentially, the LedgerStore is acting as a single source of truth. Then, are the downstream services essentially creating just almost like a pointer back to the LedgerStore in order to connect the source while not actually creating a replication of the data?
+
+[00:31:38] KD: So, what I meant is, let's say, for example, we want to investigate what happened to the balances of a certain user, and we want to go and investigate it. It can come back to LedgerStore, to see what is the source of truth that happened to affect this balance. That's what I meant. As the other applications that use LedgerStore, let me put it that way. They have an easier way to come back and access a source of truth. It's not like the source of truth was written, and then you never see it unless there's like, you wanted a detailed audit. But you can actually go back for investigations as well, you can just go back to the source of truth. And regardless of the size of the data, you can actually go and see what happened, and have the confidence that this is right. That's mostly what I said. I mean, they could maintain their own copy of the data. But again, now you have two places to build confidence, right? That's nice, as opposed to just having one place and trust it.
+
+[00:32:23] SF: Okay, makes sense. Kaushik, awesome. This was great. Thanks so much for being here. I really enjoyed it.
+
+[00:32:28] KD: Likewise, Sean. Thanks for the interview. It was great chatting with you as well.
+
+[00:32:32] SF: All right, cheers.
+
+[00:32:32] KD: Cheers.
+
+[END]

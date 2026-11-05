@@ -1,0 +1,370 @@
+SOURCE: polln whisper (mlx-community/whisper-large-v3-turbo)
+EPISODE: Building LinkedIn’s Resilient Data Storage: A Deep Dive into Derived Data Storage with Felix GV
+DATE: 2025-03-13
+SHOW: InfoQ
+LINK: https://soundcloud.com/infoq-channel/building-linkedins-resilient-data-storage-a-deep-dive-into-derived-data-storage-with-felix-gv
+AUDIO: http://dts.podtrac.com/redirect.mp3/feeds.soundcloud.com/stream/2053396240-infoq-channel-building-linkedins-resilient-data-storage-a-deep-dive-into-derived-data-storage-with-felix-gv.mp3
+DURATION_SECONDS: 2653
+TRANSCRIBED_AT: 2026-08-05T12:02:04Z
+----------------------------------------------------------------------
+Hey folks, before we get into today's podcast, I wanted to share that QCon London returns April 7th
+to the 9th, 2025. Learn what's next from world-class leaders pushing the boundaries of modern
+software. You'll learn actionable insights from senior developers working on real-world projects
+across multiple domains. Learn more at QConLondon.com. Hello everyone, I'm Olympio Pope, a veteran
+editor for InfoQ, writing mainly for the Java Q, and occasionally on topics related to ML, data, and
+other general technologies. Today, we have Felix, a principal staff engineer who solves planetary
+scale problems for LinkedIn. Thank you for accepting our invitation, Felix. Please introduce
+yourself and give us an introduction to the problems that you're targeting these days. Yeah, thanks
+for having me, Olympio. So like you said, my name is Felix. I've been working at LinkedIn for a bit
+more than a decade now, part of the Voldemort team, but it transformed into what is now the Venice
+team. Venice is the system that I worked on. It's a database that we built in-house and open sourced
+in 2022. It is basically a derived database, meaning that we store data that's been generated off of
+other data. In particular, AI feature data sets are quite popular to store in there. So there's a
+lot of AI inference workloads going on using Venice. It's been very exciting. The scope and scale of
+the system is continuously growing over the years. So looking forward to chat about all of that. So
+what would be a place where you would use VeniceDB? What would be the problem that it actually
+solves? One way to think about it is you could split the ecosystem of databases into one dimension,
+which is, is it storing primary data or derived data? That's one way to divide the space, right?
+Divide and conquer the space. Primary data, which is not what Venice focuses on, but just to put it
+in context so folks can understand. Primary data is also called source of truth data. This is the
+type of data that you will store in something like Postgres or MySQL Oracle. It doesn't have to be
+in a relational database. You might store primary data also in something like HBase or Cassandra or
+DynamoDB, CosmosDB, etc. The point is that primary data typically is human generated. These are
+things like messaging data between users of a communication platform, or maybe the profile data that
+users write on a social network site, or the posts that they write on something like Medium or
+Substack. All of those are human generated primary data. Now let's contrast that with derived data.
+Derived data, as opposed to primary data, is machine generated, right? So it could be that it's a
+denormalization of the primary data because we want to optimize for some different access pattern.
+For example, maybe it's the same data conceptually, but it's organized in a different way. For
+example, the primary data is stored in a row-oriented format that makes it very fast for OLTP
+workloads, right? Like transactional workloads. Whereas the denormalized version of that might be a
+column-oriented format for OLAP workloads, meaning like analytical processing workloads, right?
+That's one form of derivation is when the shape of the data changes. There could be other forms of
+derivation where the content of the data itself is changing, right? For example, the use case that
+Venice focuses on, not exclusively, but it's a popular use case within Venice, is ML feature data,
+right? So this is data where you take a bunch of inputs. Like for example, at LinkedIn, an example
+use case is people you may know, for example. The inputs are a variety of other datasets, like the
+connections between users, who's messaging who, who is liking whose posts, the industries they're a
+part of, the schools they went to. All of these things end up being analyzed, so to speak, or
+crunched through machine learning jobs, right? That will end up spitting out some opaque score,
+right? Maybe you can call it like an embedding or just like some floating point values. That is the
+output, right? And these machine learning oriented outputs are, in terms of content, completely
+different from the inputs, right? It's unrecognizable for a human looking at this to see the
+relation. But of course, they are related in the way that they've been generated. Now, this is
+another type of derived data, these ML feature data, and they can be loaded into a system like
+Venice. So that the developers of people you may know that we call PYMK internally, I may be using
+one or the other interchangeably, the developers of PYMK will then use Venice to load all this
+feature data and be able to query it at very low latency from their online application, right? So
+when you go to the website or you go to the mobile application and you go to your network page,
+you'll see some recommendations of people you might know. And this is essentially what we call a
+recommender system, right? So that's one of the very common use cases hosted in Venice. Okay. Thank
+you for the explanation. So let me see if I got it right. A primary database are the things that you
+usually put with your own hands. So it would probably be my profile, the jobs that I had and other
+stuff that I'm putting in for my profile. If you're talking about LinkedIn, right? So there are the
+things that I'm usually, if I'm an engineer, if I'm defining a database, those are the tables that I
+just fill in, right? Yeah. If that's an SQL based database or relational database and the derived
+data is data generated mainly by machines that are either optimizing in some sort or rearranging the
+things based on the data introduced in the primary database. Yeah. So that it allows the system to
+function in given parameters, right? Right. And by the way, where the data comes from, whether it's
+human generated or machine generated, does not necessarily need to dictate which database technology
+choice you pick, right? So for example, if you're using Postgres as your primary database, you could
+have a job that siphons off the data from Postgres, runs a machine learning job on it, producing a
+bunch of embeddings and then pump those embeddings back into Postgres, right? Nothing prevents you
+from doing that. You could use the same database for your primary data and your derived data. At
+small scale, anything works, right? So if you want, we can get into, well, what is the point of
+having a specialized system for hosting derived data? Why not just use Postgres for everything? That
+was my next question. Oh, sorry to preempt that. Yes. Well, it's good to have a flow in that
+direction, but the database space is quite busy. There are a lot of databases in all different
+aspects, relational databases, no relational databases, key value pairs, you name it. And on all
+different perspectives. Why a new database? Why venusdb? Right. Right. So by the way, I go into more
+details about all of that in a QCon London talk that I gave called, what is derived data and do you
+have any? So you can go check that out for a more in-depth explanation. But essentially, what I
+would say is, as I alluded to earlier, at small scale, anything works. And there may be benefits to
+reducing the overall complexity of your system by having fewer technologies in it. Right. So if you
+can get everything working with just Postgres, by all means, use only Postgres. Right. That's a
+totally sensible technical decision. At some point, you may start getting some operational pressure
+from certain issues. Right. For example, one of the ways that primary data and derived data differ,
+that's not a hard rule, by the way, but it's just a tendency that we've seen over and over. For
+example, derived data tends to have a very high volume of writes, or you can call it like refresh.
+Right. The primary data is oftentimes heavily skewed towards reads. So that means you have like,
+let's say, a 10% ratio of writes, 90% ratio of reads, or maybe even more skewed, like 595, or even
+199, in terms of write versus reads in a primary database. For the derived data sets, it is often
+the case that the write rate is very high, because let's say you want to regenerate new ML
+recommendations every day, or maybe even several times a day, or maybe you're doing it in a
+streaming fashion, and it has like a high amplification rate. Like, let's say two persons connect
+together, right? They add each other as contacts or as friends on a social network. Well, now
+there's a downstream side effect, which is that a bunch of new people have now become second degree
+connections, right? And so potentially for just the two persons that connected together, there is a
+side effect that hundreds or thousands of other people are now more likely to be connected to one
+another because they've become second degree connections, whereas before there were third degree
+connections, right? So all of these factors result in the write rate being potentially much higher
+for those derived data sets. And so then you get to a point where, does it make sense for me to have
+this Postgres database, which is mission critical, right? Because it's serving all of the requests
+for loading the profile, loading the user's messages, all that stuff. And once a day, that database
+gets completely slammed because a table needs to be rewritten entirely, right? So then at that
+point, maybe you get into a situation where you say, well, geez, that's untenable. I'm going to
+split those databases into separate instances, right? So I'm going to have one Postgres instance
+where I host only the primary data. That one is more typical in the sense that it has like, let's
+say 10% writes, 90% reads, and I optimize it for that. And then I have like a second Postgres
+instance, which perhaps is connected via change capture to the first one, asynchronously updated or
+maybe not. And it also gets these batch jobs that will slam it once a day and regenerate entire
+tables. And I might have different tunings that I apply there, right? So already you're sort of
+having a, you can say maybe a balkanization, right? Of your infrastructure. You're isolating pieces
+that don't play well together, like that cause interference or noisy neighbor issues with one
+another. You're separating them, but you're still using the same technology in both silos. You're
+still using Postgres on both sides. But then at some point you may get to a situation where you say,
+well, look, there's a bunch of functionalities that Postgres gives me that I'm not using anyway.
+Postgres is like very general purpose. It does everything basically, but there's a bunch of stuff
+I'm not using. And I still have some scalability issues when I need to rewrite to these entire
+tables and so on. Is there something better that I can do, right? Then at that point, you can start
+asking yourself, well, maybe there's a specialized database technology that I can use instead that
+will be very optimized at bulk loading batch data, optimized at supporting high write rate, still
+give me very low latency, perhaps even better latency than what Postgres would give you. But in
+exchange, of course, nothing is free in this world, right? In exchange, that system is much more
+specialized. So it doesn't have all the bells and whistles that Postgres gives you. It's more
+focused, right? So that's kind of a natural progression as a company scales its data needs. It will
+go from, I think, a more homogeneous stack where it has fewer technologies, less complexity in terms
+of variety of technologies, towards a more varied, diverse stack where it has a bunch of different
+technologies and each of them is specialized for a given workload. So to wrap up this in some kind
+of a conclusion, VeniceDB is a very niche database, particularly targeted for derived data that puts
+emphasis and that's oriented on having multiple writes, more writes than reads, more or less, right?
+Yes, it certainly supports very high write rate. It also supports high read rates, by the way. It
+supports both, basically. Okay, so it's about the trade-off depending on the scenarios that we're
+going to use it. You can configure it based on your needs and mainly focusing on that. But still,
+the response for why a new database is it felt better to build it from scratch for the tailor-made
+problem that you're trying to solve or there was another reason for that as well? As I alluded to,
+when I joined LinkedIn, I was in the Voldemort team and Voldemort was responsible for that type of
+workload. It was also responsible for other workloads that ended up getting migrated to other non-
+Voldemort systems. But if we zoom in on just the ML, like recommender system kind of use cases that
+we've been talking about so far, those were served by a flavor of Voldemort that we called Voldemort
+read-only. It allowed you essentially to swap the whole data set in a batch fashion periodically,
+maybe once a day or a few times a day. That worked fine for many years. Actually, Voldemort had a
+run of about 10 years at LinkedIn. So it was very successful in that sense, but it also had a bit of
+an aging architecture. So we had the choice, essentially, are we going to modernize Voldemort's
+architecture to solve these pain points that we were facing or are we going to replace it? And if we
+replace it, is there something off the shelf that we can pick that's already been built by someone
+else or do we need to build it from scratch, right? So that was kind of the improve or build or buy
+kind of decision, right? And the architectural limitations of Voldemort were thought to be
+sufficiently large that it was not that attractive to try to upgrade it in place for various
+reasons. Those limitations included the data placement across partitions and replicas was very
+static. It was like some XML file somewhere that the human had to go alter and manually shift data
+around when needed. It was kind of tedious in that way. Whereas at that point, we had new
+technologies, new building blocks that we could leverage to make it more dynamic so that as machine
+failures happen, the data rebalances automatically, all that stuff. And there were other such kind
+of operational pain points that we wanted to improve. In terms of the build versus buy, buy here
+doesn't necessarily mean money. It could also mean like open source that somebody else developed,
+but like, let's say build versus adopt. There weren't really any other significant contender in that
+space at the time that we did this evaluation. This is like circa 2014 is when we started seriously
+looking into replacing Voldemort read only with something else. At the time, Twitter had something
+similar in design called CDB, C-S-E-A, but that was a proprietary system. They had talked about it
+in some blog posts, but that's about it. We couldn't use it. Then there were things like HBase had
+some like H file side loading mechanism that could have fit in that space, but it was like not very
+mature based on, like I spoke with HBase committers and stuff like that, that I knew personally at
+the time and HBase users. And it was like, well, okay, it works. But like, there's still a lot of
+scaffolding that you need to do manually to prop it up. It could have worked, but it wasn't like as
+attractive as we hoped it was. And then like, I think there were probably some other proprietary
+solutions in other companies, but in terms of something available off the shelf in the public space,
+either open source or commercial, there wasn't really. So Voldemort was open source, but nothing
+else was. So that's kind of the thought process. By the way, we did reuse certain little parts of
+Voldemort. We didn't throw it away entirely, but we did rewrite like a large chunk of it. Just
+curious now, how do you build a database from scratch? Because usually when you're talking about
+architecture, you're talking a lot about loose coupling. But on the other side, when you're talking
+about efficiency and performance, you're talking about taking some decisions, some trade-offs to
+make sure that you have the best outcome in terms of performance. What are those decisions? How do
+you handle it? Now it's a decade old. It's already in production. What are those decisions that you
+took initially that ensure the proper operation of the database now? Well, so I should clarify, we
+certainly did not build a database from scratch. We stand on the shoulders of giants, and I want to
+give credit where it's due. We have some very critical dependencies that we rely on. So those
+include Kafka is our, you could call it like data propagation layer or our right path, so to speak,
+all the data comes in first through Kafka in the Venice architecture. We also use Apache Helix for
+cluster management. So that's what I alluded to earlier, where we wanted to get rid of Voldemort's
+static partition placement configurations and instead make it dynamic. That's handled via Apache
+Helix, which also Kafka and Helix both come out of LinkedIn. Then we're also using other things like
+Netty. Nowadays, we're using RuxDB. We didn't use it at first, but nowadays we're using RuxDB. And
+there's a bunch of other dependencies, right? So we didn't build the whole database from scratch,
+but we used, I would say, some very solid industry-provided building blocks. And then we composed
+them together in new ways that we didn't see anything similar that existed at the time. And maybe
+even now, like Venice is still a fairly unique system, I think. Certainly there are others in the
+derived data space, but in terms of what exactly we provide with Venice, it's actually difficult to
+find a comparison point. It's a little bit unique in its own niche. Okay. So let me summarize that.
+You glue together, so mainly it looks like more of a tailor-made software development and building a
+database per se. So VeniceDB is a system that stores derived data that puts together multiple
+building blocks that are already known, that are notorious in the open source space, like Kafka for
+ingestion. You have Netty on the communication side, on the transport side. And at the core of it,
+you have RockDB as the database engine. If I remember one of our previous conversations, you thought
+about VeniceDB to be able to swap the engine, but that wasn't initially needed because it served the
+purpose. That changed in the meantime. Can you walk us through that as well? Besides RockDB, you are
+in the process of adding another engine that serves another purpose. So walk us through that
+process. The storage engine part of Venice, I think, is interesting. We did want the storage engine
+to be pluggable from the get-go. And as I hinted at, we did not start off with RockDB. We actually
+started off with the storage engine that Voldemort was using, which is called BDBJE. It's the
+Berkeley Database Java Edition. It's basically a B-tree held inside of the Java heap. It provides
+pretty good read performance, okay write performance. And that's what we started with. And Venice
+was successful for a few years leveraging that building block. But the storage engine was hidden
+behind an abstraction, right? And at some point, we had increasing scalability challenges in terms
+of like tuning the garbage collection and all that stuff. And so we got all this data sitting on the
+Java heap, not the ideal use case for the JVM, right? The JVM works really great for short-lived
+data. Long-lasting data can be fine. But then the real killer is like intermediate lifespan data,
+right? The data that lives long enough to graduate through the generations of the generational
+garbage collector, but eventually does still need to be garbage collected out of the older
+generations. That's sort of a bad spot for the JVM, at least in those years. Everything is
+continuously improving in the Java space. So maybe it's better nowadays. But in those years, it was
+a bit painful. And so we had long garbage collection pauses and so on. So we looked at alternatives.
+And RocksDB was a promising one at that time. And so we did exercise our ability to use this storage
+engine abstraction. We plugged in a new one. And we essentially performed a whole migration. At that
+point, we had maybe, I don't know, like a bit less than a thousand different data sets in those
+years, probably. And we essentially invisibly migrated them. The users never knew about it. It was
+completely on the operator side, which in my opinion is the way ideally technical migrations should
+be done, like with as little burden as possible on the user. The infrastructure should be able to
+just uplift itself in an invisible way, right? So that's what we did. And so we swapped this BDBJE
+engine in favor of RocksDB. And that really improved our performance quite a bit. So that's one
+thing we did essentially by leveraging decoupling in the right places, right? And then more
+recently, we have started plugging in new types of engines again. And we had a pretty interesting
+hack week thing going on last month. Where we decided, I teamed up with one of my colleagues named
+Kuros. And we decided to see, could we plug in engine instead of a key value store, right? And so we
+chose DuckDB, which is a really great open source project that I encourage everybody to check out.
+It's super powerful. We're going to plug in.  We're going to plug in. We're going to plug in. We're
+going to plug in. And we plugged it in. And now there is an option to load Venice data directly into
+DuckDB. And then you can have like a populated DuckDB instance in your application that's been fed
+off of Venice data and then do any SQL queries on that. So then that expands the scope of
+capabilities that Venice offers. It's no longer what RocksDB provides, which is essentially a key
+value access pattern. Now there is also this alternative mechanism for accessing Venice data via
+SQL. It's still like pretty early days on that front. There's like a new module you can use to
+access that capability. It's still like pretty cutting edge, but we're hoping to polish it and
+stabilize it over time. Okay. So initially, VeniceDB and what you're currently using in production
+is a key value pair. And that's provided through RocksDB. Yeah. And now it's having SQL abilities
+through DuckDB, but that's only just getting started. It's just the product of a hackathon, right?
+Yeah. Okay. Thank you. And this leads me to the next question. RocksDB is written mainly in C++. The
+main language for Venice is Java. How do you interface that? Well, it's already a decade old, so I
+suppose it's JNI. Yeah, that's right. We use the Rocks Java dependency, which is a JNI wrapper on
+top of RocksDB. Very solid open source library. And it works really great for us. JNI, of course,
+has a cost, but it's very minimal in our experience. So yeah, it's been working great. And it allows
+us to essentially use each language where they shine the most. C++, of course, is more complex to
+get right. It can have memory leaks or seg faults and so on if you don't use it correctly. Whereas
+Java is extremely safe. The garbage collector has got your back. Well, not fully. You can still have
+memory leaks in Java also if you don't do the right things. But it's overall much more robust, much
+easier, very high productivity. So Java is great, I think, for building distributed systems, which
+are already difficult enough to get right. You know, handling all of the replication, fault
+tolerance, failovers, all that stuff. Handling all that reliably is difficult enough without adding
+the complexity of a unmanaged memory language. But for the parts where it matters the most, like
+managing the state, essentially, managing the state of the database, we do lean on these very robust
+C++ dependencies, such as RocksDB and now DuckDB. Both of these are C++ libraries that we access via
+JNI. So I think it's like the best of both worlds, basically. That sounds quite right. I mean, Java
+is quite readable. It's fast to move it, regardless of what people are saying now in the space,
+because Java is old and it's slow. But in my opinion, it's a very powerful tool, especially for
+systems that need to be reliable. And that's pretty much what I'm hearing from you as well. But
+still, I have to ask you, as you mentioned, the system was built in the last decade. And Java picked
+up the pace lately. They have two releases per year. They have LTS every fourth version. What Java
+versions are you currently supporting? What's your preferred tool? What's the pick that you use? So
+for now, I will say, unfortunately, we still have some stragglers internally at LinkedIn that are
+still on Java 8. There are very few of them, and we're trying to squash them away. But so we are
+still targeting support for Java 8. We support Java 8, 11, and 17. And we run all our unit tests on
+all three of those. Venice provides three services that, as Venice operators, we own. These are the
+controller, router, and server. And in practice, we run those services all on Java 17, which we've
+found gives us the best performance. But the client libraries, which there's a variety of them that
+we offer in the Venice ecosystem for different needs, those are the ones where it's important for us
+to keep supporting Java 8, at least for the time being. Honestly, I would love to drop support for
+Java 8. I'm really tired of being kind of handcuffed to the language constraints of Java 8. I would
+love to start using some new language features. But for now, we target support for those three, 8,
+11, and 17. Hopefully, we will add support for 21 soon. There are some very minor things getting in
+the way of that, but they should be solvable. So, yeah, that's kind of the picture for the versions
+we currently support. Sounds about right. I mean, pretty much everybody has still a small drag with
+Java 8. Most of the people are still using it in a couple of places. How about Project Panama? JNI
+did its job. It's very good at what it's doing. But as you said, it has some trade-offs. Project
+Panama is promising to take out some of the headaches that were coming with the initial native
+interface. What are your plans into that direction? That's a good question. For now, we're not
+really considering doing anything in that space, given that we still need to support those older
+JVMs. Once that gets unblocked, we'll certainly be interested at leveraging those newer
+functionalities. But for now, it's kind of a back burner issue. We're not really looking at it
+seriously yet. Okay. So, that translates into the performance is good enough for now. You have to
+support the ongoing versions that you currently have, but you have a place where you can improve in
+the future. Yeah. And how was running Java in production? I mean, it's definitely quite simple, as
+you mentioned, to write it at the language level. But in my opinion, the platform itself is quite
+hard to manage, or at least if you want to optimize it and to run it at the optimal level, you need
+to know how to do it. You need to know where to look into that. How did you handle optimizations at
+heap level, at the platform level? I know that you had some discussions online about it as well in
+the heap space. Can you share more in depth about that? What were your learnings? I would say the
+Venice code base, which is in Java, like we've been saying, actually has a fair amount of variety in
+how optimized is it, right? There are some code paths where performance doesn't matter at all. And
+it's really all about readability, maintainability. Those are the only things we care for. And then
+there are some other paths, which are hot paths. And we care very much about performance. And those
+can end up being a little different looking, right? So for the hot paths, we use a lot of tricks to
+make the Java code as efficient and performant as possible. So we are careful not to generate too
+much garbage. We do object reuse where it makes sense. We use primitive types instead of objects
+where it makes sense. We use things like fastutil, for example, which is this library that gives you
+alternatives to collections for when you use the collections to store primitive types. So for
+example, if you have an array list, you can have an array list of integer, but that's like the
+object type integer, right? So it will have boxing around each items in the list. Whereas you could
+also have an array of int, which is a primitive type, right? So that's smaller. But of course, the
+array list variable size and the array is fixed size. So how do you bridge the gap between these
+where you can actually have like a primitive equivalent of the array list, right? So these are all
+tricks that we use to minimize the memory footprint and so on. So there's a lot of things we do in
+that space to try to reduce allocations, reduce garbage. And ultimately, our goal in doing that is
+that we care about tail latency, right? We don't care only about average latency. We care about the
+long tail, like the P99, the P99.9. Essentially, the worst of the worst latencies that the system
+provides, those end up getting affected by garbage collection pauses. So we do care about minimizing
+garbage in some parts of the system, not all of them. Can you share how you managed to look more
+into this space? I know that you have a choice of tools, but I know that you built it yourself. Can
+you share more about this experiment? Recently, I shared online some work we did in terms of Java
+heap measurement, right? And the use case essentially is that in various parts of the system, we
+have buffers. So some pieces of data, let's say, get consumed from Kafka, and those come in sort of
+like mini batches, and they land in some buffer. And then there's another thread or thread pool
+somewhere that dequeues item from that buffer and processes them, like puts them in the storage
+engine or whatever, right? So this gives us better end-to-end throughput. But we don't want this
+buffer in the middle to grow unboundedly, right? Otherwise, we'll hit out-of-memory exceptions. So
+clearly, the buffer has got to have some limit on it. But that's actually challenging to get right
+because it's used for a large variety of datasets that all have different shapes, right? We have
+more than 2,000 datasets in production. Some of them have large key value pairs. Others have small
+key value pairs. And so when we buffer the items in that buffer that I talked about, there is the
+payload, which is like the user-provided data. When I say user, I mean like the Venice user, the
+internal user, right? There is the payload part, which is the key and the value that the internal
+user is writing to Venice. And then there's the Venice metadata, right? There's various pieces of
+metadata we keep to ensure data completeness, data integrity, and various other details like the
+timestamp the data was written at to monitor the lag of the system. All of these things are part of
+the metadata. And so the point is, if I do a very naive implementation of this bounded buffer
+concept, I could say I want no more than, let's say, 10,000 items in the buffer. Well, that's one
+way to bound how much memory it's going to take, but that ignores the fact that the payload part is
+variable in size, right? If I have 10,001 kilobyte payloads, that's very different than if I have
+10,100 kilobyte payloads, right? The memory cost of that is very different. The point is, we want to
+measure the entirety of what is present in that buffer. We want to measure the variable size
+payload. We also want to measure all of the Venice metadata, but there's more. There's a third thing
+in there, which is the overhead of the Java objects themselves, right? So every object in Java has a
+header. The size of that header depends on a bunch of different JVM settings, including the Java
+version, but also whether it's 32-bit or 64-bit, whether the heap size is under 32 gigs or not, and
+then some other settings as well. All of that influences what the header size is. And so if we want
+an accurate measurement of the contribution of that bounded buffer to the heap, we need to take all
+of these components into account. The user payload, the Venice metadata, and the Java object
+overhead. And so we did some work in that space. We also looked at some off-the-shelf libraries that
+do this. There's a few open source ones, like Joel, EHcash has something. Various systems have come
+up with their own kind of heap size estimator. In the end, none of the off-the-shelf solutions
+completely fit what we wanted. And so we ended up rolling out our own. It's not that much code, by
+the way. It's like a couple of classes, a few hundred lines. That's about it. It's not like a huge
+piece of code, but it was pretty interesting because as part of writing this, I had to brush up on a
+lot of things I had kind of superficial knowledge about, but I needed to kind of really clarify all
+of those details in terms of how the heap in Java works, all the object structures are laid out and
+stuff. And that ended up being this kind of custom heap measurement module, so to speak, or class
+inside the Venice code base that now gives us precise measurements of these objects. So that was a
+pretty interesting project, I thought. Yes, that sounds quite interesting because it kind of feels
+like you mentioned while working with different versions of Java. When you get started, it's all
+about writing code. But then there are other things that are maybe the long tail of the things when
+you're running them in production, like what versions do you need to support for your organization?
+Because even if you would like to work with the shiny stuff that is in Java 21, most of the systems
+are probably around in 11 or 17, but there are still some legacy systems that are still anchored in
+8. And when you're running in production, again, there are a lot of things that you're not paying
+attention while you're writing, and then it's about the optimization. And even if it's about pretty
+much finding the right balance, the right sound for everything that's working, So that's nice for
+those that are interested about it. It's not for everyone, but I mean, somebody has to do it. Pretty
+much that wraps my questions. Is there anything else that I should have asked you, but I didn't?
+Well, if people want to learn more, we have our documentation up at venicedb.org. That includes all
+of the conference talks that we've given, other podcasts on the subject of Venice. There's also a
+page in the documentation about the stuff I just talked about, like the Java heap, including a bunch
+of links that I want to give credit to Alexei Shipiliev. I used his blog posts extensively to brush
+up on my own knowledge, and those are a treasure trove. I have a bunch of links to those in our
+wiki. And if anybody wants to learn more, hit us up. We have a community Slack instance that people
+can join freely, and we do bi-weekly, meaning once every two weeks, community sync-ups on Zoom, if
+anybody wants to come in and ask questions. So yeah, that's about it as far as the project is
+concerned. Thank you. Thank you for your time, Felix. Thank you, everybody, for listening to this
+podcast. If you want to challenge Felix and his team about the things that they built in Venice
+Debate, they are available either on the community meetings that they have scheduled or online
+through the channel that he already mentioned. Listen to InfoQ Podcast, and hopefully see you guys
+around the QCon events. Have a great day. Thank you. Have a nice one. Thank you.

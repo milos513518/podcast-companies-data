@@ -1,0 +1,831 @@
+SOURCE: publisher_podhome (official captions)
+EPISODE: Designing Scalable AI Systems with FastMCP: Challenges and Innovations
+DATE: 2025-08-26
+SHOW: AI Engineering Podcast
+LINK: https://www.aiengineeringpodcast.com/fastmcp-ai-tools-integration-episode-58
+AUDIO: https://op3.dev/e/dts.podtrac.com/redirect.mp3/serve.podhome.fm/episode/f6ff0caa-931b-4c08-bfdd-08dc7f5cd336/63891765875657902626c28303-9d66-40e4-b1df-75c210e23493v1.mp3
+DURATION_SECONDS: 4437
+TRANSCRIBED_AT: 2026-09-17T03:33:36Z
+----------------------------------------------------------------------
+Hello, and welcome to the AI Engineering podcast, your guide to the fast moving world of building
+scalable and maintainable AI systems. Your host is Tobias Macy, and today I'm interviewing Jeremiah
+Loewen about the FastMCP framework and how to design and build your own MCP servers. So, Jeremiah,
+can you start by introducing yourself? Of course. Thanks so much for having me on. I'm Jeremiah. I'm
+the founder and CEO of Prefect Technologies where, historically, we've built developer tools for
+data engineers and AI engineers. And more recently, we introduced this FastMCP framework, which is
+really focused on MCP as a technology and as part of that agentic stack, and I'm really excited to
+discuss it today. And do you remember how you first got started working in the overall ecosystem of
+ML and AI? Yeah. I I was supposed to stay in that ecosystem, actually. Once upon a time, I did my
+master's in stats. I was hired on Wall Street as a quant and spent the beginning of my career in
+risk and technology in buy side finance, building models. And, really, you know, back then, this is
+02/2007, 02/2008, 02/2009. This is like the wild west of machine learning was, like, basic recurrent
+neural nets and stuff like that, and that's where a lot of my research was. And then I took this
+elongated detour into building tools for people like me and sort of, for a long time, sort of just
+watched as people did all the cool stuff I wished I was still doing, but I love building tools, and
+it's it's been a real amazing ride building perfect to deliver these tools. And so now as I think AI
+has suddenly burst into consumer awareness, it's been extremely exciting to have one foot in the
+world of what that research entails and requires. Admittedly, I'm a little out of step of, like,
+what's happening. The cutting edge is extraordinary. And then to have another foot helping deliver
+it through developers to end users is really, really exciting. And so that brings us to where we're
+at right now, which is MCP, which has taken a lot of attention in the overall AI and generative AI
+ecosystem. And before we get too much into the framework that we're going to be discussing, I'm
+wondering if you can just start by giving your summary of what the model context protocol is and the
+purpose that it serves in the overall ecosystem of AI powered applications. Of course. So we have
+this this situation where, everyone in in quotes, everyone is deploying AI agents, and they expect
+them to do things. And most of what they expect them to do is interact with the systems we already
+work with today, whether that's your calendar and your email or your data pipelines or your database
+or any any SaaS product you use or any API you use. And a lot of folks, including myself, have been
+quite intrepid about writing software to bridge these agents into those systems. But the result of
+that, kind of because of the popularity and and breadth of this ecosystem, is that every single
+person who wants to use a given API writes, let's say, a Python function for interacting with that
+API. Right? If I wanna send a notification through Slack from my agent, I write a Python function.
+Depending on my framework, I'd probably call it a tool. I attach it to the code that is my agent,
+and now my agent can talk to Slack. But as agents have become part of consumer products, I don't
+always have the opportunity to write my custom Python function to give it that functionality. So for
+functionality. So, for example, Cursor as an example of an AI enabled consumer product. I'm not
+writing code and handing it into Cursor. I need some way of packaging my tooling so that Cursor can
+take advantage of it. And so there's this need for a standard way of wrapping business logic in a
+discoverable API so that an agent can know what it is, know how to use it, and invoke it on your
+behalf. And so MCP starts life as a protocol for describing that standard. And there's this,
+increasingly cliche description of it as the USB C for AI, which is to say, no matter what your
+service is, I use Slack as an example a moment ago, but it could be any database, any service,
+whatever it is. Your services are on the right hand side. Your myriad, variety of agents are on the
+left hand side, and MCP becomes a way to ensure that all agents can talk to all services without
+needing to rewrite that code every single time. And so we could stop there. MCP could just be a
+standard. It's just a way that we agree that these, tools will advertise their capabilities and
+agents will take advantage of them. But, when Anthropic introduced this, they went a step further,
+and they introduced a variety of SDKs to actually implement that protocol and make it accessible to
+folks. And so now we have this world where MCP isn't just a thing we agree on. It's actually a
+framework that we can build on top of, and and FastMCP sort of, has its roots in that in that
+outcome. So digging now into FastMCP specifically, I know that it has gone through a couple of
+versions, and, obviously, it's been in a pretty short succession given the time frame that we're
+talking about. But I'm wondering if you can just give a bit of an overview about what the FastMCP
+framework is and some of the story behind how it came to be and why you decided to put the put your
+effort into it. Of course. So when when the MCP SDKs and the protocol was announced, I think this
+was last November, so that's November 2024. I I took a look at it that weekend because it's very
+interesting to me and, you know, especially being in the data space, the idea of having a protocol
+for connecting a bunch of stuff is extremely interesting to me. And I took a look at the SDK and
+sort of saw what it was trying to do and how it worked. And I found that, in my opinion, it didn't
+stand up to sort of the great idiomatic Python tools that we all know and love for building servers,
+whatever that means to you. So so for me, I had FastAPI on my mind when I was looking at it, which
+is why FastMCP is named what it is as a homage to that really amazing tool. As an example, if I
+wanted to have 10 tools in my MCP server using the SDK of November 2024, I would have to write my
+own branching routing logic and attach it to the SDK. It was very complicated, and it made me as a
+user, as a developer, have to deal with the nuances of how the internals of that framework work as
+opposed to just writing my tool and attaching it. And so I wrote FastMCP back in that November
+really just as a way of very, very, very quickly enabling the functionality that the SDK contained,
+without having to also learn the internals of the SDK, and it it it looks very familiar to anyone
+who knows FastAPI. It's decorator patterns. So if you want a tool if you want a function to become a
+tool for an agent, decorate it with m c p dot tool, and you're done. You know, the framework takes
+care of the rest, which is sort of simplicity goal that I really aspire to in in all of my software,
+and then I think just really resonated here. So we introduced that in November 2024. I kinda use it
+casually. MCP is a very quiet thing at the time. I get a call from the MCP team at Entropic in
+December 2024, saying they really like the implementation and asking if they could vendor it into
+the official SDK, which I thought was super exciting. And, of course, I was like, yes, by all means,
+and and worked with them to make sure that that could be done, successfully. And so now if you use
+the Python SDK, you import FastMCP, you import FastMCP object, which is just so exciting to see this
+developer tool and get that kind of reach and breadth. And then in the spring of this year, of
+twenty twenty five, when MCP really took off, there was this intense demand from even more high
+level interfaces to the protocol than what this low level SDK provided. And, empirically, it became
+clear that the anthropic team was focused not only on handling this incredible variety of requests
+that were coming in at the SDK level, but really focused on making the best possible protocol
+implementation possible, which left open this this opportunity to deliver the higher level, the
+vendor integrations, the the deployment patterns, the hosting, etcetera, at the higher level of this
+of this stack. And so we introduced FastMCP v two last spring to fill that gap, and that's where our
+efforts have really been for the last few months, which has been just exciting to see it explode.
+And the other interesting aspect of the MCP ecosystem, as you mentioned, it's a very new protocol.
+It's something that is very young even in terms of software standards. And I'm wondering if you
+could just give your overall impression of the current landscape of MCP frameworks and tooling and,
+I guess, the pros and cons that exist in that overall space right now? It's a very scattered
+ecosystem right now. I think by virtue of FastMCP's inclusion of the official SDK, we've seen a
+disproportionate share of it through the lens of FastMCP, and so we've seen sort of what people are
+building. There are many, many tools right now that I would view as ultimately features of a larger
+ecosystem. You and I saw this in the data space probably six or seven years ago where you have a
+variety of open source tooling that isn't quite gonna stand on its own, doesn't solve a discrete
+problem, but definitely solves a friction in sort of the deployment path. I think that's the status
+of the MCP landscape right now. Part of the friction there is while there's a standard for how these
+things talk to each other, there's not really a great standard right now for what a great MCP server
+looks like. And so a lot of my focus right now, to your point, is how do we evolve these best
+practices and design healthy servers? Because one of the mistakes people make is they think of well,
+this is a mistake I think people make in AI in general. It happens to be really visceral here. They
+think of these AIs as all powerful, and they don't bother to design an MCP server. Instead, they
+just regurgitate a rest API through the MCP spec into their agent, and it leads to really bad
+outcomes because agents are really bad at parsing this huge amount of information and choosing the
+one route with all the right parameters, and I'm I'm sure we'll have a a chance to explore that in
+some depth later in this conversation. But really where I where I see the state of the universe
+right now is we are live evolving these standards. Many of the conversations I have with other folks
+in the ecosystem are to learn what they've seen that's effective and to share, you know, in turn
+what we've seen that's effective. The one thing that I feel absolutely confident about right now is
+that the best MCP servers are small. These agents really, as soon as you go past 10 or certainly a
+100 tools, the agents really start to perform poorly. They get overwhelmed by the choice, and,
+frankly, the token cost is very expensive. And that's a really that's a really challenging message
+to send people at the same time that you're talking about how easy the framework makes it to deploy
+every tool you can possibly imagine. And that's where, rather than that be an opinion that I have,
+which is increasingly backed by data, I'd rather if that, emerges much more just sort of standard
+best practice, and that's really where my focus is right now. To your point of the potential for
+confusion, if there are too many choices as well as the overall context impact on the proliferation
+of tools introduced by MCP servers, I'm wondering if you can just talk to some of the ways that
+people should be thinking about the design of their overall tooling with or without MCP and some of
+the stumbling blocks that you see people run into as they start to either build their own MCP
+servers or start to incorporate MCP into their overall technical architecture? I found it really
+helpful to start talking about agent stories in the same way that a good product team would talk
+about user stories. This that's a whole other, podcast probably, but, just to just to tease it a
+little bit. When humans use an API like a REST API, we do discovery once. We look at the whole spec.
+We find the routes we need. We codify them in our script or in our code or whatever it is, and we
+never need to go look at the spec again. We we just call them as is. And so discovery is a
+relatively cheap thing that we do, and so you're incentivized to create the broadest, most atomic
+rest APIs possible to implement them with, you know, best practices. Agents are very, very
+different. They do discovery every single time they show up to the MCP server, which means that a
+large number of tools is literally expensive and literally an opportunity to confuse it and take up
+valuable context. They also read everything you put in there, every description, every explanation.
+So there's a balance to be found between how you explain the the utility of your tool and sharing
+too much. You have a situation where an agent that's an expert in, let's just say, accessing your
+data warehouse, interacts with an MCP server and downloads an immense amount of instructions. All of
+a sudden, that agent, because of how agents work, is now an expert in your MCP server, not an agent
+and not an expert in your data warehouse anymore. And so that's where this idea of small servers,
+comes into play. The operative word, I think, is curation. As opposed to optimizing for discovery,
+you optimize you you take on this role of curation. You don't want your agent to have to do
+discovery every time. You want to present the smallest surface area possible so so that it can
+interact with the server and go back to doing whatever its main job is. And the other interesting
+aspect of MCP and the patterns that it promotes from the bits that I've been digging into in my own
+work is that, generally, in the pre MCP world of building an agent and providing it with tools, you
+would be creating these bespoke tools or using whatever functions you have available and running it
+exposing it to the agent through probably the same service that you're using to actually execute the
+agent calls, and so you're dealing with everything very much in process. Whereas when you start to
+incorporate MCP, it seems that what it is encouraging, at least the default way that you would be
+interacting, is that the tool calls are then actually executed out of process in a separate service
+or application, possibly over a network boundary. And I'm wondering how you're seeing that influence
+the ways that teams are thinking about the overall architectural and scaling patterns of their AI
+applications as they start to incorporate these MCP services into their stack. So this happens to be
+a real growing pain, actually, at the moment. I think you are correct that remote calls remote MCP
+servers are not just recommended, but sort of the only real way to do this because you need
+authentication and you need but you need all these things to make sure that you're not to make sure
+that you as a tool provider have an eye on what's going on and can deploy it and stuff. And, also,
+as a consumer of tools, the alternative is to download it and run it locally. And since, we're in a
+world now where instead of writing my own tools, I'm using someone else's, we don't wanna be
+downloading random code and and executing it. Nonetheless, when the SDK was introduced back at the
+end of last year, the only way to run MCPs was to download them locally. And this was hyper
+effective for distributing the protocol and also, in my opinion, has created a bit of a nightmare
+for weaning people off of that way of working and into the, remote MCP space. Now you have this
+intense pressure from vendors now who need to deliver their stuff through remote MCPs and from the
+hosted AI clients, the ChatGPTs, the Claws of the world who will only work with remote MCPs. And you
+have the protocol actually struggling, in my opinion, to catch up, not just in terms of what it
+means to have a remote MCP and and do authentication and stuff like that, but also this is a little
+bit in the weeds, but something my team is working on right now is these MCP sessions are long lived
+and need bilateral communication in certain cases for the most advanced features. Well, that's sort
+of at odds with having a really nicely horizontal horizontally scaled, architecture where I don't
+care, you know, which session my my request comes into. And so there's, this difficulty right now
+where the correct way to deploy your MCP server actually forcibly turns off some of the coolest
+functionality that MCP affords us because it eliminates the opportunity for that back and forth. And
+so, an active area of exploration right now is the introduction of a new transport that can be
+horizontally scaled while also supporting bilateral communication. As I said, that's a bit in the
+weeds, but I think it speaks your your question in general speaks to this sort of growing pain of
+what's the right way to deploy this. If I am, you know, Joe MCP and I just have this one tool I want
+to distribute to folks, maybe I don't care about that. But if I'm one of the largest companies in
+the world trying to deploy an effective MCP front to my API, this is a real concern and, not an easy
+thing to change once you put it in the world because even the change management is still a little
+bit TBD. So I I think you're hitting on, like, one of the big open questions that, obviously, I have
+opinions about, and and would love to maybe influence, empirically, but, there's there's a lot of
+folks who have who are trying to solve this this issue. I think that's worth exploring a bit further
+too. With models, as you said already, whenever you interact with them with a fresh conversation,
+it's effectively like talking to a newborn who is just very facile with language. And so in that
+same sense, with these MCP servers and with all of these tools and rag patterns, the whole purpose
+is to do that context engineering is the phrase that I've been seeing thrown around a lot where you
+need to curate and provide the appropriate information to achieve the outcome that you care about in
+that moment. And MCP is one of the ways of managing that context curation through these tool calls
+and also through the implementation of these prompt snippets to feed into the context of the model
+to say, hey. This is what you want to do with this tool. Put this into your prompt so that you call
+the right tool. And with that bidirectional converse with that bidirectional communication, as you
+said, it it challenges the scaling patterns. It brings to mind some of the complexities of managing
+WebSocket implementations of that bi bidirectional communication. And I know that server sent events
+is one of the ways of managing the push based communication to these LLMs that has been popular in
+some of these remote MCP tools. And then it also brings to mind issues around things like sticky
+sessions or using some sort of context store for the MCP, whether it's a Redis cache or a database
+or what have you, to be able to have maybe some transactional elements of being able to allow the
+MCP server itself to be stateless, but then you're complicating your overall architecture a lot
+more. And so I'm wondering how you're seeing people start to think about this complexity, and I'm,
+in particular, curious about some of the protocol conversations that you're seeing and how people
+are starting to try and come to terms with the de facto means of building these systems. I mean, I
+think you hit the nail on the head there. You that is that is exactly the journey that we have gone
+on. I think we started with web we actually started with the WebSockets implementation of the
+protocol. I I do not know why that didn't go forward other than a preference or an opinion. But that
+that's that's been deprecated. We moved on to SSE for a variety of reasons, including, some
+influence from the large hosting providers. That wasn't, that wasn't deemed sufficient, and so now
+we've moved into HTTP requests, more vanilla HTTP requests with the ability to fall back onto an SSC
+stream for the bilateral communication. Where do we go from here? That is a that is a big debate
+right now. Also, this is a great example of why naming matters. So protocol calls what I just
+referenced, that end state calls streamable HTTP, which has led to a user expectation that responses
+are streamed, which is actually not the case. And it's it's little things like that where does does
+that really matter? Is that a is that a thing worth harping on? Well, it is when you have such an
+emergent protocol. And and so you have this deep appreciation or at least I have this deep
+appreciation for the fact that there's a committee, an MCP committee that's charged with sort of
+building this plane very much while it's in the air. This is this is a plane that's a miracle it
+took off, but it is in the air and and still needs to be built, just because of how early it is. In
+the best possible way, like, that is the ultimate win for the protocol and and also it's the the the
+greatest risk to the protocol is that the ecosystem force it into the air perhaps a step early. And
+so there's a lot of folks working to harden it as quickly as possible, and it means that you are you
+are seeing a lot of pragmatic choices that may or may not be lasting choices or may or may not be,
+ultimately congruent with the goals of the protocol. I don't know. My my interest right now is in
+serving the pragmatic needs. Quite honestly, when whatever the protocol serves up, we will we will
+make do with. We will do our best with it. There are few places in FastMCP where we have, in the
+name of pragmatism, gone around the protocol. So when the protocol introduced authentication, it
+required the MCP server itself to represent itself as a full OAuth server, which is not something we
+want any MCP users genuinely doing. And I understand that that was sort of a waypoint on the way to
+the ultimate thing, but there was a three month span there where the protocol said, if you wanna
+have auth, you need to stand up a full auth server. And then did very little to actually make that,
+achievable for folks and led to a great deal of confusion. And so in FastMCP, just as an example, we
+went off protocol, so to speak, and introduced, bearer bare off, like API keys, basically, as a
+means of interacting and securing interacting with it and securing your server. I think there are
+gonna be more opportunities where empiricism and pragmatism are gonna win out over the needs of the
+protocol, and I but my hope is that those are detours in the names of usability as the protocol
+continues to evolve and just represent sort of a hardened best practice. But, in particular, the
+deployment of remote MCPs is something where there's this push and pull effect going on right now.
+The protocol will put something out. A lot of vendors in the space will attempt, their version of
+it. Inevitably, those will vary in some way. The responses to that will come back into the
+committee's purview to update the protocol, and we're really seeing this healthy, I think, back and
+forth. It is the sort of thing that I think, in an ideal world, would happen before there was
+intense attention and use of this protocol. But in a in another interesting way, it's kinda
+wonderful to see the utility of the protocol shining through even some of these growing pains as the
+committee works through it. Another pattern that I'm seeing start to emerge that I find interesting
+from an architectural perspective as the idea of MCP gateways as a means of aggregating and routing
+to various tools so that you don't have to tell your LLM application about the half dozen different
+MCP servers. You just expose it as one and treat that as a a single system. And I know that FastMCP
+has a means of being able to actually handle proxying to other MCP servers as well as acting as a
+protocol translation for either standard IO or HTTP based interaction, as well as going back to your
+earlier point of just wrap your REST API and turn it into a set of tools. And I'm wondering how
+you're seeing people work through that discovery and evolution of their adoption of MCP and some of
+the ways that you're looking to help with short circuiting some of the dead end paths in the
+framework? It's it's such a good question. So you're you're absolutely right. The first I think the
+first feature we introduced for FastMCP is two point o iteration, which is that more high level
+iteration that we're actively maintaining today, was the ability to compose multiple MCP servers
+into a single server. So sort of a a developer focused gateway, if you will. And the reason the
+starting point is exactly what you said. I don't want to have to connect seven different MCP servers
+to my clients every single time that I set up a new client. If I can compose them into one, then I
+can only expose one endpoint to my server and let the composition handle the routing and, you know,
+all the related complexity. And, obviously, as a framework, we have to solve some some problems
+there around how you do that routing and how you rename things to avoid collisions and but, again,
+that's the role of the framework is to is to take that on. This is a really persistent request we
+see at the enterprise level for the very simple reason that, MCP has, I think, in some ways slipped
+the bounds of what would traditionally be locked down software, which is, partially because of the
+excitement that AI creates and partially because of the ease of distribution. And so you have these
+CISOs whose hair is sort of on fire because there are god knows how many MCP servers being run
+inside their organizations to do god knows what. And they they it's not that they lack observability
+on any one of them. It's that there's no way to really govern that use across various MCP servers.
+So I might be using a server to talk to Gmail, and you might be using a different MCP server to also
+talk to Gmail in the same company. What if mine's maintained and yours isn't? What if mine has some
+security risk associated? And so there's this there's this desire to not just sort of publish a a
+white list, so to speak, of what servers, might be allowed within within a company, but there's this
+desire to actually host them or at least proxy them, and just make them available on a protected
+internal route. This is also a way for companies to solve the authentication problem without users
+having to deal with it. So I I don't really want if I'm gonna have some MCP server that is allowed
+to say, give an agent access to my data warehouse, Yes. I absolutely want to make sure that only my
+employees can access it, so I have this, need for authentication. But do I really want that server
+and whatever that person who wrote it, do I really want to be at the whim of whatever auth they
+added to it, or would I rather harden that, with a proper gateway? And so we are seeing a lot of
+sort of the rediscovery of what would be viewed as obvious in a traditional API world. Now in the
+MCP world, part of the difficulty and why we're not seeing a simple translation is that MCP
+reinvents a few things or at least started off by reinventing a few things that were now instead
+adopt established standards, off being one of them. But even, for example, these are is a custom
+JSON RPC spec for communication. So even a lot of traditional observability tools are unable to sort
+of peer in naively and need to be tailored for MCP. And so you you, you do see these challenges
+within these organizations where a gateway, a centralized way of managing all of these things, I
+think, would create a lot of value. But, of course, gateways tend to codify whatever the status is
+when the gateway is built. And with the standard moving so quickly, that can be challenging, which
+is one of the reasons we we did our best to implement it in code in FastMTP. The other interesting
+aspect of the ecosystem and something that you just touched on is the the discovery and evaluation
+of existing implementations and whether and when to take something off the shelf or to build your
+own system from whole cloth using something like FastMCP. And I'm curious how you're seeing people
+work through some of that evaluation and some of the elements of the MCP implementations and the
+ecosystem that provide some sort of net new avenue of consideration beyond the standard software
+evaluation practices that we've been holding over the past several decades? So it's another great
+question, Tovasa. There is the first cut of evaluation, which is standard software evaluation. If I
+were looking at a server and it were open source, I would I would like to crack it open and just
+make sure that it looks like it's sanely written. It's not gonna leak my tokens, you know, all the
+things that we would do for any piece of software, to the extent that we can. But then you have this
+extra dimension of the context engineering aspect as you mentioned earlier. Does this server
+properly give my agent the context to make good decisions? And now we enter the world of agent
+evals, which in my opinion is really, really, really nascent for a lot of reasons. First of all,
+because agent evals require many, many, many observations, and agents tend to be slow. Right? This
+isn't, this isn't something where we can snap our fingers and write a test script that makes a
+thousand requests to an API. This is something where, yeah, we can write the test script, but come
+back in a week if you wanna see enough, interactions with the API to actually make a determination
+of whether it achieved your goal. Agent evals are also very different than sort of raw LLM evals in
+that we need to trace a trajectory of tool choice and outcomes, not just a single LLM interaction.
+And so all of this is making it very complicated to judge the efficacy of an MCP server. There is
+not, to my knowledge, there is not, like, a great or accepted standard for evaluating these tools.
+An active area of research for us with FastMCP is whether or not we can give users a way to flag
+whether they believe an outcome was good or not based on some criteria so that you can capture that
+and view it in aggregate. This this version of the code flagged, 10% of the time and this earlier
+version of the code flagged 20% of the time. Therefore, we improved it, that type of, you know, core
+experience. But at at the end of the day today, I think it is a gut feeling. I think people, spin up
+MCP servers. They pop them into a chat based AI interface. They ask a few questions. They see what
+they get back. And if the answer seems good, often goes into production. I think that is absolutely
+not where we'll be a year from today or certainly two years from today, but that is the state of the
+art at the moment. And now digging further into FastMCP itself, I'm wondering if you can talk to
+some of the architecture and design considerations that have gone into it and some of the ways that
+you're thinking about the design elements to help push people into the pit of success as it were.
+Let them, you know, default to the best way to do things for whatever approximation of best way
+there might be and some of the evolution of the framework as you have dug further into this nascent
+area? So the the the overall design goal for FastMCP, frankly, like all software that we that we
+build at Prefect is simplicity, but also the ability to sort of, iteratively adopt it. So the idea
+is you don't need to learn the entirety of the software before you start learning the software. And
+so we start with almost this hierarchy of needs of there are three core concepts in MCP tools. By
+far, that's the most popular, resources and prompts. And so the hello world of FastMCP is an import
+statement and a decorator, to create a tool, and you're you're you're kinda done. There's there's
+one or two more lines beyond that, but that's that's the core of it. And in order to do that, I
+didn't have to import any types. I didn't have to learn any schemas. I didn't have to, read too many
+docs except a quick start, and I have a fully functioning MCP server that satisfies the base
+expectations of every AI agent implementation out there. If I wanna go further, there's a really
+cool feature of MCP called sampling in which your MCP server can actually borrow the client's LLM to
+do some advanced processing. That is something that your LLM client your your agentic client has to
+support as well as your server has to support, and therefore, it's not something you should naively
+drop into your server because not every client supports it today. In fact, very few do. But if I
+wanted to take advantage of that feature, then our design goal in FastMCP is to make it possible for
+you to learn that feature, not every other feature, and add it to your tool. And I think this is,
+for me personally, as someone who builds horizontal developer tools, what we just talked about is
+the challenge that I think I enjoy the most in terms of the the game of it, if you will, is there's
+a lot of ways to put functionality in front of people. And there's a lot of ways to just
+regurgitate, protocols that people can if they imitate them in exactly the right way, yes, something
+happens. And then a well designed tool is sort of self documenting and simple in the best possible
+way. And that's our design goal with FastMCP, and I think it it has really resonated so far to the
+extent that it hasn't. There's a couple of things that we've put in the world. Off comes to mind
+being such a moving target where the feedback from from the users has been, I don't I don't know how
+to use this. I I don't get it off the off the bat, and that's sort of one of the strongest signals
+we get to go back to the drawing board and really rethink, the abstractions we're putting in front
+of folks. So, simplicity and and that iterative or excuse me, incremental adoption is are the two
+design goals that we that we have at the forefront for this for this framework. Now when you do
+that, it means you can do a lot of things. It's a horizontal tool, but it means we're not gonna be
+the right tool for everything. Right? So when we talk about simplicity and incremental adoption,
+that means that we have an opinion that's being expressed in the framework about what's the right
+path to achieve, you know, complex outcomes. There are some folks just for an example, there are
+folks who wanna make these completely dynamic MCP servers. So every single time the agent shows up,
+you get a completely essentially different set of tools that are highly context dependent stuff. I
+think this is super cool. I think there's probably a way that we will enable that in FastMCP one
+day. Today, though, I think that's, not a good place for most people to start. And so someone who
+wants that may not have the best time with FastMCP and maybe needs to go to the low level SDK. And
+so for people who are building with FastMCP, going back to our conversation about best practice,
+potential pitfalls, some of the design considerations of how to build a well factored and well
+functioning MCP server, what are some of the aspects of the framework that help make that the
+easiest option, as well as some of the domain knowledge that people who are starting down this path
+of building an MCP server should be aware of versus just throw it at GPT five and tell me to make an
+MCP server? So it's it's a great question. So one of the goals of having a simple framework is to
+translate the abstraction the developer knows into the abstractions that the the protocol requires.
+So the nice thing about MCP is tools are basically functions. They're Python functions. And so the
+core entry point where I can almost guarantee a path to success is give us a Python function. We'll
+look at the arguments. Great. We know what arguments you need for your tool. We'll look at the
+docstring. Great. We know what the instructions are for the tool. We'll look at the return value. We
+know what the you know, we know how to turn this object that the developers are really comfortable
+with, the Python function, into something the protocol requires and agents need. And so we can
+almost guarantee success for the majority of, you know, Python functions. Where do you get into
+trouble? Well, let's say your Python function has a pigantic complex structured pigantic model as
+one of its arguments. So FastMCP will take that and represent it as the protocol demands, and it
+will do the right thing in quotes. Someone opened a bug just yesterday, then it turns out that Cloud
+Code doesn't send properly hydrated structured arguments back to MCP servers. Now Cloud Code is such
+an actively developed project. I'm confident that by the time anyone listens to this, this will be
+this bug bug will have been resolved. But Cloud Code, no matter how much you beg it, no matter what
+instructions you put, will always send structured arguments as a JSON string. And FastNTP, which
+once upon a time actually automatically translated those JSON strings, but it introduced a whole
+host of bugs, now will do the right thing and reject that call and say, no. No. No. This is supposed
+to be a structured object. Please provide it, you know, as the protocol requires. This is one of
+those places where you can push too far and you can find the edges of the protocol and you can find
+the edges of client implementations. I don't know if we have a great way to protect people from
+going too far in that regard, But our hope is if we can make sure that until they go too far, they
+have a really good experience, at least the user has a way to discover. Oh, shoot. I I sort of left
+the boundaries of sanity, and I need to I need to, come back. The flip side of this, though, is the,
+probably, the most popular feature in FastMCP is something that I actually had to write a blog post
+asking people to use less, is automatically converting rest APIs into MCP servers. So this is this
+is something that even though I think it leads to trouble a lot, I think it's so incredibly useful
+and such a core user expectation that sort of has to be part of the framework. And the idea is you
+take a OpenAPI spec, you call fastmcp. From OpenAPI, you pass in the spec, and just like that, you
+have an MCP server that mirrors the REST API. This is phenomenal for bootstrapping your server. This
+is almost always a disaster in production because of what we said earlier that REST APIs are
+designed for humans for whom discovery is cheap, and MCP servers need to be described, designed for
+agents for whom discovery is expensive. And this is one of those places where I'm currently
+struggling with with the right way to guide folks to the fact that they've actually created a bad
+MCP server by using a seductively easy feature of FastMCP. Just this last week, we were, talking to
+someone who opened an issue who their automatically translated open API spec, resulted in a context
+of over a million tokens. So saying hello to this server destroyed like, overran the context of the
+LOM client instantly. And just, you know, you're you're just done at that point. Right? There's
+nothing to do. And the request was, can we compress the context? And I investigated. We were able to
+make some significant savings, like, 50%, but it was still over a million tokens. And, at some
+point, there's not much more we can do other than encourage better design of the MCP server itself
+than naively regurgitate this. And and sort of that's where, again, I I said I really enjoy this
+this this game, if you will, of of design, and and this is one of those places where it is actually
+possible to make something too easy that someone can hurt themselves with it if they're not well
+equipped to understand the consequences. And and that's a that's a real challenge. It's something I
+take very seriously as a as a dev tools, you know, builder. How do we find that balance? Sometimes
+we do it better. Sometimes we do it worse. Because of the fact that FastMCP is, at the end of the
+day, just a Python framework, air quotes around just, it lends the question of, can I just stick it
+into my existing web application? So can I just add it to my FastAPI server or to my Django
+application? And just some of the ways that you and some of the people who are building with FastMCP
+are thinking about the degree of integration into their existing application stack and the role that
+MCP plays in their overall product ecosystem. Yeah. This is one of the places where FastMCP gets to
+benefit from really wonderful work that's taking place in the MCP SDK, as a matter of fact. So the
+SDK provides a lot of utility for converting your MCP server. Or I shouldn't say converting.
+Wrapping your MCP server in an ASGI application, to start that application, but I think that makes
+it very straightforward to see how to mirror it into an especially fast API as a as a popular
+choice. So you could do something similar. Well, I was gonna say you do something similar to get
+into Flask. I haven't actually looked at that, but you need to you need to get a synchronous
+application, I think. We'll take that as a to do following this podcast of how we how we look into
+that. But it integrates really nicely into the asynchronous world of Python web applications, at
+least. And so what what FastMTP will focus on here is we have this, blueprint as well, that choice
+of words, again, we're just talking about Flask. But we have this blueprint from the low level SDK
+of what it takes to expose the MCP server as a ASGI application. We can reuse a lot of that logic.
+And And now what we need to do is make sure that we guide people to the right way to actually do
+that. There are some warts. There's little life cycle things that you have to make sure you invoke
+in the right way or the whole MCP server will die. There's there is work to do to make that a more
+pure experience, and this is one of the places where documentation really does matter. As much as I
+said earlier that the goal is self documenting and it's obvious and incrementally adoptable, I think
+you and I probably would agree that there's nothing scarier than a project with no documentation. It
+just there's something that it even signals before you even use the documentation about what level
+of care went into this. So we have done our best to document not just the right way to do these
+integrations, but the words that come with them. And and this you know, the the easiest answer to
+your question, I could ramble on for a while. The easiest answer to your question is there's a
+dedicated bay there's actually two dedicated pages in our documents in our documentation on
+integrating your MCP server into your ASGI framework. And what we see in terms of practical outcomes
+as opposed to developer outcomes is folks will take their rest API, their fast API application,
+whatever it is, and they will expose a new, probably, slash MCP route that is the exact same server
+now exposed through the MCP protocol. For simple servers, I think that's really effective. For
+complex servers, as I said, I already think it's a mistake to do that naive translation. But I think
+that this combination is effective. You're essentially saying, are you a programmatic client? We
+have a REST API for you. Are you an agentic client? We have an MCP implementation for you. And I
+think that's a really effective way to merge the two if you're not sure who your ultimate customer
+is at this time or you just want to experiment and see what happens. The other interesting point
+that you brought up is that MCP as a protocol requires the server, which is what we've been talking
+about, but it also requires a client that can understand that protocol. And I know that FastMCP has
+a client implementation. There are also numerous other clients in the ecosystem, and I'm wondering
+what sort of content negotiation or capabilities negotiation exists in the protocol and, you know,
+whether in the protocol or in practice and some of the ways that you are seeing client
+implementations stress test the capabilities of the servers that people are building with FastMCP?
+There there's a little awkwardness there because the servers don't have an amazing way right now of
+dealing with clients of limited capabilities. Now, again, the protocol the the clients will
+advertise their capabilities. The protocol is perfectly, capable of transmitting what the
+capabilities are. But I don't wanna build tools which are a series of if statements. If the client
+can, support sampling, then we do the the you know, I wanna write a tool that does a thing and I
+wanna sort of take for granted that my client can do it. And so what that is resulting in, in my
+opinion, is sort of the, I guess, the least common denominator of tooling where we are seeing the
+simplest tools being built because you just don't have a lot of confidence that one of two things.
+The client supports the advanced MCP feature or, as we referenced earlier, the deployment strategy
+will support the advanced MCP feature. And so we're seeing a lot of a lot of these servers gravitate
+towards more simple implementations, which is leading to a very valid criticism of MCP, which is why
+don't we just use a REST API? If this is really just a formatting thing, what's the point of all
+this? And, that that's a whole debate. I think that that's I I think that that's not a bad argument
+on its face. I think if you actually think about it, you could apply it to pretty much anything.
+Like, why do we even need REST standards? Why why don't we just make raw HTTP requests all the time
+and just ask developers to do it? Like, I think standards are good. I think agreement is good. I
+think frameworks are good. However, there are a lot of design decisions in MCP which are additive to
+these more complex features, which at this moment in time, there's not a lot of incentive for server
+authors to implement because they don't know about the clients. And because they're not implementing
+them, there's not a ton of motivation for clients to support them either. The one that I think is
+probably the one that will drive adoption is called elicitation, which is a very fancy way to say
+human in the loop prompting. So this is how your MCP server can send back a structured form
+essentially and say, fill this out or approve this or, you know, get get a structured piece of
+information from either an agent or a human and then act on that. And I think that is probably so
+obviously useful that I think it will drive more client adoption of this advanced feature set than,
+for example, the the sampling feature that I that I referenced earlier. Now we do have a client in
+FastMCP. We have a client because we needed a client to test. That's why that client came into Vue.
+There's not really a great client implementation. There's great client facilities that ship as part
+of the SDK. There's not like a great just client object. So we created one. It, over time has gotten
+really versatile thanks to a lot of user contributions. And the most important thing though is that
+the client that we ship in FastMCP is not an LLM client. There is no way to invoke an LLM just by
+PIP installing FastMCP. You need to go and use, you know, a Langchain or a Pydantic AI or your
+framework of choice to bring an LLM along. And our goal with the FastMCP client is to provide a
+reference implementation for how to interact with an MCP server. My hope is that LLM frameworks and
+agent frameworks will use the FastMCP client and interact with its hopefully well designed Pythonic
+methods to get MCP functionality rather than trying to build their own clients and keep up with the
+protocol. But we do not aspire to introduce an you know, I've built agent frameworks. There are
+wonderful ones out there. That's a hard life. I don't aspire for FastMCP to take the slippery slope
+and and become one. And our client will remain a programmatic client even as we do add some more
+agentic facilities elsewhere in the in the framework. So, obviously, FastMCP, it's an open source
+project. It is something that is definitely very interesting. But as you pointed out at the
+beginning of the conversation, you have a business to run. And so I'm curious what your overall
+goals and motivation are for FastMCP and where you envision the project going as you continue to
+shepherd and contribute to it. So you're right. We do have a business to run, but, interestingly,
+FastMCP came from a completely unexpected part of that business, and that business is profitable and
+taking care of itself. And so it's given us a really unique opportunity to invest fully in FastMCP
+as an open source project and make it the best, most encompassing, you know, every feature we can
+think of, while also learning what people struggle with. Because, like, candidly, yes, if there is a
+new business to be built here, I would love to build it. Who who wouldn't? And there are ways, you
+know I've been building open source businesses for long enough. I hate antagonistic, business
+practices in open source, and I think that there are ways always to build amazing open source
+frameworks that are full featured while also building complementary businesses. And so, actually, as
+you and I are recording this, we are in the process of opening up our FastMTC cloud platform, which
+is just a really simple way to host these servers for remote access with AI agents. Why are we doing
+this? Because it's the number one complaint people have. It's the number one thing people are
+confused by. It's the number one thing that's hard, and it's it's been interesting, you know, coming
+from the world of data engineers, where one of Prefect's primary buying buyers, RICP, is a member of
+a platform team, deeply knowledgeable about how to deploy software and best practices and what their
+requirements are. In the AI engineering world, we're actually seeing a lot of folks who don't have
+that deep background in deploying software. And that to be clear, that's a that's an expectation we
+have, although it was a little bit surprising at first just because I'm not used to it. And so,
+supplying these folks with a single CLI command, you know, FastMCP cloud deploy, basically, or just
+go through the UI and connect your repo is the number one request we've heard from folks, which is
+kinda complicated. Anytime you invoke CPUs remotely, it's a little complicated to ship that in an
+open source context. So everything we use will go into the open source. Right? Because people should
+be able to deploy these things as easily as possible. But for folks who don't want to take on that
+burden or don't know how, there's this opportunity to fill those gaps. So, we'll be starting with a
+with a hosting platform. By the time folks are listening to this, I'm sure you can sign up for it.
+And there's this hierarchy of needs, though. I I'm not particularly interested in a hosting platform
+as a business, and we're gonna keep that as free as we can for as long as we can because we're not
+gonna pretend that's selling CPUs is like a new or interesting business. However, I do strongly
+believe, based on what I'm seeing, that MCP is how business logic will be distributed to autonomous
+software. And there is a need, therefore, for folks to not just host and deploy, but version,
+monetize, advertise, connect, submit for gateway, submit for security reasons. This entire ecosystem
+that needs to emerge around the context economy, forget context engineering, which isn't well
+understood today, isn't well supported, today. But the starting point for that is a place where we
+understand the deployment and observability patterns that really matter for these servers. And so
+our ultimate goals for the FastMCP ecosystem that for FastMCP as an open source product is the
+easiest path to production. Our goals for our commercial products are once you're in production, if
+you really want to build your own commercial enterprise on top of MCB, how do we deliver you the
+tools to do so? And I think that those two those two products will live very harmoniously, and I
+don't think any user of either one will feel that they are missing features in the other because
+it's a very different, set of user objectives. And as people are productionizing their MCP
+implementations, as you are thinking about how to make that as simple and straightforward as
+possible. One of the things that we've touched on a few times but haven't dug into and I think
+merits some further conversation is that question of not just authentication, but authorization and
+some of the ways that the user experience manifests for people who are interacting with these AI
+powered applications that are then using MCP implementations as part of their means of interacting
+with external systems and ways of surfacing that authentication and authorization to the end user in
+a way that doesn't feel clunky or cumbersome. Yeah. This this is one of the places where I would
+sort of beg naivete in the most constructive way. I I'm not an auth expert, but I'm lucky to work
+with a lot of them. Right? And and in particular, our partners over at WorkOS, who I think are
+really at the forefront of a lot of, how this will work, and no surprise are sort of the first
+integration that we ship for all. Fast NTP is one that we built in partnership with them to just try
+and make this as easy as possible for folks to get, you know, enterprise grade off without having to
+learn all about it and sort of have a trusted a trusted vendor. This is something that I think is
+coming into view now for one server. So when I connect I let's make this up. When I connect Claude
+to my remote MCP server that is secured, my browser pops up. I log in. It's a fairly standard
+experience. That token is saved, and now we're sort of off to the races, and I don't need to deal
+with that again. There's this very real challenge of how do I authenticate my service agents, the
+ones that don't have a browser window and are running in some sort of headless motor in CI. And I
+think, there's dynamic client registration as the approach that seems to be sort of taking hold now
+for how those agents are expected to go through the auth handshake. But even if we solve those two
+headline problems, there's this latent problem of what happens when I compose a whole bunch of
+servers into a gateway. How does the third nested server properly surface the fact that it needs off
+through other servers that will presumably see everything that's going on? This is a problem that I
+think is poorly solved today. There are a lot of different theories about it. I, don't have a strong
+one, candidly. This is a place where I don't feel comfortable advocating. I I don't understand that
+space as well. I want to trust someone who does, and I would love to see what emerges as sort of
+best practice around what we what we might call, like, federated auth in this case, in this very
+local case. I don't have a great answer for that. What I am focused on right now, though, is where
+we do have a good auth handshake and we can get that token, all of a sudden, we do have a chance to
+actually start talking about authorization. Thus far, we've really been talking about
+authentication. Now the MCP protocol talks a lot about authentication. It does not make any claims
+about what you actually do inside your server as far as authorization. And, again, my call it naive
+starting point for this is, well, we know what this looks like in the Python world. We've been
+building web servers a long time. We know how people like to gate things and say, well, this can
+only be called by admins, and this can only be called by by Jeremiah. So, I think we're just going
+to try and emerge those best practices to the x experiences excuse me, developer experiences in a
+way that just makes it really easy for people to tap into the claims that they're already receiving
+from their IDP. As you have been building and investing your time and energy into the FastMCP
+framework and diving head first into this overall ecosystem, what are some of the most interesting
+or innovative or unexpected ways that you have seen either FastMCP specifically used or just MCP as
+a protocol applied? So I I wanna call out, someone named Bill Easton who works at Elastic who is, I
+think, other than me, probably the most prolific contributor to FastMCP. And we we haven't announced
+this yet, but by the time folks have listened to this, it will be announced, is now, joining as a
+maintainer, on the project. And Bill has been pushing the envelope on FastMTP since the day I
+announced it, basically. And, he has a vision, which I absolutely love, that the right way to solve
+the context engineering problem is not to well, it is absolutely to curate your context and and make
+it small. And, he's introduced this, entire surface area of what we call tool transformation
+utility. So you can take that massive open API spec and have a YAML document or a JSON document that
+essentially tells your server how to translate that or curate that into a smaller set of well
+understood tools. He's he's the person who's put that in the world, and it's fantastic. And we wanna
+take that a step further now and introduce what we're calling curator agents. And so the idea is
+that your MCP server, instead of asking the user's, LLM to here, here's your menu of tools, learn
+how to use them and then choose one, actually, the MCP server might itself expose an agent, which
+will allow the LLM, the ultimate LLM, to talk to that agent in natural language, make its queries of
+it, talk to it, and now that curator agent is the only agent in the story that's responsible for
+absorbing the potentially massive context that it takes to run and interact with the NCP server. And
+so this is something that I think is really easy to do poorly and really hard to do well, which is
+why we're dragging our feet a little bit on it. I Bill's probably cringing as he listens to this
+because that that is the case. We're trying to be very careful and not accidentally introduce an
+agent framework here. But I think this is one of the coolest things I've seen with FastMCP, not just
+because I think it's super cool, but because it's solving what I think is the looming problem of
+MCP. Is that the easier we make it to build these servers, the more people are inadvertently
+flooding their agents' context. And I don't think a lot of folks who haven't seen this at scale
+understand how damaging that is. When you have an agent that has a beautifully crafted, parsimonious
+600 token system message that, you know, exactly sets its personality and everything's right. And
+then you hit that thing with a 20,000 token context payload of of the one MCP server it's
+interacting with, and you and that and that token payload shows up every single time it interacts
+with the server, you don't realize how quickly you're lobotomizing your agent. And I think that we
+can solve that problem by leaning into this super cool, innovative approach that Bill has developed.
+And so, yeah, I guess this is also a a backdoor way of saying how excited I am for him to become a
+maintainer on the project. To that point of the massive payload every single time you interact with
+the server, I'm wondering whether you or anyone you have spoken with have had any considerations of
+how to make the MCP protocol more of a progressive discovery of here is the endpoint for the MCP
+server. By default, you have access to a small handful of tools. And then through interacting with
+those tools, it will give you access to or information about a more detailed set of tools down a
+particular tree of capabilities. Yes. I think this is one of the most important things we can do. I
+actually think, if we can go a step further, I think this is an obligation that FastMCP has as a
+high level framework that, for example, the MCP SDK does not have as a low level framework. The the
+the low level framework needs to expose the capabilities. The high level framework needs to make
+sure that they are accessible. Doing that within the confines of the protocol is a little tricky
+because one of the first things these agents do I I slightly exaggerate when I say every single time
+they get every every payload. When they first show up, they get every token. And then they rely on
+that to know what tools are available. And so depending on how the client has been programmed, you
+run the risk of it not really knowing to discover this. So, hypothetically, what you'd wanna do is
+have one tool available called discover tools or whatever it might be, and and have an instruction.
+You you use this to find out what the server can do, and you're sort of hoping that the agent
+engages in the back and forth that it's going to take. And this is to give a little a little away of
+the roadmap we're putting together. This is a this is a waypoint on the journey to the curator agent
+is this entire abstraction. We're sort of referring to it internally as a router. And the idea is I
+can see every tool or I can have a new agent in the in the middle that helps me access tools. And
+then there's many in between steps that are programmatic, like the one we're discussing now, which
+is that I have tools that help me discover tools or even tools that help me invoke tools. So this
+this is this is something that I view as an obligation of a high level framework, as I said. Not one
+that I think we've solved satisfactorily today because it's it's again, it's one of those places
+where this space moves so fast, and I do get a little nervous of getting ahead of ourselves and sort
+of locking in Amber and implementation, which risks clients being built on it that may not end up
+being ultimately compatible with how this ecosystem evolves. And so we're doing this carefully.
+We've tried to set up the right mechanisms in FastMCP, including contrib and experimental categories
+of of tooling. Although when you have something marked as experimental, it doesn't exactly make
+people excited to go test it outright and put it in their clients. So this is all part of the give
+and take of of building a healthy framework. But to your question, like, a 100%, yes, that is going
+to be something that is really important to develop here. I think we have an opportunity to do it
+well, but we're just trying to collect as much information about these large contexts as as
+possible. Unfortunately, today, we usually hear about them because people are upset about them, and
+angry about them, not because people are trying to help us compress them. But that's that's
+understandable given the state of the art. One of the other interesting aspects of the surrounding
+elements of agentic use cases that I'm curious if you have any thoughts on is the evolution of these
+large action models where beyond or or in particular, the maybe the small agents framework that
+generates code as opposed to just sending structured, data and just some of the ways that the
+evolution of the model and the agent framework capabilities provide different means of interaction
+beyond just throughout a bunch of natural language with some structured elements in the middle, how
+that evolves the utility of MCP or if MCP is a waypoint onto a more sophisticated means of letting
+these models actually execute computational primitives. MCP is one of the ultimate victories for
+pragmatism over what I'll call, merit, but that sounds way too, like, mean, and I don't mean it that
+way. The MCP protocol is very good, and it solves this problem very well. I think if we were looking
+ahead a few years, we might design it slightly differently to anticipate some slightly different
+interaction patterns. We don't have the luxury of looking ahead a few years. And I think the fact
+that MCP is being adopted so vigorously and so enthusiastically today speaks to the degree to which
+it solves very real problems. I would look forward to MCP evolving itself into an MCP two or an MCP
+plus or whatever however protocols choose to version themselves. Who knows? I would look forward to
+MCP evolving itself to encounter new interaction modes than for the team that put it forward, to
+have waited or worried that it wasn't perfect. I think that there's a lot of criticism, levied at
+MCP, which is unfair. You know, it didn't perfectly anticipate the agentic world we live in today. I
+think that's unrealistic and silly. MCP is solving a real problem. So how that evolves and how sort
+of new computational abilities of agents evolve with it, very interesting for us to speculate about.
+I I I don't I don't know. I'll be honest. My world right now is so much, the myopia of of making
+sure MCP itself works, which is itself a function of the extraordinary attention. I mean, I I've
+never seen anything like it. Right? As you and I know, I've been I've I've been working with my team
+on Prefect for seven years. It achieved 20,000 stars last week. FastMCP has been gaining stars for
+about three months and is already at 16,000. So this the the degree to which developers are flocking
+to this type of tool is something that I have not seen in my career. As much as I can imagine that
+it's and and frankly, it's easy to agree with you that new ways of agents working will lead to new,
+ways of, you know, exposing utility to them. At at this moment, I I I don't think there's any room
+for a for even a second place. As you continue to invest in this ecosystem, invest in the framework,
+and participate in this singular moment, what are some of the most interesting or innovate or sorry.
+What are some of the most interesting or unexpected or challenging lessons that you've learned in
+the process of building and growing this framework? I think the weirdest one was having to write the
+blog post that says, please stop converting your rest servers into MCP servers. And the reason it
+was so weird is not because of the surface version of weird where I introduced a feature and then I
+asked people, like, don't use it. The weird thing is I don't think it's possible to have an opinion
+anymore with all the hype and AI without it being an extreme opinion. And so, candidly, I took an
+extreme opinion in my blog post. I said, don't use this feature. And so now I'm interacting with
+folks in the ecosystem, and they almost apologize. They're like, look. I know you said not to use
+this, but it's really useful using it. It's like, there's no opportunity maybe podcasts are the only
+remaining bastion of this where we can where we can have a more nuanced conversation and say, no.
+No. It's an amazing way to bootstrap your server. It's an amazing way to get started. You just
+can't, you know, take the thousand endpoints of some AWS API and just snap your fingers and expose a
+thousand tools to your that that's going to fail. And so the only way to get that message in the
+world was to take this extreme stance. And so I think this was the most unexpected action I had to
+take. A lot of what's happened I I mean, look, I to be honest, the most unexpected thing is the
+extraordinary popularity of this tool. It's a funny thing to say. Right? You always hope you write
+tools or you get to participate in a wave, which MCP is, and I'm just one surfer of that wave where
+you you just you hope you get caught up in something like this, and you hope that you ship the the
+software that people love, and you you hope for a lot of stuff. That's unexpected, though. If you go
+into it thinking all software is gonna work out like this, it's a recipe for disaster. So that's if
+I'm honest, that's the most unexpected thing. But conditional on that, it's it's, how popular the
+OpenAPI conversion is, how little people want to understand that it creates bad outcomes and needing
+to sort of put this rather extreme, please stop using this feature blog post into the world, which
+now has its own, unexpected knock on effects. And so for people who are investigating the creation
+of their own MCP servers for various use cases, what are the cases where you would say that the
+FastMCP framework is the wrong choice? We've tried really hard to make FastMCP the the simplest way
+to get to production for what I'll call, like, a down the fairway MCB server. If you're trying to
+expose tools or resources to an agent, like, that's that's what it's for. If you yourself are trying
+to really experiment with what MCP can do, well, you can be like Billy Stitt and do it really well
+and get invited to actually maintain FastMCP and bring that in. But more likely, you're gonna have
+more success if you go right to a low level SDK because we are in FastMCP really codifying an
+opinion we have about how to build these servers, and that opinion is to build, frankly, simple,
+curated, and effective servers. That's not to say that all other ways of building them aren't
+effective. It is to say that we can't guarantee that they're effective as well. So for example,
+those dynamic servers we discussed earlier where every single invocation is a totally new server,
+that seems to be probably not a good choice for you. If you today wanted to do what we talked about
+a moment ago and have a single tool that helps you discover other tools, SMTP is probably not the
+right choice for you. I would like to support that as we said earlier, but today, we we don't have a
+great abstraction for that. And if you implement your own, I don't know, you might run into problems
+later because we're not sort of presuming that as a core use case. More broadly, though, because we
+are so focused on the fairway of MCP, I think one of the times I have to tell folks that FastMCP is
+the wrong choice is when MCP itself is the wrong choice for what they're trying to do, which feels a
+little bit like a cop out answer to your question, but we do see it a lot. Right? If you're trying
+to agent to agent communication, I think MCP has a role to play there. I think it's poorly
+understood today. I think FastMCP doesn't make any attempt to assist you in that. And so while you
+could squint and say, yeah, MCP seems like the right place to do this. I don't know. I think,
+Google's eight zero eight framework might be the right place to do that, or a custom implementation
+might be the right place to do that. And so for a lot of folks, they're trying to view MCP as a
+catchall for every possible agent interaction, and I think, it's really important to bear in mind
+that MCP is for connecting autonomous software to digital resources, that tend to be programmatic.
+And if that's the type of thing you're trying to do, if that's the USB c plug you wish you had, then
+I think MCP is a really good choice. And I think FastMCP is a really good choice for most vanilla
+applications of that. Autonomous to autonomous, probably not. Programmatic to programmatic, probably
+not. Really dynamic servers in the middle, probably not. But that that I I hate calling my software
+vanilla, but that, like, freight that down the fairway almost more vanilla flavor if we just wanna
+connect our agents to our to our systems, that's where I think we shine. And as you continue to
+build and invest in FastMCP, what are some of the things you have planned for the near to medium
+term of the framework, or some of the other projects or problem areas you're excited to explore in
+that adjacency? Yeah. There's a few things. We've touched on a lot of them today. So we really wanna
+solve the context engineering problem. We've talked about introducing agents to assist with that.
+We've talked about using dynamic tools and dynamic servers to do that. That's a huge area of
+research for us, and we'll be probably starting with the two .12and2.13 releases of FastMCP,
+probably at the major focus. A little nearer term right now, we're really focused on making sure
+that we have as close to a one liner integration with every tool folks could wanna use. So all
+providers, hosting providers, etcetera, just to make sure that it's as easy as possible to get these
+things into production. And then, of course, I mentioned earlier that we sort of believe that
+there's not just the context engineering taking place, but there's an entire context economy to be
+built. And so how do we better integrate all aspects of not just the core of agent of commerce and
+things like that, but how do we help people build and deploy business logic? If it's not a SaaS
+application, it's an MCP application, what does that what does that mean? What are what are the
+expectations when you ship business logic via MCP? Do you wanna charge for it? Do you wanna gain
+access, to it? Do you want to have observability into it? Do you want your users to have
+observability into it? In an enterprise, what does that mean versus as an end user? These are the
+types of research questions we're really focused on right now as this really goes mainstream and and
+becomes a way that people deploy, technology. Alright. Well, are there any other aspects of FastMCP
+or the overall protocol and the ecosystem that it enables that we didn't discuss yet that you'd like
+to cover before we close out the show? This has been such a wide ranging conversation. I I think
+we've touched on on pretty much anything. I think my my excitement right now as we're recording
+this, literally, the our our cloud product is is going live, and so my energy right now is really
+around seeing what people do when that, most common stumbling block is removed from them, and they
+can go, you know, from code to deployed server in less than five minutes. I'm super excited to see
+what that enables. That's where my energy is. But in terms of covering the ecosystem, it is it is
+vast. And by the time you know, three months from now, this could be an obsolete conversation.
+That's how quickly the space is moving. And, I I would just love to put out an invitation for folks.
+Our repo is very heavily trafficked. A lot of, insanely talented and smart folks there just trying
+to build the best version of this together and would like to invite folks to come participate.
+Alright. Well, for anybody who wants to get in touch with you and follow along with the work that
+you're doing or contribute to the framework or have you add your preferred contact information to
+the show notes. And as the final question, I'd like to get your perspective on what you see as being
+the biggest gaps in the tooling technology or human training that's available for AI systems today.
+The thing that frustrates me the most is something you actually said earlier in this conversation
+for a different reason. It's sort of that I have to start from scratch every time I call up a new
+window for one. I I use AI all the time, like, constantly, constantly, constantly, right, for all
+different purposes. But every single time, I feel like I'm starting from scratch. And I think that
+the ways that we have of combating that, whether it's your your agents.md or your call.md for your
+written instructions, for certain agents or, you know, ChatChippyTS is great memory feature. But
+what they're really doing is they're recording, like, facts. And I find that the thing that I spend
+a lot of my time doing when I'm trying to jump start an AI conversation is I'm trying to teach it
+more stylistic things. Right? So if I'm trying to iterate on a draft and edit something, I need to
+really quickly get my preferences about style into the brain of this thing, into its context
+engineering, into its context. And I need to do this context engineering. Right? And so this is a
+place where I don't see great solutions in the market, and what I do see tend to be sort of just
+bigger versions of that glorified key value version of memory. And I'm I'm being silly, though.
+That's not fair. But that's kinda what it is. Right? A fact gets retained as memory and it gets
+recalled later. And so my best case of jump starting my conversation is to sort of reference all the
+facts that I think it should call into memory so that we can get going. And so some way of really
+remembering the the ethereal state of a conversation, the tone of a conversation, how we like to
+interact, how those are things that I I don't see a great solution for. I look forward to having,
+but, yeah, I'm kinda tired with having, you know, basically to copy and paste effectively a system
+prompt into every different conversation to really get it get it started on this more experiential
+understanding of what I'm up to and the continuity of those conversations. It reminds me, I think,
+the the the funniest thing in the world to me is how frightened I am now when Cloud Code says it's
+about to compact, my conversation. I don't I don't know if this is a a fear that you shared, Tobias,
+but it it throws away so much information. I know why it's doing it. It's doing it for the same
+reasons of everything we've talked about in this call because the context is too big and it has to
+throw away information to make it happen. But I think that is, something that needs to move from art
+to science as fast as possible is how do we make portable context effective as effective as
+possible. Maybe MCP has a role to play in that. I actually don't think it I I can imagine how people
+would claim it does. I don't think this is an MCP thing. I think this is a architectural thing, and
+it's what I'm desperate for as a just a constant user of of AI tooling. Absolutely. Especially when
+you're moving between different services or different models or different tool contexts. Ex exactly.
+And I think you know what? It's it's like I have this instruction now when I when I ask an AI to
+write something, the biggest tell for me people talk about, like, Delve and and dashes and all this
+stuff. The tell for me is every single LLM seems right now to produce at some point in anything it
+writes a phrase to the effect of not just x, but y. Like, not merely, whatever, but also a whatever.
+Like, that phrasing, not just x, but y, shows up in every single, like, thing instruction I have now
+because I hate that phrase so much. To me, that is synonymous with, like, garbage. And it's one of
+these things where my worry is I'm editing a document with an AI. It's my voice. It's my words. I'll
+often do it by transcribing it. And if it edits it and puts that in for any reason because it thinks
+it's effective, I'm like, oh, I just polluted my entire thing because I I missed, you know, this
+this one little edit. That's the sort of thing. That's a stylistic preference I have. I don't wanna
+have to keep saying it over and over and over, and I don't know how to make that a great memory
+that's, like, recalled at a moment. So this is this type of stuff where, like, know me, know my
+preference. I hate this phrasing. I don't wanna see it in any document I look at. That that's how
+we'll know when we've hit AGI is you don't have to keep telling it to remove that phraseology. Don't
+fall back on these LLM crutches, please. But I do think it's ridiculous. For for some reason, I
+think, one of my colleagues, Adam, who also works in a fast interview with me, pointed this out to
+me. Now I cannot unsee it, so I hope I haven't infected too many people by by saying it here. But go
+through LinkedIn. You'll see it in, like, 90% of posts. Not just x, but y. Absolutely. Well, thank
+you very much for taking the time today to join me and talk about the work you've been doing on
+FastMCP and help us understand the architectural implications of the protocol on how we think about
+the creation and evolution of AI applications. It's definitely a very important and active problem
+area, so I appreciate all of the time and energy that you and your team are putting into helping
+make that a more tractable and delightful experience. Oh, I really appreciate the opportunity to
+talk about it. It is so exciting to see it happen. And and once again, we'd love to invite anyone
+out there who wants to build MCP servers to come and, join this community we're building around it
+because it is it is super cool to see. So thank you again for the time. Thank you for listening, and
+don't forget to check out our other shows, the Data Engineering Podcast, which covers the latest in
+modern data management, and podcast dot in it, which covers the Python language, its community, and
+the innovative ways it is being used. You can visit the site at the machinelearningpodcast.com to
+subscribe to the show, sign up for the mailing list, and read the show notes. And if you've learned
+something or tried out a project from the show, then tell us about it. Email hosts at
+themachinelearningpodcast dot com with your story. To help other people find the show, please leave
+a review on Apple Podcasts and tell your friends and coworkers.

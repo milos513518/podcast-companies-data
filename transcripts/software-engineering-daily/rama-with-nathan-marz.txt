@@ -1,0 +1,287 @@
+EPISODE 1600
+
+[INTRODUCTION]
+
+[0:00:00] ANNOUNCER: Building scalable software applications can be complex and typically requires dozens of different tools. The engineering often involves handling many arcane tasks that are distant from actual application logic. In addition, a lack of cohesive model for building applications can lead to substantial engineering costs.
+
+Nathan Marz is the creator of Rama, which is a platform for building end-to-end scalable back-ends. Previously, Nathan led engineering at BackType, which was acquired by Twitter in 2011. In addition, Nathan created the Apache Storm Project and is the author of the bookBig Data: Principles and Best Practices of Scalable Real-Time Data Systems. Nathan joins the podcast today to talk about Rama and how to build scalable software applications.
+
+This episode is hosted by Lee Atchison. Lee Atchison is a software architect, author and thought leader on cloud computing and application modernization. His best-selling book,Architecting for Scale, is an essential resource for technical teams looking to maintain high availability and manage risk in their cloud environments.
+
+Lee is the host of his podcast, Modern Digital Business, produced for people looking to build and grow their digital business. Listen at mdb.fm. Follow Lee at softwarearchitectureinsights.com and see all his content at leeatchison.com.
+
+[INTERVIEW]
+
+[0:01:37] LA: Code is complex. It seems like that's just a simple fact of life. Any application of any size becomes highly complex quickly in its development process. And that complexity, it seems to be growing as time goes on. Rama is a new developer platform designed to build highly scalable, highly reliable application back-ends while actively working to keep complexity in check.
+
+Nathan Marz is the founder of Red Planet Labs, the creator of Rama. And he's my guest today. Nathan, welcome to Software Engineering Daily.
+
+[0:02:10] NM: Oh, thanks for having me.
+
+[0:02:11] LA: I love the conversation of complexity. Because so many things can fit into that category. And it really is a major problem today in most applications. When I think of the effective complexity, I think of application failures, security vulnerabilities and slow down of productivity. And maybe we can end up talking about all three of them. But why don't we start out with your definition of complexity and why complexity is an important topic for you?
+
+[0:02:39] NM: Complexity, it just makes everything worse. It makes the quality of the software lower. You'll have more bugs, more problems. Both just like actual semantic problems, functional problems as well as performance problems. It kills developer productivity.
+
+What we're showing with Rama is that, by taking this new approach to back-end development, we can increase developer productivity by literally orders of magnitude by cutting out that complexity which dominates back in development so much, especially back-end development at scale.
+
+Complexity is one of those things where it's like total arbitrage. If you remove the complexity, everything gets better. Quality gets better. Productivity gets better. Cost gets lower. That's why it's so important as a developer, regardless of your domain, to be focused on complexity and to avoid it or eliminate it as much as possible.
+
+[0:03:31] LA: Yeah. I've certainly seen the evidence that just a little change in complexity can make a huge impact on developer productivity, quality, all sorts of things like that. But, frankly, you make some pretty bold claims and what you can do to help with complexity and what you can help with code size, scalability, all those sorts of things. Just to make sure everyone's on the same page, why don't you start with what are your claims? And what does Rama do for you as a developer from a complexity standpoint?
+
+[0:04:02] NM: Yeah. Our claim is that we reduce the cost of building large-scale back-ends by 100X. So any developer that hears that should think to themselves that is an extraordinary claim. And so, you better have some extraordinary evidence to back it up, right? Just if you're familiar with that great Carl Sagan quote, "Extraordinary claims require extraordinary evidence."
+
+that's why we actually launched the way we did back in August. We didn't just launch Rama and say, "Oh, hey. Here's this new platform and it's 100x better." We took it upon ourselves to actually demonstrate that directly. What we did on launch is we chose an application to build. We chose to replicate Twitter. We decided to replicate Twitter through building a new Mastodon instance from scratch.
+
+Any listeners that are unfamiliar, Mastodon is basically like an open-source Twitter. There are some minor differences between them, but it's basically the same thing in terms of the consumer product. And so, we actually built Mastodon completely from scratch, like the complete thing end-to-end. And we made it completely scalable to scale to Twitter scale. And we tested it at Twitter scale to show that it scales linearly and that its performance numbers are at least as good as Twitter's numbers.
+
+Just to say what some of the numbers were, we ran our Mastodon instance with 100 million bots posting 3500 times per second with an average fan-out of 403. And we actually tested all the way up to Twitter scale, which was Twitter scale is 7,000 post per second at 700 average fan-out. Although when we launched it live on launch, we ran it a little bit less just because it's actually really expensive to run that much infrastructure for us as a startup.
+
+The other important thing for Twitter is also the unbalanced social graph. The problem is actually much harder when the social graph is unbalanced versus balanced. There's just a lot of additional stuff you have to do on the back-end to be able to handle that. And so, our social graph was highly unbalanced. The average fan-out was 403. But some users had over 20 million followers. And like the issues there you have to deal with are issues of fairness.
+
+Making sure that when a really large user posts a status, that they don't like dominate all the resources on the system and then delay everyone else from posting statuses. You want to make sure that it doesn't affect the average latency of delivering a new status to your followers' timelines.
+
+And the other issue is just throughput, right? When you have some users that are so much bigger than other users, you may have some partitions of your processing. Have a lot more work to do than other partitions, which can lower the overall throughput.
+
+And so, in our implementation, we actually handled all of that. And we use the same approaches that Twitter does. I'm very familiar with Twitter's implementation because I used to work there. And also, just I've known so many people there over the years. The techniques we use are the same. The fundamental techniques, but obviously expressed completely differently within a platform like Rama. Anyway, that's like our like flagship example. It was 10,000 lines of code total to build a fully scalable Twitter clone.
+
+[0:07:02] LA: And that compares to Twitter's how many lines of code?
+
+[0:07:05] NM: Twitter spent 1 million lines of code to do the same thing. Now to be clear about what these numbers mean, right? I'm only counting the Mastodon implementation here, right? Obviously, I'm not counting the Rama implementation. And the reason I'm not doing that is because Rama is a general-purpose platform. There's nothing about it that's specific to Twitter, right? It'd be kind of the same way you don't -
+
+[0:07:24] LA: The compiler lines of code.
+
+[0:07:25] NM: Yeah. You don't count the number of lines of code in your compiler, or Postgres, or Cassandra, or whatever databases you're using, right? Rama provides this similar acceleration for any large-scale application. The reason it took Twitter a million lines of code to do this, that's actually a result of complexity like we started talking about.
+
+A lot of what Twitter had to do to get to scale is build a lot of specialized infrastructure from scratch, including multiple data stores because there was no database that fit their particular needs for that part of the system. For example, they had to do this for both the social graph and they had to do it for timelines, for actually storing people's timelines.
+
+It is really expensive to build a data store from scratch. You actually just keep on essentially repeating the work, right? Process management, and durability and replication. There's some stuff you can do to share logic. But a lot of it is repeated. Every programmer learns really early on like that max them, right? DRY. Don't repeat yourself.
+
+But the fact of the matter is, is that until Rama, we have been doing nothing but repeating ourselves. The fact that we can build a platform that reduces the number of lines of code by 100x just shows how much we are repeating ourselves in this industry, especially at scale.
+
+That said, another interesting metric about our Mastodon implementation, it was actually more than 40% less code than Mastodon's official open-source implementation, which isn't - it's not even scalable. We have a much more scalable, much higher performance implementation that's even less code than the non-scalable implementation, which is also an indication of how much we're just reducing complexity in general. Not just at high scale, but including at low scale.
+
+[0:09:15] LA: Let's talk about how you accomplish that. Those are pretty bold claims. But how do you accomplish that? Yeah, it's a platform that allows you to not have to repeat yourself as much. But there are a lot of platforms that do that.
+
+[0:09:28] NM: Yeah.
+
+[0:09:28] LA: What specifically is it about Rama that allows you to get that sort of 100x enhancement?
+
+[0:09:37] NM: Yeah. Yeah. Let me describe what the platform is. I'll start off by speaking of Rama by analogy to existing tools. The problem relating to analogy is that it can limit you in terms of thinking in terms of those analogous tools. Now, Rama, it's much more powerful than that. There's nothing like it that's ever existed. You can call Rama a paradigm shift because of how different it is.
+
+But you can think of Rama as like a programmable data store on steroids. Think of it as like a combination of a stream processor and database. But, again, that's like a way you can relate to it and like what the style of using it is. But that doesn't really capture it. Because it's so much more powerful than those like individual components or just like the individual tooling that has ever existed before for both streaming and databases.
+
+Let me give like some insight into how it's so much more powerful. We talk about the data storage part of it to start. You look at databases, how they exist today and have existed for basically forever, they all revolve around a concept of a data model, right? Relational, key-value, graph, column-oriented, document, et cetera, et cetera, et cetera, right?
+
+And a data model is - that is what the database does. That is how it stores data. And that also determines the types of queries that you can do on that data, right? A key value database is - well, you can put values in. You can get values out. That's all it can do, right?
+
+A document database, you can put a value in for specific field and then you can fetch specific fields out for some key, right? You can get more fine-grained information. And other different query patterns for other lines of column-oriented database can do like certain kinds of range queries efficiently, right?
+
+Rama deconstructs the idea of a data model into a simpler primitive that's able to compose to all these different data bottles plus infinite more. Rama - the data source in Rama is called a P state, which means partition state. And you express your P state to your application in terms of data structures, right? Just like you're used to doing in regular programming, right? Maps, lists, sets and stuff like that, right?
+
+It turns out every data model is just a specific combination of data structures. Key-value is just a map. Documents, map of maps. Column-oriented is a map of sort of maps and so on, right? And so, when you're using Rama, you create as many P States as you need and as many different shapes as you need. You can express any of those data models and then you can express infinite more.
+
+You can have a map of list of maps of sets if you need for one application. A lot of time series stuff, which is doing multiple granularities will be like a triply nested map. It'd be like map from key, to granularity, to bucket, to whatever the aggregation is for that window and stuff like that.
+
+And so, by simplifying the concept of data storage into data structures, we have made a much more general primitive that's able to satisfy all the use cases that every database does combined plus any use case any database design could. Because we have simplified it and turned it into a composable abstraction.
+
+You look at like Twitter, for example. The reason they had to build these new databases from scratch is because the data models didn't fit their use cases. So you end up having to build a whole new database from scratch repeating all that work of replication or process management, fault tolerance just to have a different data model, which is all it is is a different combination of data structures.
+
+Rama, by doing it into the data structures at its base primitive means you don't need to repeat that work. That's all that's built-in. You compose to what you need specific to your application. That is one piece of how Rama is able to be simplify the problem and be so much more general purpose.
+
+[0:13:37] LA: An argument can be made here that the reason why there are these different types of databases structured different ways, key-value, document, et cetera, is because different problem sets have to optimize different types of access in different ways. Key-values are designed to optimize certain types of access differently than an SQL database and different than a document database. By generalizing even more, you remove some of the opportunities to optimize. Is that correct?
+
+[0:14:07] NM: Not really.
+
+[0:14:08] LA: Okay.
+
+[0:14:09] NM: Well, if you look at like what does a database operation do, right? You're doing a write. You have writes and you have reads, right? And a read is going to be a seek on disk and then fetching a bunch of data from that point. And reads are either going to be like point reads. You just want to fetch this one thing that at that location on disk or like a range read, right? You want to fetch a range of data that'd be like an iteration query.
+
+And so, as we're showing from like our performance numbers on Mastodon, our numbers equaled or were better than Twitter's numbers with all of their specialized infrastructure. I think that like, empirically, the performance that we're getting is at least as good as what you get with these specialized tools.
+
+[0:14:56] LA: Okay. That's an interesting say. But let's go on from there. Why don't you describe a little bit more about how - what does a P state look like and how does it work? As best as we can do over a podcast. Maybe if you visualize it a little bit more, we'll be able to talk about it and think about it a little bit better.
+
+[0:15:13] LA: Yeah. A P state is an arbitrary combination of data structures of arbitrary size. P states are durable on disk. They're partitioned. Basically, when you say it's a data structure, that's the data structure on each partition, right? You might be deploying a Rama application. Rama application is deployed as what's called a module. You can have as many partitions of your module, right? If you have 64 partitions of your module, every P state in that module will have 64 partitions.
+
+And then the way you specify your P states is you declare a schema and you just say what data structures it is. If you declare a sub-schema with something called sub-indexing, that allows that data structure to be of essentially unlimited size. Essentially, only limited by the amount of disc space you have.
+
+For example, you can match a column-oriented database that's equivalent to a map of sub-indexed maps where those inner maps can be - they can have hundreds and millions of elements in them and you can still access them. Do both reads and writes in them very efficiently, including range queries. Because sub-indexed structures are always sorted. That's it. Those are the primitives.
+
+And then every - I think for Mastodon we had - I think it was - actually, I don't know off the top of my head. It's something like 80 or 90 P states across the whole application. And huge variety in what the P state structures were for them. Those are the basic primitives. And you think about - it lets you do back-end programming just like how you do like regular progamming, right? Because you're just dealing with data structures directly. These data structures happen to be durable on disk, and replicated and so on. But they're still just - like the mental model is still just data structures.
+
+Another really useful consequence of this, it's kind of a small thing in a big scheme of things, but it's a common impedance mismatch that you have with databases is that you can store whatever you want in them, right? When you're working with Rama, you're storing your domain objects directly. You don't have to like translate it to whatever representation that your database needs, right? It's common for databases to require you to give it like a JSON document. Whereas with Rama, you would just say, "Oh, my domain type is defined with protocol buffers. I'm just going to store directly in the P state." Which means you can query it directly. And also, you can even query pieces of it directly. It's another consequence. Let me actually describe like more of Rama. Because P states are just one part of it.
+
+[0:17:28] LA: Yeah. I was actually just going to suggest, there's actually a multi-stage process that you go through here with P states being the middle of this process. Why don't you start at the beginning?
+
+[0:17:37] NM: Yeah. Rama is unifying both computation and storage, right? P states are the storage part. The overall model is there are four concepts in Rama. You have - the first concept is called a depot. This is how data comes into Rama. Depot is actually exactly like the Apache Kafka but built into the system. It's just a distributed cue of data that's basically unindexed. Rama's programming model, it's basically event sourcing, and materialized views and then generalized. Depot is what would be like the event sourcing part of it.
+
+The next piece would be ETL topologies. And most of working with Rama is writing these ETLs. There are two types of ETLs. Streaming and micro-batching that have different performance characteristics. But those are just - they're just distributed programs that you write using this data flow API that Rama has that consumes data from any number of depots and then can do whatever it wants, including materializing P states.
+
+[0:18:39] LA: It converts the flow of data coming in into the P state representation.
+
+[0:18:41] NM: Correct. [inaudible 0:18:43]. Yeah. And then you have P states. As we discussed, that's how data is indexed. And you have as many of them as you need for your application. And the last thing is query. How do you actually query - how do you actually answer queries through application, right?
+
+And so, there are two types of queries in Rama. You have point queries. These are analogous to things anyone has done with a database client before. You just want to fetch information from one partition of one P state. Rama has another facility called query topologies. These are analogous to like predefined queries as you might see them in a SQL database. Except they're much more powerful. They'd be defined as part of a module and they're defined with the exact same APIs used to define ETLs. Rama has a Java API and a Clojure API.
+
+And so, the query topology is defined using the same thing used to define the ETLs. And a query topology is an on-demand, potentially distributed computation that can look at any or all of your P states and any or all of the partitions of those P states. You can do some really like intense stuff with a query topology.
+
+Those are concepts. In terms of like the design processes using Rama. If you look at any back-end that has ever existed, it all comes down to balancing what do you pre-compute versus what you compute on-demand. And so, what Rama is doing through these concepts, through this flow of how they fit together is giving you maximum flexibility and maximum generality into determining how you make that tradeoff. 
+
+Basically, what you do is you determine what are the P states I need to be able to serve all my applications queries. The way I like to design is actually backwards. Start with the queries. Then you see what are the P states I need? One P state structure may be able to serve 10 of your queries. Another P state may exist just to serve one of your queries, right?
+
+And then you work backwards from there. Then what are the events I have coming in? The depots would correspond to like - for a consumer app would correspond to like actions you take on the platform. For something like Twitter, it'd be like a follow, a tweet and all the different actions that happen. And then you figure out - the last piece you fill in is the ETLs. How do I translate from the depots to the P states I need which will then serve the queries that I've to defined? Let me give an example. Because it's actually an inversion of control compared to how applications have been structured forever.
+
+[0:20:59] LA: Yeah. I was actually just going to say that. Because, normally, people think about what an application is going to do. And think about storing that. And what data you need to store as an outcome of what the application needs to do? But you're doing this opposite, right? You're focused on the storage part first and then building everything else around it.
+
+[0:21:19] NM: Yeah. You start with the queries, which dictates the storage.
+
+[0:21:23] LA: The queries and the storage. Right.
+
+[0:21:23] NM: And then you also start with the events, right? The events are just the events. Let me give you an example so you see how like that inversion of control, right? Let's look at like - sticking with the Twitter use case. Timelines. Right? Timelines would be like - if you look at the chronological timeline, these are the Tweets in reverse chronological order that have been tweeted by the people you follow, right?
+
+[0:21:44] LA: And that'd be a query in your -
+
+[0:21:46] NM: Well, it's both, right? It's a balance. We're doing the same approach Twitter does. We actually materialize your timeline, right? We're actually storing the what - in order what of the most recent tweets cap. We basically store the last 600, right? Which is the same thing Twitter does. And so, that's called timeline fan-out, right?
+
+The event that's coming in is the tweet. And you have to fan that out to all of your followers according to the rules of fan-out. A regular tweet would just go to all your followers. A retweet goes to all your followers, but not to the person who originally tweeted it, right? If that person happens to follow you. A reply only goes to people who also follow the person being replied to.
+
+But the way it works at Twitter is that they have their specialized database for timelines and their specialized database for social graph. And they have like an application layer, which does read and rights to those data stores, right?
+
+Rama, this is the inversion of control, right? In Rama, that's part of the ETL that's materializing your timeline according to the depot information, right? This business logic goes into Rama, into the thing that's also your data store, right? Because that is what it means to materialize a timeline. That's part of the process.
+
+All those rules of only fan-out to a follower if they also follow the person replied to, that's part of the ETL definition. As well as all the other like random rules that exist. Now that's how that particular use case works. And that is like more generally how you think when you're programming Rama.
+
+[0:23:15] LA: Okay. I guess what I struggled with is - this is all great. And, actually, I like the model you're describing. I do see the efficiencies of it. I see the developmental performance benefits you get from it. I can see some areas where you can get some performance scalability out of this model relatively easily. But what do you say to people who would just say that, "This is just yet another novel programming language or environment." Why is it so much different?
+
+I mean, if you said this was twice as efficient, it would just be another environment. Maybe it's a better environment. Maybe not. Who knows? Who cares? But you say it's 100x more efficient and 100x better just in general. I mean, a couple different dimensions. Code size, scalability, et cetera.
+
+[0:24:02] NM: 100x more productive. Yeah. 100x more productive.
+
+[0:24:06] LA: Yeah. More productive. What is it that's so different about this compared to every other environment that gets you that? And it's not just because you've got a better data structure. I mean, fine, everyone's got a better data structure. It's got to be more than that. What is it that makes this so much more efficient at building efficient systems?
+
+[0:24:28] NM: Yeah. Again, going back to our Mastodon example. That is why we built a Mastodon example. Actually, that is one of the things that we're learning how to do, right? How do we teach people Rama? Because it is a paradigm shift. And it's so different than what they did before, right? Just like it's - I can describe the model. How much more general it is? How much more flexible it is?
+
+But in terms of like being able to have that light bulb, those light bulb moments for how much it accelerates programming, it's impossible to just write a paragraph or say something in one minute that's going to help someone understand that. You really only - you see that when you use it, right? Which is why we started with this Mastodon example.
+
+It was actually 100x less code than Twitter. It was actually even more than that in terms of time. Twitter, to write that million lines of code, spent about 200 person-years. We spent nine-person months to build our Mastodon implementation. And there's nothing that will enable you to build that product end-to-end in that low amount of time at scale. Not even close. You're going to get absolutely bogged down by complexity, by the fact that the tooling is too specific, too narrow. It doesn't fit your application. There's no way you're going to be that low line. Not even close to that low line count or that little amount of time.
+
+The reason why Twitter is a good example, it's just one application, but that application's comprised of like 50 different - radically different use cases inside of it. the way the social graph works is completely different than the way timelines work, which is completely different than the way personalized follow suggestions work. And so on. Plus, you have all the filtering, and muting, and blocking and all the million features in there. There are also analytics features with trends. There is search in there. All that stuff we unified on just using the same set of primitives.
+
+The reasons why you're so much more productive with Rama is because we have broken down the concepts into simpler primitives that you compose. I explained that already with P states. That's a really big deal. The data structures and the data models, that's a massive reduction in complexity. It means that you're no longer - when you use databases, you are constantly twisting your domain model to fit your database. People have been doing it for so long they don't even realize they're doing it anymore.
+
+But just little things like the fact that you can't just store your domain object directly, in many, many cases, that lowers your productivity. Just like more random stuff you have to do to try to get things to work. As well as the performance overhead of that, by the way.
+
+And it's the same thing for computation. The computation part is harder to explain. It's just something you have to kind of have to see and play around with. But by breaking down these problems into simpler primitives that can compose into not only the things people are currently doing, but also infinite more things that people could be doing, that is where the acceleration comes from.
+
+Anyone who has a background, especially in functional programming, can relate to that. Because composable abstractions are a bigger thing in functional programming. But that's essentially what we've done. And then the evidence of that is, right now, in that Mastodon example, which is really significant. And we'll have more examples moving forward.
+
+[0:27:46] LA: To that end, some people would say that the way you build something more efficiently is you build it the second time, right? It's easier to build something the second time than the first time. Arguably, anybody could build a better Twitter today than Twitter was able to do.
+
+Now, that being said, you built a platform that happened to make building Twitter easier. What's the risk that what you built is a platform that helps make Twitter easier, build Twitter easier, but isn't as general purpose as you'd like it to be and doesn't work with radically different use cases as efficiently or at the same sort of scale as it does with Twitter?
+
+[0:28:26] NM: Yeah. There are a couple things about that. Nothing about the platform has anything to do with Twitter. It's a general-purpose platform about data structures and computation. And we have actually tested it across many different applications. First of all, there's what I said about Twitter itself. It's not just one use case, right? It's like 50 completely different use cases. That's one thing. The fact that one platform can do search, social graph, timelines, trends, analytics all extremely efficiently, extremely productively is significant, right?
+
+What I actually do for onboarding new employees is, for the first month, they actually just use Rama to build - just replicate some application. It's not going to be as complete of a replica as like our Mastodon implementation or nearly as polished. We're not going to be releasing those. Also, those are using an internal Clojure API. Not the public closure API. We've replicated like Coinbase, Wikipedia, eBay. Gosh. We have so many of them. But it's just like all across - oh, Gmail. I think we have another analytics one. Just all across the board. And it's just - I mean, they're very general-purpose primitives. Data structures and composable data flow computation.
+
+[0:29:35] LA: You feel confident that as you grow this platform it will be a platform that's usable for a wide variety of application use cases.
+
+[0:29:44] NM: Yeah. Absolutely. That's just a fact based on usage. We have a repository on our GitHub called Rama Demo Gallery, right? Now there's five examples on it of just - they're all like really short self-contained, very thoroughly commented examples.
+
+I mean, they're like really short. They're really just a few lines of code each. But like we have one which is like how do you do account registration and profiles? Another one is time series analytics. Another one is bank. Doing atomic bank transfer, right? Atomically transferring funds from one bank account to another and having that be completely fault tolerant. It's literally like just a couple lines of code to do all this.
+
+And so, Rama Demo Gallery is an educational resource for helping learn Rama. Because they're so short and so well-commented. But also, it's just a demonstration of just like these radically different use cases all just being unified very simply by the same set of abstractions.
+
+[0:30:36] LA: What's the next step for you and your company then? You've built this large-scale demo. You are trying to promote your platform. What's the next step? How does this work? How do you grow this into a well-supported, well-accepted platform that really does bring the industry many times more efficient than it currently is? How do you do that?
+
+[0:30:58] NM: Yeah. That is the mission of the company, which is to just radically reduce the cost of software development and really transform the economics of the industry.
+
+Right now, Rama is not generally available. We're in a private beta right now. We have an application form on our website. We already started working with our initial private beta users. And they're all across the board in terms of how they're applying Rama. And so, we'll be growing the private beta from here once as we get our users into production.
+
+I don't know exactly how long we'll be in private beta. I'm not going to say any - when Rama will be generally available. Because I don't want to be held to that. But that's where we're at right now. And, essentially, we're particularly using the private beta to learn how best to teach Rama and just learn what -
+
+[0:31:39] LA: I mentioned, that's a huge struggle for you. It is a struggle for anybody with a new paradigm shift, is how do you convince people that it's better? And how do you convince people that it's the right way to go?
+
+[0:31:50] NM: Exactly. Yeah. That's what we're - well, our private beta users are obviously already convinced it's better, right? We're mainly learning with them how to get them productive, right?
+
+[0:31:58] LA: Right. But you need to know how to communicate that to the general public.
+
+[0:32:02] NM: Exactly. Yeah. that's the main thing we're learning. Just like little things of just like where can we improve the documentation? How can make the developer experience like better? It's like very like specific things that we're doing. We've actually already done - I think it's been seven weeks since we initially announced Rama. And there is a publicly available build of Rama. You can't use that to run distributed clusters, but you can use it to explore the full-on API. That build essentially simulates a Rama cluster in process. And you can use it just like you would a real cluster. It's really good for experimentation and learning. And it's also the environment you use for unit testing, like your modules you're doing for production, right?
+
+And so, since we released that, we've done one release a week just with like little enhancements just to improve the developer experience based on the feedback we've been getting. We're doing a lot of that in the private beta. And the other thing about the private beta is to just accumulate these more examples of how Rama is being applied.
+
+You can expect that, as our private beta users go to production, we will be publishing case studies. So far, every private beta user is doing a completely different domain. They're also completely different than Mastodon, or social networks, or Twitter. It's just going to accumulate more evidence as to how general-purpose of a platform Rama is and how much it accelerates what you're doing regardless of your domain.
+
+[0:33:22] LA: Makes sense.
+
+[0:33:23] LA: That's where we're at right now as a company.
+
+[0:33:25] NM: Some of it too is also believing the people behind it. And that means believing you. And you actually have a background that's rather interesting that kind of proves your ability to build something like this. First of all, you've had experience at Twitter. But also, you were responsible for Apache Storm. Is that correct?
+
+[0:33:44] NM: Yeah.
+
+[0:33:46] LA: Do you want to talk about your history and your background a little bit that brought you to where you are?
+
+[0:33:50] NM: Oh, yeah. Sure. I started working on Red Planet Labs March of 2013 actually. It's been more than 10 years that I've been working on this. It took 10 years to go from starting working on this to launch, right? It was a very difficult and hard R&D process.
+
+Before I started Red Planet Labs, I have been working for years on just building applications. And particularly scale of applications, right? Using the whole spectrum of tooling that existed back then. And in that process, I did a lot of open-source work. My most popular open-source project was Storm, which became an absolutely huge project. I released that in 2011. I think it was September 2011. And became a huge project used all over the world by tons and tons of companies.
+
+Storm was a stream processor, right? But it was the first stream processor that allowed you do scalable stream processing in a fault-tolerant way that actually provided a strong guarantee that your data would be fully processed. Obviously, Rama is also doing that. Or Rama is kind of like -
+
+[0:34:53] LA: The concepts are built into Rama.
+
+[0:34:55] NM: Yeah. Kind of. Yeah. Rama is way different than Storm. But those properties also exist in Rama.
+
+[0:35:00] LA: Philosophical Concepts anyway.
+
+[0:35:01] NM: Exactly. Yeah. I learned a lot from Storm both on the technical end and also on the non-technical end. Stuff like marketing and communication. And that was a really good experience for me.
+
+I was actually in a really interesting position in 2013 where I had a ton of demand for a Storm company. People were saying to me, "Can we give you money so that you can give us like support and consulting services? " And I very, very easily could have started a Storm company and raised money for that. That's a proven model. You have a popular open source project and then you build a company to monetize that.
+
+And I could have done that. And I certainly thought about it. And, actually, that was honestly my intention back in 2011 when I first released it. But by the time I got to 2013, doing a Storm company would have been purely about monetization, right?
+
+Another thing I was doing at the time as I was working on my book, which I eventually published, I think it was 2015 - I actually don't remember exactly when I published it. I think it was 2015. It took me many years to write the book. The book was about the much broader subject about just building big data applications end-to-end. And I came up with this theory, I guess, which is now known as Lambda Architecture.
+
+Where my book basically goes to first principles. What are the first principles of building back-ends? Which, surprisingly, was never defined before. It turns out to be very simple. And then from the first principles, you're actually able to get some really big insights into what architecture should look like, right?
+
+Now in my book, I was talking about applying those principles in terms of existing toolings, right? For this piece, you would use a stream processor. For this piece, you'd use a batch processor. And then for this piece, you do this kind of database. And for this piece you do this other kind of database.
+
+In my book, I had to keep on saying these tools aren't ideal for this purpose. They have all these random limitations, right? Here's what an Ideal tool would look like. But we're going to show you how to do it in terms of the existing tooling, right?
+
+And it's was really through working my book and thinking so much in terms of like the principles and holistically about these problems. And also, just my experience working on so many applications, especially helping people through Storm, that I started to get the general concept of like what a really next-generation tool would look like.
+
+In 2013, I had this vague outline of what would ultimately become Rama. But what I knew at that point, I knew like the general model of event sourcing, materialized views. And I already knew about databases are way better to be expressed in terms of data structures, right? Just infinitely more flexible and powerful. That's all I knew at that point. And that was really, really compelling to me. And then I had this Storm company I could have done. I also could have just stayed at Twitter and gone down like the distinguished engineer. Speak at conferences route. Right?
+
+And, ultimately, I decided to do Red Planet Labs, right? Focus on Rama. And take Storm, donate to Apache and just focus on Rama. Because that was just much more compelling to me to have this opportunity to be able to completely change the economics of the entire industry. That's why I went down that route. And it was a very difficult route.
+
+It really wasn't until 2016, I would say, that I was confident it was even possible. It was a lot of like two steps forward, one step back kind of thing. Sometimes I'd be stuck on like little sub-problems within Rama for like months at a time before I finally figured out that like, "Oh, I'm thinking about the wrong way. I need to question my assumptions." And that helps me break through the problem to figure it out. P states actually were one area where I was stuck for many months to figure out what do the abstractions look like. That's basically the story and history of it.
+
+[0:38:40] LA: Basically, 10 years of R&D and then the last several years in development and turning it into a real company, you now can boldly talk about what this new programming paradigm is. And you really believe this will change the way the back-ends are developed in the future.
+
+[0:38:58] NM: Yeah.
+
+[0:38:59] LA: Or is that your hope, I should say? That's your plan?
+
+[0:39:01] NM: Yeah. That is the plan. Yeah. Well, I think when you have cost reduction that extreme, I think it's - I'm not going to say it's inevitable. But it's just a question that like the tool, it exists already. It does what it does. Now it's a question of people coming to that understanding.
+
+Right now, that's a relatively small set of people. Basically, right now, the people who understand that are the most technically savvy people who are able to reason through the first principles that I'm presenting, right?
+
+You have like two forms of reasoning broadly, right? You have reasoning from first principles, which is thinking in terms of like what are the true issues involved in the application, right? And being able to reason from there. Most people do not reason from that, even though that is by far the best form of reasoning.
+
+Most people reason by analogy, "Oh, let me understand this thing in relation to these other things that I already understand." "Let me understand this thing in relation to this thing being applied to things that are exactly the same or very similar to what I'm currently working on."
+
+And we're just now beginning that process of helping people who think by analogy be able to understand Rama in that way. And as we have more and more us users, there'll be more and more examples and more and more things that people can relate to to have those light bulb moments of like, "Oh, this thing that I'm currently doing that is taking me every little thing I want to do is taking me months to do because of the complexity. Here's this other thing that I can see is doing the same thing much more efficiently." That is essentially what the road ahead looks to us to expand the users.
+
+It's actually an interesting situation to be in to have a tool that - basically, the moment Rama was released, current tooling became 100x worse than the state-of-the-art, which is now Rama. And it's going to take time for people just to even understand that that's the case. But we're getting there. And it's going to become easier and easier for us -
+
+[0:40:48] LA: Understand and believe.
+
+[0:40:49] NM: Yeah. Yeah. Yeah. But it'll become easier for us as we have more and more examples out there and more and more case studies out there.
+
+[0:40:55] LA: I really like the general concepts that you talk about. And I love the bold vision. And I'm really anxious to see how this goes. And so, I really would like to wish you luck. I hope this comes through. And I'm looking forward to following what you do and see what happens.
+
+My guest today has been Nathan Marz, who is the creator of the Rama programming platform. Nathan, thank you for joining me on Software Engineering daily.
+
+[0:41:17] NM: Thanks. I had a lot of fun.
+
+[END]
+
+

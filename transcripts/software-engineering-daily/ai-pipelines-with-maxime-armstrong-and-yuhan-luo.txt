@@ -1,0 +1,225 @@
+EPISODE 1742
+
+[INTRO]
+
+[0:00:00] ANNOUNCER: LLMs are becoming more mature and accessible, and many teams are now integrating them into common business practices such as technical support bots, online real-time help, and other knowledge-based related tasks. However, the high cost of maintaining AI teams and operating AI pipelines is becoming apparent.
+
+Maxime Armstrong and Yuhan Luo are software engineers at Dagster, which is an open-source platform for orchestrating data and AI pipelines. They join the show with Sean Falconer to talk about running cost-effective AI pipelines. This episode is hosted by Sean Falconer. Check the show notes for more information on Sean's work and where to find him.
+
+[EPISODE]
+
+[0:00:49] SF: Yuhan and Max, welcome to the show.
+
+[0:00:52] MA: Hi. Nice to meet you.
+
+[0:00:52] YL: Thanks for having us.
+
+[0:00:54] SF: Yes. I'm excited to have you here. Why don't we start off with just a brief introduction? Yuhan, who are you and what do you do?
+
+[0:01:00] YL: Yes. My name's Yuhan. I joined Dagser four and a half years ago and now I lead developer success at Dagster, and my team's goal is to ensure our users are happy with us and can get their job done effectively through the tools we provide. Before, Daxter, I am a tech lead at Yelp, where I'm part of the data platform team. I focused on product analytics and its automation.
+
+[0:01:25] SF: Awesome. Same question over to you, Max. Who are you? What do you do?
+
+[0:01:29] MA: Yes, for sure. I'm Max. I'm a software engineer at Dagster. So, working with the developer success team with Yuhan, making sure we provide tools that help developers onboard quickly with Dagster. Previously, I was at Retain AI in the region of San Francisco, where I was working on a customer success platform. I was a data engineer and software engineer over there.
+
+[0:01:54] SF: Excellent. So, we're going to be talking about AI and some stuff around cost optimization today. I think as companies over the last year or so have started to move from just sort of playing with Generative AI to actually building like real AI-powered applications, one of the challenges they run into is simply around cost. It's expensive to train or run models. You can easily run out huge bills if you're not careful. Based on what you've seen in your experience, like what exactly in the process of building like an AI-powered application is actually expensive. Is this purely the GPU cost or is there other factors that really lead to an explosion and cost?
+
+[0:02:35] MA: Yes, that's a good question. I think training is for sure a good part of what is the cost in AI, but I think also running the models and in terms of, for example, for the LLMs, in terms of like the completions and asking all that energy or runtime from the model. So, in this example, I think we can talk about the observability. This is like a key point when we talk about the cost in AI. Like I said, training is one thing. But then after when it's done, what do we do in the data pipeline? How can we make sure that we keep track of the costs?
+
+[0:03:17] SF: Yuhan, do you have anything to add to that?
+
+[0:03:18] YL: Yes. So, I would second on what Max said, training and running, basically. In terms of running, one is like actually running a job, running all the moving pieces in an AI-type pipeline. But at the same time, also, making sure that you are actually aware of what's going on in pipeline because a lot of - there's so many moving pieces. A lot of things could go wrong. So, observability is what we've pushing on in terms of data pipelines.
+
+[0:03:48] SF: At what scale does this start to become a problem? When you're building sort of prototyping phase, is everything manageable and then at some certain level things start to potentially become a problem that you need to really pay attention to this?
+
+[0:04:02] YL: Yes. This is actually really good question. I actually think the short answer is whenever it's all manageable. Meaning, like, at a scale where you cannot control all those moving pieces. I actually think this patent is very consistent across the traditional software engineering or data engineering and also this new emergent AI domain. People used to talk about like big data being this problem. When they talk about big data, there's like different kind of Vs. For example, like when it's reaching, say, a tera by scale, this is clearly large-scale and it will cause problem, because the big data is just unmanageable.
+
+But nowadays, I actually believe the problem is more of in this like big complexity, which comes much earlier than simply growing the volume of the data before. With AI, I think it's getting even more complex and comes much earlier in the product development cycle. As you mentioned, for example, even when your application or your AI model are being developed locally, you could be touching like so many moving pieces in different systems.
+
+To say, in this example, in a blog post that we rolled on the prototype did as a support bot via some, you know, LLM APIs. You might call to, say, OpenAI APIs, and you may collect customer data from various sources, and then you may clean it. In the end, you may actually also want to experiment it with different prompts to see the results. All of these don't have to come with large volume, but them combining together becomes this complex problem. In AI, this actually happens very, very early on. 
+
+[0:05:56] SF: Yes. I think that's a really interesting point that you make about how early in the life cycle this becomes a problem. Because if I'm in the early stages of building some sort of web application or something like that, and I don't have any users today, then probably like my relative costs are fairly low to spin up that application and start prototyping and testing and even getting some people playing around with it. But the amount of data that I actually need to feed into a model to be useful already supersedes probably the level of data that my simple web application that kind of like testing is ever going to see for quite some time.
+
+So, it's not about necessarily scale of users. You have essentially data scale problems from day one, even when you're in sort of that prototyping community.
+
+[0:06:39] YL: Actually, here's why hot take. I think AI pipelines are just data pipelines. All those prompt engineering or fine-tuning or primary data engineering, because exactly as you said, you have enormous amount of data since day one or even day zero. So, at a very high level, it is collecting data from certain contacts from different sources, cleaning, wrangling the data to be reusable, and then feeding it back to the models or building tools on top of it. All of these are data engineering.
+
+So, in AI to answer the questions like at which scale it will be a problem? It's basically like at any scale, it can be a problem. While we are in this like early in this AI subdomain, we believe that the principle still applies. We think taking the learnings from the traditional general data or software engineering apply here since day one would really be helpful.
+
+[0:07:43] SF: Yes, that's interesting. You mentioned this article that you wrote, which is about managing costs for AI pipelines using a combination of OpenAI, LangChain, and Dagster. I want to start there. So, could you walk us through sort of the initial setup process for integrating those components and what were some of the things that you're trying to accomplish in the article that you wrote?
+
+[0:08:03] MA: I think in our example, we had three main steps. The first one was for sure how to handle the sources. So, we have like a lot of data. We want to make sure we handle that properly. The second one was to handle vector search. If we want to do some prompt engineering using the data sources, how can we achieve that in a way that it's reusable and that we can, in the data pipeline, achieve and use that properly. Then we want to for sure handle completions. In the example, we are using an LLM. We are using ChatGPT and OpenAI. Yes, GPT-3, I would say.
+
+So, yes, I think these steps were all components in the data pipeline. Initially, we want to handle the sources in Dagster. We have that concept, which is the data assets or software-defined assets. Basically, an asset is a piece of data that we have in the pipeline so that we can materialize it. Then after, we can reuse it in the pipeline.
+
+Initially, we wanted to represent the sources. What we did was create a simple asset that would pull the data from GitHub. In our case, we wanted to use the documentation that we have. Then, from there, we went to creating a vector search object. So, we used the FAISS search index to leverage OpenAI and LangChain. From there, it was really about making sure that when we do prompt engineering, we could use this vector search index to go with the completions and the prompt that we were receiving from users.
+
+So, for example, if a user asked specifically about, let's say, our DBT integration, then we would provide that to the FAISS search index. And then from there, we would help the prompt and the answer from the LLM. It was very like a simple pipeline, but we made sure like all the components were there. 
+
+[0:10:08] SF: Right. So, you built like a RAG pipeline using data sources. Primarily, is it all GitHub, your own GitHub that you're pulling data from?
+
+[0:10:16] MA: Yes. In this example, yes, it is.
+
+[0:10:19] SF: Then Dagster is essentially pulling that in and then creating the embeddings and bumping those into a vector database, in this case, FAISS index, that you're using to augment the model when someone's creating a prompt. That's kind of a general setup that we're talking about, right? 
+
+[0:10:34] MA: Yes, exactly.
+
+[0:10:35] SF: What's the sort of size of the data in reference here?
+
+[0:10:39] MA: That's a good question. We have several pages that we're pulling. So basically, the sources here are all the pages or the guides that we use in our documentation website. So, in terms of the number, I believe in terms of the tokens, it was several hundreds, hundred thousands of tokens. But in number of pages, I couldn't say exactly. But yes, I think when we pull that in the data pipeline, eventually it became a problem in terms of how do we compute all that and make sure that the tokens are not - when we train the embeddings we don't want to retrain all the embeddings all the time when we update one piece of documentation. So, that was one of the problems we addressed in that pipeline. But, yes.
+
+[0:11:24] SF: How does that work? How does the update to the index work?
+
+[0:11:28] MA: Yes. So, what we did was leveraging another Dagster concept. We used the partitions for that specifically. What we wanted to do is imagine that you're updating one piece of documentation on your documentation website, and you want to make sure that your embeddings are up to date for when you provide that to your AI model, but you don't want to retrain all your embeddings.
+
+So, what we did was splitting the sources based on partitions. We used static partitions in our case. What we did was, for example, in our documentation, we will have a section about integrations. We will have a section about our guides, our tutorials. We leveraged the partitions for splitting the sources. Then, what we did was, if we want to refresh the FAISS search index, we just rebuild it using what we had before, but we had one part of it based on the new sources. Really, it was just to make sure that we reduce the cost, because if we don't need to rebuild all the embeddings, we should not do that.
+
+[0:12:40] SF: How is pre-processing and chunking of the text handled?
+
+[0:12:44] MA: In our case, it was very basic what we did. Basically, we split it, I think, it was around something like a thousand tokens, the sources, and we fed that to the FAISS search index. I think in terms of pre-processing, we wanted to keep it simple. Basically, I think in our use case, the documentation website is already formatted. It's not like social media posts that you want to make sure you remove like emojis and different things.
+
+I think in our site, was just a matter of feeding a correct amount of tokens when training the embeddings. It's a very simple use case here, where pre-processing is basically chunking by about like a thousand tokens when creating the embeddings.
+
+[0:13:30] YL: Also to add on that, one is like we built our documentation based on markdown. It's like we have all the source files, so those are easy. Another source is that we're using or GitHub and we also tried a little bit Slack. That's like we kind of prototype it in different iterations, and the first iteration was like, let's just dump everything there. Then the cost was, like, pretty high. Then we realized actually, the highest the quality sources we could use would be our docs, which basically requires the shortest context window, basically. Then, it will go to like the GitHub. Then in the end after we kind of start to optimize the cost, we started to drop the Slack, because we also did some manual work in part of our support. During support, we also surfaced stuff out from Slack to GitHub so it turns out to be like some Slack stuff for like a diminishing return per se. So, we kind of not using it. But that's also part of the journey. We start really just like try to dump everything, and over time, over a few iterations, we optimize the cost.
+
+[0:14:51] SF: I see. Is the cost in your case primarily like related to the input data volume? There's a correlation essentially between input data volume and overall costs. So, if you reduce input data volume, then your cost goes down?
+
+[0:15:07] YL: I think there's two things. One is, yes, definitely the input data volume and the other is also like how much fine-tuning you would do. For example, as Max said, we ended up partitioning stuff by like basically the feature category, like DOS category. In there, we realized the fine-tuning becomes a lot lighter because they are within certain contexts. It does not have to provide a ton of context to the model every time.
+
+I guess the reason why we're so like erring on cost efficiency is one is like we definitely care about that. The other is like we kind of want to try it as a prototype and show it to like our users who's writing AI pipelines to like basically show them and demonstrate how they can build a cost-effective pipeline and using this as like really simple example.
+
+[0:16:01] SF: So, what were some of the things that you like learned around the cost optimization? What were some of the tweaks that you had to make from the original besides reducing the input data set, but what were some of the other things that you learned and help you control cost?
+
+[0:16:16] MA: Yes. I think the main piece of optimization in this specific data pipeline was really about splitting the sources, making sure that we don't rebuild everything. In an initial prototype, we were just, pulling all the data sources and we were rebuilding the embeddings every time. That was like, for sure, the biggest optimization that we did specifically. In the end, we also want to make sure that we reuse the same tools often in the data pipeline where we can and we don't rebuild different.
+
+So, for example, if we have like different completion assets in our pipeline, we want to make sure in our case, we use the same search index. That would be one thing. But I think in terms of like the completions and the way we are optimizing prompt engineering, we leveraged, actually, the Dagster OpenAI integration that we implemented first, in which we captured metadata, the usage metadata on OpenAI side, and we were able to make sure that we would have a look and observe the cost.
+
+I think in our case, it was mostly about the data sources we want to make sure we're not rebuilding everything. But after, in terms of completions, I think it's about what is the template you're using. Are you providing enough context to your prompt when you're providing it to the open AI model? From there, can we reduce that also? If you're providing too many examples, maybe it's not relevant. So, using the observability tools that we have, like insights in Dagster+ and just making sure what are the results, the completion is good enough if we're using less examples. If yes, could we adjust maybe the prompt template and go from there?
+
+[0:18:08] SF: Yes. Can you walk me through like that process? How are you making decisions about what is enough in the prompt? And how does the observability tool help you make those decisions? 
+
+[0:18:19] MA: Yes, it's a good question. I think, so like I said before, in this example, we are using Dagster+ Insights, which is a tool where you see several metrics in your Dagster pipeline. And when using the Dagster OpenAI integration, the OpenAI client will capture the metadata usage, and then we will see it over there. After, I think it's a matter of just testing your pipeline, making sure that you have like a data set that you can test against, making sure that your completions are accurate based on what is the initial question coming from the user.
+
+Then after, I think it's a matter of comparing exactly if I go to insights, I could create two different completion assets. These completion assets, one could be using like one shot inference and the other one could use multiple shots inference. Then from there, we compare like the two sets of completions and against a test dataset. This is mostly how we use that. Then we can see, like, what is the difference in terms of accuracy that we will have in the completions based on the number of examples we provide the two prompts.
+
+I think it's a matter of traditional AI or machine learning testing, just making sure what is your accuracy based on the dataset, and then from there, also use the observability tools to see what are the costs for that example.
+
+[0:19:49] SF: How are you measuring the accuracy against the test set?
+
+[0:19:53] MA: I think in this example, we could use different tools, specifically. I think we will look at what is the content and what is the answer like in the completion. Maybe the topics are related to the original question? But for sure, I think for this example we build the data set in terms of like what would be in the documentation. We test against like what is the proper answer in documentation.
+
+[0:20:24] YL: Yes, I would say it's more qualitative.
+
+[0:20:28] SF: So, is it the manual test then?
+
+[0:20:31] YL: Yes. It's, well, two folds to the manual test. One is internally before rolling it out. Well, before putting it in front of users, we do like some spot check. But at the same time, we also put it in front of users and when user's sentiments, when we know the result is good.
+
+[0:20:50] SF: Then, in terms of, how do you handle errors or anomalies during the pipeline execution as you were starting to ingest these different sources? Do you run into any issues around essentially parsing and chunking and pre-processing? Or did everything work at the box?
+
+[0:21:09] YL: Absolutely. That's like the life of data engineering, right? You always got errors or anomalies that you don't even control. That's actually a big reason why we started building this pipeline with the Dagster, is like you kind of get the native, the logs from each run. It gives you like a very comprehensive compute locks. It goes into every single run. You also break it down to like multiple sources. You show, basically, a deck, like a graph that have all the sources coming into one operation and stuff like that. So, whenever a box is red, we know what's happening and then we can go there.
+
+That's like troubleshooting stuff and usually it's like troubleshooting my user error. Another interesting thing when we go on prod is like there is also an anomaly detection, right? There is also unexpected upstream errors, which don't necessarily do anything with us, or sometimes don't even necessarily need us to fail the wrongs. In Dagster, we have this concept of data quality check and it's called Dagster Checks. So, the idea of checks is like, you don't necessarily need to fail a pipeline because something may just be unexpected, like some different format, but we'll still want the pipeline to be wrong.
+
+So, like, we'll just say checks fails, but wrong succeed. You need to pay extra attention to that, and then we go into and go through the whole troubleshooting cycle.
+
+[0:22:48] SF: Yes. Because those are also potential cost centers, right? If you have a lot of errors and anomalies that you have to deal with or your pipelines like breaking all the time just for sort of normal engineering things, then you have to put a person on that stuff that's like -
+
+[0:23:03] YL: Yes, totally. When people talk about cost efficiency, cost optimization, we should talk about the bills, our finance team receives. But actually, it's also like a lot of human capital go into that. 
+
+[0:23:19] SF: Especially right now where all these tools are quite new and a lot of people are just kind of figuring out. You're cobbling together a combination often of like stuff that you've built some open source tooling that you've pulled from somewhere and maybe some you know existing proprietary technology that you're paying for.
+
+[0:23:37] YL: Right. So, that's why we always felt like you know [inaudible 0:23:40] should not be, or like a control plane should not be the last piece you think of. Actually, we do the opposite. It's day one, we think of bringing a tool that can manage complexity. Therefore, whenever something fails, we know exactly what's wrong. Instead of going through tons of different sources and waste days on troubleshooting all those.
+
+I guess another thing I want to echo what Max said is about Insights. So, Insights is actually essentially this like UI element in our clouding sense and it actually shows you like charts over time. So, tracks failure, some cost tracking that if certainly there's a dip or certain there's a bump that we can easily capture those, and those also made our life easier.
+
+[0:24:32] SF: How did you manage like the model deployment and versioning?
+
+[0:24:36] YL: Yes. That's also a good question. We are all kind of declarative. So, everything, they're defining code. They're essentially all just versioned out of box through Git. Another thing we really liked ourselves is this feature called Branch Appointments. So basically, it's like we said it, so every GitHub PR goes to a branch of course, and then every branch gets pushed to a kind of sandboxing-like environment to Dagster+.
+
+Before you push to prod, so the idea is like you go from local, and then you go to branch appointments, and that's basically the staging environment, but it's an infernal environment. It's like when you're - you could think it as a sandbox. You can do whatever with it and it does not touch your prod environments and it gives you basically this like integration or a small task, a small task workflow. So, before you hit go live, go prod you are actually confident that the model is deployed properly and all the moving pieces are like bring.
+
+[0:25:51] SF: Is there a way to roll that back if you have to?
+
+[0:25:54] YL: Yes. I'll just get commits. You just revert the commit and things would be back.
+
+[0:25:59] SF: I meant the model itself.
+
+[0:26:03] YL: Oh, yes. We currently do not have the model versioning. We do save the model as like the intermediate step automatically. Whenever you want to get the previous data is somewhere in our S3 bucket.
+
+[0:26:19] SF: Okay, got it. I see. Then one of the things that you started off talking about was how you had this, your hot take about how AI pipelines are not that much different than like a traditional data engineering pipeline. But are there unique challenges that come from building these, either it's a RAG mat model pipeline or Gen AI model pipeline, whatever it is, are there unique parts of that, that you've encountered that are different than maybe what you've traditionally encountered in building a data engineering pipeline that's going to drop data down into like a warehouse or something like that?
+
+[0:26:54] YL: Yes. That's a really good question. I would say actually, almost all the parts are similar. But the interesting part is like the learning curve and like the familiarity with all different tools. Max can probably speak more about it, but to my experience, it's like, actually, we also use LangChain when building this, and LangChain really helped us making model comparison, switching between model, and also lower the learning barrier for switching between models. So, I would say that's a bit component to it because in traditional data engineering, it's usually like, if you use Snowflake, you're using Snowflake, and SQL is just like all the same.
+
+Whereas for those like newly AI tools all kind of perform differently, so we have to learn every single stuff. LangChain, as a component here, really help us to make things modular and composable, and the switch costs becomes pretty low.
+
+[0:28:00] SF: Yes. It's interesting. If you compare what you need to do, let's say you're building some AI application and you're going to use a model underneath the hood to do some AI magic. There's pretty big variance in terms of the quality of responses for the specific use case, which is very different than like you're hitting a database and you're running a SQL query. Maybe there's some performance differences at certain scale and stuff like that, but it's still the same SQL statement's going to generate the same response in the same data there.
+
+[0:28:31] YL: You can poke around, say the execution plan is just like, it's all kind of deterministic. Whereas it's such a black box.
+
+[0:28:38] SF: Yes. Non-deterministic, basically. Do you see much gains in terms of costs by changing models?
+
+[0:28:48] YL: Actually, yes. So originally, we actually had this prototype really early on when the GPT-3 came out. When we refreshed this pipeline with our OpenAI integration, the GPT-4 came out. Around the time, or actually, after we released this blog post, the 4.0 came out. Every time we would just try one to two parameter and change it and see the cost. The cost from 3 to 4 went dramatically down. It's also interesting that the kind of qualitative sentiment analysis also went up. All those AI companies are definitely doing stuff and it seems really promising to me in both the cost-effective way and also, making our job easier.
+
+[0:29:42] SF: You may not know this, but I'm curious to hear your thoughts on. I could run essentially, take an open-source model and run it on my own instances, versus calling something like OpenAI's APIs, where they're going to run this stuff as a managed service behind the scenes. Do you think that there's cost savings to be gained? I mean, obviously, I'm taking on a lot of responsibility to try to manage the infrastructure to run the open-source model and scale it. But in the early maybe prototyping phase, where performance is less of an issue, is that a way to potentially keep costs low while I'm going through the prototyping phase?
+
+[0:30:22] YL: Meaning like open-source models?
+
+[0:30:24] SF: Yes. Essentially run an open source model on my own, like GPU cluster or even CPU cluster, I guess, is going to be slow, but I could do it in order to just like test and iterate. Then once I get to a place where I'm happy, then I can do something that's more scalable where the cost goes up.
+
+[0:30:41] YL: That's exactly why I mentioned LangChain, it's just like one or two prime changing, then you go to.
+
+[0:30:46] SF: Right. Yes. So, was that an iteration that you went through?
+
+[0:30:51] YL: I think we probably have compared Llama. I forget. But we did compare a few other ones. It's not an initial prototype phase. Cost was not a big concern. We just went straight to OpenAI.
+
+[0:31:09] SF: In terms of your experience building some of these AI-powered applications, we talked a little bit about how the toolchain is a little bit certainly immature in comparison to other, even though like modern data stack or something like that where you're cobbling a bunch of tools. Where do you see the biggest gaps right now based on your experience where that need to be addressed for people to be able to build more sort of production level AI applications?
+
+[0:31:34] YL: To me, I would say it's the metadata tracking. It's like I don't necessarily want to treat all those models as black box. For example, the very first step forward in the past year was like this usage tracking, Open AI exposed more metadata about each API costs. So, then this gives us basically this platform who wants to interact with those models to have to leverage, say, we let the model users to handle the business logic themselves, but let us take care of those pipeline or API calls, like metadata. What's lacking in my mind is trying to expose more, for those problems to explore more interesting metadata.
+
+[0:32:22] SF: Any thoughts on that, Max?
+
+[0:32:24] MA: Yes, I would second, Yuhan, on this. I think one of the technical challenges we had when building that pipeline specifically was to make sure that when using LangChain, we would be able to capture the OpenAI metadata.
+
+So, I think when using new tools, like all of these are very powerful. We just want to make sure we can use them together properly, efficiently, and then we can keep track of the cost. I think in this use case, we created beforehand the Dagster OpenAI integration in which we did kind of like a wrapper around the OpenAI client enabling us to capture the metadata.
+
+Basically, the challenge for us was to make sure we could use that with LangChain. It was a good thing because LangChain was really to use that specifically. But then it was a matter of like making sure how can I use like one of these tools and make sure I can bring it in my data pipeline and leverage as much as I can, because in production I want to make sure I can keep track of what's going on.
+
+So, in our case, we were able to plug the OpenAI client that we implemented, the wrapper, and was good to go with that. But yes, I think making sure we can leverage these tools, quite new tools, and make sure we can bring them with the observability that we want for a production data by line.
+
+[0:34:00] SF: What about on the vector side? So, you're using fast index for your embedding index, but is there a trade-off with that of relying on that versus relying on something like a more fully-fledged vector database? Or you're operating with such a small enough dataset that there isn't necessarily a visible performance improvement?
+
+[0:34:23] MA: Yes, I think it would be the latter for this data pipeline. I think, like I said before, it was kind of like a few hundred thousand tokens for this example. I think it was good enough to just go with FAISS and it was fast enough. Quite frankly, the cost of just going with something else was maybe too big for this use case. Going with that solution was just the best to do.
+
+But I agree that if the input data was much greater, it would be interesting to test different approaches in terms of like the embeddings and how can we make the most of different approaches and how can we reduce the costs for that.
+
+[0:35:07] SF: What's next with this project? Is this kind of wrapped up? Or are you going to be continuing to build and iterate on this?
+
+[0:35:14] YL: Yes. The project itself is wrapped up and we do want to expand, as we write more features. We kind of use this as an example pipeline to demonstrate [inaudible 0:35:27], all the capabilities that we have with other AI tools. So later on, we want to - one is like leverage our new data catalog to add more sources, like trying to add Slack in and also our support tickets, and also build on top of the data freshness and reliability to deal with bad or spammy sources. So, these are the things. But at the same time, we're also exploring. We're actually using other AI support tools at the same time because they do better job than us making it as our part-time projects.
+
+[0:36:11] SF: How do you see the integration of Dagster, with LangChain, and OpenAI sort of continuing to evolve?
+
+[0:36:18] YL: Yes. So, as I mentioned, I think the composability is actually a really big key part. On the extra side, we aim to be this composable single pane of glass for all your data. While I cannot really speak deeply for that engine, but given my experience, I think it really makes the process of building AI apps, it's mostly via those, like, modular components. So, when integrating with LangChan, similar to LangChain, I think composability, and it boils down to, one is like incremental adoption. So, it's like if we can move certain pipe, certain stuff to, and it's not - we don't want - I believe, we and other tools - for example, like we are a huge believer in like incremental value delivery and we don't want our tool to be adopted as all or nothing. We will meet users where they are.
+
+For example, like if in a future those tools does have a capability to like execute a model or wrong stuff, then we would instead of executing, instead of all in Dagster, we would want to offer this term called, observe, which means, like, you can listen to those activities in external platforms. For example, Dagster would know the upstream dependencies, for example, in LangChain, or other platform, but still be able to manage the things that depend within Dagster, but depend on external sources. But at the same time, we don't have to necessarily kick off those jobs. That's like a big component when we think of integration.
+
+The other components are the second one be like, and this phrase called, like, learn once, write anywhere. So, LangChain actually does a really good job. It's like it makes switching model really easy, and we want to do it the same way. Sometimes user may want different tools in the same category or even switch between them and we want our integration with AI to be like that. We want our PAN to be consistent enough to lower those switch barriers, basically essentially like get users to get their job down quickly enough without learning new things.
+
+[0:38:44] SF: What needs to happen in order for that to occur?
+
+[0:38:47] YL: So, part of it will be like in our integration abstraction. We would build like the same patent, same abstraction for different tools within the same category. Throughout the past year, we rolled out this tool, this patent, or concept called pipes. That's essentially a tool, a protocol built on top of our very basic building blocks. Basically, it's like, if you want to integrate with external execution platform, that is the way to go. Then to our users, the APIs will just look the same.
+
+[0:39:26] SF: Great. Well, as we start to wrap up, is there anything else that you'd like to share?
+
+[0:39:31] YL: Let's see. There's an interesting thought recently in like data and AI that I may want to share. We recently roll out this blog post called Rise of the Media and Code. So, AI is a big topic and it will continue to be in a future. Many people think that AI will completely kind of eliminate those like human written software creation. But in our land, and I guess this also kind of comes back to this whole integration story. We believe that humans are still remaining in the driver's seat when it comes to building software. We caught this kind of emerging class median code. We believe those authors are essentially the ones who own the business logics. It's like LLMs and AIs cannot really author those projects unsupervised. We believe these jobs are not replaceable, which is also a key reason why we want our users to focus on like writing the business projects and leave all those other metadata moving pieces for us to handle. I thought there's like some interesting conversation going around after we kind of start to think and explore that part.
+
+[0:40:57] SF: Yes. I mean, I think that it's difficult to make almost any definitive statement about where things are going to be in the future right now because things are moving so quickly. We always tend to sort of underestimate in the long term and overestimate in the short term. I think like one of the interesting things that's happening right now is if you had showed most tools that exist in the Gen AI space to anybody five years ago, they'd be like blown away by the magic of it. But after just a year of ChatGPT, they're all like disgruntled and think that it's terrible and consistently like criticize the output that comes from and forget the like utility and value that it's generated.
+
+[0:41:39] YL: Right. Yes, I was about to say like five years is a huge honor statement. It's like a year. 
+
+[0:41:44] SF: Yes, absolutely. Well, Yuhan and Max, thanks so much for being here. This was great. Very enjoyable. It was great to learn from your first-hand experience how some of the things that you pulled away from this project to building AI pipeline and some of the things that you were able to do around optimizing costs.
+
+[0:42:01] MA: Thanks so much.
+
+[0:42:02] YL: Yes, thanks for having us. We have been really excited to be here.
+
+[END]
